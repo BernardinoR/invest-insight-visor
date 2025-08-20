@@ -2,41 +2,66 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Investment Analytics Design System - Inspired by sophisticated wealth management aesthetics */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core Brand Colors - Professional wealth management palette */
+    --background: 160 25% 8%;
+    --foreground: 45 100% 90%;
+    
+    --card: 160 20% 12%;
+    --card-foreground: 45 95% 88%;
+    
+    --popover: 160 25% 10%;
+    --popover-foreground: 45 100% 90%;
+    
+    --primary: 45 95% 65%;
+    --primary-foreground: 160 25% 8%;
+    
+    --secondary: 160 15% 20%;
+    --secondary-foreground: 45 90% 85%;
+    
+    --muted: 160 12% 25%;
+    --muted-foreground: 45 40% 70%;
+    
+    --accent: 170 30% 35%;
+    --accent-foreground: 45 100% 90%;
+    
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 45 100% 95%;
+    
+    --border: 160 15% 25%;
+    --input: 160 12% 20%;
+    --ring: 45 95% 65%;
+    
+    /* Investment specific colors */
+    --success: 120 60% 50%;
+    --success-foreground: 45 100% 95%;
+    
+    --warning: 35 95% 60%;
+    --warning-foreground: 160 25% 8%;
+    
+    --info: 200 95% 60%;
+    --info-foreground: 160 25% 8%;
+    
+    /* Sophisticated gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(160 25% 8%), hsl(170 30% 15%));
+    --gradient-accent: linear-gradient(135deg, hsl(45 95% 65%), hsl(35 85% 55%));
+    --gradient-card: linear-gradient(135deg, hsl(160 20% 12%), hsl(160 15% 15%));
+    --gradient-hero: linear-gradient(135deg, hsl(160 25% 8%) 0%, hsl(170 30% 12%) 50%, hsl(160 20% 10%) 100%);
+    
+    /* Elegant shadows */
+    --shadow-sm: 0 2px 8px hsl(160 25% 5% / 0.2);
+    --shadow-md: 0 8px 32px hsl(160 25% 5% / 0.3);
+    --shadow-lg: 0 20px 60px hsl(160 25% 5% / 0.4);
+    --shadow-glow: 0 0 40px hsl(45 95% 65% / 0.15);
+    
+    /* Professional transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 

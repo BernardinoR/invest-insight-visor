@@ -1,0 +1,101 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { PerformanceChart } from "./charts/PerformanceChart";
+import { StrategyBreakdown } from "./charts/StrategyBreakdown";
+import { MaturityTimeline } from "./charts/MaturityTimeline";
+import { IssuerExposure } from "./charts/IssuerExposure";
+import { PortfolioTable } from "./PortfolioTable";
+import { TrendingUp, DollarSign, Target, Building2, Calendar } from "lucide-react";
+
+export function InvestmentDashboard() {
+  return (
+    <div className="min-h-screen bg-gradient-hero">
+      {/* Header */}
+      <header className="border-b border-border/50 bg-card/30 backdrop-blur-sm">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="h-8 w-8 rounded-lg bg-gradient-accent flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Investment Insight Visor</h1>
+                <p className="text-sm text-muted-foreground">Relatório de Performance de Investimentos</p>
+              </div>
+            </div>
+            <Button variant="outline" className="bg-card/50 border-primary/20 hover:bg-primary/10">
+              Exportar Relatório
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-6 py-8">
+        {/* Portfolio Overview */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-foreground mb-2">Portfolio Performance</h2>
+          <p className="text-muted-foreground">Bianca Monique Soares Marcellini - XP Performance</p>
+        </div>
+
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Patrimônio Total</CardTitle>
+              <DollarSign className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-foreground">R$ 848.512,74</div>
+              <p className="text-xs text-success">+0,58% no período</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Rentabilidade Média</CardTitle>
+              <Target className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-foreground">5,2%</div>
+              <p className="text-xs text-success">vs CDI: 4,4%</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Diversificação</CardTitle>
+              <Building2 className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-foreground">12</div>
+              <p className="text-xs text-muted-foreground">Estratégias ativas</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Próximo Vencimento</CardTitle>
+              <Calendar className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-foreground">Fev/26</div>
+              <p className="text-xs text-muted-foreground">R$ 23.808,91</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <PerformanceChart />
+          <StrategyBreakdown />
+          <MaturityTimeline />
+          <IssuerExposure />
+        </div>
+
+        {/* Portfolio Table */}
+        <PortfolioTable />
+      </main>
+    </div>
+  );
+}
