@@ -91,22 +91,83 @@ export function PerformanceChart() {
         
         {/* Performance Summary Table */}
         <div className="mt-6 pt-4 border-t border-border/50">
-          <div className="grid grid-cols-7 gap-4 text-sm">
+          <div className="grid grid-cols-10 gap-2 text-xs">
             <div className="font-medium text-muted-foreground">Período</div>
             <div className="font-medium text-muted-foreground">Patrimônio Inicial</div>
             <div className="font-medium text-muted-foreground">Movimentação</div>
+            <div className="font-medium text-muted-foreground">Taxas</div>
             <div className="font-medium text-muted-foreground">Impostos</div>
             <div className="font-medium text-muted-foreground">Rendimento</div>
             <div className="font-medium text-muted-foreground">Patrimônio Final</div>
             <div className="font-medium text-muted-foreground">Rentabilidade</div>
+            <div className="font-medium text-muted-foreground">% IPCA</div>
+            <div className="font-medium text-muted-foreground">% CDI</div>
             
             <div className="text-foreground">12 Meses</div>
-            <div className="text-foreground">R$ 802.839,65</div>
-            <div className="text-foreground">R$ 40.800,00</div>
-            <div className="text-foreground">R$ 0,00</div>
-            <div className="text-foreground">R$ 4.873,08</div>
-            <div className="text-foreground">R$ 848.512,74</div>
-            <div className="text-success">0,58%</div>
+            <div className="text-foreground">1.976.765,57</div>
+            <div className="text-foreground">-402.480,13</div>
+            <div className="text-foreground">-3.556,75</div>
+            <div className="text-foreground">-25.797,28</div>
+            <div className="text-foreground">229.418,03</div>
+            <div className="text-foreground">1.774.349,44</div>
+            <div className="text-success">12,58%</div>
+            <div className="text-foreground">7,26%</div>
+            <div className="text-foreground">106,63%</div>
+
+            <div className="text-foreground">Mai/25</div>
+            <div className="text-foreground">1.870.215,75</div>
+            <div className="text-foreground">-116.074,83</div>
+            <div className="text-foreground">-13,48</div>
+            <div className="text-foreground">-10.059,89</div>
+            <div className="text-foreground">30.281,89</div>
+            <div className="text-foreground">1.774.349,44</div>
+            <div className="text-success">1,71%</div>
+            <div className="text-foreground">1,45%</div>
+            <div className="text-foreground">150,52%</div>
+
+            <div className="text-foreground">Abr/25</div>
+            <div className="text-foreground">1.853.300,78</div>
+            <div className="text-foreground">-18.935,44</div>
+            <div className="text-foreground">-354,12</div>
+            <div className="text-foreground">-253,91</div>
+            <div className="text-foreground">36.458,44</div>
+            <div className="text-foreground">1.870.215,75</div>
+            <div className="text-success">1,98%</div>
+            <div className="text-foreground">1,55%</div>
+            <div className="text-foreground">187,41%</div>
+
+            <div className="text-foreground">Mar/25</div>
+            <div className="text-foreground">2.005.772,60</div>
+            <div className="text-foreground">-170.145,42</div>
+            <div className="text-foreground">-1.279,04</div>
+            <div className="text-foreground">-1.513,48</div>
+            <div className="text-foreground">20.466,12</div>
+            <div className="text-foreground">1.853.300,78</div>
+            <div className="text-success">1,04%</div>
+            <div className="text-foreground">0,48%</div>
+            <div className="text-foreground">107,99%</div>
+
+            <div className="text-foreground">Fev/25</div>
+            <div className="text-foreground">2.017.158,92</div>
+            <div className="text-foreground">-1.347,51</div>
+            <div className="text-foreground">-1,65</div>
+            <div className="text-foreground">-</div>
+            <div className="text-foreground">-9.437,16</div>
+            <div className="text-foreground">2.005.772,60</div>
+            <div className="text-destructive">-0,47%</div>
+            <div className="text-foreground">-1,78%</div>
+            <div className="text-foreground">-47,51%</div>
+
+            <div className="text-foreground">Jan/25</div>
+            <div className="text-foreground">2.015.031,38</div>
+            <div className="text-foreground">25,30</div>
+            <div className="text-foreground">-122,69</div>
+            <div className="text-foreground">-2.628,64</div>
+            <div className="text-foreground">4.853,57</div>
+            <div className="text-foreground">2.017.158,92</div>
+            <div className="text-success">0,23%</div>
+            <div className="text-foreground">0,07%</div>
+            <div className="text-foreground">22,62%</div>
           </div>
         </div>
       </CardContent>
