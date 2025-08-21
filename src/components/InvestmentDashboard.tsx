@@ -7,10 +7,13 @@ import { MaturityTimeline } from "./charts/MaturityTimeline";
 import { IssuerExposure } from "./charts/IssuerExposure";
 import { PortfolioTable } from "./PortfolioTable";
 import { ClientSelector } from "./ClientSelector";
+import { ClientDataDisplay } from "./ClientDataDisplay";
+import { useClientData } from "@/hooks/useClientData";
 import { TrendingUp, DollarSign, Target, Building2, Calendar } from "lucide-react";
 
 export function InvestmentDashboard() {
   const [selectedClient, setSelectedClient] = useState<string>("");
+  const { consolidadoData, dadosData, loading, totalPatrimonio, totalRendimento, hasData } = useClientData(selectedClient);
 
   return (
     <div className="min-h-screen bg-gradient-hero">
@@ -49,6 +52,8 @@ export function InvestmentDashboard() {
           <h2 className="text-3xl font-bold text-foreground mb-2">Portfolio Performance</h2>
           <p className="text-muted-foreground">
             {selectedClient || "Selecione um cliente para visualizar os dados"}
+            {selectedClient && hasData && " - Dados carregados"}
+            {selectedClient && !hasData && loading && " - Carregando..."}
           </p>
         </div>
 
@@ -60,8 +65,12 @@ export function InvestmentDashboard() {
               <DollarSign className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">R$ 848.512,74</div>
-              <p className="text-xs text-success">+0,58% no período</p>
+              <div className="text-2xl font-bold text-foreground">
+                {hasData ? `R$ ${totalPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : "R$ --"}
+              </div>
+              <p className="text-xs text-success">
+                {hasData ? "+0,58% no período" : "Aguardando dados"}
+              </p>
             </CardContent>
           </Card>
           
@@ -71,8 +80,12 @@ export function InvestmentDashboard() {
               <Target className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">5,2%</div>
-              <p className="text-xs text-success">vs CDI: 4,4%</p>
+              <div className="text-2xl font-bold text-foreground">
+                {hasData ? `${totalRendimento.toFixed(1)}%` : "--%"}
+              </div>
+              <p className="text-xs text-success">
+                {hasData ? "vs CDI: 4,4%" : "Aguardando dados"}
+              </p>
             </CardContent>
           </Card>
 
@@ -82,8 +95,12 @@ export function InvestmentDashboard() {
               <Building2 className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">12</div>
-              <p className="text-xs text-muted-foreground">Estratégias ativas</p>
+              <div className="text-2xl font-bold text-foreground">
+                {hasData ? dadosData.length : "--"}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {hasData ? "Ativos na carteira" : "Aguardando dados"}
+              </p>
             </CardContent>
           </Card>
 
@@ -93,11 +110,29 @@ export function InvestmentDashboard() {
               <Calendar className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">Fev/26</div>
-              <p className="text-xs text-muted-foreground">R$ 23.808,91</p>
+              <div className="text-2xl font-bold text-foreground">
+                {hasData && dadosData.length > 0 ? 
+                  new Date(dadosData[0].Vencimento).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) : 
+                  "--"
+                }
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {hasData && dadosData.length > 0 ? 
+                  `R$ ${dadosData[0].Posicao.toLocaleString('pt-BR')}` : 
+                  "Aguardando dados"
+                }
+              </p>
             </CardContent>
           </Card>
         </div>
+
+        {/* Client Data Display */}
+        <ClientDataDisplay 
+          consolidadoData={consolidadoData}
+          dadosData={dadosData}
+          loading={loading}
+          clientName={selectedClient}
+        />
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
