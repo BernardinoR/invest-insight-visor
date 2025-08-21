@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PerformanceChart } from "./charts/PerformanceChart";
@@ -5,9 +6,12 @@ import { StrategyBreakdown } from "./charts/StrategyBreakdown";
 import { MaturityTimeline } from "./charts/MaturityTimeline";
 import { IssuerExposure } from "./charts/IssuerExposure";
 import { PortfolioTable } from "./PortfolioTable";
+import { ClientSelector } from "./ClientSelector";
 import { TrendingUp, DollarSign, Target, Building2, Calendar } from "lucide-react";
 
 export function InvestmentDashboard() {
+  const [selectedClient, setSelectedClient] = useState<string>("");
+
   return (
     <div className="min-h-screen bg-gradient-hero">
       {/* Header */}
@@ -32,10 +36,20 @@ export function InvestmentDashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
+        {/* Client Selection */}
+        <div className="mb-8">
+          <ClientSelector 
+            selectedClient={selectedClient}
+            onClientChange={setSelectedClient}
+          />
+        </div>
+
         {/* Portfolio Overview */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-foreground mb-2">Portfolio Performance</h2>
-          <p className="text-muted-foreground">Bianca Monique Soares Marcellini - XP Performance</p>
+          <p className="text-muted-foreground">
+            {selectedClient || "Selecione um cliente para visualizar os dados"}
+          </p>
         </div>
 
         {/* Key Metrics */}
