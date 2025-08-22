@@ -2,20 +2,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 const COLORS = [
-  'hsl(217 71% 53%)', // Blue - Pós Fixado - Liquidez
-  'hsl(25 95% 53%)',  // Orange - Pós Fixado
-  'hsl(142 71% 45%)', // Green - Inflação
-  'hsl(262 83% 58%)', // Purple - Pré Fixado
-  'hsl(346 87% 43%)', // Red - Multimercado
-  'hsl(47 96% 53%)',  // Yellow - Imobiliário
-  'hsl(195 93% 46%)', // Cyan - Ações
-  'hsl(271 81% 56%)', // Violet - Ações Long Bias
-  'hsl(160 84% 39%)', // Teal - Private Equity
-  'hsl(24 70% 52%)',  // Brown - Exterior Ações
-  'hsl(43 74% 49%)',  // Gold - Exterior Renda Fixa
-  'hsl(291 47% 51%)', // Purple2 - COE
-  'hsl(48 89% 60%)',  // Gold2 - Ouro
-  'hsl(14 83% 53%)',  // Orange2 - Criptoativos
+  'hsl(210 16% 82%)', // Light blue-gray
+  'hsl(32 25% 72%)',  // Light beige
+  'hsl(45 20% 85%)',  // Very light beige
+  'hsl(210 11% 71%)', // Medium gray
+  'hsl(210 16% 58%)', // Darker gray
+  'hsl(207 26% 50%)', // Blue-gray
+  'hsl(158 64% 25%)', // Dark forest green
+  'hsl(159 61% 33%)', // Medium forest green
+  'hsl(210 29% 24%)', // Dark blue-gray
+  'hsl(25 28% 53%)',  // Medium brown
+  'hsl(40 23% 77%)',  // Light tan
+  'hsl(210 14% 53%)', // Medium blue-gray
+  'hsl(35 31% 65%)',  // Warm beige
+  'hsl(210 24% 40%)', // Darker blue-gray
 ];
 
 interface StrategyBreakdownProps {
