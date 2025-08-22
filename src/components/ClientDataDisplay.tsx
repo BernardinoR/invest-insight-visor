@@ -82,7 +82,6 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Data</TableHead>
                   <TableHead>Competência</TableHead>
                   <TableHead>Patrimônio Inicial</TableHead>
                   <TableHead>Movimentação</TableHead>
@@ -94,9 +93,6 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
               <TableBody>
                 {consolidadoData.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell>
-                      {new Date(item.Data).toLocaleDateString('pt-BR')}
-                    </TableCell>
                     <TableCell>
                       {item.Competencia}
                     </TableCell>
