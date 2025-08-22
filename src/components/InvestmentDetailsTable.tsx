@@ -9,7 +9,92 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
-export function InvestmentDetailsTable() {
+interface InvestmentDetailsTableProps {
+  dadosData?: Array<{
+    "Classe do ativo": string;
+    Posicao: number;
+    Rendimento: number;
+  }>;
+}
+
+export function InvestmentDetailsTable({ dadosData = [] }: InvestmentDetailsTableProps) {
+  // Function to group strategy names according to original specification
+  const groupStrategy = (strategy: string): string => {
+    const strategyLower = strategy.toLowerCase();
+    
+    if (strategyLower.includes('cdi - liquidez')) {
+      return 'Pós Fixado - Liquidez';
+    }
+    if (strategyLower.includes('cdi - fundos') || strategyLower.includes('cdi - titulos')) {
+      return 'Pós Fixado';
+    }
+    if (strategyLower.includes('inflação - titulos') || strategyLower.includes('inflação - fundos')) {
+      return 'Inflação';
+    }
+    if (strategyLower.includes('pré fixado - titulos') || strategyLower.includes('pré fixado - fundos')) {
+      return 'Pré Fixado';
+    }
+    if (strategyLower.includes('multimercado')) {
+      return 'Multimercado';
+    }
+    if (strategyLower.includes('imobiliário - ativos') || strategyLower.includes('imobiliário - fundos')) {
+      return 'Imobiliário';
+    }
+    if (strategyLower.includes('ações - ativos') || strategyLower.includes('ações - fundos') || strategyLower.includes('ações - etfs')) {
+      return 'Ações';
+    }
+    if (strategyLower.includes('ações - long bias')) {
+      return 'Ações - Long Bias';
+    }
+    if (strategyLower.includes('private equity') || strategyLower.includes('venture capital') || strategyLower.includes('special sits')) {
+      return 'Private Equity';
+    }
+    if (strategyLower.includes('exterior - ações')) {
+      return 'Exterior - Ações';
+    }
+    if (strategyLower.includes('exterior - renda fixa')) {
+      return 'Exterior - Renda Fixa';
+    }
+    if (strategyLower.includes('coe')) {
+      return 'COE';
+    }
+    if (strategyLower.includes('ouro')) {
+      return 'Ouro';
+    }
+    if (strategyLower.includes('criptoativos')) {
+      return 'Criptoativos';
+    }
+    
+    return strategy;
+  };
+
+  // Group investments by grouped asset class and calculate totals
+  const strategyData = dadosData.reduce((acc, investment) => {
+    const originalStrategy = investment["Classe do ativo"] || "Outros";
+    const groupedStrategy = groupStrategy(originalStrategy);
+    
+    if (!acc[groupedStrategy]) {
+      acc[groupedStrategy] = { 
+        name: groupedStrategy, 
+        value: 0, 
+        count: 0,
+        totalReturn: 0
+      };
+    }
+    acc[groupedStrategy].value += Number(investment.Posicao) || 0;
+    acc[groupedStrategy].totalReturn += (Number(investment.Rendimento) || 0) * (Number(investment.Posicao) || 0);
+    acc[groupedStrategy].count += 1;
+    return acc;
+  }, {} as Record<string, { name: string; value: number; count: number; totalReturn: number }>);
+
+  const totalPatrimonio = Object.values(strategyData).reduce((sum, item) => sum + item.value, 0);
+
+  const consolidatedData = Object.values(strategyData).map((item) => ({
+    ...item,
+    percentage: totalPatrimonio > 0 ? (item.value / totalPatrimonio) * 100 : 0,
+    avgReturn: item.value > 0 ? (item.totalReturn / item.value) * 100 : 0,
+  }));
+
   const getPerformanceBadge = (performance: number) => {
     if (performance > 2) {
       return <Badge className="bg-success/20 text-success border-success/30">Excelente</Badge>;
@@ -20,6 +105,14 @@ export function InvestmentDetailsTable() {
     } else {
       return <Badge className="bg-destructive/20 text-destructive border-destructive/30">Negativo</Badge>;
     }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2
+    }).format(value);
   };
 
   return (
@@ -41,41 +134,29 @@ export function InvestmentDetailsTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow className="border-border/50">
-                <TableCell className="font-medium text-foreground">CDI - Fundos</TableCell>
-                <TableCell className="text-foreground">R$ 123.456,78</TableCell>
-                <TableCell className="text-muted-foreground">14.6%</TableCell>
-                <TableCell className="text-success">+0.48%</TableCell>
-                <TableCell>{getPerformanceBadge(0.48)}</TableCell>
-              </TableRow>
-              <TableRow className="border-border/50">
-                <TableCell className="font-medium text-foreground">Inflação - Títulos</TableCell>
-                <TableCell className="text-foreground">R$ 249.837,93</TableCell>
-                <TableCell className="text-muted-foreground">29.4%</TableCell>
-                <TableCell className="text-success">+6.95%</TableCell>
-                <TableCell>{getPerformanceBadge(6.95)}</TableCell>
-              </TableRow>
-              <TableRow className="border-border/50">
-                <TableCell className="font-medium text-foreground">Pré-Fixado - Títulos</TableCell>
-                <TableCell className="text-foreground">R$ 165.913,91</TableCell>
-                <TableCell className="text-muted-foreground">19.6%</TableCell>
-                <TableCell className="text-success">+13.02%</TableCell>
-                <TableCell>{getPerformanceBadge(13.02)}</TableCell>
-              </TableRow>
-              <TableRow className="border-border/50">
-                <TableCell className="font-medium text-foreground">Ações - Long Biased</TableCell>
-                <TableCell className="text-foreground">R$ 68.465,18</TableCell>
-                <TableCell className="text-muted-foreground">8.1%</TableCell>
-                <TableCell className="text-success">+4.58%</TableCell>
-                <TableCell>{getPerformanceBadge(4.58)}</TableCell>
-              </TableRow>
-              <TableRow className="border-border/50">
-                <TableCell className="font-medium text-foreground">Imobiliário - Ativos</TableCell>
-                <TableCell className="text-foreground">R$ 7.340,17</TableCell>
-                <TableCell className="text-muted-foreground">0.9%</TableCell>
-                <TableCell className="text-destructive">-0.83%</TableCell>
-                <TableCell>{getPerformanceBadge(-0.83)}</TableCell>
-              </TableRow>
+              {consolidatedData.length > 0 ? (
+                consolidatedData.map((item) => (
+                  <TableRow key={item.name} className="border-border/50">
+                    <TableCell className="font-medium text-foreground">{item.name}</TableCell>
+                    <TableCell className="text-foreground">
+                      {formatCurrency(item.value)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {item.percentage.toFixed(1)}%
+                    </TableCell>
+                    <TableCell className={item.avgReturn >= 0 ? "text-success" : "text-destructive"}>
+                      {item.avgReturn >= 0 ? "+" : ""}{item.avgReturn.toFixed(2)}%
+                    </TableCell>
+                    <TableCell>{getPerformanceBadge(item.avgReturn)}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow className="border-border/50">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    Nenhum dado disponível
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>

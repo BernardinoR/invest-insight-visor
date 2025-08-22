@@ -166,7 +166,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
         {/* Investment Details Table */}
         <div className="mb-8">
-          <InvestmentDetailsTable />
+          <InvestmentDetailsTable dadosData={dadosData} />
         </div>
 
         {/* Charts Grid */}
