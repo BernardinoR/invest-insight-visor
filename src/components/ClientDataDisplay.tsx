@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Database, TrendingUp, Calendar, Target } from "lucide-react";
 import { PerformanceChart } from "./charts/PerformanceChart";
+import { StrategyBreakdown } from "./charts/StrategyBreakdown";
 
 interface ConsolidadoPerformance {
   id: number;
@@ -128,6 +129,11 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
       {/* Performance Chart - positioned after Consolidado Performance */}
       {consolidadoData.length > 0 && (
         <PerformanceChart consolidadoData={consolidadoData} />
+      )}
+
+      {/* Strategy Breakdown - positioned after Performance Chart */}
+      {dadosData.length > 0 && (
+        <StrategyBreakdown dadosData={dadosData} />
       )}
 
       {/* Dados Performance */}
