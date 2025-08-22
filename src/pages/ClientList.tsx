@@ -21,12 +21,13 @@ export default function ClientList() {
 
   const fetchClients = async () => {
     try {
-      // Usando rpc ou query direta para contornar limitações de tipos
-      const { data, error } = await supabase.rpc('get_unique_clients');
+      // Usando a função get_unique_clients criada no Supabase
+      const { data, error } = await supabase
+        .rpc('get_unique_clients');
       
       if (error) {
         console.error('Erro ao buscar clientes via RPC:', error);
-        // Fallback para dados mock temporariamente
+        // Fallback para dados mock se houver erro
         const mockClients: Client[] = [
           { Cliente: "João Silva", "Meta de Retorno": "CDI + 2%" },
           { Cliente: "Maria Santos", "Meta de Retorno": "IPCA + 5%" },
@@ -39,11 +40,13 @@ export default function ClientList() {
         return;
       }
 
-      setClients(data || []);
+      // Garantir que os dados estão no formato correto
+      const clientsData = (data as Client[]) || [];
+      setClients(clientsData);
       setLoading(false);
     } catch (error) {
       console.error('Erro ao buscar clientes:', error);
-      // Fallback para dados mock
+      // Usar dados mock como fallback
       const mockClients: Client[] = [
         { Cliente: "João Silva", "Meta de Retorno": "CDI + 2%" },
         { Cliente: "Maria Santos", "Meta de Retorno": "IPCA + 5%" },

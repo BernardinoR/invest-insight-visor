@@ -14,6 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
+      ConsolidadoPerformance: {
+        Row: {
+          Competencia: string | null
+          created_at: string
+          Data: string | null
+          "Ganho Financeiro": number | null
+          id: number
+          Impostos: number | null
+          Instituicao: string | null
+          Movimentação: number | null
+          Nome: string | null
+          "Patrimonio Final": number | null
+          "Patrimonio Inicial": number | null
+          Rendimento: number | null
+        }
+        Insert: {
+          Competencia?: string | null
+          created_at?: string
+          Data?: string | null
+          "Ganho Financeiro"?: number | null
+          id?: number
+          Impostos?: number | null
+          Instituicao?: string | null
+          Movimentação?: number | null
+          Nome?: string | null
+          "Patrimonio Final"?: number | null
+          "Patrimonio Inicial"?: number | null
+          Rendimento?: number | null
+        }
+        Update: {
+          Competencia?: string | null
+          created_at?: string
+          Data?: string | null
+          "Ganho Financeiro"?: number | null
+          id?: number
+          Impostos?: number | null
+          Instituicao?: string | null
+          Movimentação?: number | null
+          Nome?: string | null
+          "Patrimonio Final"?: number | null
+          "Patrimonio Inicial"?: number | null
+          Rendimento?: number | null
+        }
+        Relationships: []
+      }
+      DadosPerformance: {
+        Row: {
+          Ativo: string | null
+          "Classe do ativo": string | null
+          Competencia: string | null
+          created_at: string
+          Data: string | null
+          Emissor: string | null
+          id: number
+          Instituicao: string | null
+          Nome: string | null
+          Posicao: number | null
+          Rendimento: number | null
+          Taxa: string | null
+          Vencimento: string | null
+        }
+        Insert: {
+          Ativo?: string | null
+          "Classe do ativo"?: string | null
+          Competencia?: string | null
+          created_at?: string
+          Data?: string | null
+          Emissor?: string | null
+          id?: number
+          Instituicao?: string | null
+          Nome?: string | null
+          Posicao?: number | null
+          Rendimento?: number | null
+          Taxa?: string | null
+          Vencimento?: string | null
+        }
+        Update: {
+          Ativo?: string | null
+          "Classe do ativo"?: string | null
+          Competencia?: string | null
+          created_at?: string
+          Data?: string | null
+          Emissor?: string | null
+          id?: number
+          Instituicao?: string | null
+          Nome?: string | null
+          Posicao?: number | null
+          Rendimento?: number | null
+          Taxa?: string | null
+          Vencimento?: string | null
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           content: string | null
@@ -170,6 +263,87 @@ export type Database = {
         }
         Relationships: []
       }
+      PoliticaInvestimentos: {
+        Row: {
+          "Ações - Ativos": number | null
+          "Ações - ETFs": number | null
+          "Ações - Fundos": number | null
+          "Ações - Long Biased": number | null
+          "CDI - Fundos": number | null
+          "CDI - Liquidez": number | null
+          "CDI - Titulos": number | null
+          Cliente: string | null
+          COE: number | null
+          created_at: string
+          Criptoativos: number | null
+          "Exterior - Ações": number | null
+          "Exterior - Renda Fixa": number | null
+          id: number
+          "Imobiliário - Ativos": number | null
+          "Imobiliário - Fundos": number | null
+          "Inflação - Fundos": number | null
+          "Inflação - Titulos": number | null
+          "Meta de Retorno": string | null
+          Multimercado: number | null
+          Ouro: number | null
+          "Pré Fixado - Fundos": number | null
+          "Pré Fixado - Titulos": number | null
+          "Private Equity/Venture Capital/Special Sits": number | null
+        }
+        Insert: {
+          "Ações - Ativos"?: number | null
+          "Ações - ETFs"?: number | null
+          "Ações - Fundos"?: number | null
+          "Ações - Long Biased"?: number | null
+          "CDI - Fundos"?: number | null
+          "CDI - Liquidez"?: number | null
+          "CDI - Titulos"?: number | null
+          Cliente?: string | null
+          COE?: number | null
+          created_at?: string
+          Criptoativos?: number | null
+          "Exterior - Ações"?: number | null
+          "Exterior - Renda Fixa"?: number | null
+          id?: number
+          "Imobiliário - Ativos"?: number | null
+          "Imobiliário - Fundos"?: number | null
+          "Inflação - Fundos"?: number | null
+          "Inflação - Titulos"?: number | null
+          "Meta de Retorno"?: string | null
+          Multimercado?: number | null
+          Ouro?: number | null
+          "Pré Fixado - Fundos"?: number | null
+          "Pré Fixado - Titulos"?: number | null
+          "Private Equity/Venture Capital/Special Sits"?: number | null
+        }
+        Update: {
+          "Ações - Ativos"?: number | null
+          "Ações - ETFs"?: number | null
+          "Ações - Fundos"?: number | null
+          "Ações - Long Biased"?: number | null
+          "CDI - Fundos"?: number | null
+          "CDI - Liquidez"?: number | null
+          "CDI - Titulos"?: number | null
+          Cliente?: string | null
+          COE?: number | null
+          created_at?: string
+          Criptoativos?: number | null
+          "Exterior - Ações"?: number | null
+          "Exterior - Renda Fixa"?: number | null
+          id?: number
+          "Imobiliário - Ativos"?: number | null
+          "Imobiliário - Fundos"?: number | null
+          "Inflação - Fundos"?: number | null
+          "Inflação - Titulos"?: number | null
+          "Meta de Retorno"?: string | null
+          Multimercado?: number | null
+          Ouro?: number | null
+          "Pré Fixado - Fundos"?: number | null
+          "Pré Fixado - Titulos"?: number | null
+          "Private Equity/Venture Capital/Special Sits"?: number | null
+        }
+        Relationships: []
+      }
       RAG_Processador: {
         Row: {
           Ativo: string | null
@@ -220,6 +394,13 @@ export type Database = {
       binary_quantize: {
         Args: { "": string } | { "": unknown }
         Returns: unknown
+      }
+      get_unique_clients: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          Cliente: string
+          "Meta de Retorno": string
+        }[]
       }
       halfvec_avg: {
         Args: { "": number[] }
