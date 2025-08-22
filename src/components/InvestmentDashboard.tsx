@@ -175,6 +175,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           <IssuerExposure />
         </div>
 
+        {/* Portfolio Table */}
+        <PortfolioTable />
+
         {/* Investment Details Table - moved to end */}
         {dadosData.length > 0 && (
           <div className="mb-8 mt-8">
@@ -241,9 +244,6 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             </Card>
           </div>
         )}
-
-        {/* Portfolio Table */}
-        <PortfolioTable />
       </main>
     </div>
   );
