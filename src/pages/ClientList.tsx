@@ -142,7 +142,7 @@ export default function ClientList() {
                 onClick={() => handleClientClick(client.Cliente)}
               >
                 <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-start space-x-6">
                     <div className="space-y-2">
                       <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
                         {client.Cliente}
