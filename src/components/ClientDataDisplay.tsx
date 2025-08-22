@@ -3,7 +3,6 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Database, TrendingUp, Calendar, Target } from "lucide-react";
 import { PerformanceChart } from "./charts/PerformanceChart";
-import { StrategyBreakdown } from "./charts/StrategyBreakdown";
 
 interface ConsolidadoPerformance {
   id: number;
@@ -129,76 +128,6 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
       {/* Performance Chart - positioned after Consolidado Performance */}
       {consolidadoData.length > 0 && (
         <PerformanceChart consolidadoData={consolidadoData} />
-      )}
-
-      {/* Strategy Breakdown - positioned after Performance Chart */}
-      {dadosData.length > 0 && (
-        <StrategyBreakdown dadosData={dadosData} />
-      )}
-
-      {/* Detalhes dos Investimentos - positioned after Strategy Breakdown */}
-      {dadosData.length > 0 && (
-        <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-primary" />
-              Detalhes dos Investimentos - Posições consolidadas por estratégia - {clientName}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Ativo</TableHead>
-                  <TableHead>Classe</TableHead>
-                  <TableHead>Posição</TableHead>
-                  <TableHead>Taxa</TableHead>
-                  <TableHead>Rendimento</TableHead>
-                  <TableHead>Vencimento</TableHead>
-                  <TableHead>Emissor</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dadosData.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">
-                      {item.Ativo}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {item["Classe do ativo"]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      R$ {item.Posicao.toLocaleString('pt-BR')}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {item.Taxa}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={item.Rendimento >= 0 ? "default" : "destructive"}>
-                        {(item.Rendimento * 100).toFixed(2)}%
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {item.Vencimento ? (
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3 text-muted-foreground" />
-                          {new Date(item.Vencimento).toLocaleDateString('pt-BR')}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {item.Emissor}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
       )}
 
       {consolidadoData.length === 0 && dadosData.length === 0 && (
