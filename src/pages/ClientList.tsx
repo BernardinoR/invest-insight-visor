@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, Users, ArrowRight } from "lucide-react";
+import { TrendingUp, Users, ArrowRight, Search } from "lucide-react";
 
 interface Client {
   Cliente: string;
@@ -12,6 +13,8 @@ interface Client {
 
 export default function ClientList() {
   const [clients, setClients] = useState<Client[]>([]);
+  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -35,14 +38,16 @@ export default function ClientList() {
           { Cliente: "Ana Costa", "Meta de Retorno": "IPCA + 4%" },
           { Cliente: "Carlos Ferreira", "Meta de Retorno": "CDI + 3%" },
         ];
-        setClients(mockClients);
-        setLoading(false);
+      setClients(mockClients);
+      setFilteredClients(mockClients);
+      setLoading(false);
         return;
       }
 
       // Garantir que os dados estão no formato correto
       const clientsData = (data as Client[]) || [];
       setClients(clientsData);
+      setFilteredClients(clientsData);
       setLoading(false);
     } catch (error) {
       console.error('Erro ao buscar clientes:', error);
@@ -55,9 +60,17 @@ export default function ClientList() {
         { Cliente: "Carlos Ferreira", "Meta de Retorno": "CDI + 3%" },
       ];
       setClients(mockClients);
+      setFilteredClients(mockClients);
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const filtered = clients.filter((client) =>
+      client.Cliente.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredClients(filtered);
+  }, [searchTerm, clients]);
 
   const handleClientClick = (clientName: string) => {
     navigate(`/dashboard/${encodeURIComponent(clientName)}`);
@@ -87,9 +100,21 @@ export default function ClientList() {
             <Users className="h-6 w-6 text-primary" />
             <h2 className="text-3xl font-bold text-foreground">Lista de Clientes</h2>
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-6">
             Clique em um cliente para acessar seu relatório detalhado de investimentos
           </p>
+          
+          {/* Search Input */}
+          <div className="max-w-md relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Buscar cliente..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-card/50 border-border/50 focus:border-primary"
+            />
+          </div>
         </div>
 
         {loading ? (
@@ -110,7 +135,7 @@ export default function ClientList() {
           </div>
         ) : (
           <div className="max-w-4xl mx-auto space-y-4">
-            {clients.map((client) => (
+            {filteredClients.map((client) => (
               <Card 
                 key={client.Cliente}
                 className="bg-gradient-card border-border/50 shadow-elegant-md hover:shadow-glow transition-all duration-300 cursor-pointer group"
@@ -138,6 +163,20 @@ export default function ClientList() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        )}
+
+        {!loading && filteredClients.length === 0 && searchTerm && (
+          <div className="max-w-4xl mx-auto">
+            <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
+              <CardContent className="py-12 text-center">
+                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum cliente encontrado</h3>
+                <p className="text-muted-foreground">
+                  Nenhum cliente corresponde à sua busca "{searchTerm}".
+                </p>
+              </CardContent>
+            </Card>
           </div>
         )}
 
