@@ -1,7 +1,7 @@
-import { InvestmentDashboard } from "@/components/InvestmentDashboard";
+import ClientList from "./ClientList";
 
 const Index = () => {
-  return <InvestmentDashboard />;
+  return <ClientList />;
 };
 
 export default Index;

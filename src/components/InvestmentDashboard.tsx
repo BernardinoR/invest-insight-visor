@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PerformanceChart } from "./charts/PerformanceChart";
@@ -6,13 +5,15 @@ import { StrategyBreakdown } from "./charts/StrategyBreakdown";
 import { MaturityTimeline } from "./charts/MaturityTimeline";
 import { IssuerExposure } from "./charts/IssuerExposure";
 import { PortfolioTable } from "./PortfolioTable";
-import { ClientSelector } from "./ClientSelector";
 import { ClientDataDisplay } from "./ClientDataDisplay";
 import { useClientData } from "@/hooks/useClientData";
 import { TrendingUp, DollarSign, Target, Building2, Calendar } from "lucide-react";
 
-export function InvestmentDashboard() {
-  const [selectedClient, setSelectedClient] = useState<string>("");
+interface InvestmentDashboardProps {
+  selectedClient: string;
+}
+
+export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps) {
   const { consolidadoData, dadosData, loading, totalPatrimonio, totalRendimento, hasData } = useClientData(selectedClient);
 
   return (
@@ -39,13 +40,6 @@ export function InvestmentDashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
-        {/* Client Selection */}
-        <div className="mb-8">
-          <ClientSelector 
-            selectedClient={selectedClient}
-            onClientChange={setSelectedClient}
-          />
-        </div>
 
         {/* Portfolio Overview */}
         <div className="mb-8">
