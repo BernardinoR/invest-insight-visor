@@ -16,15 +16,22 @@ interface PerformanceChartProps {
 }
 
 export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
-  // Transform consolidado data for chart - convert to percentage
-  const chartData = consolidadoData.map((item, index) => ({
-    name: new Date(item.Data).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
-    rentabilidade: (Number(item.Rendimento) || 0) * 100, // Convert to percentage
-  }));
+  // Transform consolidado data for chart - convert to percentage using Competencia field
+  const chartData = consolidadoData.map((item, index) => {
+    // Parse competencia format (MM/YYYY) to create proper date
+    const [month, year] = item.Competencia.split('/');
+    const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+    
+    return {
+      name: competenciaDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+      rentabilidade: (Number(item.Rendimento) || 0) * 100, // Convert to percentage
+    };
+  });
 
-  // Add zero point one month before the first data point
+  // Add zero point one month before the first competencia
   if (consolidadoData.length > 0) {
-    const firstDate = new Date(consolidadoData[0].Data);
+    const [month, year] = consolidadoData[0].Competencia.split('/');
+    const firstDate = new Date(parseInt(year), parseInt(month) - 1, 1);
     const previousMonth = new Date(firstDate);
     previousMonth.setMonth(previousMonth.getMonth() - 1);
     
@@ -146,7 +153,7 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
             {consolidadoData.slice(-4).map((item, index) => (
               <div key={index} className="text-center p-3 rounded-lg bg-muted/30">
                 <div className="text-xs text-muted-foreground mb-1">
-                  {new Date(item.Data).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}
+                  {item.Competencia}
                 </div>
                 <div className={`text-sm font-semibold ${Number(item.Rendimento) >= 0 ? 'text-success' : 'text-destructive'}`}>
                   {(Number(item.Rendimento || 0) * 100).toFixed(2)}%
