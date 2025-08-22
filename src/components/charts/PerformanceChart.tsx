@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { TrendingUp } from "lucide-react";
 
 interface PerformanceChartProps {
   consolidadoData: Array<{
@@ -15,161 +16,129 @@ interface PerformanceChartProps {
 }
 
 export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
-  // Transform consolidado data for chart
+  // Transform consolidado data for chart - convert to percentage
   const chartData = consolidadoData.map((item, index) => ({
     name: new Date(item.Data).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
-    portfolio: Number(item.Rendimento) || 0,
-    ipca5: 4.5, // Static benchmark data - would be dynamic in real app
-    cdi: 3.8   // Static benchmark data - would be dynamic in real app
+    rentabilidade: (Number(item.Rendimento) || 0) * 100, // Convert to percentage
   }));
+
+  // Calculate max value for Y axis
+  const maxValue = Math.max(...chartData.map(item => item.rentabilidade));
+  const yAxisMax = Math.max(maxValue + 1, 5); // At least 5% on Y axis
+
   return (
-    <Card className="bg-card border-border/20 shadow-lg lg:col-span-2">
-      <CardHeader className="pb-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-foreground text-2xl font-normal mb-1">Performance</CardTitle>
-            <div className="flex items-center gap-8 mt-4 text-sm text-muted-foreground">
-              <span>Período</span>
-              <span>16/08/25</span>
-              <span>03/01/2022</span>
-              <span>30/05/2025</span>
-              <span className="text-foreground font-medium">Real (R$)</span>
+    <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-gradient-accent flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <CardTitle className="text-foreground text-xl font-semibold">Performance de Rentabilidade</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Evolução mensal da carteira</p>
             </div>
           </div>
-        </div>
-        
-        <div className="mt-6 flex items-center justify-between">
-          <h3 className="text-base font-medium text-foreground">Performance nos Últimos 12 Meses</h3>
-          <div className="flex items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-0.5 bg-slate-800"></div>
-              <span className="text-muted-foreground">Rentabilidade</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-0.5 bg-blue-600"></div>
-              <span className="text-muted-foreground">IPCA</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-0.5 bg-orange-500"></div>
-              <span className="text-muted-foreground">CDI</span>
-            </div>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10">
+            <div className="w-2 h-2 rounded-full bg-primary"></div>
+            <span className="text-sm font-medium text-primary">Rentabilidade</span>
           </div>
         </div>
       </CardHeader>
       
-      <CardContent className="pt-0">
-        <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={chartData} margin={{ top: 20, right: 30, left: 40, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="1 1" stroke="#e2e8f0" opacity={0.4} />
-            <XAxis 
-              dataKey="name" 
-              stroke="#64748b"
-              fontSize={11}
-              axisLine={false}
-              tickLine={false}
-              tick={{ dy: 15 }}
-              interval={0}
-            />
-            <YAxis 
-              stroke="#64748b"
-              fontSize={11}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(value) => `${value}%`}
-              domain={[-2, 14]}
-              ticks={[-2, 0, 2, 5, 8, 11, 14]}
-            />
-            <Tooltip 
-              contentStyle={{
-                backgroundColor: 'white',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                fontSize: '12px'
-              }}
-              formatter={(value, name) => [
-                `${value}%`, 
-                name === 'portfolio' ? 'Rentabilidade' : 
-                name === 'ipca5' ? 'IPCA' : 'CDI'
-              ]}
-              labelStyle={{ color: '#64748b', fontWeight: '500' }}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="portfolio" 
-              stroke="#1e293b" 
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4, fill: '#1e293b', strokeWidth: 2, stroke: '#fff' }}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="ipca5" 
-              stroke="#2563eb" 
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4, fill: '#2563eb', strokeWidth: 2, stroke: '#fff' }}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="cdi" 
-              stroke="#f97316" 
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4, fill: '#f97316', strokeWidth: 2, stroke: '#fff' }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+      <CardContent className="pt-0 pb-6">
+        <div className="h-80 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart 
+              data={chartData} 
+              margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+            >
+              <defs>
+                <linearGradient id="rentabilidadeGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                  <stop offset="50%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid 
+                strokeDasharray="3 3" 
+                stroke="hsl(var(--border))" 
+                opacity={0.3}
+                horizontal={true}
+                vertical={false}
+              />
+              <XAxis 
+                dataKey="name" 
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                axisLine={false}
+                tickLine={false}
+                tick={{ dy: 10 }}
+                interval={0}
+              />
+              <YAxis 
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(value) => `${value.toFixed(1)}%`}
+                domain={[0, yAxisMax]}
+                width={60}
+              />
+              <Tooltip 
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
+                  fontSize: '13px',
+                  padding: '12px'
+                }}
+                formatter={(value: any) => [`${value.toFixed(2)}%`, 'Rentabilidade']}
+                labelStyle={{ 
+                  color: 'hsl(var(--foreground))', 
+                  fontWeight: '600',
+                  marginBottom: '4px'
+                }}
+                cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="rentabilidade" 
+                stroke="hsl(var(--primary))"
+                strokeWidth={3}
+                fill="url(#rentabilidadeGradient)"
+                dot={{ 
+                  fill: 'hsl(var(--primary))', 
+                  strokeWidth: 2, 
+                  stroke: 'hsl(var(--card))',
+                  r: 4
+                }}
+                activeDot={{ 
+                  r: 6, 
+                  fill: 'hsl(var(--primary))', 
+                  strokeWidth: 3, 
+                  stroke: 'hsl(var(--card))',
+                  filter: 'drop-shadow(0 4px 8px hsl(var(--primary) / 0.3))'
+                }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
         
-        {/* Performance Summary Table */}
-        <div className="mt-8 pt-6 border-t border-border/30">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border/20">
-                  <th className="text-left py-3 text-muted-foreground font-medium">Período</th>
-                  <th className="text-right py-3 text-muted-foreground font-medium">Patrimônio Inicial</th>
-                  <th className="text-right py-3 text-muted-foreground font-medium">Movimentação</th>
-                  <th className="text-right py-3 text-muted-foreground font-medium">Taxas</th>
-                  <th className="text-right py-3 text-muted-foreground font-medium">Impostos</th>
-                  <th className="text-right py-3 text-muted-foreground font-medium">Rendimento</th>
-                  <th className="text-right py-3 text-muted-foreground font-medium">Patrimônio Final</th>
-                  <th className="text-right py-3 text-muted-foreground font-medium">Rentabilidade</th>
-                  <th className="text-right py-3 text-muted-foreground font-medium">% IPCA</th>
-                  <th className="text-right py-3 text-muted-foreground font-medium">% CDI</th>
-                </tr>
-              </thead>
-              <tbody>
-                {consolidadoData.map((item, index) => (
-                  <tr key={index} className={index < consolidadoData.length - 1 ? "border-b border-border/10" : ""}>
-                    <td className="py-3 text-foreground font-medium">
-                      {new Date(item.Data).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}
-                    </td>
-                    <td className="py-3 text-right text-foreground">
-                      {Number(item["Patrimonio Inicial"] || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-3 text-right text-foreground">
-                      {Number(item["Movimentação"] || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-3 text-right text-foreground">-</td>
-                    <td className="py-3 text-right text-foreground">
-                      {Number(item.Impostos || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-3 text-right text-foreground">
-                      {Number(item["Ganho Financeiro"] || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-3 text-right text-foreground">
-                      {Number(item["Patrimonio Final"] || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className={`py-3 text-right font-medium ${Number(item.Rendimento) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {(Number(item.Rendimento || 0) * 100).toFixed(2)}%
-                    </td>
-                    <td className="py-3 text-right text-foreground">4,5%</td>
-                    <td className="py-3 text-right text-foreground">110%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Performance Summary */}
+        <div className="mt-6 pt-6 border-t border-border/30">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {consolidadoData.slice(-4).map((item, index) => (
+              <div key={index} className="text-center p-3 rounded-lg bg-muted/30">
+                <div className="text-xs text-muted-foreground mb-1">
+                  {new Date(item.Data).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}
+                </div>
+                <div className={`text-sm font-semibold ${Number(item.Rendimento) >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {(Number(item.Rendimento || 0) * 100).toFixed(2)}%
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </CardContent>
