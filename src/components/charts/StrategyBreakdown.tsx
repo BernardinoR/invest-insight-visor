@@ -22,14 +22,66 @@ interface StrategyBreakdownProps {
 }
 
 export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
-  // Group investments by asset class and calculate totals
-  const strategyData = dadosData.reduce((acc, investment) => {
-    const strategy = investment["Classe do ativo"] || "Outros";
-    if (!acc[strategy]) {
-      acc[strategy] = { name: strategy, value: 0, count: 0 };
+  // Function to group strategy names
+  const groupStrategy = (strategy: string): string => {
+    const strategyLower = strategy.toLowerCase();
+    
+    if (strategyLower.includes('cdi - liquidez')) {
+      return 'Pós Fixado - Liquidez';
     }
-    acc[strategy].value += Number(investment.Posicao) || 0;
-    acc[strategy].count += 1;
+    if (strategyLower.includes('cdi - fundos') || strategyLower.includes('cdi - titulos')) {
+      return 'Pós Fixado';
+    }
+    if (strategyLower.includes('inflação - titulos') || strategyLower.includes('inflação - fundos')) {
+      return 'Inflação';
+    }
+    if (strategyLower.includes('pré fixado - titulos') || strategyLower.includes('pré fixado - fundos')) {
+      return 'Pré Fixado';
+    }
+    if (strategyLower.includes('multimercado')) {
+      return 'Multimercado';
+    }
+    if (strategyLower.includes('imobiliário - ativos') || strategyLower.includes('imobiliário - fundos')) {
+      return 'Imobiliário';
+    }
+    if (strategyLower.includes('ações - ativos') || strategyLower.includes('ações - fundos') || strategyLower.includes('ações - etfs')) {
+      return 'Ações';
+    }
+    if (strategyLower.includes('ações - long bias')) {
+      return 'Ações - Long Bias';
+    }
+    if (strategyLower.includes('private equity') || strategyLower.includes('venture capital') || strategyLower.includes('special sits')) {
+      return 'Private Equity';
+    }
+    if (strategyLower.includes('exterior - ações')) {
+      return 'Exterior - Ações';
+    }
+    if (strategyLower.includes('exterior - renda fixa')) {
+      return 'Exterior - Renda Fixa';
+    }
+    if (strategyLower.includes('coe')) {
+      return 'COE';
+    }
+    if (strategyLower.includes('ouro')) {
+      return 'Ouro';
+    }
+    if (strategyLower.includes('criptoativos')) {
+      return 'Criptoativos';
+    }
+    
+    return strategy; // Return original if no match
+  };
+
+  // Group investments by grouped asset class and calculate totals
+  const strategyData = dadosData.reduce((acc, investment) => {
+    const originalStrategy = investment["Classe do ativo"] || "Outros";
+    const groupedStrategy = groupStrategy(originalStrategy);
+    
+    if (!acc[groupedStrategy]) {
+      acc[groupedStrategy] = { name: groupedStrategy, value: 0, count: 0 };
+    }
+    acc[groupedStrategy].value += Number(investment.Posicao) || 0;
+    acc[groupedStrategy].count += 1;
     return acc;
   }, {} as Record<string, { name: string; value: number; count: number }>);
 
