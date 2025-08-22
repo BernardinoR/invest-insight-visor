@@ -75,7 +75,7 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" />
-              Performance Consolidada - {clientName}
+              Performance Consolidada - Por Instituição
             </CardTitle>
           </CardHeader>
           <CardContent>
