@@ -159,7 +159,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
         {/* Portfolio Table */}
         <div className="mb-8">
-          <PortfolioTable />
+          <PortfolioTable selectedClient={selectedClient} />
         </div>
 
         {/* Strategy Breakdown */}
