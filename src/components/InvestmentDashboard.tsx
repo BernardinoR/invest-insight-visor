@@ -70,7 +70,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           
           <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Rentabilidade Média</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Rentabilidade no mês</CardTitle>
               <Target className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
