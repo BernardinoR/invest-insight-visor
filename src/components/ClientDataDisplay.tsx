@@ -82,6 +82,7 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
               <TableHeader>
                 <TableRow>
                   <TableHead>Data</TableHead>
+                  <TableHead>Competência</TableHead>
                   <TableHead>Patrimônio Inicial</TableHead>
                   <TableHead>Movimentação</TableHead>
                   <TableHead>Patrimônio Final</TableHead>
@@ -94,6 +95,9 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
                   <TableRow key={item.id}>
                     <TableCell>
                       {new Date(item.Data).toLocaleDateString('pt-BR')}
+                    </TableCell>
+                    <TableCell>
+                      {item.Competencia}
                     </TableCell>
                     <TableCell>
                       R$ {item["Patrimonio Inicial"].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
