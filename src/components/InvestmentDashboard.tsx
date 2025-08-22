@@ -7,6 +7,7 @@ import { StrategyBreakdown } from "./charts/StrategyBreakdown";
 import { MaturityTimeline } from "./charts/MaturityTimeline";
 import { IssuerExposure } from "./charts/IssuerExposure";
 import { PortfolioTable } from "./PortfolioTable";
+import { InvestmentDetailsTable } from "./InvestmentDetailsTable";
 import { ClientDataDisplay } from "./ClientDataDisplay";
 import { useClientData } from "@/hooks/useClientData";
 import { TrendingUp, DollarSign, Target, Building2, Calendar } from "lucide-react";
@@ -162,6 +163,11 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             <StrategyBreakdown dadosData={dadosData} />
           </div>
         )}
+
+        {/* Investment Details Table */}
+        <div className="mb-8">
+          <InvestmentDetailsTable />
+        </div>
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
