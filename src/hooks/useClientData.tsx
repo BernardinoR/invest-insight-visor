@@ -85,7 +85,8 @@ export function useClientData(clientName: string) {
     }
   };
 
-  const totalPatrimonio = consolidadoData.reduce((sum, item) => sum + (item["Patrimonio Final"] || 0), 0);
+  // Get the most recent patrimônio final (last entry in sorted data)
+  const totalPatrimonio = consolidadoData.length > 0 ? consolidadoData[consolidadoData.length - 1]["Patrimonio Final"] || 0 : 0;
   const totalRendimento = dadosData.reduce((sum, item) => sum + (item.Rendimento || 0), 0) / Math.max(dadosData.length, 1);
 
   return {
