@@ -9,6 +9,23 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
+const COLORS = [
+  'hsl(210 16% 82%)', // Light blue-gray
+  'hsl(32 25% 72%)',  // Light beige
+  'hsl(45 20% 85%)',  // Very light beige
+  'hsl(210 11% 71%)', // Medium gray
+  'hsl(210 16% 58%)', // Darker gray
+  'hsl(207 26% 50%)', // Blue-gray
+  'hsl(158 64% 25%)', // Dark forest green
+  'hsl(159 61% 33%)', // Medium forest green
+  'hsl(210 29% 24%)', // Dark blue-gray
+  'hsl(25 28% 53%)',  // Medium brown
+  'hsl(40 23% 77%)',  // Light tan
+  'hsl(210 14% 53%)', // Medium blue-gray
+  'hsl(35 31% 65%)',  // Warm beige
+  'hsl(210 24% 40%)', // Darker blue-gray
+];
+
 interface InvestmentDetailsTableProps {
   dadosData?: Array<{
     "Classe do ativo": string;
@@ -106,6 +123,12 @@ export function InvestmentDetailsTable({ dadosData = [] }: InvestmentDetailsTabl
     'Ouro',
     'Criptoativos'
   ];
+
+  // Function to get color for strategy
+  const getStrategyColor = (strategyName: string) => {
+    const index = strategyOrder.indexOf(strategyName);
+    return index !== -1 ? COLORS[index] : COLORS[0];
+  };
 
   const consolidatedData = Object.values(strategyData)
     .map((item) => ({
@@ -208,7 +231,10 @@ export function InvestmentDetailsTable({ dadosData = [] }: InvestmentDetailsTabl
                     <>
                       <TableRow key={item.name} className="border-border/50">
                         <TableCell className="font-medium text-foreground flex items-center gap-2 py-2">
-                          <div className="w-1 h-4 bg-primary rounded-full"></div>
+                          <div 
+                            className="w-1 h-4 rounded-sm" 
+                            style={{ backgroundColor: getStrategyColor(item.name) }}
+                          ></div>
                           {item.name}
                         </TableCell>
                         <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
