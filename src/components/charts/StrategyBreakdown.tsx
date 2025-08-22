@@ -98,12 +98,45 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
 
   const totalPatrimonio = Object.values(strategyData).reduce((sum, item) => sum + item.value, 0);
 
-  const chartData = Object.values(strategyData).map((item, index) => ({
-    ...item,
-    percentage: (item.value / totalPatrimonio) * 100,
-    avgReturn: item.value > 0 ? (item.totalReturn / item.value) * 100 : 0,
-    color: COLORS[index % COLORS.length]
-  }));
+  // Define the order for strategies
+  const strategyOrder = [
+    'Pós Fixado - Liquidez',
+    'Pós Fixado',
+    'Inflação',
+    'Pré Fixado',
+    'Multimercado',
+    'Imobiliário',
+    'Ações',
+    'Ações - Long Bias',
+    'Private Equity',
+    'Exterior - Renda Fixa',
+    'Exterior - Ações',
+    'COE',
+    'Ouro',
+    'Criptoativos'
+  ];
+
+  const chartData = Object.values(strategyData)
+    .map((item, index) => ({
+      ...item,
+      percentage: (item.value / totalPatrimonio) * 100,
+      avgReturn: item.value > 0 ? (item.totalReturn / item.value) * 100 : 0,
+      color: COLORS[strategyOrder.indexOf(item.name) !== -1 ? strategyOrder.indexOf(item.name) : index % COLORS.length]
+    }))
+    .sort((a, b) => {
+      const indexA = strategyOrder.indexOf(a.name);
+      const indexB = strategyOrder.indexOf(b.name);
+      
+      // If both strategies are in the order array, sort by their position
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      // If only one is in the array, prioritize it
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      // If neither is in the array, maintain original order
+      return 0;
+    });
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {

@@ -89,11 +89,44 @@ export function InvestmentDetailsTable({ dadosData = [] }: InvestmentDetailsTabl
 
   const totalPatrimonio = Object.values(strategyData).reduce((sum, item) => sum + item.value, 0);
 
-  const consolidatedData = Object.values(strategyData).map((item) => ({
-    ...item,
-    percentage: totalPatrimonio > 0 ? (item.value / totalPatrimonio) * 100 : 0,
-    avgReturn: item.value > 0 ? (item.totalReturn / item.value) * 100 : 0,
-  }));
+  // Define the order for strategies
+  const strategyOrder = [
+    'Pós Fixado - Liquidez',
+    'Pós Fixado',
+    'Inflação',
+    'Pré Fixado',
+    'Multimercado',
+    'Imobiliário',
+    'Ações',
+    'Ações - Long Bias',
+    'Private Equity',
+    'Exterior - Renda Fixa',
+    'Exterior - Ações',
+    'COE',
+    'Ouro',
+    'Criptoativos'
+  ];
+
+  const consolidatedData = Object.values(strategyData)
+    .map((item) => ({
+      ...item,
+      percentage: totalPatrimonio > 0 ? (item.value / totalPatrimonio) * 100 : 0,
+      avgReturn: item.value > 0 ? (item.totalReturn / item.value) * 100 : 0,
+    }))
+    .sort((a, b) => {
+      const indexA = strategyOrder.indexOf(a.name);
+      const indexB = strategyOrder.indexOf(b.name);
+      
+      // If both strategies are in the order array, sort by their position
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      // If only one is in the array, prioritize it
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      // If neither is in the array, maintain original order
+      return 0;
+    });
 
   const getPerformanceBadge = (performance: number) => {
     if (performance > 2) {
