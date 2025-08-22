@@ -110,7 +110,7 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
                     </TableCell>
                     <TableCell>
                       <Badge variant={item.Rendimento >= 0 ? "default" : "destructive"}>
-                        {item.Rendimento.toFixed(2)}%
+                        {(item.Rendimento * 100).toFixed(2)}%
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
@@ -165,7 +165,7 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
                     </TableCell>
                     <TableCell>
                       <Badge variant={item.Rendimento >= 0 ? "default" : "destructive"}>
-                        {item.Rendimento.toFixed(1)}%
+                        {(item.Rendimento * 100).toFixed(2)}%
                       </Badge>
                     </TableCell>
                     <TableCell>

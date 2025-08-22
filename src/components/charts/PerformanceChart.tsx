@@ -162,7 +162,7 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
                       {Number(item["Patrimonio Final"] || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </td>
                     <td className={`py-3 text-right font-medium ${Number(item.Rendimento) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {Number(item.Rendimento || 0).toFixed(2)}%
+                      {(Number(item.Rendimento || 0) * 100).toFixed(2)}%
                     </td>
                     <td className="py-3 text-right text-foreground">4,5%</td>
                     <td className="py-3 text-right text-foreground">110%</td>
