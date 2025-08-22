@@ -157,6 +157,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           clientName={selectedClient}
         />
 
+        {/* Portfolio Table */}
+        <PortfolioTable />
+
         {/* Strategy Breakdown */}
         {dadosData.length > 0 && (
           <div className="mb-8">
@@ -175,8 +178,6 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           <IssuerExposure />
         </div>
 
-        {/* Portfolio Table */}
-        <PortfolioTable />
 
         {/* Investment Details Table - moved to end */}
         {dadosData.length > 0 && (
