@@ -163,6 +163,73 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           </div>
         )}
 
+        {/* Detalhamento dos Investimentos - Posições consolidadas por estratégia */}
+        {dadosData.length > 0 && (
+          <div className="mb-8">
+            <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-primary" />
+                  Detalhamento dos Investimentos - Posições consolidadas por estratégia
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ativo</TableHead>
+                      <TableHead>Classe</TableHead>
+                      <TableHead>Posição</TableHead>
+                      <TableHead>Taxa</TableHead>
+                      <TableHead>Rendimento</TableHead>
+                      <TableHead>Vencimento</TableHead>
+                      <TableHead>Emissor</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {dadosData.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">
+                          {item.Ativo}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {item["Classe do ativo"]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          R$ {item.Posicao.toLocaleString('pt-BR')}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {item.Taxa}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={item.Rendimento >= 0 ? "default" : "destructive"}>
+                            {(item.Rendimento * 100).toFixed(2)}%
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {item.Vencimento ? (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3 text-muted-foreground" />
+                              {new Date(item.Vencimento).toLocaleDateString('pt-BR')}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {item.Emissor}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <MaturityTimeline />
