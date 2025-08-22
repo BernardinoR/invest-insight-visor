@@ -136,13 +136,13 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
         <StrategyBreakdown dadosData={dadosData} />
       )}
 
-      {/* Dados Performance */}
+      {/* Detalhes dos Investimentos - positioned after Strategy Breakdown */}
       {dadosData.length > 0 && (
         <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-primary" />
-              Detalhes dos Investimentos - {clientName}
+              Detalhes dos Investimentos - Posições consolidadas por estratégia - {clientName}
             </CardTitle>
           </CardHeader>
           <CardContent>
