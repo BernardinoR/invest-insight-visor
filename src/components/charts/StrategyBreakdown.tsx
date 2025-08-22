@@ -132,17 +132,14 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Table */}
           <div className="space-y-4">
-            <div className="grid grid-cols-6 gap-2 text-xs font-medium text-muted-foreground border-b border-border/30 pb-2">
+            <div className="grid grid-cols-3 gap-4 text-xs font-medium text-muted-foreground border-b border-border/30 pb-2">
               <div>Nome</div>
               <div className="text-center">Alocação</div>
               <div className="text-right">Saldo Bruto</div>
-              <div className="text-right">Mês</div>
-              <div className="text-right">Ano</div>
-              <div className="text-right">Início</div>
             </div>
             
             {chartData.map((item, index) => (
-              <div key={item.name} className="grid grid-cols-6 gap-2 text-sm py-2 border-b border-border/10 hover:bg-muted/30 transition-colors rounded-sm px-1">
+              <div key={item.name} className="grid grid-cols-3 gap-4 text-sm py-2 border-b border-border/10 hover:bg-muted/30 transition-colors rounded-sm px-1">
                 <div className="flex items-center gap-2">
                   <div 
                     className="w-3 h-3 rounded-full shadow-sm" 
@@ -155,15 +152,6 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
                 </div>
                 <div className="text-right text-foreground">
                   {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </div>
-                <div className="text-right text-foreground">
-                  {item.avgReturn > 0 ? `${item.avgReturn.toFixed(2)}%` : '-'}
-                </div>
-                <div className="text-right text-foreground">
-                  {item.avgReturn > 0 ? `${(item.avgReturn * 12).toFixed(2)}%` : '-'}
-                </div>
-                <div className="text-right text-foreground">
-                  {item.avgReturn > 0 ? `${item.avgReturn.toFixed(2)}%` : '-'}
                 </div>
               </div>
             ))}
@@ -186,7 +174,7 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
                     data={chartData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={75}
+                    innerRadius={110}
                     outerRadius={135}
                     paddingAngle={3}
                     dataKey="value"
