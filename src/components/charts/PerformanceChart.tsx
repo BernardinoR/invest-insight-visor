@@ -22,6 +22,20 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
     rentabilidade: (Number(item.Rendimento) || 0) * 100, // Convert to percentage
   }));
 
+  // Add zero point one month before the first data point
+  if (consolidadoData.length > 0) {
+    const firstDate = new Date(consolidadoData[0].Data);
+    const previousMonth = new Date(firstDate);
+    previousMonth.setMonth(previousMonth.getMonth() - 1);
+    
+    const zeroPoint = {
+      name: previousMonth.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+      rentabilidade: 0
+    };
+    
+    chartData.unshift(zeroPoint);
+  }
+
   // Calculate max value for Y axis
   const maxValue = Math.max(...chartData.map(item => item.rentabilidade));
   const yAxisMax = Math.max(maxValue + 1, 5); // At least 5% on Y axis
