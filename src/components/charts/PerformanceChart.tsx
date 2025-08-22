@@ -1,8 +1,27 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { benchmarkData } from "@/data/investmentData";
 
-export function PerformanceChart() {
+interface PerformanceChartProps {
+  consolidadoData: Array<{
+    Data: string;
+    "Patrimonio Final": number;
+    "Patrimonio Inicial": number;
+    "Movimentação": number;
+    "Ganho Financeiro": number;
+    Rendimento: number;
+    Impostos: number;
+    Competencia: string;
+  }>;
+}
+
+export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
+  // Transform consolidado data for chart
+  const chartData = consolidadoData.map((item, index) => ({
+    name: new Date(item.Data).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+    portfolio: Number(item.Rendimento) || 0,
+    ipca5: 4.5, // Static benchmark data - would be dynamic in real app
+    cdi: 3.8   // Static benchmark data - would be dynamic in real app
+  }));
   return (
     <Card className="bg-card border-border/20 shadow-lg lg:col-span-2">
       <CardHeader className="pb-6">
@@ -40,7 +59,7 @@ export function PerformanceChart() {
       
       <CardContent className="pt-0">
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={benchmarkData} margin={{ top: 20, right: 30, left: 40, bottom: 20 }}>
+          <LineChart data={chartData} margin={{ top: 20, right: 30, left: 40, bottom: 20 }}>
             <CartesianGrid strokeDasharray="1 1" stroke="#e2e8f0" opacity={0.4} />
             <XAxis 
               dataKey="name" 
@@ -121,78 +140,34 @@ export function PerformanceChart() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-border/10">
-                  <td className="py-3 text-foreground font-medium">12 Meses</td>
-                  <td className="py-3 text-right text-foreground">1.976.765,57</td>
-                  <td className="py-3 text-right text-foreground">-402.480,13</td>
-                  <td className="py-3 text-right text-foreground">-3.556,75</td>
-                  <td className="py-3 text-right text-foreground">-25.797,28</td>
-                  <td className="py-3 text-right text-foreground">229.418,03</td>
-                  <td className="py-3 text-right text-foreground">1.774.349,44</td>
-                  <td className="py-3 text-right text-emerald-600 font-medium">12,58%</td>
-                  <td className="py-3 text-right text-foreground">7,26%</td>
-                  <td className="py-3 text-right text-foreground">106,63%</td>
-                </tr>
-                <tr className="border-b border-border/10">
-                  <td className="py-3 text-foreground">Mai/25</td>
-                  <td className="py-3 text-right text-foreground">1.870.215,75</td>
-                  <td className="py-3 text-right text-foreground">-116.074,83</td>
-                  <td className="py-3 text-right text-foreground">-13,48</td>
-                  <td className="py-3 text-right text-foreground">-10.059,89</td>
-                  <td className="py-3 text-right text-foreground">30.281,89</td>
-                  <td className="py-3 text-right text-foreground">1.774.349,44</td>
-                  <td className="py-3 text-right text-emerald-600">1,71%</td>
-                  <td className="py-3 text-right text-foreground">1,45%</td>
-                  <td className="py-3 text-right text-foreground">150,52%</td>
-                </tr>
-                <tr className="border-b border-border/10">
-                  <td className="py-3 text-foreground">Abr/25</td>
-                  <td className="py-3 text-right text-foreground">1.853.300,78</td>
-                  <td className="py-3 text-right text-foreground">-18.935,44</td>
-                  <td className="py-3 text-right text-foreground">-354,12</td>
-                  <td className="py-3 text-right text-foreground">-253,91</td>
-                  <td className="py-3 text-right text-foreground">36.458,44</td>
-                  <td className="py-3 text-right text-foreground">1.870.215,75</td>
-                  <td className="py-3 text-right text-emerald-600">1,98%</td>
-                  <td className="py-3 text-right text-foreground">1,55%</td>
-                  <td className="py-3 text-right text-foreground">187,41%</td>
-                </tr>
-                <tr className="border-b border-border/10">
-                  <td className="py-3 text-foreground">Mar/25</td>
-                  <td className="py-3 text-right text-foreground">2.005.772,60</td>
-                  <td className="py-3 text-right text-foreground">-170.145,42</td>
-                  <td className="py-3 text-right text-foreground">-1.279,04</td>
-                  <td className="py-3 text-right text-foreground">-1.513,48</td>
-                  <td className="py-3 text-right text-foreground">20.466,12</td>
-                  <td className="py-3 text-right text-foreground">1.853.300,78</td>
-                  <td className="py-3 text-right text-emerald-600">1,04%</td>
-                  <td className="py-3 text-right text-foreground">0,48%</td>
-                  <td className="py-3 text-right text-foreground">107,99%</td>
-                </tr>
-                <tr className="border-b border-border/10">
-                  <td className="py-3 text-foreground">Fev/25</td>
-                  <td className="py-3 text-right text-foreground">2.017.158,92</td>
-                  <td className="py-3 text-right text-foreground">-1.347,51</td>
-                  <td className="py-3 text-right text-foreground">-1,65</td>
-                  <td className="py-3 text-right text-foreground">-</td>
-                  <td className="py-3 text-right text-foreground">-9.437,16</td>
-                  <td className="py-3 text-right text-foreground">2.005.772,60</td>
-                  <td className="py-3 text-right text-red-600">-0,47%</td>
-                  <td className="py-3 text-right text-foreground">-1,78%</td>
-                  <td className="py-3 text-right text-foreground">-47,51%</td>
-                </tr>
-                <tr>
-                  <td className="py-3 text-foreground">Jan/25</td>
-                  <td className="py-3 text-right text-foreground">2.015.031,38</td>
-                  <td className="py-3 text-right text-foreground">25,30</td>
-                  <td className="py-3 text-right text-foreground">-122,69</td>
-                  <td className="py-3 text-right text-foreground">-2.628,64</td>
-                  <td className="py-3 text-right text-foreground">4.853,57</td>
-                  <td className="py-3 text-right text-foreground">2.017.158,92</td>
-                  <td className="py-3 text-right text-emerald-600">0,23%</td>
-                  <td className="py-3 text-right text-foreground">0,07%</td>
-                  <td className="py-3 text-right text-foreground">22,62%</td>
-                </tr>
+                {consolidadoData.map((item, index) => (
+                  <tr key={index} className={index < consolidadoData.length - 1 ? "border-b border-border/10" : ""}>
+                    <td className="py-3 text-foreground font-medium">
+                      {new Date(item.Data).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}
+                    </td>
+                    <td className="py-3 text-right text-foreground">
+                      {Number(item["Patrimonio Inicial"] || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 text-right text-foreground">
+                      {Number(item["Movimentação"] || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 text-right text-foreground">-</td>
+                    <td className="py-3 text-right text-foreground">
+                      {Number(item.Impostos || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 text-right text-foreground">
+                      {Number(item["Ganho Financeiro"] || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 text-right text-foreground">
+                      {Number(item["Patrimonio Final"] || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className={`py-3 text-right font-medium ${Number(item.Rendimento) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {Number(item.Rendimento || 0).toFixed(2)}%
+                    </td>
+                    <td className="py-3 text-right text-foreground">4,5%</td>
+                    <td className="py-3 text-right text-foreground">110%</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

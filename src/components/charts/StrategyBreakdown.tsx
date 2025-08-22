@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { investmentData } from "@/data/investmentData";
 
 const COLORS = [
   'hsl(var(--primary))',
@@ -15,14 +14,21 @@ const COLORS = [
   'hsl(340 75% 65%)'
 ];
 
-export function StrategyBreakdown() {
-  // Group investments by strategy and calculate totals
-  const strategyData = investmentData.reduce((acc, investment) => {
-    const strategy = investment.strategy;
+interface StrategyBreakdownProps {
+  dadosData: Array<{
+    "Classe do ativo": string;
+    Posicao: number;
+  }>;
+}
+
+export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
+  // Group investments by asset class and calculate totals
+  const strategyData = dadosData.reduce((acc, investment) => {
+    const strategy = investment["Classe do ativo"] || "Outros";
     if (!acc[strategy]) {
       acc[strategy] = { name: strategy, value: 0, count: 0 };
     }
-    acc[strategy].value += investment.value;
+    acc[strategy].value += Number(investment.Posicao) || 0;
     acc[strategy].count += 1;
     return acc;
   }, {} as Record<string, { name: string; value: number; count: number }>);

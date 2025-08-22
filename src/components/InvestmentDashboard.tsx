@@ -130,8 +130,8 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <PerformanceChart />
-          <StrategyBreakdown />
+          <PerformanceChart consolidadoData={consolidadoData} />
+          <StrategyBreakdown dadosData={dadosData} />
           <MaturityTimeline />
           <IssuerExposure />
         </div>
