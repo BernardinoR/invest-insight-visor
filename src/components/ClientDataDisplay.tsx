@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Database, TrendingUp, Calendar, Target } from "lucide-react";
+import { PerformanceChart } from "./charts/PerformanceChart";
 
 interface ConsolidadoPerformance {
   id: number;
@@ -122,6 +123,11 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
             </Table>
           </CardContent>
         </Card>
+      )}
+
+      {/* Performance Chart - positioned after Consolidado Performance */}
+      {consolidadoData.length > 0 && (
+        <PerformanceChart consolidadoData={consolidadoData} />
       )}
 
       {/* Dados Performance */}
