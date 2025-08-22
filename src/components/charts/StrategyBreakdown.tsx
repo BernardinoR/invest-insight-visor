@@ -207,9 +207,9 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
                     data={chartData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={100}
+                    innerRadius={120}
                     outerRadius={140}
-                    paddingAngle={6}
+                    paddingAngle={1}
                     dataKey="value"
                     stroke="none"
                     strokeWidth={0}
