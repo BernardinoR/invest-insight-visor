@@ -158,7 +158,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
         />
 
         {/* Portfolio Table */}
-        <PortfolioTable />
+        <div className="mb-8">
+          <PortfolioTable />
+        </div>
 
         {/* Strategy Breakdown */}
         {dadosData.length > 0 && (
