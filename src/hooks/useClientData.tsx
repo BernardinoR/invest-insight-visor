@@ -19,7 +19,7 @@ interface DadosPerformance {
   id: number;
   Data: string;
   Posicao: number;
-  Vencimento: string;
+  Vencimento: string | null;
   Competencia: string;
   Rendimento: number;
   Taxa: string;

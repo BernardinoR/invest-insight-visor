@@ -105,7 +105,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground">
-                {hasData && dadosData.length > 0 ? 
+                {hasData && dadosData.length > 0 && dadosData[0].Vencimento ? 
                   new Date(dadosData[0].Vencimento).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) : 
                   "--"
                 }

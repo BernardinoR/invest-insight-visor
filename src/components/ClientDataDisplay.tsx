@@ -169,10 +169,14 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3 text-muted-foreground" />
-                        {new Date(item.Vencimento).toLocaleDateString('pt-BR')}
-                      </div>
+                      {item.Vencimento ? (
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                          {new Date(item.Vencimento).toLocaleDateString('pt-BR')}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {item.Emissor}
