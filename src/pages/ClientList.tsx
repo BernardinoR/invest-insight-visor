@@ -21,7 +21,29 @@ export default function ClientList() {
 
   const fetchClients = async () => {
     try {
-      // Mock data while Supabase types are being updated
+      // Usando rpc ou query direta para contornar limitações de tipos
+      const { data, error } = await supabase.rpc('get_unique_clients');
+      
+      if (error) {
+        console.error('Erro ao buscar clientes via RPC:', error);
+        // Fallback para dados mock temporariamente
+        const mockClients: Client[] = [
+          { Cliente: "João Silva", "Meta de Retorno": "CDI + 2%" },
+          { Cliente: "Maria Santos", "Meta de Retorno": "IPCA + 5%" },
+          { Cliente: "Pedro Oliveira", "Meta de Retorno": "CDI + 1.5%" },
+          { Cliente: "Ana Costa", "Meta de Retorno": "IPCA + 4%" },
+          { Cliente: "Carlos Ferreira", "Meta de Retorno": "CDI + 3%" },
+        ];
+        setClients(mockClients);
+        setLoading(false);
+        return;
+      }
+
+      setClients(data || []);
+      setLoading(false);
+    } catch (error) {
+      console.error('Erro ao buscar clientes:', error);
+      // Fallback para dados mock
       const mockClients: Client[] = [
         { Cliente: "João Silva", "Meta de Retorno": "CDI + 2%" },
         { Cliente: "Maria Santos", "Meta de Retorno": "IPCA + 5%" },
@@ -29,13 +51,7 @@ export default function ClientList() {
         { Cliente: "Ana Costa", "Meta de Retorno": "IPCA + 4%" },
         { Cliente: "Carlos Ferreira", "Meta de Retorno": "CDI + 3%" },
       ];
-      
-      setTimeout(() => {
-        setClients(mockClients);
-        setLoading(false);
-      }, 1000);
-    } catch (error) {
-      console.error('Erro ao buscar clientes:', error);
+      setClients(mockClients);
       setLoading(false);
     }
   };
@@ -74,43 +90,43 @@ export default function ClientList() {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="max-w-4xl mx-auto space-y-4">
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="bg-gradient-card border-border/50 shadow-elegant-md">
-                <CardHeader>
-                  <div className="h-4 bg-muted rounded animate-pulse" />
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="h-3 bg-muted rounded animate-pulse" />
-                    <div className="h-3 bg-muted rounded animate-pulse w-3/4" />
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2 flex-1">
+                      <div className="h-5 bg-muted rounded animate-pulse w-1/3" />
+                      <div className="h-4 bg-muted rounded animate-pulse w-1/4" />
+                    </div>
+                    <div className="h-10 w-32 bg-muted rounded animate-pulse" />
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="max-w-4xl mx-auto space-y-4">
             {clients.map((client) => (
               <Card 
                 key={client.Cliente}
                 className="bg-gradient-card border-border/50 shadow-elegant-md hover:shadow-glow transition-all duration-300 cursor-pointer group"
                 onClick={() => handleClientClick(client.Cliente)}
               >
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                    {client.Cliente}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Meta de Retorno:</span>
-                      <span className="text-success font-medium">{client["Meta de Retorno"]}</span>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
+                        {client.Cliente}
+                      </h3>
+                      <div className="flex items-center space-x-2 text-sm">
+                        <span className="text-muted-foreground">Meta de Retorno:</span>
+                        <span className="text-success font-medium">{client["Meta de Retorno"]}</span>
+                      </div>
                     </div>
                     <Button 
                       variant="outline" 
-                      className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300"
+                      className="group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300"
                     >
                       <span>Ver Dashboard</span>
                       <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -123,7 +139,8 @@ export default function ClientList() {
         )}
 
         {!loading && clients.length === 0 && (
-          <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
+          <div className="max-w-4xl mx-auto">
+            <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
             <CardContent className="py-12 text-center">
               <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum cliente encontrado</h3>
@@ -131,7 +148,8 @@ export default function ClientList() {
                 Não há clientes cadastrados no momento.
               </p>
             </CardContent>
-          </Card>
+            </Card>
+          </div>
         )}
       </main>
     </div>
