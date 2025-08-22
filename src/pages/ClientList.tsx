@@ -118,7 +118,7 @@ export default function ClientList() {
         </div>
 
         {loading ? (
-          <div className="max-w-4xl mx-auto space-y-4">
+          <div className="max-w-4xl space-y-4">
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="bg-gradient-card border-border/50 shadow-elegant-md">
                 <CardContent className="p-6">
@@ -134,7 +134,7 @@ export default function ClientList() {
             ))}
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto space-y-4">
+          <div className="max-w-4xl space-y-4">
             {filteredClients.map((client) => (
               <Card 
                 key={client.Cliente}
@@ -167,7 +167,7 @@ export default function ClientList() {
         )}
 
         {!loading && filteredClients.length === 0 && searchTerm && (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl">
             <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
               <CardContent className="py-12 text-center">
                 <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -181,7 +181,7 @@ export default function ClientList() {
         )}
 
         {!loading && clients.length === 0 && (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl">
             <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
             <CardContent className="py-12 text-center">
               <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
