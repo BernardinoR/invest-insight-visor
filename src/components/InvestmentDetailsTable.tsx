@@ -169,18 +169,69 @@ export function InvestmentDetailsTable({ dadosData = [] }: InvestmentDetailsTabl
             </TableHeader>
             <TableBody>
               {consolidatedData.length > 0 ? (
-                consolidatedData.map((item) => (
-                  <TableRow key={item.name} className="border-border/50">
-                    <TableCell className="font-medium text-foreground">{item.name}</TableCell>
-                    <TableCell className="text-center text-muted-foreground">-</TableCell>
-                    <TableCell className="text-center text-muted-foreground">-</TableCell>
-                    <TableCell className="text-center text-muted-foreground">-</TableCell>
-                    <TableCell className="text-center text-muted-foreground">-</TableCell>
-                    <TableCell className={`text-center ${item.avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
-                      {item.avgReturn >= 0 ? "+" : ""}{item.avgReturn.toFixed(2)}%
-                    </TableCell>
-                  </TableRow>
-                ))
+                consolidatedData.map((item) => {
+                  // Get benchmark name for each strategy
+                  const getBenchmark = (strategyName: string) => {
+                    switch (strategyName) {
+                      case 'Pós Fixado - Liquidez':
+                      case 'Pós Fixado':
+                        return '± CDI';
+                      case 'Inflação':
+                        return '± IPCA';
+                      case 'Pré Fixado':
+                        return '± IRF-M';
+                      case 'Multimercado':
+                        return '± CDI';
+                      case 'Imobiliário':
+                        return '± IFIX';
+                      case 'Ações':
+                      case 'Ações - Long Bias':
+                        return '± IBOV';
+                      case 'Private Equity':
+                        return '± CDI';
+                      case 'Exterior - Renda Fixa':
+                        return '± T-Bond';
+                      case 'Exterior - Ações':
+                        return '± S&P500';
+                      case 'COE':
+                        return '± CDI';
+                      case 'Ouro':
+                        return '± Gold';
+                      case 'Criptoativos':
+                        return '± BTC';
+                      default:
+                        return '± CDI';
+                    }
+                  };
+
+                  return (
+                    <>
+                      <TableRow key={item.name} className="border-border/50">
+                        <TableCell className="font-medium text-foreground flex items-center gap-2">
+                          <div className="w-1 h-4 bg-primary rounded-full"></div>
+                          {item.name}
+                        </TableCell>
+                        <TableCell className="text-center text-muted-foreground">-</TableCell>
+                        <TableCell className="text-center text-muted-foreground">-</TableCell>
+                        <TableCell className="text-center text-muted-foreground">-</TableCell>
+                        <TableCell className="text-center text-muted-foreground">-</TableCell>
+                        <TableCell className={`text-center ${item.avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                          {item.avgReturn >= 0 ? "+" : ""}{item.avgReturn.toFixed(2)}%
+                        </TableCell>
+                      </TableRow>
+                      <TableRow key={`${item.name}-benchmark`} className="border-border/50 bg-muted/20">
+                        <TableCell className="font-medium text-muted-foreground pl-8">
+                          {getBenchmark(item.name)}
+                        </TableCell>
+                        <TableCell className="text-center text-muted-foreground">-</TableCell>
+                        <TableCell className="text-center text-muted-foreground">-</TableCell>
+                        <TableCell className="text-center text-muted-foreground">-</TableCell>
+                        <TableCell className="text-center text-muted-foreground">-</TableCell>
+                        <TableCell className="text-center text-muted-foreground">-</TableCell>
+                      </TableRow>
+                    </>
+                  );
+                })
               ) : (
                 <TableRow className="border-border/50">
                   <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
