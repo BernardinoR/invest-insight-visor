@@ -160,8 +160,11 @@ export function InvestmentDetailsTable({ dadosData = [] }: InvestmentDetailsTabl
             <TableHeader>
               <TableRow className="border-border/50">
                 <TableHead className="text-muted-foreground">Estratégia</TableHead>
-                <TableHead className="text-muted-foreground">Performance</TableHead>
-                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground text-center">Mês</TableHead>
+                <TableHead className="text-muted-foreground text-center">Ano</TableHead>
+                <TableHead className="text-muted-foreground text-center">6 Meses</TableHead>
+                <TableHead className="text-muted-foreground text-center">12 Meses</TableHead>
+                <TableHead className="text-muted-foreground text-center">Início</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -169,15 +172,18 @@ export function InvestmentDetailsTable({ dadosData = [] }: InvestmentDetailsTabl
                 consolidatedData.map((item) => (
                   <TableRow key={item.name} className="border-border/50">
                     <TableCell className="font-medium text-foreground">{item.name}</TableCell>
-                    <TableCell className={item.avgReturn >= 0 ? "text-success" : "text-destructive"}>
+                    <TableCell className="text-center text-muted-foreground">-</TableCell>
+                    <TableCell className="text-center text-muted-foreground">-</TableCell>
+                    <TableCell className="text-center text-muted-foreground">-</TableCell>
+                    <TableCell className="text-center text-muted-foreground">-</TableCell>
+                    <TableCell className={`text-center ${item.avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
                       {item.avgReturn >= 0 ? "+" : ""}{item.avgReturn.toFixed(2)}%
                     </TableCell>
-                    <TableCell>{getPerformanceBadge(item.avgReturn)}</TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow className="border-border/50">
-                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     Nenhum dado disponível
                   </TableCell>
                 </TableRow>
