@@ -207,27 +207,27 @@ export function InvestmentDetailsTable({ dadosData = [] }: InvestmentDetailsTabl
                   return (
                     <>
                       <TableRow key={item.name} className="border-border/50">
-                        <TableCell className="font-medium text-foreground flex items-center gap-2">
+                        <TableCell className="font-medium text-foreground flex items-center gap-2 py-2">
                           <div className="w-1 h-4 bg-primary rounded-full"></div>
                           {item.name}
                         </TableCell>
-                        <TableCell className="text-center text-muted-foreground">-</TableCell>
-                        <TableCell className="text-center text-muted-foreground">-</TableCell>
-                        <TableCell className="text-center text-muted-foreground">-</TableCell>
-                        <TableCell className="text-center text-muted-foreground">-</TableCell>
-                        <TableCell className={`text-center ${item.avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                        <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
+                        <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
+                        <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
+                        <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
+                        <TableCell className={`text-center py-2 ${item.avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
                           {item.avgReturn >= 0 ? "+" : ""}{item.avgReturn.toFixed(2)}%
                         </TableCell>
                       </TableRow>
                       <TableRow key={`${item.name}-benchmark`} className="border-border/50 bg-muted/20">
-                        <TableCell className="font-medium text-muted-foreground pl-8">
+                        <TableCell className="font-medium text-muted-foreground pl-8 py-1">
                           {getBenchmark(item.name)}
                         </TableCell>
-                        <TableCell className="text-center text-muted-foreground">-</TableCell>
-                        <TableCell className="text-center text-muted-foreground">-</TableCell>
-                        <TableCell className="text-center text-muted-foreground">-</TableCell>
-                        <TableCell className="text-center text-muted-foreground">-</TableCell>
-                        <TableCell className="text-center text-muted-foreground">-</TableCell>
+                        <TableCell className="text-center text-muted-foreground py-1">-</TableCell>
+                        <TableCell className="text-center text-muted-foreground py-1">-</TableCell>
+                        <TableCell className="text-center text-muted-foreground py-1">-</TableCell>
+                        <TableCell className="text-center text-muted-foreground py-1">-</TableCell>
+                        <TableCell className="text-center text-muted-foreground py-1">-</TableCell>
                       </TableRow>
                     </>
                   );
