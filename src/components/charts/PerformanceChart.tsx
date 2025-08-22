@@ -43,9 +43,36 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
     chartData.unshift(zeroPoint);
   }
 
-  // Calculate max value for Y axis
-  const maxValue = Math.max(...chartData.map(item => item.rentabilidade));
-  const yAxisMax = Math.max(maxValue + 1, 5); // At least 5% on Y axis
+  // Calculate optimal Y axis scale
+  const allValues = chartData.map(item => item.rentabilidade);
+  const minValue = Math.min(...allValues);
+  const maxValue = Math.max(...allValues);
+  
+  // Create a buffer around the data for better visualization
+  const range = maxValue - minValue;
+  const buffer = Math.max(range * 0.2, 0.5); // At least 0.5% buffer
+  
+  const yAxisMin = Math.max(minValue - buffer, 0); // Don't go below 0
+  const yAxisMax = maxValue + buffer;
+  
+  // Generate nice tick values
+  const generateTicks = (min: number, max: number) => {
+    const range = max - min;
+    let step;
+    
+    if (range <= 2) step = 0.5;
+    else if (range <= 5) step = 1;
+    else if (range <= 10) step = 2;
+    else step = Math.ceil(range / 6);
+    
+    const ticks = [];
+    for (let i = Math.floor(min / step) * step; i <= max; i += step) {
+      ticks.push(Number(i.toFixed(1)));
+    }
+    return ticks;
+  };
+  
+  const yAxisTicks = generateTicks(yAxisMin, yAxisMax);
 
   return (
     <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
@@ -103,8 +130,9 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(value) => `${value.toFixed(1)}%`}
-                domain={[0, yAxisMax]}
-                width={60}
+                domain={[yAxisMin, yAxisMax]}
+                ticks={yAxisTicks}
+                width={70}
               />
               <Tooltip 
                 contentStyle={{
