@@ -6,34 +6,34 @@
 
 @layer base {
   :root {
-    /* Core Brand Colors - Professional wealth management palette */
-    --background: 160 25% 8%;
-    --foreground: 45 100% 90%;
+    /* Core Brand Colors - Light professional wealth management palette */
+    --background: 0 0% 98%;
+    --foreground: 222 47% 11%;
     
-    --card: 160 20% 12%;
-    --card-foreground: 45 95% 88%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
     
-    --popover: 160 25% 10%;
-    --popover-foreground: 45 100% 90%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
     
-    --primary: 45 95% 65%;
-    --primary-foreground: 160 25% 8%;
+    --primary: 45 95% 55%;
+    --primary-foreground: 0 0% 98%;
     
-    --secondary: 160 15% 20%;
-    --secondary-foreground: 45 90% 85%;
+    --secondary: 210 40% 92%;
+    --secondary-foreground: 222 47% 11%;
     
-    --muted: 160 12% 25%;
-    --muted-foreground: 45 40% 70%;
+    --muted: 210 40% 95%;
+    --muted-foreground: 215 16% 47%;
     
-    --accent: 170 30% 35%;
-    --accent-foreground: 45 100% 90%;
+    --accent: 170 30% 85%;
+    --accent-foreground: 160 25% 15%;
     
     --destructive: 0 70% 50%;
-    --destructive-foreground: 45 100% 95%;
+    --destructive-foreground: 0 0% 98%;
     
-    --border: 160 15% 25%;
-    --input: 160 12% 20%;
-    --ring: 45 95% 65%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 45 95% 55%;
     
     /* Investment specific colors */
     --success: 120 60% 50%;
@@ -45,17 +45,17 @@
     --info: 200 95% 60%;
     --info-foreground: 160 25% 8%;
     
-    /* Sophisticated gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(160 25% 8%), hsl(170 30% 15%));
-    --gradient-accent: linear-gradient(135deg, hsl(45 95% 65%), hsl(35 85% 55%));
-    --gradient-card: linear-gradient(135deg, hsl(160 20% 12%), hsl(160 15% 15%));
-    --gradient-hero: linear-gradient(135deg, hsl(160 25% 8%) 0%, hsl(170 30% 12%) 50%, hsl(160 20% 10%) 100%);
+    /* Light sophisticated gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 40% 96%));
+    --gradient-accent: linear-gradient(135deg, hsl(45 95% 85%), hsl(35 85% 80%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 40% 98%));
+    --gradient-hero: linear-gradient(135deg, hsl(0 0% 98%) 0%, hsl(210 40% 95%) 50%, hsl(0 0% 96%) 100%);
     
-    /* Elegant shadows */
-    --shadow-sm: 0 2px 8px hsl(160 25% 5% / 0.2);
-    --shadow-md: 0 8px 32px hsl(160 25% 5% / 0.3);
-    --shadow-lg: 0 20px 60px hsl(160 25% 5% / 0.4);
-    --shadow-glow: 0 0 40px hsl(45 95% 65% / 0.15);
+    /* Light elegant shadows */
+    --shadow-sm: 0 2px 8px hsl(210 15% 60% / 0.08);
+    --shadow-md: 0 8px 32px hsl(210 15% 60% / 0.12);
+    --shadow-lg: 0 20px 60px hsl(210 15% 60% / 0.15);
+    --shadow-glow: 0 0 40px hsl(45 95% 55% / 0.1);
     
     /* Professional transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
