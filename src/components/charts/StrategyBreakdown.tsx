@@ -175,7 +175,7 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
               <div key={item.name} className="grid grid-cols-3 gap-4 text-sm py-2 border-b border-border/10 hover:bg-muted/30 transition-colors rounded-sm px-1">
                 <div className="flex items-center gap-2">
                   <div 
-                    className="w-3 h-3 rounded-full shadow-sm" 
+                    className="w-1 h-4 rounded-sm shadow-sm" 
                     style={{ backgroundColor: item.color }}
                   ></div>
                   <span className="font-medium text-foreground">{item.name}</span>
