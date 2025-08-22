@@ -160,8 +160,6 @@ export function InvestmentDetailsTable({ dadosData = [] }: InvestmentDetailsTabl
             <TableHeader>
               <TableRow className="border-border/50">
                 <TableHead className="text-muted-foreground">Estratégia</TableHead>
-                <TableHead className="text-muted-foreground">Patrimônio</TableHead>
-                <TableHead className="text-muted-foreground">Participação</TableHead>
                 <TableHead className="text-muted-foreground">Performance</TableHead>
                 <TableHead className="text-muted-foreground">Status</TableHead>
               </TableRow>
@@ -171,12 +169,6 @@ export function InvestmentDetailsTable({ dadosData = [] }: InvestmentDetailsTabl
                 consolidatedData.map((item) => (
                   <TableRow key={item.name} className="border-border/50">
                     <TableCell className="font-medium text-foreground">{item.name}</TableCell>
-                    <TableCell className="text-foreground">
-                      {formatCurrency(item.value)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {item.percentage.toFixed(1)}%
-                    </TableCell>
                     <TableCell className={item.avgReturn >= 0 ? "text-success" : "text-destructive"}>
                       {item.avgReturn >= 0 ? "+" : ""}{item.avgReturn.toFixed(2)}%
                     </TableCell>
@@ -185,7 +177,7 @@ export function InvestmentDetailsTable({ dadosData = [] }: InvestmentDetailsTabl
                 ))
               ) : (
                 <TableRow className="border-border/50">
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
                     Nenhum dado disponível
                   </TableCell>
                 </TableRow>
