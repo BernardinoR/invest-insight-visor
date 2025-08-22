@@ -207,20 +207,19 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
                     data={chartData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={110}
-                    outerRadius={135}
-                    paddingAngle={3}
+                    innerRadius={100}
+                    outerRadius={140}
+                    paddingAngle={6}
                     dataKey="value"
-                    stroke="rgba(255,255,255,0.1)"
-                    strokeWidth={2}
+                    stroke="none"
+                    strokeWidth={0}
                   >
                     {chartData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={`url(#gradient-${index})`}
+                        fill={entry.color}
                         style={{
-                          filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))',
-                          transition: 'all 0.3s ease'
+                          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
                         }}
                       />
                     ))}
