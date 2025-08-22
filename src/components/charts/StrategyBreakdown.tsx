@@ -193,8 +193,8 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
           {/* Enhanced Donut Chart */}
           <div className="relative flex flex-col items-center justify-center">
             <div className="relative">
-              <ResponsiveContainer width={300} height={300}>
-                <PieChart>
+              <ResponsiveContainer width="100%" height={400} minWidth={350}>
+                <PieChart width={400} height={400}>
                   <defs>
                     {chartData.map((item, index) => (
                       <linearGradient key={`gradient-${index}`} id={`gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="100%">
