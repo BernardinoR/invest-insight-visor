@@ -170,7 +170,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Target className="h-5 w-5 text-primary" />
-                  Detalhamento dos Investimentos - Posições consolidadas por estratégia
+                  Retorno por Ativo
                 </CardTitle>
               </CardHeader>
               <CardContent>
