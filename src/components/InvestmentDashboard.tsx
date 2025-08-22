@@ -163,9 +163,18 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           </div>
         )}
 
-        {/* Investment Details Table - moved below classes */}
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <MaturityTimeline />
+          <IssuerExposure />
+        </div>
+
+        {/* Portfolio Table */}
+        <PortfolioTable />
+
+        {/* Investment Details Table - moved to end */}
         {dadosData.length > 0 && (
-          <div className="mb-8">
+          <div className="mb-8 mt-8">
             <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -229,15 +238,6 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             </Card>
           </div>
         )}
-
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <MaturityTimeline />
-          <IssuerExposure />
-        </div>
-
-        {/* Portfolio Table */}
-        <PortfolioTable />
       </main>
     </div>
   );
