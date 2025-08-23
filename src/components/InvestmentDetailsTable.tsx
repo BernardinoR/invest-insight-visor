@@ -240,7 +240,9 @@ export function InvestmentDetailsTable({ dadosData = [] }: InvestmentDetailsTabl
                         <TableCell className={`text-center py-2 ${item.avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
                           {item.avgReturn >= 0 ? "+" : ""}{item.avgReturn.toFixed(2)}%
                         </TableCell>
-                        <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
+                        <TableCell className={`text-center py-2 ${item.avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                          {item.avgReturn >= 0 ? "+" : ""}{(item.avgReturn * 12).toFixed(2)}%
+                        </TableCell>
                         <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
                         <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
                         <TableCell className={`text-center py-2 ${item.avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
