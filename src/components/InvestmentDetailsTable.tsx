@@ -140,18 +140,6 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient }: Inves
       try {
         const currentYear = new Date().getFullYear().toString();
         
-        // Fetch current year data
-        const { data: yearlyData, error: yearlyError } = await supabase
-          .from('DadosPerformance')
-          .select('*')
-          .eq('Nome', selectedClient)
-          .like('Competencia', `%${currentYear}%`);
-        
-        if (yearlyError) {
-          console.error('Error fetching yearly data:', yearlyError);
-          return;
-        }
-
         // Fetch all historical data for accumulated returns calculation
         const { data: allData, error: allError } = await supabase
           .from('DadosPerformance')
@@ -163,20 +151,8 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient }: Inves
           return;
         }
 
-        // Group and accumulate by strategy for the current year
         const yearlyAccumulated: Record<string, number> = {};
         const accumulatedReturns: Record<string, number> = {};
-        
-        yearlyData?.forEach(item => {
-          const originalStrategy = item["Classe do ativo"] || "Outros";
-          const groupedStrategy = groupStrategy(originalStrategy);
-          const rendimento = Number(item.Rendimento) || 0;
-          
-          if (!yearlyAccumulated[groupedStrategy]) {
-            yearlyAccumulated[groupedStrategy] = 0;
-          }
-          yearlyAccumulated[groupedStrategy] += rendimento;
-        });
 
         // Calculate accumulated returns for each strategy from the beginning
         const strategies = new Set<string>();
@@ -187,6 +163,29 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient }: Inves
         });
 
         strategies.forEach(strategy => {
+          // Calculate yearly accumulated returns (current year only) with compound interest
+          const currentYearData = allData?.filter(item => {
+            const originalStrategy = item["Classe do ativo"] || "Outros";
+            const groupedStrategy = groupStrategy(originalStrategy);
+            return groupedStrategy === strategy && item.Competencia.includes(currentYear);
+          }).sort((a, b) => {
+            const [monthA, yearA] = a.Competencia.split('/');
+            const [monthB, yearB] = b.Competencia.split('/');
+            const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+            const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+            return dateA.getTime() - dateB.getTime();
+          });
+
+          if (currentYearData && currentYearData.length > 0) {
+            let yearAccumulatedMultiplier = 1;
+            currentYearData.forEach(item => {
+              const monthlyReturn = Number(item.Rendimento) || 0;
+              yearAccumulatedMultiplier *= (1 + monthlyReturn);
+            });
+            yearlyAccumulated[strategy] = yearAccumulatedMultiplier - 1;
+          }
+
+          // Calculate total accumulated returns from beginning with compound interest
           accumulatedReturns[strategy] = calculateAccumulatedReturns(allData || [], strategy);
         });
 
