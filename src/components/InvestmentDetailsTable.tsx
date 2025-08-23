@@ -237,7 +237,9 @@ export function InvestmentDetailsTable({ dadosData = [] }: InvestmentDetailsTabl
                           ></div>
                           {item.name}
                         </TableCell>
-                        <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
+                        <TableCell className={`text-center py-2 ${item.avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                          {item.avgReturn >= 0 ? "+" : ""}{item.avgReturn.toFixed(2)}%
+                        </TableCell>
                         <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
                         <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
                         <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
