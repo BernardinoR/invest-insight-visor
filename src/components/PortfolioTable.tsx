@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface PortfolioTableProps {
   selectedClient: string;
+  filteredConsolidadoData?: ConsolidadoData[];
+  filteredRange?: { inicio: string; fim: string };
 }
 
 interface ConsolidadoData {
@@ -25,9 +27,16 @@ interface ConsolidadoData {
   "Competencia": string;
 }
 
-export function PortfolioTable({ selectedClient }: PortfolioTableProps) {
+export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange }: PortfolioTableProps) {
   const [consolidadoData, setConsolidadoData] = useState<ConsolidadoData[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Use filtered data if available, otherwise use internal data
+  const displayData = filteredConsolidadoData && filteredRange?.inicio && filteredRange?.fim 
+    ? filteredConsolidadoData.filter(item => 
+        item.Competencia >= filteredRange.inicio && item.Competencia <= filteredRange.fim
+      ).sort((a, b) => b.Competencia.localeCompare(a.Competencia))
+    : consolidadoData;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -92,14 +101,14 @@ export function PortfolioTable({ selectedClient }: PortfolioTableProps) {
                     Carregando dados...
                   </TableCell>
                 </TableRow>
-              ) : consolidadoData.length === 0 ? (
+              ) : displayData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground">
                     Nenhum dado encontrado
                   </TableCell>
                 </TableRow>
               ) : (
-                consolidadoData.map((item) => (
+                displayData.map((item) => (
                   <TableRow key={item.id} className="border-border/50">
                     <TableCell className="font-medium text-foreground">
                       {item.Competencia}
