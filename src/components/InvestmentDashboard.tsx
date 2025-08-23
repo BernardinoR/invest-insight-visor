@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PerformanceChart } from "./charts/PerformanceChart";
 import { StrategyBreakdown } from "./charts/StrategyBreakdown";
 import { MaturityTimeline } from "./charts/MaturityTimeline";
@@ -10,7 +11,8 @@ import { PortfolioTable } from "./PortfolioTable";
 import { InvestmentDetailsTable } from "./InvestmentDetailsTable";
 import { ClientDataDisplay } from "./ClientDataDisplay";
 import { useClientData } from "@/hooks/useClientData";
-import { TrendingUp, DollarSign, Target, Building2, Calendar } from "lucide-react";
+import { TrendingUp, DollarSign, Target, Building2, Calendar, ChevronDown, ChevronRight } from "lucide-react";
+import { useState } from "react";
 
 interface InvestmentDashboardProps {
   selectedClient: string;
@@ -18,6 +20,7 @@ interface InvestmentDashboardProps {
 
 export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps) {
   const { consolidadoData, dadosData, loading, totalPatrimonio, totalRendimento, hasData } = useClientData(selectedClient);
+  const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
 
   return (
     <div className="min-h-screen bg-gradient-hero">
@@ -192,8 +195,58 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {(() => {
+                    // Strategy colors mapping
+                    const COLORS = [
+                      'hsl(210 16% 82%)', // Light blue-gray
+                      'hsl(32 25% 72%)',  // Light beige
+                      'hsl(45 20% 85%)',  // Very light beige
+                      'hsl(210 11% 71%)', // Medium gray
+                      'hsl(210 16% 58%)', // Darker gray
+                      'hsl(207 26% 50%)', // Blue-gray
+                      'hsl(158 64% 25%)', // Dark forest green
+                      'hsl(159 61% 33%)', // Medium forest green
+                      'hsl(210 29% 24%)', // Dark blue-gray
+                      'hsl(25 28% 53%)',  // Medium brown
+                      'hsl(40 23% 77%)',  // Light tan
+                      'hsl(210 14% 53%)', // Medium blue-gray
+                      'hsl(35 31% 65%)',  // Warm beige
+                      'hsl(210 24% 40%)', // Darker blue-gray
+                    ];
+
+                    const strategyOrder = [
+                      'Pós Fixado - Liquidez',
+                      'Pós Fixado',
+                      'Inflação',
+                      'Pré Fixado',
+                      'Multimercado',
+                      'Imobiliário',
+                      'Ações',
+                      'Ações - Long Bias',
+                      'Private Equity',
+                      'Exterior - Renda Fixa',
+                      'Exterior - Ações',
+                      'COE',
+                      'Ouro',
+                      'Criptoativos'
+                    ];
+
+                    const getStrategyColor = (strategyName: string) => {
+                      const index = strategyOrder.indexOf(strategyName);
+                      return index !== -1 ? COLORS[index] : COLORS[0];
+                    };
+
+                    const toggleStrategy = (strategy: string) => {
+                      const newExpanded = new Set(expandedStrategies);
+                      if (newExpanded.has(strategy)) {
+                        newExpanded.delete(strategy);
+                      } else {
+                        newExpanded.add(strategy);
+                      }
+                      setExpandedStrategies(newExpanded);
+                    };
+
                     // Function to group strategy names
                     const groupStrategy = (strategy: string): string => {
                       const strategyLower = strategy.toLowerCase();
@@ -271,68 +324,93 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       };
                     }).sort((a, b) => b.totalPosition - a.totalPosition);
 
-                    return strategyTotals.map(({ strategy, assets, totalPosition, avgReturn, percentage }) => (
-                      <div key={strategy} className="border border-border/50 rounded-lg bg-card/30">
-                        {/* Strategy Header */}
-                        <div className="p-4 border-b border-border/50 bg-muted/20">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                                  {percentage.toFixed(1)}%
+                    return strategyTotals.map(({ strategy, assets, totalPosition, avgReturn, percentage }) => {
+                      const isExpanded = expandedStrategies.has(strategy);
+                      const strategyColor = getStrategyColor(strategy);
+                      
+                      return (
+                        <Collapsible key={strategy} open={isExpanded} onOpenChange={() => toggleStrategy(strategy)}>
+                          <div className="border border-border/50 rounded-lg overflow-hidden bg-card/50">
+                            {/* Strategy Header */}
+                            <CollapsibleTrigger asChild>
+                              <div 
+                                className="p-4 cursor-pointer hover:bg-muted/30 transition-colors border-l-4" 
+                                style={{ borderLeftColor: strategyColor }}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2">
+                                      <div 
+                                        className="w-3 h-3 rounded-full"
+                                        style={{ backgroundColor: strategyColor }}
+                                      ></div>
+                                      <span className="font-semibold text-foreground text-lg">{strategy}</span>
+                                      <div className="w-8 h-8 rounded-full bg-muted/30 flex items-center justify-center text-xs font-bold text-muted-foreground">
+                                        {percentage.toFixed(1)}%
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-4">
+                                    <div className="text-right">
+                                      <div className="text-sm text-muted-foreground">Saldo</div>
+                                      <div className="font-semibold text-foreground">R$ {totalPosition.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className="text-sm text-muted-foreground">Rentabilidade</div>
+                                      <div className={`font-semibold ${avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                                        {avgReturn >= 0 ? "+" : ""}{avgReturn.toFixed(2)}%
+                                      </div>
+                                    </div>
+                                    <div className="ml-2">
+                                      {isExpanded ? (
+                                        <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform" />
+                                      ) : (
+                                        <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform" />
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
-                                <span className="font-semibold text-foreground">{strategy}</span>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-6 text-sm">
-                              <div className="text-right">
-                                <div className="font-medium text-foreground">Posição</div>
-                                <div className="text-muted-foreground">R$ {totalPosition.toLocaleString('pt-BR')}</div>
+                            </CollapsibleTrigger>
+                            
+                            {/* Assets List */}
+                            <CollapsibleContent className="animate-accordion-down">
+                              <div className="border-t border-border/50 bg-muted/10">
+                                {assets.map((item, index) => (
+                                  <div key={item.id} className={`p-4 ${index !== assets.length - 1 ? 'border-b border-border/20' : ''} hover:bg-muted/20 transition-colors`}>
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                          <Building2 className="h-4 w-4 text-primary" />
+                                        </div>
+                                        <div>
+                                          <div className="font-medium text-foreground">{item.Ativo}</div>
+                                          <div className="text-sm text-muted-foreground">{item.Emissor}</div>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-6 text-sm">
+                                        <div className="text-right">
+                                          <div className="font-medium text-foreground">R$ {item.Posicao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                          <div className="text-muted-foreground">{item.Taxa}</div>
+                                        </div>
+                                        <div className="text-right">
+                                          <div className={`font-medium ${item.Rendimento >= 0 ? "text-success" : "text-destructive"}`}>
+                                            {item.Rendimento >= 0 ? "+" : ""}{(item.Rendimento * 100).toFixed(2)}%
+                                          </div>
+                                          <div className="text-muted-foreground">
+                                            {item.Vencimento ? new Date(item.Vencimento).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) : "-"}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                              <div className="text-right">
-                                <div className="font-medium text-foreground">Rentabilidade</div>
-                                <div className={avgReturn >= 0 ? "text-success" : "text-destructive"}>
-                                  {avgReturn >= 0 ? "+" : ""}{avgReturn.toFixed(2)}%
-                                </div>
-                              </div>
-                            </div>
+                            </CollapsibleContent>
                           </div>
-                        </div>
-                        
-                        {/* Assets List */}
-                        <div className="divide-y divide-border/50">
-                          {assets.map((item) => (
-                            <div key={item.id} className="p-4 hover:bg-muted/10 transition-colors">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
-                                    <Building2 className="h-4 w-4 text-primary" />
-                                  </div>
-                                  <div>
-                                    <div className="font-medium text-foreground">{item.Ativo}</div>
-                                    <div className="text-sm text-muted-foreground">{item.Emissor}</div>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-6 text-sm">
-                                  <div className="text-right">
-                                    <div className="font-medium text-foreground">R$ {item.Posicao.toLocaleString('pt-BR')}</div>
-                                    <div className="text-muted-foreground">{item.Taxa}</div>
-                                  </div>
-                                  <div className="text-right">
-                                    <div className={`font-medium ${item.Rendimento >= 0 ? "text-success" : "text-destructive"}`}>
-                                      {item.Rendimento >= 0 ? "+" : ""}{(item.Rendimento * 100).toFixed(2)}%
-                                    </div>
-                                    <div className="text-muted-foreground">
-                                      {item.Vencimento ? new Date(item.Vencimento).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) : "-"}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ));
+                        </Collapsible>
+                      );
+                    });
                   })()}
                 </div>
               </CardContent>
