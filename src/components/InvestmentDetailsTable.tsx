@@ -93,65 +93,49 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient }: Inves
     return strategy;
   };
 
-  // Fetch accumulated returns data by strategy using compound interest
+  // Fetch yearly accumulated data for current year
   useEffect(() => {
-    const fetchAccumulatedData = async () => {
+    const fetchYearlyData = async () => {
       if (!selectedClient) return;
       
       setLoading(true);
       try {
+        const currentYear = new Date().getFullYear().toString();
+        
         const { data, error } = await supabase
           .from('DadosPerformance')
           .select('*')
           .eq('Nome', selectedClient)
-          .order('Competencia', { ascending: true });
+          .like('Competencia', `%${currentYear}%`);
         
         if (error) {
-          console.error('Error fetching accumulated data:', error);
+          console.error('Error fetching yearly data:', error);
           return;
         }
 
-        // Calculate accumulated returns by strategy using compound interest
-        const accumulatedByStrategy: Record<string, number> = {};
-        
-        // Group data by strategy and calculate compound returns
-        const strategyGroups: Record<string, any[]> = {};
+        // Group and accumulate by strategy for the current year
+        const yearlyAccumulated: Record<string, number> = {};
         
         data?.forEach(item => {
           const originalStrategy = item["Classe do ativo"] || "Outros";
           const groupedStrategy = groupStrategy(originalStrategy);
+          const rendimento = Number(item.Rendimento) || 0;
           
-          if (!strategyGroups[groupedStrategy]) {
-            strategyGroups[groupedStrategy] = [];
+          if (!yearlyAccumulated[groupedStrategy]) {
+            yearlyAccumulated[groupedStrategy] = 0;
           }
-          strategyGroups[groupedStrategy].push(item);
+          yearlyAccumulated[groupedStrategy] += rendimento;
         });
 
-        // Calculate compound accumulated returns for each strategy
-        Object.entries(strategyGroups).forEach(([strategy, items]) => {
-          let accumulated = 0;
-          
-          // Sort by competencia to ensure proper chronological order
-          const sortedItems = items.sort((a, b) => a.Competencia.localeCompare(b.Competencia));
-          
-          sortedItems.forEach(item => {
-            const monthlyReturn = Number(item.Rendimento) || 0;
-            // Compound interest formula: (1 + accumulated) * (1 + monthly_return) - 1
-            accumulated = (1 + accumulated) * (1 + monthlyReturn) - 1;
-          });
-          
-          accumulatedByStrategy[strategy] = accumulated;
-        });
-
-        setYearlyAccumulatedData(accumulatedByStrategy);
+        setYearlyAccumulatedData(yearlyAccumulated);
       } catch (error) {
-        console.error('Error fetching accumulated data:', error);
+        console.error('Error fetching yearly data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAccumulatedData();
+    fetchYearlyData();
   }, [selectedClient]);
 
   // Filter to get only the most recent competencia
@@ -268,7 +252,7 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient }: Inves
               <TableRow className="border-border/50">
                 <TableHead className="text-muted-foreground">Estratégia</TableHead>
                 <TableHead className="text-muted-foreground text-center">Mês</TableHead>
-                <TableHead className="text-muted-foreground text-center">Retorno Acumulado</TableHead>
+                <TableHead className="text-muted-foreground text-center">Ano</TableHead>
                 <TableHead className="text-muted-foreground text-center">6 Meses</TableHead>
                 <TableHead className="text-muted-foreground text-center">12 Meses</TableHead>
                 <TableHead className="text-muted-foreground text-center">Início</TableHead>
