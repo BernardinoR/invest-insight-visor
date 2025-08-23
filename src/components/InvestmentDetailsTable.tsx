@@ -199,16 +199,36 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
           });
 
           if (currentYearData && currentYearData.length > 0) {
-            let yearAccumulatedMultiplier = 1;
-            console.log(`Calculating year return for strategy ${strategy}:`, currentYearData);
-            currentYearData.forEach(item => {
-              const monthlyReturn = Number(item.Rendimento) || 0;
-              console.log(`Month ${item.Competencia}: ${monthlyReturn * 100}%`);
-              yearAccumulatedMultiplier *= (1 + monthlyReturn);
-            });
-            const finalYearReturn = yearAccumulatedMultiplier - 1;
-            console.log(`Final year return for ${strategy}: ${(finalYearReturn * 100).toFixed(2)}%`);
-            yearlyAccumulated[strategy] = finalYearReturn;
+            // When filtering by specific period, calculate weighted average return
+            // instead of compound interest across different assets
+            if (filteredRange?.inicio && filteredRange?.fim) {
+              // Calculate weighted average return for the filtered period
+              let totalPosition = 0;
+              let totalWeightedReturn = 0;
+              
+              currentYearData.forEach(item => {
+                const position = Number(item.Posicao) || 0;
+                const monthlyReturn = Number(item.Rendimento) || 0;
+                totalPosition += position;
+                totalWeightedReturn += monthlyReturn * position;
+              });
+              
+              const weightedAvgReturn = totalPosition > 0 ? totalWeightedReturn / totalPosition : 0;
+              console.log(`Weighted average return for ${strategy}: ${(weightedAvgReturn * 100).toFixed(2)}%`);
+              yearlyAccumulated[strategy] = weightedAvgReturn;
+            } else {
+              // For yearly calculation across time periods, use compound interest
+              let yearAccumulatedMultiplier = 1;
+              console.log(`Calculating year return for strategy ${strategy}:`, currentYearData);
+              currentYearData.forEach(item => {
+                const monthlyReturn = Number(item.Rendimento) || 0;
+                console.log(`Month ${item.Competencia}: ${monthlyReturn * 100}%`);
+                yearAccumulatedMultiplier *= (1 + monthlyReturn);
+              });
+              const finalYearReturn = yearAccumulatedMultiplier - 1;
+              console.log(`Final year return for ${strategy}: ${(finalYearReturn * 100).toFixed(2)}%`);
+              yearlyAccumulated[strategy] = finalYearReturn;
+            }
           }
 
           // Calculate total accumulated returns from beginning with compound interest
