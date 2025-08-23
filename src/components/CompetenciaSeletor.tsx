@@ -79,13 +79,24 @@ export function CompetenciaSeletor({ selectedClient, onFilterChange }: Competenc
     return `${monthNames[parseInt(month) - 1]}/${year}`;
   };
 
-  if (loading || competencias.length === 0) {
-    return null;
-  }
-
   return (
     <Card className="bg-gradient-card border-border/50 shadow-elegant-md mb-6">
       <CardContent className="p-4">
+        {loading ? (
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-foreground">Carregando competências...</span>
+            </div>
+          </div>
+        ) : competencias.length === 0 ? (
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Nenhuma competência encontrada</span>
+            </div>
+          </div>
+        ) : (
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <Filter className="h-4 w-4 text-primary" />
@@ -124,7 +135,8 @@ export function CompetenciaSeletor({ selectedClient, onFilterChange }: Competenc
               </SelectContent>
             </Select>
           </div>
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
