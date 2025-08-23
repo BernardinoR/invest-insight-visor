@@ -192,57 +192,149 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Ativo</TableHead>
-                      <TableHead>Classe</TableHead>
-                      <TableHead>Posição</TableHead>
-                      <TableHead>Taxa</TableHead>
-                      <TableHead>Rendimento</TableHead>
-                      <TableHead>Vencimento</TableHead>
-                      <TableHead>Emissor</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {dadosData.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">
-                          {item.Ativo}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {item["Classe do ativo"]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          R$ {item.Posicao.toLocaleString('pt-BR')}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {item.Taxa}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={item.Rendimento >= 0 ? "default" : "destructive"}>
-                            {(item.Rendimento * 100).toFixed(2)}%
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {item.Vencimento ? (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3 text-muted-foreground" />
-                              {new Date(item.Vencimento).toLocaleDateString('pt-BR')}
+                <div className="space-y-4">
+                  {(() => {
+                    // Function to group strategy names
+                    const groupStrategy = (strategy: string): string => {
+                      const strategyLower = strategy.toLowerCase();
+                      
+                      if (strategyLower.includes('cdi - liquidez')) {
+                        return 'Pós Fixado - Liquidez';
+                      }
+                      if (strategyLower.includes('cdi - fundos') || strategyLower.includes('cdi - titulos')) {
+                        return 'Pós Fixado';
+                      }
+                      if (strategyLower.includes('inflação - titulos') || strategyLower.includes('inflação - fundos')) {
+                        return 'Inflação';
+                      }
+                      if (strategyLower.includes('pré fixado - titulos') || strategyLower.includes('pré fixado - fundos')) {
+                        return 'Pré Fixado';
+                      }
+                      if (strategyLower.includes('multimercado')) {
+                        return 'Multimercado';
+                      }
+                      if (strategyLower.includes('imobiliário - ativos') || strategyLower.includes('imobiliário - fundos')) {
+                        return 'Imobiliário';
+                      }
+                      if (strategyLower.includes('ações - ativos') || strategyLower.includes('ações - fundos') || strategyLower.includes('ações - etfs')) {
+                        return 'Ações';
+                      }
+                      if (strategyLower.includes('ações - long bias')) {
+                        return 'Ações - Long Bias';
+                      }
+                      if (strategyLower.includes('private equity') || strategyLower.includes('venture capital') || strategyLower.includes('special sits')) {
+                        return 'Private Equity';
+                      }
+                      if (strategyLower.includes('exterior - ações')) {
+                        return 'Exterior - Ações';
+                      }
+                      if (strategyLower.includes('exterior - renda fixa')) {
+                        return 'Exterior - Renda Fixa';
+                      }
+                      if (strategyLower.includes('coe')) {
+                        return 'COE';
+                      }
+                      if (strategyLower.includes('ouro')) {
+                        return 'Ouro';
+                      }
+                      if (strategyLower.includes('criptoativos')) {
+                        return 'Criptoativos';
+                      }
+                      
+                      return strategy;
+                    };
+
+                    // Group data by strategy
+                    const groupedData = dadosData.reduce((acc, item) => {
+                      const originalStrategy = item["Classe do ativo"] || "Outros";
+                      const groupedStrategy = groupStrategy(originalStrategy);
+                      
+                      if (!acc[groupedStrategy]) {
+                        acc[groupedStrategy] = [];
+                      }
+                      acc[groupedStrategy].push(item);
+                      return acc;
+                    }, {} as Record<string, typeof dadosData>);
+
+                    // Calculate totals for each strategy
+                    const strategyTotals = Object.entries(groupedData).map(([strategy, assets]) => {
+                      const totalPosition = assets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
+                      const totalReturn = assets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
+                      const avgReturn = totalPosition > 0 ? (totalReturn / totalPosition) * 100 : 0;
+                      
+                      return {
+                        strategy,
+                        assets,
+                        totalPosition,
+                        avgReturn,
+                        percentage: totalPatrimonio > 0 ? (totalPosition / totalPatrimonio) * 100 : 0
+                      };
+                    }).sort((a, b) => b.totalPosition - a.totalPosition);
+
+                    return strategyTotals.map(({ strategy, assets, totalPosition, avgReturn, percentage }) => (
+                      <div key={strategy} className="border border-border/50 rounded-lg bg-card/30">
+                        {/* Strategy Header */}
+                        <div className="p-4 border-b border-border/50 bg-muted/20">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                                  {percentage.toFixed(1)}%
+                                </div>
+                                <span className="font-semibold text-foreground">{strategy}</span>
+                              </div>
                             </div>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {item.Emissor}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                            <div className="flex items-center gap-6 text-sm">
+                              <div className="text-right">
+                                <div className="font-medium text-foreground">Posição</div>
+                                <div className="text-muted-foreground">R$ {totalPosition.toLocaleString('pt-BR')}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-medium text-foreground">Rentabilidade</div>
+                                <div className={avgReturn >= 0 ? "text-success" : "text-destructive"}>
+                                  {avgReturn >= 0 ? "+" : ""}{avgReturn.toFixed(2)}%
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Assets List */}
+                        <div className="divide-y divide-border/50">
+                          {assets.map((item) => (
+                            <div key={item.id} className="p-4 hover:bg-muted/10 transition-colors">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
+                                    <Building2 className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-foreground">{item.Ativo}</div>
+                                    <div className="text-sm text-muted-foreground">{item.Emissor}</div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-6 text-sm">
+                                  <div className="text-right">
+                                    <div className="font-medium text-foreground">R$ {item.Posicao.toLocaleString('pt-BR')}</div>
+                                    <div className="text-muted-foreground">{item.Taxa}</div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className={`font-medium ${item.Rendimento >= 0 ? "text-success" : "text-destructive"}`}>
+                                      {item.Rendimento >= 0 ? "+" : ""}{(item.Rendimento * 100).toFixed(2)}%
+                                    </div>
+                                    <div className="text-muted-foreground">
+                                      {item.Vencimento ? new Date(item.Vencimento).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) : "-"}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
               </CardContent>
             </Card>
           </div>
