@@ -21,6 +21,7 @@ interface ConsolidadoData {
   "Impostos": number;
   "Ganho Financeiro": number;
   "Patrimonio Final": number;
+  "Rendimento": number;
   "Competencia": string;
 }
 
@@ -81,18 +82,19 @@ export function PortfolioTable({ selectedClient }: PortfolioTableProps) {
                 <TableHead className="text-muted-foreground">Impostos</TableHead>
                 <TableHead className="text-muted-foreground">Ganho Financeiro</TableHead>
                 <TableHead className="text-muted-foreground">Patrimônio Final</TableHead>
+                <TableHead className="text-muted-foreground">Retorno %</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     Carregando dados...
                   </TableCell>
                 </TableRow>
               ) : consolidadoData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     Nenhum dado encontrado
                   </TableCell>
                 </TableRow>
@@ -105,17 +107,20 @@ export function PortfolioTable({ selectedClient }: PortfolioTableProps) {
                     <TableCell className="font-medium text-foreground">
                       {formatCurrency(item["Patrimonio Inicial"])}
                     </TableCell>
-                    <TableCell className="text-info">
+                    <TableCell className={`font-medium ${item["Movimentação"] >= 0 ? "text-blue-600" : "text-orange-600"}`}>
                       {formatCurrency(item["Movimentação"])}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="text-red-600 font-medium">
                       {formatCurrency(item.Impostos)}
                     </TableCell>
-                    <TableCell className="text-success">
+                    <TableCell className="text-success font-medium">
                       {formatCurrency(item["Ganho Financeiro"])}
                     </TableCell>
-                    <TableCell className="font-bold text-primary">
+                    <TableCell className="font-bold text-green-600">
                       {formatCurrency(item["Patrimonio Final"])}
+                    </TableCell>
+                    <TableCell className={`font-bold ${(item.Rendimento || 0) >= 0 ? "text-success" : "text-destructive"}`}>
+                      {((item.Rendimento || 0) * 100).toFixed(2)}%
                     </TableCell>
                   </TableRow>
                 ))
