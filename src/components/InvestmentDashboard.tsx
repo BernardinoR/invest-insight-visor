@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
+import { PerformanceChart } from "./charts/PerformanceChart";
 import { StrategyBreakdown } from "./charts/StrategyBreakdown";
 import { MaturityTimeline } from "./charts/MaturityTimeline";
 import { IssuerExposure } from "./charts/IssuerExposure";
@@ -15,7 +15,6 @@ import { CompetenciaSeletor } from "./CompetenciaSeletor";
 import { useClientData } from "@/hooks/useClientData";
 import { TrendingUp, DollarSign, Target, Building2, Calendar, ChevronDown, ChevronRight } from "lucide-react";
 import { useState, useCallback } from "react";
-// Force rebuild after PerformanceChart removal
 
 interface InvestmentDashboardProps {
   selectedClient: string;
@@ -283,6 +282,12 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           <StrategyScatterChart />
         </div>
 
+        {/* Performance Chart */}
+        {filteredConsolidadoData.length > 0 && (
+          <div className="mb-8">
+            <PerformanceChart consolidadoData={filteredConsolidadoData} />
+          </div>
+        )}
 
 
         {/* Investment Details Table - moved to end */}
