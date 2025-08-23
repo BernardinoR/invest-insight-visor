@@ -225,7 +225,7 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
       </CardHeader>
       
       <CardContent className="pt-0 pb-6">
-        <div className="h-80 w-full">
+        <div className="h-96 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart 
               data={chartData} 
@@ -308,25 +308,6 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
               />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
-        
-        {/* Performance Summary */}
-        <div className="mt-6 pt-6 border-t border-border/30">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {chartData.slice(-4).map((item, index) => (
-              <div key={index} className="text-center p-3 rounded-lg bg-muted/30">
-                <div className="text-xs text-muted-foreground mb-1">
-                  {item.competencia}
-                </div>
-                <div className={`text-sm font-semibold ${item.retornoAcumulado >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  {item.retornoAcumulado.toFixed(2)}%
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Mensal: {item.retornoMensal.toFixed(2)}%
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </CardContent>
     </Card>
