@@ -41,6 +41,7 @@ interface InvestmentDetailsTableProps {
 
 export function InvestmentDetailsTable({ dadosData = [], selectedClient }: InvestmentDetailsTableProps) {
   const [yearlyAccumulatedData, setYearlyAccumulatedData] = useState<Record<string, number>>({});
+  const [accumulatedReturnsData, setAccumulatedReturnsData] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
 
   // Function to group strategy names according to original specification
@@ -93,30 +94,79 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient }: Inves
     return strategy;
   };
 
-  // Fetch yearly accumulated data for current year
+  // Calculate accumulated returns with compound interest for each strategy
+  const calculateAccumulatedReturns = (allData: Array<{
+    "Classe do ativo": string;
+    Rendimento: number;
+    Competencia: string;
+    Nome?: string;
+  }>, strategy: string) => {
+    // Filter data for this strategy and sort by competencia
+    const strategyData = allData
+      .filter(item => {
+        const originalStrategy = item["Classe do ativo"] || "Outros";
+        const groupedStrategy = groupStrategy(originalStrategy);
+        return groupedStrategy === strategy;
+      })
+      .sort((a, b) => {
+        // Sort by competencia (MM/YYYY format)
+        const [monthA, yearA] = a.Competencia.split('/');
+        const [monthB, yearB] = b.Competencia.split('/');
+        const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+        const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+        return dateA.getTime() - dateB.getTime();
+      });
+
+    if (strategyData.length === 0) return 0;
+
+    // Calculate compound accumulated returns
+    let accumulated = 0;
+    strategyData.forEach(item => {
+      const monthlyReturn = Number(item.Rendimento) || 0;
+      // Compound interest formula: (1 + accumulated) * (1 + monthly_return) - 1
+      accumulated = (1 + accumulated) * (1 + monthlyReturn) - 1;
+    });
+
+    return accumulated;
+  };
+
+  // Fetch yearly accumulated data for current year and all historical data for accumulated returns
   useEffect(() => {
-    const fetchYearlyData = async () => {
+    const fetchData = async () => {
       if (!selectedClient) return;
       
       setLoading(true);
       try {
         const currentYear = new Date().getFullYear().toString();
         
-        const { data, error } = await supabase
+        // Fetch current year data
+        const { data: yearlyData, error: yearlyError } = await supabase
           .from('DadosPerformance')
           .select('*')
           .eq('Nome', selectedClient)
           .like('Competencia', `%${currentYear}%`);
         
-        if (error) {
-          console.error('Error fetching yearly data:', error);
+        if (yearlyError) {
+          console.error('Error fetching yearly data:', yearlyError);
+          return;
+        }
+
+        // Fetch all historical data for accumulated returns calculation
+        const { data: allData, error: allError } = await supabase
+          .from('DadosPerformance')
+          .select('*')
+          .eq('Nome', selectedClient);
+
+        if (allError) {
+          console.error('Error fetching all data:', allError);
           return;
         }
 
         // Group and accumulate by strategy for the current year
         const yearlyAccumulated: Record<string, number> = {};
+        const accumulatedReturns: Record<string, number> = {};
         
-        data?.forEach(item => {
+        yearlyData?.forEach(item => {
           const originalStrategy = item["Classe do ativo"] || "Outros";
           const groupedStrategy = groupStrategy(originalStrategy);
           const rendimento = Number(item.Rendimento) || 0;
@@ -127,15 +177,28 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient }: Inves
           yearlyAccumulated[groupedStrategy] += rendimento;
         });
 
+        // Calculate accumulated returns for each strategy from the beginning
+        const strategies = new Set<string>();
+        allData?.forEach(item => {
+          const originalStrategy = item["Classe do ativo"] || "Outros";
+          const groupedStrategy = groupStrategy(originalStrategy);
+          strategies.add(groupedStrategy);
+        });
+
+        strategies.forEach(strategy => {
+          accumulatedReturns[strategy] = calculateAccumulatedReturns(allData || [], strategy);
+        });
+
         setYearlyAccumulatedData(yearlyAccumulated);
+        setAccumulatedReturnsData(accumulatedReturns);
       } catch (error) {
-        console.error('Error fetching yearly data:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchYearlyData();
+    fetchData();
   }, [selectedClient]);
 
   // Filter to get only the most recent competencia
@@ -317,8 +380,12 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient }: Inves
                         </TableCell>
                         <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
                         <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
-                        <TableCell className={`text-center py-2 ${item.avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
-                          {item.avgReturn >= 0 ? "+" : ""}{item.avgReturn.toFixed(2)}%
+                        <TableCell className={`text-center py-2 ${(accumulatedReturnsData[item.name] || 0) >= 0 ? "text-success" : "text-destructive"}`}>
+                          {loading ? "..." : (
+                            accumulatedReturnsData[item.name] !== undefined
+                              ? `${accumulatedReturnsData[item.name] >= 0 ? "+" : ""}${(accumulatedReturnsData[item.name] * 100).toFixed(2)}%`
+                              : "-"
+                          )}
                         </TableCell>
                       </TableRow>
                       <TableRow key={`${item.name}-benchmark`} className="border-border/50 bg-muted/20">
