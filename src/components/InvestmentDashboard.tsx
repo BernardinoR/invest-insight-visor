@@ -15,6 +15,7 @@ import { CompetenciaSeletor } from "./CompetenciaSeletor";
 import { useClientData } from "@/hooks/useClientData";
 import { TrendingUp, DollarSign, Target, Building2, Calendar, ChevronDown, ChevronRight } from "lucide-react";
 import { useState, useCallback } from "react";
+// Force rebuild after PerformanceChart removal
 
 interface InvestmentDashboardProps {
   selectedClient: string;
