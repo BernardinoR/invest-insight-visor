@@ -119,15 +119,16 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient }: Inves
 
     if (strategyData.length === 0) return 0;
 
-    // Calculate compound accumulated returns
-    let accumulated = 0;
+    // Calculate compound accumulated returns using the monthly returns from Supabase
+    // Example: Month 1: 1% (0.01), Month 2: 1.5% (0.015)
+    // Accumulated = (1 + 0.01) * (1 + 0.015) - 1 = 1.01 * 1.015 - 1 = 0.02515 = 2.515%
+    let accumulatedMultiplier = 1;
     strategyData.forEach(item => {
       const monthlyReturn = Number(item.Rendimento) || 0;
-      // Compound interest formula: (1 + accumulated) * (1 + monthly_return) - 1
-      accumulated = (1 + accumulated) * (1 + monthlyReturn) - 1;
+      accumulatedMultiplier *= (1 + monthlyReturn);
     });
 
-    return accumulated;
+    return accumulatedMultiplier - 1; // Convert back to percentage (e.g., 1.02515 - 1 = 0.02515)
   };
 
   // Fetch yearly accumulated data for current year and all historical data for accumulated returns
