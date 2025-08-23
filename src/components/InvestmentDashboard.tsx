@@ -467,7 +467,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                       <div>
                                         <div className="font-medium text-foreground text-xs">{item.Ativo}</div>
                                       </div>
-                                      <div className="text-center text-foreground">-</div>
+                                      <div className="text-center text-foreground text-xs">
+                                        {totalPatrimonio > 0 ? `${((item.Posicao / totalPatrimonio) * 100).toFixed(2)}%` : "-"}
+                                      </div>
                                       <div className="text-center text-foreground">{item.Posicao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                                       <div className="text-center">
                                         <div className={`font-medium ${item.Rendimento >= 0 ? "text-success" : "text-destructive"}`}>
