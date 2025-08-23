@@ -67,34 +67,51 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
     );
   }
 
+  // Filter to get only the most recent competencia
+  const getMostRecentData = (data: ConsolidadoPerformance[]) => {
+    if (data.length === 0) return [];
+    
+    // Find the most recent competencia
+    const mostRecentCompetencia = data.reduce((latest, current) => {
+      return current.Competencia > latest.Competencia ? current : latest;
+    }).Competencia;
+    
+    // Return all records with the most recent competencia
+    return data.filter(item => item.Competencia === mostRecentCompetencia);
+  };
+
+  const filteredConsolidadoData = getMostRecentData(consolidadoData);
+
   return (
     <div className="space-y-6 mb-8">
       {/* Consolidado Performance */}
-      {consolidadoData.length > 0 && (
+      {filteredConsolidadoData.length > 0 && (
         <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" />
-              Performance Consolidada - Por Instituição
+              Performance Consolidada - Competência Mais Recente
             </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Competência: {filteredConsolidadoData[0]?.Competencia} - Diferentes Instituições
+            </p>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Competência</TableHead>
+                  <TableHead>Instituição</TableHead>
                   <TableHead>Patrimônio Inicial</TableHead>
                   <TableHead>Movimentação</TableHead>
                   <TableHead>Patrimônio Final</TableHead>
                   <TableHead>Rendimento</TableHead>
-                  <TableHead>Instituição</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {consolidadoData.map((item) => (
+                {filteredConsolidadoData.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell>
-                      {item.Competencia}
+                    <TableCell className="font-medium">
+                      {item.Instituicao}
                     </TableCell>
                     <TableCell>
                       R$ {item["Patrimonio Inicial"].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -110,9 +127,6 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
                         {(item.Rendimento * 100).toFixed(2)}%
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {item.Instituicao}
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -122,7 +136,7 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
       )}
 
       {/* Performance Chart - positioned after Consolidado Performance */}
-      {consolidadoData.length > 0 && (
+      {filteredConsolidadoData.length > 0 && (
         <PerformanceChart consolidadoData={consolidadoData} />
       )}
 
