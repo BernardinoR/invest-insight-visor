@@ -14,34 +14,47 @@ const STRATEGY_COLORS = [
 ];
 
 export function StrategyScatterChart() {
-  // Group investments by strategy
-  const strategyData = investmentData.reduce((acc, investment) => {
-    if (!investment.strategy) return acc;
-    
-    if (!acc[investment.strategy]) {
-      acc[investment.strategy] = [];
-    }
-    
-    acc[investment.strategy].push({
-      name: investment.asset,
-      value: investment.value,
-      performance: investment.performance,
-      strategy: investment.strategy,
-      rate: investment.rate || 'N/A',
-      issuer: investment.issuer || 'N/A',
-      maturity: investment.maturity || 'N/A'
-    });
-    
-    return acc;
-  }, {} as Record<string, Array<{
-    name: string;
-    value: number;
-    performance: number;
-    strategy: string;
-    rate: string;
-    issuer: string;
-    maturity: string;
-  }>>);
+  // Filter investments to only include those with maturity and group by strategy
+  const strategyData = investmentData
+    .filter(investment => investment.maturity && investment.strategy)
+    .reduce((acc, investment) => {
+      if (!investment.strategy || !investment.maturity) return acc;
+      
+      if (!acc[investment.strategy]) {
+        acc[investment.strategy] = [];
+      }
+      
+      // Parse rate to get numeric value for average calculation
+      const parseRate = (rate: string) => {
+        if (!rate || rate === 'N/A') return 0;
+        const match = rate.match(/(\d+(?:\.\d+)?)/);
+        return match ? parseFloat(match[1]) : 0;
+      };
+      
+      acc[investment.strategy].push({
+        name: investment.asset,
+        value: investment.value,
+        performance: investment.performance,
+        strategy: investment.strategy,
+        rate: parseRate(investment.rate || ''),
+        rateDisplay: investment.rate || 'N/A',
+        issuer: investment.issuer || 'N/A',
+        maturity: investment.maturity,
+        maturitySort: new Date(investment.maturity.split('/').reverse().join('-')).getTime()
+      });
+      
+      return acc;
+    }, {} as Record<string, Array<{
+      name: string;
+      value: number;
+      performance: number;
+      strategy: string;
+      rate: number;
+      rateDisplay: string;
+      issuer: string;
+      maturity: string;
+      maturitySort: number;
+    }>>);
 
   const strategies = Object.keys(strategyData);
 
@@ -52,12 +65,9 @@ export function StrategyScatterChart() {
         <div className="bg-card border border-border rounded-lg p-3 shadow-elegant-md max-w-xs">
           <p className="text-foreground font-medium">{data.name}</p>
           <p className="text-primary">Valor: R$ {data.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-          <p className="text-muted-foreground">Performance: {data.performance >= 0 ? '+' : ''}{data.performance.toFixed(2)}%</p>
-          <p className="text-sm text-muted-foreground">Taxa: {data.rate}</p>
+          <p className="text-muted-foreground">Taxa: {data.rateDisplay}</p>
           <p className="text-sm text-muted-foreground">Emissor: {data.issuer}</p>
-          {data.maturity !== 'N/A' && (
-            <p className="text-sm text-muted-foreground">Vencimento: {data.maturity}</p>
-          )}
+          <p className="text-sm text-muted-foreground">Vencimento: {data.maturity}</p>
         </div>
       );
     }
@@ -67,28 +77,34 @@ export function StrategyScatterChart() {
   return (
     <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
       <CardHeader>
-        <CardTitle className="text-foreground">Distribuição de Investimentos por Estratégia</CardTitle>
-        <p className="text-sm text-muted-foreground">Valor vs Performance por ativo</p>
+        <CardTitle className="text-foreground">Taxa de Retorno por Vencimento</CardTitle>
+        <p className="text-sm text-muted-foreground">Taxa média por data de vencimento</p>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={500}>
-          <ScatterChart margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+          <ScatterChart margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis 
-              dataKey="value" 
+              dataKey="maturitySort" 
               type="number"
               stroke="hsl(var(--muted-foreground))"
-              fontSize={12}
-              tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
-              name="Valor"
+              fontSize={11}
+              tickFormatter={(value) => {
+                const date = new Date(value);
+                return date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+              }}
+              name="Vencimento"
+              angle={-45}
+              textAnchor="end"
+              height={60}
             />
             <YAxis 
-              dataKey="performance" 
+              dataKey="rate" 
               type="number"
               stroke="hsl(var(--muted-foreground))"
               fontSize={12}
               tickFormatter={(value) => `${value.toFixed(1)}%`}
-              name="Performance"
+              name="Taxa"
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
