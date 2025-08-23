@@ -85,10 +85,22 @@ export function useClientData(clientName: string) {
     }
   };
 
-  // Get the most recent patrimônio final (last entry in sorted data)
-  const totalPatrimonio = consolidadoData.length > 0 ? consolidadoData[consolidadoData.length - 1]["Patrimonio Final"] || 0 : 0;
-  // Get the most recent rendimento from ConsolidadoPerformance (last entry in sorted data)
-  const totalRendimento = consolidadoData.length > 0 ? consolidadoData[consolidadoData.length - 1].Rendimento || 0 : 0;
+  // Get the most recent competencia data
+  const getMostRecentData = () => {
+    if (consolidadoData.length === 0) return { patrimonio: 0, rendimento: 0 };
+    
+    // Find the most recent competencia
+    const mostRecentEntry = consolidadoData.reduce((latest, current) => {
+      return current.Competencia > latest.Competencia ? current : latest;
+    });
+    
+    return {
+      patrimonio: mostRecentEntry["Patrimonio Final"] || 0,
+      rendimento: mostRecentEntry.Rendimento || 0
+    };
+  };
+
+  const { patrimonio: totalPatrimonio, rendimento: totalRendimento } = getMostRecentData();
 
   return {
     consolidadoData,
