@@ -178,11 +178,15 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient }: Inves
 
           if (currentYearData && currentYearData.length > 0) {
             let yearAccumulatedMultiplier = 1;
+            console.log(`Calculating year return for strategy ${strategy}:`, currentYearData);
             currentYearData.forEach(item => {
               const monthlyReturn = Number(item.Rendimento) || 0;
+              console.log(`Month ${item.Competencia}: ${monthlyReturn * 100}%`);
               yearAccumulatedMultiplier *= (1 + monthlyReturn);
             });
-            yearlyAccumulated[strategy] = yearAccumulatedMultiplier - 1;
+            const finalYearReturn = yearAccumulatedMultiplier - 1;
+            console.log(`Final year return for ${strategy}: ${(finalYearReturn * 100).toFixed(2)}%`);
+            yearlyAccumulated[strategy] = finalYearReturn;
           }
 
           // Calculate total accumulated returns from beginning with compound interest
