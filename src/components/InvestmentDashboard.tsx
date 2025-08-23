@@ -14,8 +14,7 @@ import { ClientDataDisplay } from "./ClientDataDisplay";
 import { CompetenciaSeletor } from "./CompetenciaSeletor";
 import { useClientData } from "@/hooks/useClientData";
 import { TrendingUp, DollarSign, Target, Building2, Calendar, ChevronDown, ChevronRight } from "lucide-react";
-import { useState, useCallback, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useCallback } from "react";
 
 interface InvestmentDashboardProps {
   selectedClient: string;
@@ -25,7 +24,6 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const { consolidadoData, dadosData, loading, totalPatrimonio, totalRendimento, hasData } = useClientData(selectedClient);
   const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
   const [filteredRange, setFilteredRange] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
-  const [strategyReturns, setStrategyReturns] = useState<Record<string, { month: number; year: number; inception: number }>>({});
 
   // Filter data based on selected competencia range
   const getFilteredDadosData = (data: typeof dadosData) => {
@@ -403,151 +401,6 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       return strategy;
                     };
 
-                    // Function to calculate strategy returns using the same logic as InvestmentDetailsTable
-                    const calculateStrategyReturns = useCallback(async () => {
-                      if (!selectedClient || !dadosData.length) return;
-
-                      try {
-                        const { data: allData, error } = await supabase
-                          .from('DadosPerformance')
-                          .select('*')
-                          .eq('Nome', selectedClient);
-
-                        if (error) {
-                          console.error('Error fetching strategy returns data:', error);
-                          return;
-                        }
-
-                        const returns: Record<string, { month: number; year: number; inception: number }> = {};
-                        
-                        // Get unique strategies
-                        const strategies = new Set<string>();
-                        allData?.forEach(item => {
-                          const originalStrategy = item["Classe do ativo"] || "Outros";
-                          const groupedStrategy = groupStrategy(originalStrategy);
-                          strategies.add(groupedStrategy);
-                        });
-
-                        strategies.forEach(strategy => {
-                           // Calculate month return (last competencia in filtered range)
-                           const lastCompetencia = filteredDadosData.length > 0 
-                             ? filteredDadosData.reduce((latest, current) => {
-                               return current.Competencia > latest.Competencia ? current : latest;
-                             })?.Competencia 
-                             : "";
-
-                          const monthData = filteredDadosData.filter(item => {
-                            const originalStrategy = item["Classe do ativo"] || "Outros";
-                            const groupedStrategy = groupStrategy(originalStrategy);
-                            return groupedStrategy === strategy && item.Competencia === lastCompetencia;
-                          });
-
-                          let monthReturn = 0;
-                          if (monthData.length > 0) {
-                            const totalPosition = monthData.reduce((sum, item) => sum + (Number(item.Posicao) || 0), 0);
-                            const totalWeightedReturn = monthData.reduce((sum, item) => sum + ((Number(item.Rendimento) || 0) * (Number(item.Posicao) || 0)), 0);
-                            monthReturn = totalPosition > 0 ? totalWeightedReturn / totalPosition : 0;
-                          }
-
-                          // Calculate year return (year of last competencia)
-                          let yearReturn = 0;
-                          if (filteredRange?.inicio && filteredRange?.fim && allData) {
-                            const allFilteredData = allData.filter(item => {
-                              const originalStrategy = item["Classe do ativo"] || "Outros";
-                              const groupedStrategy = groupStrategy(originalStrategy);
-                              return groupedStrategy === strategy && 
-                                     item.Competencia >= filteredRange.inicio && 
-                                     item.Competencia <= filteredRange.fim;
-                            });
-
-                            if (allFilteredData.length > 0) {
-                              const lastComp = allFilteredData.reduce((latest, current) => {
-                                return current.Competencia > latest.Competencia ? current : latest;
-                              }).Competencia;
-                              
-                              const lastYear = lastComp.split('/')[1];
-                              const yearData = allFilteredData.filter(item => item.Competencia.includes(lastYear));
-                              
-                              yearReturn = calculateCompoundReturn(yearData);
-                            }
-                          }
-
-                          // Calculate inception return (all filtered data)
-                          let inceptionReturn = 0;
-                          if (filteredRange?.inicio && filteredRange?.fim && allData) {
-                            const allFilteredData = allData.filter(item => {
-                              const originalStrategy = item["Classe do ativo"] || "Outros";
-                              const groupedStrategy = groupStrategy(originalStrategy);
-                              return groupedStrategy === strategy && 
-                                     item.Competencia >= filteredRange.inicio && 
-                                     item.Competencia <= filteredRange.fim;
-                            });
-                            
-                            inceptionReturn = calculateCompoundReturn(allFilteredData);
-                          }
-
-                          returns[strategy] = {
-                            month: monthReturn,
-                            year: yearReturn,
-                            inception: inceptionReturn
-                          };
-                        });
-
-                        setStrategyReturns(returns);
-                      } catch (error) {
-                        console.error('Error calculating strategy returns:', error);
-                      }
-                    }, [selectedClient, dadosData, filteredDadosData, filteredRange]);
-
-                    // Helper function to calculate compound returns
-                    const calculateCompoundReturn = (data: any[]) => {
-                      if (data.length === 0) return 0;
-
-                      const competenciaGroups: Record<string, any[]> = {};
-                      data.forEach(item => {
-                        if (!competenciaGroups[item.Competencia]) {
-                          competenciaGroups[item.Competencia] = [];
-                        }
-                        competenciaGroups[item.Competencia].push(item);
-                      });
-
-                      const monthlyReturns: Array<{ competencia: string; return: number }> = [];
-                      Object.entries(competenciaGroups).forEach(([competencia, items]) => {
-                        let totalPosition = 0;
-                        let totalWeightedReturn = 0;
-                        
-                        items.forEach(item => {
-                          const position = Number(item.Posicao) || 0;
-                          const monthlyReturn = Number(item.Rendimento) || 0;
-                          totalPosition += position;
-                          totalWeightedReturn += monthlyReturn * position;
-                        });
-                        
-                        const weightedAvgReturn = totalPosition > 0 ? totalWeightedReturn / totalPosition : 0;
-                        monthlyReturns.push({ competencia, return: weightedAvgReturn });
-                      });
-
-                      monthlyReturns.sort((a, b) => {
-                        const [monthA, yearA] = a.competencia.split('/');
-                        const [monthB, yearB] = b.competencia.split('/');
-                        const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-                        const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
-                        return dateA.getTime() - dateB.getTime();
-                      });
-
-                      let accumulatedMultiplier = 1;
-                      monthlyReturns.forEach(({ return: monthReturn }) => {
-                        accumulatedMultiplier *= (1 + monthReturn);
-                      });
-
-                      return accumulatedMultiplier - 1;
-                    };
-
-                    // Calculate strategy returns when data changes
-                    useEffect(() => {
-                      calculateStrategyReturns();
-                    }, [calculateStrategyReturns]);
-
                     // Filter to get only the most recent competencia
                     const getMostRecentData = (data: typeof dadosData) => {
                       if (data.length === 0) return [];
@@ -561,10 +414,10 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       return data.filter(item => item.Competencia === mostRecentCompetencia);
                     };
 
-                    const filteredDadosDataLocal = getMostRecentData(dadosData);
+                    const filteredDadosData = getMostRecentData(dadosData);
 
                     // Group data by strategy using filtered data
-                    const groupedData = filteredDadosDataLocal.reduce((acc, item) => {
+                    const groupedData = filteredDadosData.reduce((acc, item) => {
                       const originalStrategy = item["Classe do ativo"] || "Outros";
                       const groupedStrategy = groupStrategy(originalStrategy);
                       
@@ -573,7 +426,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       }
                       acc[groupedStrategy].push(item);
                       return acc;
-                    }, {} as Record<string, typeof filteredDadosDataLocal>);
+                    }, {} as Record<string, typeof filteredDadosData>);
 
                     // Calculate totals for each strategy
                     const strategyTotals = Object.entries(groupedData).map(([strategy, assets]) => {
@@ -678,18 +531,18 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                       {avgReturn >= 0 ? "+" : ""}{avgReturn.toFixed(2)}%
                                     </div>
                                   </div>
-                                   <div className="text-center">
-                                     <div className="text-xs text-muted-foreground">Rent.</div>
-                                     <div className={`font-medium ${(strategyReturns[strategy]?.year || 0) >= 0 ? "text-success" : "text-destructive"}`}>
-                                       {(strategyReturns[strategy]?.year || 0) >= 0 ? "+" : ""}{((strategyReturns[strategy]?.year || 0) * 100).toFixed(2)}%
-                                     </div>
-                                   </div>
-                                   <div className="text-center">
-                                     <div className="text-xs text-muted-foreground">Rent.</div>
-                                     <div className={`font-medium ${(strategyReturns[strategy]?.inception || 0) >= 0 ? "text-success" : "text-destructive"}`}>
-                                       {(strategyReturns[strategy]?.inception || 0) >= 0 ? "+" : ""}{((strategyReturns[strategy]?.inception || 0) * 100).toFixed(2)}%
-                                     </div>
-                                   </div>
+                                  <div className="text-center">
+                                    <div className="text-xs text-muted-foreground">Rent.</div>
+                                    <div className={`font-medium ${avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                                      {avgReturn >= 0 ? "+" : ""}{(avgReturn * 12).toFixed(2)}%
+                                    </div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="text-xs text-muted-foreground">Rent.</div>
+                                    <div className={`font-medium ${avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                                      {avgReturn >= 0 ? "+" : ""}{avgReturn.toFixed(2)}%
+                                    </div>
+                                  </div>
                                   <div className="text-center text-foreground">-</div>
                                   <div className="text-center text-foreground">-</div>
                                 </div>
