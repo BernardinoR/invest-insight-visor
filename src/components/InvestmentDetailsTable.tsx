@@ -95,26 +95,19 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     return strategy;
   };
 
-  // Calculate accumulated returns with compound interest for each strategy from the beginning
-  const calculateAccumulatedReturns = (allData: Array<{
+  // Calculate accumulated returns with compound interest for each strategy from filtered data
+  const calculateAccumulatedReturnsFromData = (filteredData: Array<{
     "Classe do ativo": string;
     Rendimento: number;
     Competencia: string;
     Nome?: string;
     Posicao: number;
   }>, strategy: string) => {
-    // Filter data for this strategy and group by competencia
-    const strategyData = allData.filter(item => {
-      const originalStrategy = item["Classe do ativo"] || "Outros";
-      const groupedStrategy = groupStrategy(originalStrategy);
-      return groupedStrategy === strategy;
-    });
-
-    if (strategyData.length === 0) return 0;
+    if (filteredData.length === 0) return 0;
 
     // Group by competencia to calculate weighted average for each month
-    const competenciaGroups: Record<string, typeof strategyData> = {};
-    strategyData.forEach(item => {
+    const competenciaGroups: Record<string, typeof filteredData> = {};
+    filteredData.forEach(item => {
       if (!competenciaGroups[item.Competencia]) {
         competenciaGroups[item.Competencia] = [];
       }
@@ -147,13 +140,30 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
       return dateA.getTime() - dateB.getTime();
     });
 
-    // Apply compound interest across all months since beginning
+    // Apply compound interest across all months
     let accumulatedMultiplier = 1;
     monthlyReturns.forEach(({ competencia, return: monthReturn }) => {
       accumulatedMultiplier *= (1 + monthReturn);
     });
 
-    return accumulatedMultiplier - 1; // Convert back to percentage
+    console.log(`${strategy} - Início calculation:`, monthlyReturns.map(m => `${m.competencia}: ${(m.return * 100).toFixed(2)}%`).join(', '), `= ${((accumulatedMultiplier - 1) * 100).toFixed(2)}%`);
+    
+    return accumulatedMultiplier - 1;
+  };
+
+  // Legacy function for backward compatibility
+  const calculateAccumulatedReturns = (allData: Array<{
+    "Classe do ativo": string;
+    Rendimento: number;
+    Competencia: string;
+    Nome?: string;
+    Posicao: number;
+  }>, strategy: string) => {
+    return calculateAccumulatedReturnsFromData(allData.filter(item => {
+      const originalStrategy = item["Classe do ativo"] || "Outros";
+      const groupedStrategy = groupStrategy(originalStrategy);
+      return groupedStrategy === strategy;
+    }), strategy);
   };
 
   // Fetch yearly accumulated data for current year and all historical data for accumulated returns
@@ -188,30 +198,44 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
         });
 
         strategies.forEach(strategy => {
-          // Calculate yearly accumulated returns based on filtered range or current year
+          // Calculate yearly accumulated returns based on filtered range
           let yearFilterData;
+          let allFilteredData;
+          
           if (filteredRange?.inicio && filteredRange?.fim) {
-            // Use filtered range for year calculation
-            console.log(`Filtering for strategy ${strategy} with range:`, filteredRange);
-            yearFilterData = allData?.filter(item => {
+            // Get all data within the filtered range
+            allFilteredData = allData?.filter(item => {
               const originalStrategy = item["Classe do ativo"] || "Outros";
               const groupedStrategy = groupStrategy(originalStrategy);
-              const matches = groupedStrategy === strategy && 
+              return groupedStrategy === strategy && 
                      item.Competencia >= filteredRange.inicio && 
                      item.Competencia <= filteredRange.fim;
-              if (matches) {
-                console.log(`Matched item for ${strategy}:`, item.Competencia, item.Rendimento);
-              }
-              return matches;
             });
-            console.log(`Year filter data for ${strategy}:`, yearFilterData?.length, 'items');
+            
+            // For year calculation: get the year of the last competencia in the filter
+            if (allFilteredData && allFilteredData.length > 0) {
+              const lastCompetencia = allFilteredData.reduce((latest, current) => {
+                return current.Competencia > latest.Competencia ? current : latest;
+              }).Competencia;
+              
+              const lastYear = lastCompetencia.split('/')[1]; // Get year from MM/YYYY
+              
+              // Filter for only the competencias from that year within the filtered range
+              yearFilterData = allFilteredData.filter(item => 
+                item.Competencia.includes(lastYear)
+              );
+              
+              console.log(`${strategy} - Year filter (${lastYear}):`, yearFilterData.map(i => i.Competencia));
+            }
           } else {
-            // Default to current year
+            // Default fallback (shouldn't happen with proper filtering)
+            const currentYear = new Date().getFullYear().toString();
             yearFilterData = allData?.filter(item => {
               const originalStrategy = item["Classe do ativo"] || "Outros";
               const groupedStrategy = groupStrategy(originalStrategy);
               return groupedStrategy === strategy && item.Competencia.includes(currentYear);
             });
+            allFilteredData = yearFilterData;
           }
 
           const currentYearData = yearFilterData?.sort((a, b) => {
@@ -271,8 +295,10 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
             yearlyAccumulated[strategy] = finalReturn;
           }
 
-          // Calculate total accumulated returns from beginning with compound interest
-          accumulatedReturns[strategy] = calculateAccumulatedReturns(allData || [], strategy);
+          // Calculate total accumulated returns using all filtered data (for "Início" column)
+          if (allFilteredData && allFilteredData.length > 0) {
+            accumulatedReturns[strategy] = calculateAccumulatedReturnsFromData(allFilteredData, strategy);
+          }
         });
 
         setYearlyAccumulatedData(yearlyAccumulated);
