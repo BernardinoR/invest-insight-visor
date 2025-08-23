@@ -466,7 +466,6 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                     <div className="grid grid-cols-8 gap-4 p-3 hover:bg-muted/20 transition-colors text-sm">
                                       <div>
                                         <div className="font-medium text-foreground text-xs">{item.Ativo}</div>
-                                        <div className="text-xs text-muted-foreground">{item.Posicao.toLocaleString('pt-BR')}</div>
                                       </div>
                                       <div className="text-center text-foreground">-</div>
                                       <div className="text-center text-foreground">{item.Posicao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
