@@ -1,6 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, Calendar as CalendarIcon } from "lucide-react";
+import { useState } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface PerformanceChartProps {
   consolidadoData: Array<{
@@ -16,54 +22,93 @@ interface PerformanceChartProps {
 }
 
 export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
-  // Transform consolidado data for chart - convert to percentage using Competencia field
-  const chartData = consolidadoData.map((item, index) => {
-    // Parse competencia format (MM/YYYY) to create proper date
-    const [month, year] = item.Competencia.split('/');
-    const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-    
-    return {
-      name: competenciaDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
-      rentabilidade: (Number(item.Rendimento) || 0) * 100, // Convert to percentage
-    };
+  const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'custom'>('12months');
+  const [customStartDate, setCustomStartDate] = useState<Date>();
+  const [customEndDate, setCustomEndDate] = useState<Date>();
+  const [showCustomCalendar, setShowCustomCalendar] = useState(false);
+
+  // Sort data by competencia date
+  const sortedData = [...consolidadoData].sort((a, b) => {
+    const [monthA, yearA] = a.Competencia.split('/');
+    const [monthB, yearB] = b.Competencia.split('/');
+    const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+    const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+    return dateA.getTime() - dateB.getTime();
   });
 
-  // Add zero point one month before the first competencia
-  if (consolidadoData.length > 0) {
-    const [month, year] = consolidadoData[0].Competencia.split('/');
-    const firstDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-    const previousMonth = new Date(firstDate);
-    previousMonth.setMonth(previousMonth.getMonth() - 1);
+  // Filter data based on selected period
+  const getFilteredData = () => {
+    if (sortedData.length === 0) return [];
     
-    const zeroPoint = {
-      name: previousMonth.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
-      rentabilidade: 0
-    };
-    
-    chartData.unshift(zeroPoint);
-  }
+    const now = new Date();
+    let filteredData = sortedData;
 
-  // Calculate optimal Y axis scale
-  const allValues = chartData.map(item => item.rentabilidade);
-  const minValue = Math.min(...allValues);
+    switch (selectedPeriod) {
+      case 'month':
+        filteredData = sortedData.slice(-1);
+        break;
+      case 'year':
+        filteredData = sortedData.slice(-12);
+        break;
+      case '12months':
+        filteredData = sortedData.slice(-12);
+        break;
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          filteredData = sortedData.filter(item => {
+            const [month, year] = item.Competencia.split('/');
+            const itemDate = new Date(parseInt(year), parseInt(month) - 1);
+            return itemDate >= customStartDate && itemDate <= customEndDate;
+          });
+        }
+        break;
+    }
+
+    return filteredData;
+  };
+
+  const filteredData = getFilteredData();
+
+  // Calculate accumulated returns
+  const calculateAccumulatedReturns = (data: typeof filteredData) => {
+    let accumulated = 0;
+    return data.map((item, index) => {
+      const [month, year] = item.Competencia.split('/');
+      const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      
+      // Add current period return to accumulated
+      accumulated = (1 + accumulated / 100) * (1 + Number(item.Rendimento)) - 1;
+      
+      return {
+        name: competenciaDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+        retornoAcumulado: accumulated * 100,
+        retornoMensal: (Number(item.Rendimento) || 0) * 100,
+        competencia: item.Competencia
+      };
+    });
+  };
+
+  const chartData = calculateAccumulatedReturns(filteredData);
+
+  // Calculate optimal Y axis scale for accumulated returns
+  const allValues = chartData.map(item => item.retornoAcumulado);
+  const minValue = Math.min(...allValues, 0);
   const maxValue = Math.max(...allValues);
   
-  // Create a buffer around the data for better visualization
   const range = maxValue - minValue;
-  const buffer = Math.max(range * 0.2, 0.5); // At least 0.5% buffer
+  const buffer = Math.max(range * 0.2, 1);
   
-  const yAxisMin = Math.max(minValue - buffer, 0); // Don't go below 0
+  const yAxisMin = minValue - buffer;
   const yAxisMax = maxValue + buffer;
   
-  // Generate nice tick values
   const generateTicks = (min: number, max: number) => {
     const range = max - min;
     let step;
     
-    if (range <= 2) step = 0.5;
-    else if (range <= 5) step = 1;
+    if (range <= 5) step = 1;
     else if (range <= 10) step = 2;
-    else step = Math.ceil(range / 6);
+    else if (range <= 20) step = 5;
+    else step = Math.ceil(range / 8);
     
     const ticks = [];
     for (let i = Math.floor(min / step) * step; i <= max; i += step) {
@@ -74,6 +119,13 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
   
   const yAxisTicks = generateTicks(yAxisMin, yAxisMax);
 
+  const periodButtons = [
+    { id: 'month', label: 'Mês' },
+    { id: 'year', label: 'Ano' },
+    { id: '12months', label: '12M' },
+    { id: 'custom', label: 'Personalizado' }
+  ];
+
   return (
     <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
       <CardHeader className="pb-4">
@@ -83,13 +135,69 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
               <TrendingUp className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <CardTitle className="text-foreground text-xl font-semibold">Performance de Rentabilidade</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">Evolução mensal da carteira</p>
+              <CardTitle className="text-foreground text-xl font-semibold">Retorno Acumulado</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Evolução do retorno acumulado da carteira</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10">
-            <div className="w-2 h-2 rounded-full bg-primary"></div>
-            <span className="text-sm font-medium text-primary">Rentabilidade</span>
+          
+          {/* Period Selection Buttons */}
+          <div className="flex items-center gap-1">
+            {periodButtons.map((button) => (
+              <Button
+                key={button.id}
+                variant={selectedPeriod === button.id ? "default" : "ghost"}
+                size="sm"
+                onClick={() => {
+                  setSelectedPeriod(button.id as any);
+                  if (button.id === 'custom') {
+                    setShowCustomCalendar(true);
+                  }
+                }}
+                className="text-xs px-3 py-1 h-8"
+              >
+                {button.label}
+              </Button>
+            ))}
+            
+            {selectedPeriod === 'custom' && (
+              <Popover open={showCustomCalendar} onOpenChange={setShowCustomCalendar}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="ml-2">
+                    <CalendarIcon className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <div className="p-4 space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Data Inicial</label>
+                      <Calendar
+                        mode="single"
+                        selected={customStartDate}
+                        onSelect={setCustomStartDate}
+                        locale={ptBR}
+                        className="rounded-md border"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Data Final</label>
+                      <Calendar
+                        mode="single"
+                        selected={customEndDate}
+                        onSelect={setCustomEndDate}
+                        locale={ptBR}
+                        className="rounded-md border"
+                      />
+                    </div>
+                    <Button 
+                      onClick={() => setShowCustomCalendar(false)}
+                      className="w-full"
+                    >
+                      Aplicar
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -102,7 +210,7 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
               margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
             >
               <defs>
-                <linearGradient id="rentabilidadeGradient" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="retornoGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
                   <stop offset="50%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
                   <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
@@ -143,7 +251,12 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
                   fontSize: '13px',
                   padding: '12px'
                 }}
-                formatter={(value: any) => [`${value.toFixed(2)}%`, 'Rentabilidade']}
+                formatter={(value: any, name: string) => {
+                  if (name === 'retornoAcumulado') {
+                    return [`${value.toFixed(2)}%`, 'Retorno Acumulado'];
+                  }
+                  return [`${value.toFixed(2)}%`, name];
+                }}
                 labelStyle={{ 
                   color: 'hsl(var(--foreground))', 
                   fontWeight: '600',
@@ -153,10 +266,10 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
               />
               <Area 
                 type="monotone" 
-                dataKey="rentabilidade" 
+                dataKey="retornoAcumulado" 
                 stroke="hsl(var(--primary))"
                 strokeWidth={3}
-                fill="url(#rentabilidadeGradient)"
+                fill="url(#retornoGradient)"
                 dot={{ 
                   fill: 'hsl(var(--primary))', 
                   strokeWidth: 2, 
@@ -178,13 +291,16 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
         {/* Performance Summary */}
         <div className="mt-6 pt-6 border-t border-border/30">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {consolidadoData.slice(-4).map((item, index) => (
+            {chartData.slice(-4).map((item, index) => (
               <div key={index} className="text-center p-3 rounded-lg bg-muted/30">
                 <div className="text-xs text-muted-foreground mb-1">
-                  {item.Competencia}
+                  {item.competencia}
                 </div>
-                <div className={`text-sm font-semibold ${Number(item.Rendimento) >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  {(Number(item.Rendimento || 0) * 100).toFixed(2)}%
+                <div className={`text-sm font-semibold ${item.retornoAcumulado >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {item.retornoAcumulado.toFixed(2)}%
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Mensal: {item.retornoMensal.toFixed(2)}%
                 </div>
               </div>
             ))}
