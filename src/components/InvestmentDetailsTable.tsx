@@ -37,9 +37,10 @@ interface InvestmentDetailsTableProps {
     Nome?: string;
   }>;
   selectedClient: string;
+  filteredRange?: { inicio: string; fim: string };
 }
 
-export function InvestmentDetailsTable({ dadosData = [], selectedClient }: InvestmentDetailsTableProps) {
+export function InvestmentDetailsTable({ dadosData = [], selectedClient, filteredRange }: InvestmentDetailsTableProps) {
   const [yearlyAccumulatedData, setYearlyAccumulatedData] = useState<Record<string, number>>({});
   const [accumulatedReturnsData, setAccumulatedReturnsData] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
@@ -163,12 +164,27 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient }: Inves
         });
 
         strategies.forEach(strategy => {
-          // Calculate yearly accumulated returns (current year only) with compound interest
-          const currentYearData = allData?.filter(item => {
-            const originalStrategy = item["Classe do ativo"] || "Outros";
-            const groupedStrategy = groupStrategy(originalStrategy);
-            return groupedStrategy === strategy && item.Competencia.includes(currentYear);
-          }).sort((a, b) => {
+          // Calculate yearly accumulated returns based on filtered range or current year
+          let yearFilterData;
+          if (filteredRange?.inicio && filteredRange?.fim) {
+            // Use filtered range for year calculation
+            yearFilterData = allData?.filter(item => {
+              const originalStrategy = item["Classe do ativo"] || "Outros";
+              const groupedStrategy = groupStrategy(originalStrategy);
+              return groupedStrategy === strategy && 
+                     item.Competencia >= filteredRange.inicio && 
+                     item.Competencia <= filteredRange.fim;
+            });
+          } else {
+            // Default to current year
+            yearFilterData = allData?.filter(item => {
+              const originalStrategy = item["Classe do ativo"] || "Outros";
+              const groupedStrategy = groupStrategy(originalStrategy);
+              return groupedStrategy === strategy && item.Competencia.includes(currentYear);
+            });
+          }
+
+          const currentYearData = yearFilterData?.sort((a, b) => {
             const [monthA, yearA] = a.Competencia.split('/');
             const [monthB, yearB] = b.Competencia.split('/');
             const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
@@ -203,7 +219,7 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient }: Inves
     };
 
     fetchData();
-  }, [selectedClient]);
+  }, [selectedClient, filteredRange]);
 
   // Filter to get only the most recent competencia
   const getMostRecentData = (data: typeof dadosData) => {
