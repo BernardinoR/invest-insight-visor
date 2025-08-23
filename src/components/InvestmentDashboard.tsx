@@ -52,6 +52,22 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     setFilteredRange({ inicio: inicioCompetencia, fim: fimCompetencia });
   }, []);
 
+  // Calculate rendimento from the final competencia selected
+  const getRendimentoFromFinalCompetencia = () => {
+    if (!filteredRange.fim || filteredConsolidadoData.length === 0) {
+      return totalRendimento; // fallback to original
+    }
+    
+    // Find the entry with the final competencia
+    const finalCompetenciaEntry = filteredConsolidadoData.find(
+      item => item.Competencia === filteredRange.fim
+    );
+    
+    return finalCompetenciaEntry ? finalCompetenciaEntry.Rendimento || 0 : totalRendimento;
+  };
+
+  const displayRendimento = getRendimentoFromFinalCompetencia();
+
   return (
     <div className="min-h-screen bg-gradient-hero">
       {/* Header */}
@@ -114,9 +130,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
               <Target className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {hasData ? `${(totalRendimento * 100).toFixed(2)}%` : "--%"}
-              </div>
+               <div className="text-2xl font-bold text-foreground">
+                 {hasData ? `${(displayRendimento * 100).toFixed(2)}%` : "--%"}
+               </div>
               <p className="text-xs text-success">
                 {hasData ? "vs CDI: 4,4%" : "Aguardando dados"}
               </p>
