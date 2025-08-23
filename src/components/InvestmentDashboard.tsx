@@ -115,8 +115,15 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                 {(() => {
                   if (!hasData || dadosData.length === 0) return "--";
                   
+                  // Filter to get only the most recent competencia
+                  const mostRecentCompetencia = dadosData.reduce((latest, current) => {
+                    return current.Competencia > latest.Competencia ? current : latest;
+                  }).Competencia;
+                  
+                  const filteredData = dadosData.filter(item => item.Competencia === mostRecentCompetencia);
+                  
                   const now = new Date();
-                  const validVencimentos = dadosData
+                  const validVencimentos = filteredData
                     .filter(item => item.Vencimento)
                     .map(item => ({ 
                       ...item, 
@@ -124,7 +131,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                     }))
                     .filter(item => item.vencimentoDate >= now)
                     .sort((a, b) => a.vencimentoDate.getTime() - b.vencimentoDate.getTime());
-                    
+                     
                   return validVencimentos.length > 0 
                     ? validVencimentos[0].vencimentoDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
                     : "--";
@@ -134,8 +141,15 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                 {(() => {
                   if (!hasData || dadosData.length === 0) return "Aguardando dados";
                   
+                  // Filter to get only the most recent competencia
+                  const mostRecentCompetencia = dadosData.reduce((latest, current) => {
+                    return current.Competencia > latest.Competencia ? current : latest;
+                  }).Competencia;
+                  
+                  const filteredData = dadosData.filter(item => item.Competencia === mostRecentCompetencia);
+                  
                   const now = new Date();
-                  const validVencimentos = dadosData
+                  const validVencimentos = filteredData
                     .filter(item => item.Vencimento)
                     .map(item => ({ 
                       ...item, 
@@ -143,7 +157,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                     }))
                     .filter(item => item.vencimentoDate >= now)
                     .sort((a, b) => a.vencimentoDate.getTime() - b.vencimentoDate.getTime());
-                    
+                     
                   return validVencimentos.length > 0 
                     ? `R$ ${validVencimentos[0].Posicao.toLocaleString('pt-BR')}`
                     : "Nenhum vencimento futuro";
