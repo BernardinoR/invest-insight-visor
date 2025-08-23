@@ -376,33 +376,120 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                             {/* Assets List */}
                             <CollapsibleContent className="animate-accordion-down">
                               <div className="border-t border-border/50 bg-muted/10">
+                                {/* Table Header */}
+                                <div className="grid grid-cols-6 gap-4 p-3 border-b border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground">
+                                  <div></div>
+                                  <div className="text-center">Alocação / Qtd.</div>
+                                  <div className="text-center">Saldo Bruto</div>
+                                  <div className="text-center">Mês</div>
+                                  <div className="text-center">Ano</div>
+                                  <div className="text-center">Início</div>
+                                </div>
+                                
+                                {/* Strategy Summary Row */}
+                                <div className="grid grid-cols-6 gap-4 p-3 border-b border-border/30 bg-muted/30 text-sm font-semibold">
+                                  <div className="text-foreground">{strategy}</div>
+                                  <div className="text-center text-foreground">{percentage.toFixed(2)}%</div>
+                                  <div className="text-center text-foreground">{totalPosition.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                  <div className="text-center">
+                                    <div className="text-xs text-muted-foreground">Rent.</div>
+                                    <div className={`font-medium ${avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                                      {avgReturn >= 0 ? "+" : ""}{avgReturn.toFixed(2)}%
+                                    </div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="text-xs text-muted-foreground">Rent.</div>
+                                    <div className={`font-medium ${avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                                      {avgReturn >= 0 ? "+" : ""}{(avgReturn * 12).toFixed(2)}%
+                                    </div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="text-xs text-muted-foreground">Rent.</div>
+                                    <div className={`font-medium ${avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                                      {avgReturn >= 0 ? "+" : ""}{avgReturn.toFixed(2)}%
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Benchmark Row */}
+                                <div className="grid grid-cols-6 gap-4 p-3 border-b border-border/30 bg-muted/10 text-sm">
+                                  <div className="text-muted-foreground">
+                                    {(() => {
+                                      switch (strategy) {
+                                        case 'Pós Fixado - Liquidez':
+                                        case 'Pós Fixado':
+                                          return '% CDI';
+                                        case 'Inflação':
+                                          return '± IPCA';
+                                        case 'Pré Fixado':
+                                          return '± IRF-M';
+                                        case 'Multimercado':
+                                          return '% CDI';
+                                        case 'Imobiliário':
+                                          return '± IFIX';
+                                        case 'Ações':
+                                        case 'Ações - Long Bias':
+                                          return '± IBOV';
+                                        case 'Private Equity':
+                                          return '% CDI';
+                                        case 'Exterior - Renda Fixa':
+                                          return '± T-Bond';
+                                        case 'Exterior - Ações':
+                                          return '± S&P500';
+                                        case 'COE':
+                                          return '% CDI';
+                                        case 'Ouro':
+                                          return '± Gold';
+                                        case 'Criptoativos':
+                                          return '± BTC';
+                                        default:
+                                          return '% CDI';
+                                      }
+                                    })()}
+                                  </div>
+                                  <div className="text-center text-muted-foreground">-</div>
+                                  <div className="text-center text-muted-foreground">-</div>
+                                  <div className="text-center text-muted-foreground">-</div>
+                                  <div className="text-center text-muted-foreground">-</div>
+                                  <div className="text-center text-muted-foreground">-</div>
+                                </div>
+
+                                {/* Individual Assets */}
                                 {assets.map((item, index) => (
-                                  <div key={item.id} className={`p-4 ${index !== assets.length - 1 ? 'border-b border-border/20' : ''} hover:bg-muted/20 transition-colors`}>
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                          <Building2 className="h-4 w-4 text-primary" />
+                                  <div key={item.id}>
+                                    <div className="grid grid-cols-6 gap-4 p-3 hover:bg-muted/20 transition-colors text-sm">
+                                      <div>
+                                        <div className="font-medium text-foreground text-xs">{item.Ativo}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                          Início: {item.Vencimento ? new Date(item.Vencimento).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "-"} 
+                                          {item.Vencimento && " | Vencimento: " + new Date(item.Vencimento).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                                         </div>
-                                        <div>
-                                          <div className="font-medium text-foreground">{item.Ativo}</div>
-                                          <div className="text-sm text-muted-foreground">{item.Emissor}</div>
-                                        </div>
+                                        <div className="text-xs text-muted-foreground">{item.Posicao.toLocaleString('pt-BR')}</div>
                                       </div>
-                                      <div className="flex items-center gap-6 text-sm">
-                                        <div className="text-right">
-                                          <div className="font-medium text-foreground">R$ {item.Posicao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                                          <div className="text-muted-foreground">{item.Taxa}</div>
+                                      <div className="text-center text-foreground">-</div>
+                                      <div className="text-center text-foreground">{item.Posicao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                      <div className="text-center">
+                                        <div className={`font-medium ${item.Rendimento >= 0 ? "text-success" : "text-destructive"}`}>
+                                          {item.Rendimento >= 0 ? "+" : ""}{(item.Rendimento * 100).toFixed(2)}%
                                         </div>
-                                        <div className="text-right">
-                                          <div className={`font-medium ${item.Rendimento >= 0 ? "text-success" : "text-destructive"}`}>
-                                            {item.Rendimento >= 0 ? "+" : ""}{(item.Rendimento * 100).toFixed(2)}%
-                                          </div>
-                                          <div className="text-muted-foreground">
-                                            {item.Vencimento ? new Date(item.Vencimento).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) : "-"}
-                                          </div>
+                                        <div className="text-xs text-muted-foreground">-</div>
+                                      </div>
+                                      <div className="text-center">
+                                        <div className={`font-medium ${item.Rendimento >= 0 ? "text-success" : "text-destructive"}`}>
+                                          {item.Rendimento >= 0 ? "+" : ""}{(item.Rendimento * 100 * 12).toFixed(2)}%
                                         </div>
+                                        <div className="text-xs text-muted-foreground">-</div>
+                                      </div>
+                                      <div className="text-center">
+                                        <div className={`font-medium ${item.Rendimento >= 0 ? "text-success" : "text-destructive"}`}>
+                                          {item.Rendimento >= 0 ? "+" : ""}{(item.Rendimento * 100).toFixed(2)}%
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">-</div>
                                       </div>
                                     </div>
+                                    {index < assets.length - 1 && (
+                                      <div className="border-b border-border/20"></div>
+                                    )}
                                   </div>
                                 ))}
                               </div>
