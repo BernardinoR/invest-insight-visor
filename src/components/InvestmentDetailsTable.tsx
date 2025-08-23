@@ -294,9 +294,9 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient }: Inves
                         </TableCell>
                         <TableCell className={`text-center py-2 ${(yearlyAccumulatedData[item.name] || 0) >= 0 ? "text-success" : "text-destructive"}`}>
                           {loading ? "..." : (
-                            yearlyAccumulatedData[item.name] 
+                            yearlyAccumulatedData[item.name] !== undefined
                               ? `${yearlyAccumulatedData[item.name] >= 0 ? "+" : ""}${(yearlyAccumulatedData[item.name] * 100).toFixed(2)}%`
-                              : "-"
+                              : (item.avgReturn !== undefined ? `${item.avgReturn >= 0 ? "+" : ""}${item.avgReturn.toFixed(2)}%` : "-")
                           )}
                         </TableCell>
                         <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
