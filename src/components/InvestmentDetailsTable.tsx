@@ -8,6 +8,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const COLORS = [
   'hsl(210 16% 82%)', // Light blue-gray
@@ -31,10 +33,15 @@ interface InvestmentDetailsTableProps {
     "Classe do ativo": string;
     Posicao: number;
     Rendimento: number;
+    Nome?: string;
   }>;
+  selectedClient: string;
 }
 
-export function InvestmentDetailsTable({ dadosData = [] }: InvestmentDetailsTableProps) {
+export function InvestmentDetailsTable({ dadosData = [], selectedClient }: InvestmentDetailsTableProps) {
+  const [yearlyAccumulatedData, setYearlyAccumulatedData] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(false);
+
   // Function to group strategy names according to original specification
   const groupStrategy = (strategy: string): string => {
     const strategyLower = strategy.toLowerCase();
@@ -84,6 +91,51 @@ export function InvestmentDetailsTable({ dadosData = [] }: InvestmentDetailsTabl
     
     return strategy;
   };
+
+  // Fetch yearly accumulated data for current year
+  useEffect(() => {
+    const fetchYearlyData = async () => {
+      if (!selectedClient) return;
+      
+      setLoading(true);
+      try {
+        const currentYear = new Date().getFullYear().toString();
+        
+        const { data, error } = await supabase
+          .from('DadosPerformance')
+          .select('*')
+          .eq('Nome', selectedClient)
+          .like('Competencia', `%${currentYear}%`);
+        
+        if (error) {
+          console.error('Error fetching yearly data:', error);
+          return;
+        }
+
+        // Group and accumulate by strategy for the current year
+        const yearlyAccumulated: Record<string, number> = {};
+        
+        data?.forEach(item => {
+          const originalStrategy = item["Classe do ativo"] || "Outros";
+          const groupedStrategy = groupStrategy(originalStrategy);
+          const rendimento = Number(item.Rendimento) || 0;
+          
+          if (!yearlyAccumulated[groupedStrategy]) {
+            yearlyAccumulated[groupedStrategy] = 0;
+          }
+          yearlyAccumulated[groupedStrategy] += rendimento;
+        });
+
+        setYearlyAccumulatedData(yearlyAccumulated);
+      } catch (error) {
+        console.error('Error fetching yearly data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchYearlyData();
+  }, [selectedClient]);
 
   // Group investments by grouped asset class and calculate totals
   const strategyData = dadosData.reduce((acc, investment) => {
@@ -240,8 +292,12 @@ export function InvestmentDetailsTable({ dadosData = [] }: InvestmentDetailsTabl
                         <TableCell className={`text-center py-2 ${item.avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
                           {item.avgReturn >= 0 ? "+" : ""}{item.avgReturn.toFixed(2)}%
                         </TableCell>
-                        <TableCell className={`text-center py-2 ${item.avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
-                          {item.avgReturn >= 0 ? "+" : ""}{(item.avgReturn * 12).toFixed(2)}%
+                        <TableCell className={`text-center py-2 ${(yearlyAccumulatedData[item.name] || 0) >= 0 ? "text-success" : "text-destructive"}`}>
+                          {loading ? "..." : (
+                            yearlyAccumulatedData[item.name] 
+                              ? `${yearlyAccumulatedData[item.name] >= 0 ? "+" : ""}${(yearlyAccumulatedData[item.name] * 100).toFixed(2)}%`
+                              : "-"
+                          )}
                         </TableCell>
                         <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
                         <TableCell className="text-center text-muted-foreground py-2">-</TableCell>

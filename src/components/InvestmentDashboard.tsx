@@ -171,7 +171,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
         {/* Investment Details Table */}
         <div className="mb-8">
-          <InvestmentDetailsTable dadosData={dadosData} />
+          <InvestmentDetailsTable dadosData={dadosData} selectedClient={selectedClient} />
         </div>
 
         {/* Charts Grid */}
