@@ -103,6 +103,8 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
                   <TableHead>Instituição</TableHead>
                   <TableHead>Patrimônio Inicial</TableHead>
                   <TableHead>Movimentação</TableHead>
+                  <TableHead>Impostos</TableHead>
+                  <TableHead>Ganho Financeiro</TableHead>
                   <TableHead>Patrimônio Final</TableHead>
                   <TableHead>Rendimento</TableHead>
                 </TableRow>
@@ -118,6 +120,12 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
                     </TableCell>
                     <TableCell className={item["Movimentação"] >= 0 ? "text-success" : "text-destructive"}>
                       R$ {item["Movimentação"].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell className={item.Impostos >= 0 ? "text-muted-foreground" : "text-destructive"}>
+                      R$ {item.Impostos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell className={item["Ganho Financeiro"] >= 0 ? "text-success" : "text-destructive"}>
+                      R$ {item["Ganho Financeiro"].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="font-semibold">
                       R$ {item["Patrimonio Final"].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
