@@ -168,13 +168,19 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
           let yearFilterData;
           if (filteredRange?.inicio && filteredRange?.fim) {
             // Use filtered range for year calculation
+            console.log(`Filtering for strategy ${strategy} with range:`, filteredRange);
             yearFilterData = allData?.filter(item => {
               const originalStrategy = item["Classe do ativo"] || "Outros";
               const groupedStrategy = groupStrategy(originalStrategy);
-              return groupedStrategy === strategy && 
+              const matches = groupedStrategy === strategy && 
                      item.Competencia >= filteredRange.inicio && 
                      item.Competencia <= filteredRange.fim;
+              if (matches) {
+                console.log(`Matched item for ${strategy}:`, item.Competencia, item.Rendimento);
+              }
+              return matches;
             });
+            console.log(`Year filter data for ${strategy}:`, yearFilterData?.length, 'items');
           } else {
             // Default to current year
             yearFilterData = allData?.filter(item => {
@@ -246,14 +252,15 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
         name: groupedStrategy, 
         value: 0, 
         count: 0,
-        totalReturn: 0
+        totalReturn: 0,
+        avgReturnMonth: 0
       };
     }
     acc[groupedStrategy].value += Number(investment.Posicao) || 0;
     acc[groupedStrategy].totalReturn += (Number(investment.Rendimento) || 0) * (Number(investment.Posicao) || 0);
     acc[groupedStrategy].count += 1;
     return acc;
-  }, {} as Record<string, { name: string; value: number; count: number; totalReturn: number }>);
+  }, {} as Record<string, { name: string; value: number; count: number; totalReturn: number; avgReturnMonth: number }>);
 
   const totalPatrimonio = Object.values(strategyData).reduce((sum, item) => sum + item.value, 0);
 
@@ -282,11 +289,19 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
   };
 
   const consolidatedData = Object.values(strategyData)
-    .map((item) => ({
-      ...item,
-      percentage: totalPatrimonio > 0 ? (item.value / totalPatrimonio) * 100 : 0,
-      avgReturn: item.value > 0 ? (item.totalReturn / item.value) * 100 : 0,
-    }))
+    .map((item) => {
+      const avgReturn = item.value > 0 ? (item.totalReturn / item.value) * 100 : 0;
+      console.log(`Strategy ${item.name} avgReturn calculation:`, {
+        totalReturn: item.totalReturn,
+        value: item.value,
+        avgReturn: avgReturn
+      });
+      return {
+        ...item,
+        percentage: totalPatrimonio > 0 ? (item.value / totalPatrimonio) * 100 : 0,
+        avgReturn: avgReturn,
+      };
+    })
     .sort((a, b) => {
       const indexA = strategyOrder.indexOf(a.name);
       const indexB = strategyOrder.indexOf(b.name);
