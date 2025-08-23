@@ -11,6 +11,7 @@ import { StrategyScatterChart } from "./charts/StrategyScatterChart";
 import { PortfolioTable } from "./PortfolioTable";
 import { InvestmentDetailsTable } from "./InvestmentDetailsTable";
 import { ClientDataDisplay } from "./ClientDataDisplay";
+import { CompetenciaSeletor } from "./CompetenciaSeletor";
 import { useClientData } from "@/hooks/useClientData";
 import { TrendingUp, DollarSign, Target, Building2, Calendar, ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
@@ -22,6 +23,33 @@ interface InvestmentDashboardProps {
 export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps) {
   const { consolidadoData, dadosData, loading, totalPatrimonio, totalRendimento, hasData } = useClientData(selectedClient);
   const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
+  const [filteredRange, setFilteredRange] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
+
+  // Filter data based on selected competencia range
+  const getFilteredDadosData = (data: typeof dadosData) => {
+    if (!filteredRange.inicio || !filteredRange.fim) return data;
+    
+    return data.filter(item => {
+      const competencia = item.Competencia;
+      return competencia >= filteredRange.inicio && competencia <= filteredRange.fim;
+    });
+  };
+
+  const getFilteredConsolidadoData = (data: typeof consolidadoData) => {
+    if (!filteredRange.inicio || !filteredRange.fim) return data;
+    
+    return data.filter(item => {
+      const competencia = item.Competencia;
+      return competencia >= filteredRange.inicio && competencia <= filteredRange.fim;
+    });
+  };
+
+  const filteredDadosData = getFilteredDadosData(dadosData);
+  const filteredConsolidadoData = getFilteredConsolidadoData(consolidadoData);
+
+  const handleFilterChange = (inicioCompetencia: string, fimCompetencia: string) => {
+    setFilteredRange({ inicio: inicioCompetencia, fim: fimCompetencia });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-hero">
@@ -58,7 +86,11 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           </p>
         </div>
 
-        {/* Key Metrics */}
+        {/* Competencia Seletor */}
+        <CompetenciaSeletor 
+          selectedClient={selectedClient}
+          onFilterChange={handleFilterChange}
+        />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -179,8 +211,8 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
         {/* Client Data Display */}
         <ClientDataDisplay 
-          consolidadoData={consolidadoData}
-          dadosData={dadosData}
+          consolidadoData={filteredConsolidadoData}
+          dadosData={filteredDadosData}
           loading={loading}
           clientName={selectedClient}
         />
@@ -191,15 +223,15 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
         </div>
 
         {/* Strategy Breakdown */}
-        {dadosData.length > 0 && (
+        {filteredDadosData.length > 0 && (
           <div className="mb-8">
-            <StrategyBreakdown dadosData={dadosData} />
+            <StrategyBreakdown dadosData={filteredDadosData} />
           </div>
         )}
 
         {/* Investment Details Table */}
         <div className="mb-8">
-          <InvestmentDetailsTable dadosData={dadosData} selectedClient={selectedClient} />
+          <InvestmentDetailsTable dadosData={filteredDadosData} selectedClient={selectedClient} />
         </div>
 
         {/* Charts Grid */}
@@ -212,6 +244,13 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
         <div className="mb-8">
           <StrategyScatterChart />
         </div>
+
+        {/* Performance Chart */}
+        {filteredConsolidadoData.length > 0 && (
+          <div className="mb-8">
+            <PerformanceChart consolidadoData={filteredConsolidadoData} />
+          </div>
+        )}
 
 
         {/* Investment Details Table - moved to end */}
