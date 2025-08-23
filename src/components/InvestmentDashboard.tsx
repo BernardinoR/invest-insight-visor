@@ -377,17 +377,19 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                             <CollapsibleContent className="animate-accordion-down">
                               <div className="border-t border-border/50 bg-muted/10">
                                 {/* Table Header */}
-                                <div className="grid grid-cols-6 gap-4 p-3 border-b border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground">
+                                <div className="grid grid-cols-8 gap-4 p-3 border-b border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground">
                                   <div></div>
                                   <div className="text-center">Alocação / Qtd.</div>
                                   <div className="text-center">Saldo Bruto</div>
                                   <div className="text-center">Mês</div>
                                   <div className="text-center">Ano</div>
                                   <div className="text-center">Início</div>
+                                  <div className="text-center">Emissor</div>
+                                  <div className="text-center">Vencimento</div>
                                 </div>
                                 
                                 {/* Strategy Summary Row */}
-                                <div className="grid grid-cols-6 gap-4 p-3 border-b border-border/30 bg-muted/30 text-sm font-semibold">
+                                <div className="grid grid-cols-8 gap-4 p-3 border-b border-border/30 bg-muted/30 text-sm font-semibold">
                                   <div className="text-foreground">{strategy}</div>
                                   <div className="text-center text-foreground">{percentage.toFixed(2)}%</div>
                                   <div className="text-center text-foreground">{totalPosition.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
@@ -409,10 +411,12 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                       {avgReturn >= 0 ? "+" : ""}{avgReturn.toFixed(2)}%
                                     </div>
                                   </div>
+                                  <div className="text-center text-foreground">-</div>
+                                  <div className="text-center text-foreground">-</div>
                                 </div>
 
                                 {/* Benchmark Row */}
-                                <div className="grid grid-cols-6 gap-4 p-3 border-b border-border/30 bg-muted/10 text-sm">
+                                <div className="grid grid-cols-8 gap-4 p-3 border-b border-border/30 bg-muted/10 text-sm">
                                   <div className="text-muted-foreground">
                                     {(() => {
                                       switch (strategy) {
@@ -452,18 +456,16 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                   <div className="text-center text-muted-foreground">-</div>
                                   <div className="text-center text-muted-foreground">-</div>
                                   <div className="text-center text-muted-foreground">-</div>
+                                  <div className="text-center text-muted-foreground">-</div>
+                                  <div className="text-center text-muted-foreground">-</div>
                                 </div>
 
                                 {/* Individual Assets */}
                                 {assets.map((item, index) => (
                                   <div key={item.id}>
-                                    <div className="grid grid-cols-6 gap-4 p-3 hover:bg-muted/20 transition-colors text-sm">
+                                    <div className="grid grid-cols-8 gap-4 p-3 hover:bg-muted/20 transition-colors text-sm">
                                       <div>
                                         <div className="font-medium text-foreground text-xs">{item.Ativo}</div>
-                                        <div className="text-xs text-muted-foreground">
-                                          Início: {item.Vencimento ? new Date(item.Vencimento).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "-"} 
-                                          {item.Vencimento && " | Vencimento: " + new Date(item.Vencimento).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                                        </div>
                                         <div className="text-xs text-muted-foreground">{item.Posicao.toLocaleString('pt-BR')}</div>
                                       </div>
                                       <div className="text-center text-foreground">-</div>
@@ -485,6 +487,10 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                           {item.Rendimento >= 0 ? "+" : ""}{(item.Rendimento * 100).toFixed(2)}%
                                         </div>
                                         <div className="text-xs text-muted-foreground">-</div>
+                                      </div>
+                                      <div className="text-center text-foreground text-xs">{item.Emissor || "-"}</div>
+                                      <div className="text-center text-foreground text-xs">
+                                        {item.Vencimento ? new Date(item.Vencimento).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "-"}
                                       </div>
                                     </div>
                                     {index < assets.length - 1 && (
