@@ -95,41 +95,65 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     return strategy;
   };
 
-  // Calculate accumulated returns with compound interest for each strategy
+  // Calculate accumulated returns with compound interest for each strategy from the beginning
   const calculateAccumulatedReturns = (allData: Array<{
     "Classe do ativo": string;
     Rendimento: number;
     Competencia: string;
     Nome?: string;
+    Posicao: number;
   }>, strategy: string) => {
-    // Filter data for this strategy and sort by competencia
-    const strategyData = allData
-      .filter(item => {
-        const originalStrategy = item["Classe do ativo"] || "Outros";
-        const groupedStrategy = groupStrategy(originalStrategy);
-        return groupedStrategy === strategy;
-      })
-      .sort((a, b) => {
-        // Sort by competencia (MM/YYYY format)
-        const [monthA, yearA] = a.Competencia.split('/');
-        const [monthB, yearB] = b.Competencia.split('/');
-        const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-        const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
-        return dateA.getTime() - dateB.getTime();
-      });
+    // Filter data for this strategy and group by competencia
+    const strategyData = allData.filter(item => {
+      const originalStrategy = item["Classe do ativo"] || "Outros";
+      const groupedStrategy = groupStrategy(originalStrategy);
+      return groupedStrategy === strategy;
+    });
 
     if (strategyData.length === 0) return 0;
 
-    // Calculate compound accumulated returns using the monthly returns from Supabase
-    // Example: Month 1: 1% (0.01), Month 2: 1.5% (0.015)
-    // Accumulated = (1 + 0.01) * (1 + 0.015) - 1 = 1.01 * 1.015 - 1 = 0.02515 = 2.515%
-    let accumulatedMultiplier = 1;
+    // Group by competencia to calculate weighted average for each month
+    const competenciaGroups: Record<string, typeof strategyData> = {};
     strategyData.forEach(item => {
-      const monthlyReturn = Number(item.Rendimento) || 0;
-      accumulatedMultiplier *= (1 + monthlyReturn);
+      if (!competenciaGroups[item.Competencia]) {
+        competenciaGroups[item.Competencia] = [];
+      }
+      competenciaGroups[item.Competencia].push(item);
     });
 
-    return accumulatedMultiplier - 1; // Convert back to percentage (e.g., 1.02515 - 1 = 0.02515)
+    // Calculate weighted average for each competencia
+    const monthlyReturns: Array<{ competencia: string; return: number }> = [];
+    Object.entries(competenciaGroups).forEach(([competencia, items]) => {
+      let totalPosition = 0;
+      let totalWeightedReturn = 0;
+      
+      items.forEach(item => {
+        const position = Number(item.Posicao) || 0;
+        const monthlyReturn = Number(item.Rendimento) || 0;
+        totalPosition += position;
+        totalWeightedReturn += monthlyReturn * position;
+      });
+      
+      const weightedAvgReturn = totalPosition > 0 ? totalWeightedReturn / totalPosition : 0;
+      monthlyReturns.push({ competencia, return: weightedAvgReturn });
+    });
+
+    // Sort by competencia chronologically
+    monthlyReturns.sort((a, b) => {
+      const [monthA, yearA] = a.competencia.split('/');
+      const [monthB, yearB] = b.competencia.split('/');
+      const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+      const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    // Apply compound interest across all months since beginning
+    let accumulatedMultiplier = 1;
+    monthlyReturns.forEach(({ competencia, return: monthReturn }) => {
+      accumulatedMultiplier *= (1 + monthReturn);
+    });
+
+    return accumulatedMultiplier - 1; // Convert back to percentage
   };
 
   // Fetch yearly accumulated data for current year and all historical data for accumulated returns
