@@ -120,7 +120,7 @@ export function PortfolioTable({ selectedClient }: PortfolioTableProps) {
                       {formatCurrency(item["Patrimonio Final"])}
                     </TableCell>
                     <TableCell>
-                      <span className="bg-yellow-500 text-white px-2 py-1 rounded text-sm font-medium">
+                      <span className="bg-yellow-500 text-white px-2 py-1 rounded-full text-sm font-medium">
                         {((item.Rendimento || 0) * 100).toFixed(2)}%
                       </span>
                     </TableCell>
