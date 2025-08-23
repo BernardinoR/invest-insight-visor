@@ -322,7 +322,20 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                         avgReturn,
                         percentage: totalPatrimonio > 0 ? (totalPosition / totalPatrimonio) * 100 : 0
                       };
-                    }).sort((a, b) => b.totalPosition - a.totalPosition);
+                    }).sort((a, b) => {
+                      const indexA = strategyOrder.indexOf(a.strategy);
+                      const indexB = strategyOrder.indexOf(b.strategy);
+                      
+                      // If both strategies are in the order array, sort by their position
+                      if (indexA !== -1 && indexB !== -1) {
+                        return indexA - indexB;
+                      }
+                      // If only one is in the array, prioritize it
+                      if (indexA !== -1) return -1;
+                      if (indexB !== -1) return 1;
+                      // If neither is in the array, maintain original order
+                      return 0;
+                    });
 
                     return strategyTotals.map(({ strategy, assets, totalPosition, avgReturn, percentage }) => {
                       const isExpanded = expandedStrategies.has(strategy);
