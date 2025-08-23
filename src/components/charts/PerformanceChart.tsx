@@ -69,23 +69,45 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
 
   const filteredData = getFilteredData();
 
-  // Calculate accumulated returns
+  // Calculate accumulated returns with compound interest
   const calculateAccumulatedReturns = (data: typeof filteredData) => {
-    let accumulated = 0;
-    return data.map((item, index) => {
+    if (data.length === 0) return [];
+    
+    const result = [];
+    let accumulated = 0; // Start at 0%
+    
+    // Add zero point one month before the first competencia
+    const [firstMonth, firstYear] = data[0].Competencia.split('/');
+    const firstDate = new Date(parseInt(firstYear), parseInt(firstMonth) - 1, 1);
+    const previousMonth = new Date(firstDate);
+    previousMonth.setMonth(previousMonth.getMonth() - 1);
+    
+    // Add the zero starting point
+    result.push({
+      name: previousMonth.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+      retornoAcumulado: 0,
+      retornoMensal: 0,
+      competencia: previousMonth.toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' })
+    });
+    
+    // Calculate compound accumulated returns
+    data.forEach((item, index) => {
       const [month, year] = item.Competencia.split('/');
       const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      const monthlyReturn = Number(item.Rendimento) || 0;
       
-      // Add current period return to accumulated
-      accumulated = (1 + accumulated / 100) * (1 + Number(item.Rendimento)) - 1;
+      // Compound interest formula: (1 + accumulated) * (1 + monthly_return) - 1
+      accumulated = (1 + accumulated) * (1 + monthlyReturn) - 1;
       
-      return {
+      result.push({
         name: competenciaDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
         retornoAcumulado: accumulated * 100,
-        retornoMensal: (Number(item.Rendimento) || 0) * 100,
+        retornoMensal: monthlyReturn * 100,
         competencia: item.Competencia
-      };
+      });
     });
+    
+    return result;
   };
 
   const chartData = calculateAccumulatedReturns(filteredData);
