@@ -7,7 +7,6 @@ import { TrendingUp, Calendar as CalendarIcon } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
 interface PerformanceChartProps {
   consolidadoData: Array<{
     Data: string;
@@ -20,8 +19,9 @@ interface PerformanceChartProps {
     Competencia: string;
   }>;
 }
-
-export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
+export function PerformanceChart({
+  consolidadoData
+}: PerformanceChartProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'custom'>('12months');
   const [customStartDate, setCustomStartDate] = useState<Date>();
   const [customEndDate, setCustomEndDate] = useState<Date>();
@@ -39,10 +39,8 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
   // Filter data based on selected period
   const getFilteredData = () => {
     if (sortedData.length === 0) return [];
-    
     const now = new Date();
     let filteredData = sortedData;
-
     switch (selectedPeriod) {
       case 'month':
         filteredData = sortedData.slice(-1);
@@ -63,253 +61,89 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
         }
         break;
     }
-
     return filteredData;
   };
-
   const filteredData = getFilteredData();
 
   // Calculate accumulated returns with compound interest
   const calculateAccumulatedReturns = (data: typeof filteredData) => {
     if (data.length === 0) return [];
-    
     const result = [];
     let accumulated = 0; // Start at 0%
-    
+
     // Add zero point one month before the first competencia
     const [firstMonth, firstYear] = data[0].Competencia.split('/');
     const firstDate = new Date(parseInt(firstYear), parseInt(firstMonth) - 1, 1);
     const previousMonth = new Date(firstDate);
     previousMonth.setMonth(previousMonth.getMonth() - 1);
-    
+
     // Add the zero starting point
     result.push({
-      name: previousMonth.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+      name: previousMonth.toLocaleDateString('pt-BR', {
+        month: 'short',
+        year: '2-digit'
+      }),
       retornoAcumulado: 0,
       retornoMensal: 0,
-      competencia: previousMonth.toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' })
+      competencia: previousMonth.toLocaleDateString('pt-BR', {
+        month: '2-digit',
+        year: 'numeric'
+      })
     });
-    
+
     // Calculate compound accumulated returns
     data.forEach((item, index) => {
       const [month, year] = item.Competencia.split('/');
       const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
       const monthlyReturn = Number(item.Rendimento) || 0;
-      
+
       // Compound interest formula: (1 + accumulated) * (1 + monthly_return) - 1
       accumulated = (1 + accumulated) * (1 + monthlyReturn) - 1;
-      
       result.push({
-        name: competenciaDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+        name: competenciaDate.toLocaleDateString('pt-BR', {
+          month: 'short',
+          year: '2-digit'
+        }),
         retornoAcumulado: accumulated * 100,
         retornoMensal: monthlyReturn * 100,
         competencia: item.Competencia
       });
     });
-    
     return result;
   };
-
   const chartData = calculateAccumulatedReturns(filteredData);
 
   // Calculate optimal Y axis scale for accumulated returns
   const allValues = chartData.map(item => item.retornoAcumulado);
   const minValue = Math.min(...allValues, 0);
   const maxValue = Math.max(...allValues);
-  
   const range = maxValue - minValue;
   const buffer = Math.max(range * 0.2, 1);
-  
   const yAxisMin = minValue - buffer;
   const yAxisMax = maxValue + buffer;
-  
   const generateTicks = (min: number, max: number) => {
     const range = max - min;
     let step;
-    
-    if (range <= 5) step = 1;
-    else if (range <= 10) step = 2;
-    else if (range <= 20) step = 5;
-    else step = Math.ceil(range / 8);
-    
+    if (range <= 5) step = 1;else if (range <= 10) step = 2;else if (range <= 20) step = 5;else step = Math.ceil(range / 8);
     const ticks = [];
     for (let i = Math.floor(min / step) * step; i <= max; i += step) {
       ticks.push(Number(i.toFixed(1)));
     }
     return ticks;
   };
-  
   const yAxisTicks = generateTicks(yAxisMin, yAxisMax);
-
-  const periodButtons = [
-    { id: 'month', label: 'Mês' },
-    { id: 'year', label: 'Ano' },
-    { id: '12months', label: '12M' },
-    { id: 'custom', label: 'Personalizado' }
-  ];
-
-  return (
-    <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-gradient-accent flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div>
-              <CardTitle className="text-foreground text-xl font-semibold">Retorno Acumulado</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">Evolução do retorno acumulado da carteira</p>
-            </div>
-          </div>
-          
-          {/* Period Selection Buttons */}
-          <div className="flex items-center gap-1">
-            {periodButtons.map((button) => (
-              <Button
-                key={button.id}
-                variant={selectedPeriod === button.id ? "default" : "ghost"}
-                size="sm"
-                onClick={() => {
-                  setSelectedPeriod(button.id as any);
-                  if (button.id === 'custom') {
-                    setShowCustomCalendar(true);
-                  }
-                }}
-                className="text-xs px-3 py-1 h-8"
-              >
-                {button.label}
-              </Button>
-            ))}
-            
-            {selectedPeriod === 'custom' && (
-              <Popover open={showCustomCalendar} onOpenChange={setShowCustomCalendar}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="ml-2">
-                    <CalendarIcon className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <div className="p-4 space-y-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Data Inicial</label>
-                      <Calendar
-                        mode="single"
-                        selected={customStartDate}
-                        onSelect={setCustomStartDate}
-                        locale={ptBR}
-                        className="rounded-md border"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Data Final</label>
-                      <Calendar
-                        mode="single"
-                        selected={customEndDate}
-                        onSelect={setCustomEndDate}
-                        locale={ptBR}
-                        className="rounded-md border"
-                      />
-                    </div>
-                    <Button 
-                      onClick={() => setShowCustomCalendar(false)}
-                      className="w-full"
-                    >
-                      Aplicar
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="pt-0 pb-6">
-        <div className="h-96 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart 
-              data={chartData} 
-              margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
-            >
-              <defs>
-                <linearGradient id="retornoGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                  <stop offset="50%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke="hsl(var(--border))" 
-                opacity={0.3}
-                horizontal={true}
-                vertical={false}
-              />
-              <XAxis 
-                dataKey="name" 
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-                axisLine={false}
-                tickLine={false}
-                tick={{ dy: 10 }}
-                interval={0}
-              />
-              <YAxis 
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(value) => `${value.toFixed(1)}%`}
-                domain={[yAxisMin, yAxisMax]}
-                ticks={yAxisTicks}
-                width={70}
-              />
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '12px',
-                  boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
-                  fontSize: '13px',
-                  padding: '12px'
-                }}
-                formatter={(value: any, name: string) => {
-                  if (name === 'retornoAcumulado') {
-                    return [`${value.toFixed(2)}%`, 'Retorno Acumulado'];
-                  }
-                  return [`${value.toFixed(2)}%`, name];
-                }}
-                labelStyle={{ 
-                  color: 'hsl(var(--foreground))', 
-                  fontWeight: '600',
-                  marginBottom: '4px'
-                }}
-                cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="retornoAcumulado" 
-                stroke="hsl(var(--primary))"
-                strokeWidth={3}
-                fill="url(#retornoGradient)"
-                dot={{ 
-                  fill: 'hsl(var(--primary))', 
-                  strokeWidth: 2, 
-                  stroke: 'hsl(var(--card))',
-                  r: 4
-                }}
-                activeDot={{ 
-                  r: 6, 
-                  fill: 'hsl(var(--primary))', 
-                  strokeWidth: 3, 
-                  stroke: 'hsl(var(--card))',
-                  filter: 'drop-shadow(0 4px 8px hsl(var(--primary) / 0.3))'
-                }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  const periodButtons = [{
+    id: 'month',
+    label: 'Mês'
+  }, {
+    id: 'year',
+    label: 'Ano'
+  }, {
+    id: '12months',
+    label: '12M'
+  }, {
+    id: 'custom',
+    label: 'Personalizado'
+  }];
+  return;
 }
