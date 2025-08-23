@@ -107,20 +107,22 @@ export function PortfolioTable({ selectedClient }: PortfolioTableProps) {
                     <TableCell className="font-medium text-foreground">
                       {formatCurrency(item["Patrimonio Inicial"])}
                     </TableCell>
-                    <TableCell className={`font-medium ${item["Movimentação"] >= 0 ? "text-blue-600" : "text-orange-600"}`}>
+                    <TableCell className="text-red-600 font-medium">
                       {formatCurrency(item["Movimentação"])}
                     </TableCell>
                     <TableCell className="text-red-600 font-medium">
                       {formatCurrency(item.Impostos)}
                     </TableCell>
-                    <TableCell className="text-success font-medium">
+                    <TableCell className="text-green-600 font-medium">
                       {formatCurrency(item["Ganho Financeiro"])}
                     </TableCell>
-                    <TableCell className="font-bold text-green-600">
+                    <TableCell className="font-medium text-foreground">
                       {formatCurrency(item["Patrimonio Final"])}
                     </TableCell>
-                    <TableCell className={`font-bold ${(item.Rendimento || 0) >= 0 ? "text-success" : "text-destructive"}`}>
-                      {((item.Rendimento || 0) * 100).toFixed(2)}%
+                    <TableCell>
+                      <span className="bg-yellow-500 text-white px-2 py-1 rounded text-sm font-medium">
+                        {((item.Rendimento || 0) * 100).toFixed(2)}%
+                      </span>
                     </TableCell>
                   </TableRow>
                 ))
