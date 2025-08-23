@@ -58,7 +58,7 @@ export function CompetenciaSeletor({ selectedClient, onFilterChange }: Competenc
     };
 
     fetchCompetencias();
-  }, [selectedClient, onFilterChange]);
+  }, [selectedClient]); // Removido onFilterChange das dependências
 
   const handleInicioChange = (value: string) => {
     setInicioCompetencia(value);

@@ -14,7 +14,7 @@ import { ClientDataDisplay } from "./ClientDataDisplay";
 import { CompetenciaSeletor } from "./CompetenciaSeletor";
 import { useClientData } from "@/hooks/useClientData";
 import { TrendingUp, DollarSign, Target, Building2, Calendar, ChevronDown, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 interface InvestmentDashboardProps {
   selectedClient: string;
@@ -47,9 +47,10 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const filteredDadosData = getFilteredDadosData(dadosData);
   const filteredConsolidadoData = getFilteredConsolidadoData(consolidadoData);
 
-  const handleFilterChange = (inicioCompetencia: string, fimCompetencia: string) => {
+  const handleFilterChange = useCallback((inicioCompetencia: string, fimCompetencia: string) => {
+    console.log('Filter changed:', { inicioCompetencia, fimCompetencia });
     setFilteredRange({ inicio: inicioCompetencia, fim: fimCompetencia });
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-hero">
