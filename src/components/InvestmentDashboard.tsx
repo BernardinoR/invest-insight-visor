@@ -68,6 +68,22 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
   const displayRendimento = getRendimentoFromFinalCompetencia();
 
+  // Calculate patrimônio from the final competencia selected
+  const getPatrimonioFromFinalCompetencia = () => {
+    if (!filteredRange.fim || filteredConsolidadoData.length === 0) {
+      return totalPatrimonio; // fallback to original
+    }
+    
+    // Find the entry with the final competencia
+    const finalCompetenciaEntry = filteredConsolidadoData.find(
+      item => item.Competencia === filteredRange.fim
+    );
+    
+    return finalCompetenciaEntry ? finalCompetenciaEntry["Patrimonio Final"] || 0 : totalPatrimonio;
+  };
+
+  const displayPatrimonio = getPatrimonioFromFinalCompetencia();
+
   return (
     <div className="min-h-screen bg-gradient-hero">
       {/* Header */}
@@ -115,9 +131,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
               <DollarSign className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {hasData ? `R$ ${totalPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : "R$ --"}
-              </div>
+               <div className="text-2xl font-bold text-foreground">
+                 {hasData ? `R$ ${displayPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : "R$ --"}
+               </div>
               <p className="text-xs text-success">
                 {hasData ? "+0,58% no período" : "Aguardando dados"}
               </p>
