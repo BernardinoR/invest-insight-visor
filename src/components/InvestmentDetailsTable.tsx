@@ -199,14 +199,22 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
           });
 
           if (currentYearData && currentYearData.length > 0) {
-            // When filtering by specific period, calculate weighted average return
-            // instead of compound interest across different assets
-            if (filteredRange?.inicio && filteredRange?.fim) {
-              // Calculate weighted average return for the filtered period
+            // Group data by competencia to calculate monthly weighted averages first
+            const competenciaGroups: Record<string, typeof currentYearData> = {};
+            currentYearData.forEach(item => {
+              if (!competenciaGroups[item.Competencia]) {
+                competenciaGroups[item.Competencia] = [];
+              }
+              competenciaGroups[item.Competencia].push(item);
+            });
+
+            // Calculate weighted average for each competencia
+            const monthlyReturns: Array<{ competencia: string; return: number }> = [];
+            Object.entries(competenciaGroups).forEach(([competencia, items]) => {
               let totalPosition = 0;
               let totalWeightedReturn = 0;
               
-              currentYearData.forEach(item => {
+              items.forEach(item => {
                 const position = Number(item.Posicao) || 0;
                 const monthlyReturn = Number(item.Rendimento) || 0;
                 totalPosition += position;
@@ -214,21 +222,29 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
               });
               
               const weightedAvgReturn = totalPosition > 0 ? totalWeightedReturn / totalPosition : 0;
-              console.log(`Weighted average return for ${strategy}: ${(weightedAvgReturn * 100).toFixed(2)}%`);
-              yearlyAccumulated[strategy] = weightedAvgReturn;
-            } else {
-              // For yearly calculation across time periods, use compound interest
-              let yearAccumulatedMultiplier = 1;
-              console.log(`Calculating year return for strategy ${strategy}:`, currentYearData);
-              currentYearData.forEach(item => {
-                const monthlyReturn = Number(item.Rendimento) || 0;
-                console.log(`Month ${item.Competencia}: ${monthlyReturn * 100}%`);
-                yearAccumulatedMultiplier *= (1 + monthlyReturn);
-              });
-              const finalYearReturn = yearAccumulatedMultiplier - 1;
-              console.log(`Final year return for ${strategy}: ${(finalYearReturn * 100).toFixed(2)}%`);
-              yearlyAccumulated[strategy] = finalYearReturn;
-            }
+              monthlyReturns.push({ competencia, return: weightedAvgReturn });
+              console.log(`${strategy} - ${competencia}: ${(weightedAvgReturn * 100).toFixed(2)}%`);
+            });
+
+            // Sort by competencia and apply compound interest
+            monthlyReturns.sort((a, b) => {
+              const [monthA, yearA] = a.competencia.split('/');
+              const [monthB, yearB] = b.competencia.split('/');
+              const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+              const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+              return dateA.getTime() - dateB.getTime();
+            });
+
+            // Apply compound interest across months
+            let accumulatedMultiplier = 1;
+            monthlyReturns.forEach(({ competencia, return: monthReturn }) => {
+              accumulatedMultiplier *= (1 + monthReturn);
+              console.log(`${strategy} - ${competencia}: ${(monthReturn * 100).toFixed(2)}%, accumulated: ${((accumulatedMultiplier - 1) * 100).toFixed(2)}%`);
+            });
+
+            const finalReturn = accumulatedMultiplier - 1;
+            console.log(`${strategy} final accumulated return: ${(finalReturn * 100).toFixed(2)}%`);
+            yearlyAccumulated[strategy] = finalReturn;
           }
 
           // Calculate total accumulated returns from beginning with compound interest
