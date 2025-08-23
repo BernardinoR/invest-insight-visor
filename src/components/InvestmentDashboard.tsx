@@ -303,8 +303,23 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       return strategy;
                     };
 
-                    // Group data by strategy
-                    const groupedData = dadosData.reduce((acc, item) => {
+                    // Filter to get only the most recent competencia
+                    const getMostRecentData = (data: typeof dadosData) => {
+                      if (data.length === 0) return [];
+                      
+                      // Find the most recent competencia
+                      const mostRecentCompetencia = data.reduce((latest, current) => {
+                        return current.Competencia > latest.Competencia ? current : latest;
+                      }).Competencia;
+                      
+                      // Return all records with the most recent competencia
+                      return data.filter(item => item.Competencia === mostRecentCompetencia);
+                    };
+
+                    const filteredDadosData = getMostRecentData(dadosData);
+
+                    // Group data by strategy using filtered data
+                    const groupedData = filteredDadosData.reduce((acc, item) => {
                       const originalStrategy = item["Classe do ativo"] || "Outros";
                       const groupedStrategy = groupStrategy(originalStrategy);
                       
@@ -313,7 +328,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       }
                       acc[groupedStrategy].push(item);
                       return acc;
-                    }, {} as Record<string, typeof dadosData>);
+                    }, {} as Record<string, typeof filteredDadosData>);
 
                     // Calculate totals for each strategy
                     const strategyTotals = Object.entries(groupedData).map(([strategy, assets]) => {
