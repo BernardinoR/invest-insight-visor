@@ -7,7 +7,6 @@ import { PerformanceChart } from "./charts/PerformanceChart";
 import { StrategyBreakdown } from "./charts/StrategyBreakdown";
 import { MaturityTimeline } from "./charts/MaturityTimeline";
 import { IssuerExposure } from "./charts/IssuerExposure";
-import { StrategyScatterChart } from "./charts/StrategyScatterChart";
 import { PortfolioTable } from "./PortfolioTable";
 import { InvestmentDetailsTable } from "./InvestmentDetailsTable";
 import { ClientDataDisplay } from "./ClientDataDisplay";
@@ -182,11 +181,6 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <MaturityTimeline />
           <IssuerExposure />
-        </div>
-
-        {/* Strategy Scatter Chart */}
-        <div className="mb-8">
-          <StrategyScatterChart />
         </div>
 
 
