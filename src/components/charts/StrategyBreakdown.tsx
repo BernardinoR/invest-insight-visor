@@ -23,10 +23,26 @@ interface StrategyBreakdownProps {
     "Classe do ativo": string;
     Posicao: number;
     Rendimento: number;
+    Competencia: string;
   }>;
 }
 
 export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
+  // Filter to get only the most recent competencia
+  const getMostRecentData = (data: typeof dadosData) => {
+    if (data.length === 0) return [];
+    
+    // Find the most recent competencia
+    const mostRecentCompetencia = data.reduce((latest, current) => {
+      return current.Competencia > latest.Competencia ? current : latest;
+    }).Competencia;
+    
+    // Return all records with the most recent competencia
+    return data.filter(item => item.Competencia === mostRecentCompetencia);
+  };
+
+  const filteredData = getMostRecentData(dadosData);
+
   // Function to group strategy names according to original specification
   const groupStrategy = (strategy: string): string => {
     const strategyLower = strategy.toLowerCase();
@@ -77,8 +93,8 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
     return strategy;
   };
 
-  // Group investments by grouped asset class and calculate totals
-  const strategyData = dadosData.reduce((acc, investment) => {
+  // Group investments by grouped asset class and calculate totals using filtered data
+  const strategyData = filteredData.reduce((acc, investment) => {
     const originalStrategy = investment["Classe do ativo"] || "Outros";
     const groupedStrategy = groupStrategy(originalStrategy);
     
