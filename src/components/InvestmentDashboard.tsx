@@ -437,20 +437,27 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                     };
 
                     // Calculate returns for strategies
-                    const calculateStrategyReturns = (strategy: string, assets: typeof filteredDadosData) => {
-                      // Get all competencias for this strategy from filtered data
-                      const strategyData = filteredDadosData.filter(item => groupStrategy(item["Classe do ativo"] || "Outros") === strategy);
+                    const calculateStrategyReturns = (strategy: string) => {
+                      // Get all data for this strategy (using original dadosData to respect filter)
+                      const allStrategyData = dadosData.filter(item => groupStrategy(item["Classe do ativo"] || "Outros") === strategy);
                       
-                      if (strategyData.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
+                      if (allStrategyData.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
+                      
+                      // Apply filter to get filtered data
+                      const filteredStrategyData = filteredRange.inicio && filteredRange.fim 
+                        ? allStrategyData.filter(item => item.Competencia >= filteredRange.inicio && item.Competencia <= filteredRange.fim)
+                        : allStrategyData;
+                      
+                      if (filteredStrategyData.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
                       
                       // Group by competencia
-                      const competenciaGroups = strategyData.reduce((acc, item) => {
+                      const competenciaGroups = filteredStrategyData.reduce((acc, item) => {
                         if (!acc[item.Competencia]) {
                           acc[item.Competencia] = [];
                         }
                         acc[item.Competencia].push(item);
                         return acc;
-                      }, {} as Record<string, typeof strategyData>);
+                      }, {} as Record<string, typeof filteredStrategyData>);
                       
                       const sortedCompetencias = Object.keys(competenciaGroups).sort();
                       
@@ -484,7 +491,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       });
                       const inceptionReturn = calculateCompoundReturn(monthlyReturns);
                       
-                      console.log(`${strategy} - Calculation:`, {
+                      console.log(`${strategy} - Strategy Calculation:`, {
+                        filteredRange,
+                        sortedCompetencias,
                         lastCompetencia,
                         yearCompetenciasInFilter,
                         monthReturn: (monthReturn * 100).toFixed(2) + '%',
@@ -498,7 +507,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                     // Calculate totals for each strategy
                     const strategyTotals = Object.entries(groupedData).map(([strategy, assets]) => {
                       const totalPosition = assets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
-                      const returns = calculateStrategyReturns(strategy, assets);
+                      const returns = calculateStrategyReturns(strategy);
                       
                       return {
                         strategy,
