@@ -463,18 +463,11 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       const lastMonthTotalReturn = lastMonthAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
                       const monthReturn = lastMonthTotalPosition > 0 ? (lastMonthTotalReturn / lastMonthTotalPosition) : 0;
                       
-                      // Calculate compound returns for each competencia
-                      const monthlyReturns = sortedCompetencias.map(competencia => {
-                        const competenciaAssets = competenciaGroups[competencia];
-                        const totalPosition = competenciaAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
-                        const totalReturn = competenciaAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
-                        return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
-                      });
-                      
-                      // Year return: compound return for the year of the last competencia
+                      // Year return: compound return for the year of the last competencia (within filter)
                       const lastYear = lastCompetencia.substring(3);
-                      const yearCompetencias = sortedCompetencias.filter(comp => comp.endsWith(lastYear));
-                      const yearReturns = yearCompetencias.map(competencia => {
+                      const yearCompetenciasInFilter = sortedCompetencias.filter(comp => comp.endsWith(lastYear));
+                      
+                      const yearReturns = yearCompetenciasInFilter.map(competencia => {
                         const competenciaAssets = competenciaGroups[competencia];
                         const totalPosition = competenciaAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
                         const totalReturn = competenciaAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
@@ -483,7 +476,21 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       const yearReturn = calculateCompoundReturn(yearReturns);
                       
                       // Inception return: compound return for all competencias in filter
+                      const monthlyReturns = sortedCompetencias.map(competencia => {
+                        const competenciaAssets = competenciaGroups[competencia];
+                        const totalPosition = competenciaAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
+                        const totalReturn = competenciaAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
+                        return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
+                      });
                       const inceptionReturn = calculateCompoundReturn(monthlyReturns);
+                      
+                      console.log(`${strategy} - Calculation:`, {
+                        lastCompetencia,
+                        yearCompetenciasInFilter,
+                        monthReturn: (monthReturn * 100).toFixed(2) + '%',
+                        yearReturn: (yearReturn * 100).toFixed(2) + '%',
+                        inceptionReturn: (inceptionReturn * 100).toFixed(2) + '%'
+                      });
                       
                       return { monthReturn, yearReturn, inceptionReturn };
                     };
