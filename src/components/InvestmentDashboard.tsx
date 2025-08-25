@@ -428,17 +428,78 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       return acc;
                     }, {} as Record<string, typeof filteredDadosData>);
 
+                    // Function to calculate compound returns
+                    const calculateCompoundReturn = (monthlyReturns: number[]): number => {
+                      if (monthlyReturns.length === 0) return 0;
+                      return monthlyReturns.reduce((acc, monthReturn) => {
+                        return (1 + acc) * (1 + monthReturn) - 1;
+                      }, 0);
+                    };
+
+                    // Calculate returns for strategies
+                    const calculateStrategyReturns = (strategy: string, assets: typeof filteredDadosData) => {
+                      // Get all competencias for this strategy from filtered data
+                      const strategyData = filteredDadosData.filter(item => groupStrategy(item["Classe do ativo"] || "Outros") === strategy);
+                      
+                      if (strategyData.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
+                      
+                      // Group by competencia
+                      const competenciaGroups = strategyData.reduce((acc, item) => {
+                        if (!acc[item.Competencia]) {
+                          acc[item.Competencia] = [];
+                        }
+                        acc[item.Competencia].push(item);
+                        return acc;
+                      }, {} as Record<string, typeof strategyData>);
+                      
+                      const sortedCompetencias = Object.keys(competenciaGroups).sort();
+                      
+                      if (sortedCompetencias.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
+                      
+                      // Last competencia for "Mês"
+                      const lastCompetencia = sortedCompetencias[sortedCompetencias.length - 1];
+                      const lastMonthAssets = competenciaGroups[lastCompetencia];
+                      const lastMonthTotalPosition = lastMonthAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
+                      const lastMonthTotalReturn = lastMonthAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
+                      const monthReturn = lastMonthTotalPosition > 0 ? (lastMonthTotalReturn / lastMonthTotalPosition) : 0;
+                      
+                      // Calculate compound returns for each competencia
+                      const monthlyReturns = sortedCompetencias.map(competencia => {
+                        const competenciaAssets = competenciaGroups[competencia];
+                        const totalPosition = competenciaAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
+                        const totalReturn = competenciaAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
+                        return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
+                      });
+                      
+                      // Year return: compound return for the year of the last competencia
+                      const lastYear = lastCompetencia.substring(3);
+                      const yearCompetencias = sortedCompetencias.filter(comp => comp.endsWith(lastYear));
+                      const yearReturns = yearCompetencias.map(competencia => {
+                        const competenciaAssets = competenciaGroups[competencia];
+                        const totalPosition = competenciaAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
+                        const totalReturn = competenciaAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
+                        return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
+                      });
+                      const yearReturn = calculateCompoundReturn(yearReturns);
+                      
+                      // Inception return: compound return for all competencias in filter
+                      const inceptionReturn = calculateCompoundReturn(monthlyReturns);
+                      
+                      return { monthReturn, yearReturn, inceptionReturn };
+                    };
+
                     // Calculate totals for each strategy
                     const strategyTotals = Object.entries(groupedData).map(([strategy, assets]) => {
                       const totalPosition = assets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
-                      const totalReturn = assets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
-                      const avgReturn = totalPosition > 0 ? (totalReturn / totalPosition) * 100 : 0;
+                      const returns = calculateStrategyReturns(strategy, assets);
                       
                       return {
                         strategy,
                         assets,
                         totalPosition,
-                        avgReturn,
+                        monthReturn: returns.monthReturn,
+                        yearReturn: returns.yearReturn,
+                        inceptionReturn: returns.inceptionReturn,
                         percentage: totalPatrimonio > 0 ? (totalPosition / totalPatrimonio) * 100 : 0
                       };
                     }).sort((a, b) => {
@@ -456,7 +517,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       return 0;
                     });
 
-                    return strategyTotals.map(({ strategy, assets, totalPosition, avgReturn, percentage }) => {
+                    return strategyTotals.map(({ strategy, assets, totalPosition, monthReturn, yearReturn, inceptionReturn, percentage }) => {
                       const isExpanded = expandedStrategies.has(strategy);
                       const strategyColor = getStrategyColor(strategy);
                       
@@ -487,12 +548,12 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                       <div className="text-sm text-muted-foreground">Saldo</div>
                                       <div className="font-semibold text-foreground">R$ {totalPosition.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                                     </div>
-                                    <div className="text-right">
-                                      <div className="text-sm text-muted-foreground">Rentabilidade</div>
-                                      <div className={`font-semibold ${avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
-                                        {avgReturn >= 0 ? "+" : ""}{avgReturn.toFixed(2)}%
-                                      </div>
-                                    </div>
+                                     <div className="text-right">
+                                       <div className="text-sm text-muted-foreground">Rentabilidade</div>
+                                       <div className={`font-semibold ${monthReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                                         {monthReturn >= 0 ? "+" : ""}{(monthReturn * 100).toFixed(2)}%
+                                       </div>
+                                     </div>
                                     <div className="ml-2">
                                       {isExpanded ? (
                                         <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform" />
@@ -527,20 +588,20 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                   <div className="text-center text-foreground">{totalPosition.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                                   <div className="text-center">
                                     <div className="text-xs text-muted-foreground">Rent.</div>
-                                    <div className={`font-medium ${avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
-                                      {avgReturn >= 0 ? "+" : ""}{avgReturn.toFixed(2)}%
+                                    <div className={`font-medium ${monthReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                                      {monthReturn >= 0 ? "+" : ""}{(monthReturn * 100).toFixed(2)}%
                                     </div>
                                   </div>
                                   <div className="text-center">
                                     <div className="text-xs text-muted-foreground">Rent.</div>
-                                    <div className={`font-medium ${avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
-                                      {avgReturn >= 0 ? "+" : ""}{(avgReturn * 12).toFixed(2)}%
+                                    <div className={`font-medium ${yearReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                                      {yearReturn >= 0 ? "+" : ""}{(yearReturn * 100).toFixed(2)}%
                                     </div>
                                   </div>
                                   <div className="text-center">
                                     <div className="text-xs text-muted-foreground">Rent.</div>
-                                    <div className={`font-medium ${avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
-                                      {avgReturn >= 0 ? "+" : ""}{avgReturn.toFixed(2)}%
+                                    <div className={`font-medium ${inceptionReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                                      {inceptionReturn >= 0 ? "+" : ""}{(inceptionReturn * 100).toFixed(2)}%
                                     </div>
                                   </div>
                                   <div className="text-center text-foreground">-</div>
