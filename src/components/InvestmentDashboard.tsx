@@ -504,6 +504,49 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       return { monthReturn, yearReturn, inceptionReturn };
                     };
 
+                    // Calculate returns for individual assets
+                    const calculateAssetReturns = (assetName: string) => {
+                      // Get all data for this asset (using original dadosData to respect filter)
+                      const allAssetData = dadosData.filter(item => item.Ativo === assetName);
+                      
+                      if (allAssetData.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
+                      
+                      // Apply filter to get filtered data
+                      const filteredAssetData = filteredRange.inicio && filteredRange.fim 
+                        ? allAssetData.filter(item => item.Competencia >= filteredRange.inicio && item.Competencia <= filteredRange.fim)
+                        : allAssetData;
+                      
+                      if (filteredAssetData.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
+                      
+                      const sortedCompetencias = [...new Set(filteredAssetData.map(item => item.Competencia))].sort();
+                      
+                      if (sortedCompetencias.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
+                      
+                      // Last competencia for "Mês"
+                      const lastCompetencia = sortedCompetencias[sortedCompetencias.length - 1];
+                      const lastMonthData = filteredAssetData.find(item => item.Competencia === lastCompetencia);
+                      const monthReturn = lastMonthData ? lastMonthData.Rendimento : 0;
+                      
+                      // Year return: compound return for the year of the last competencia (within filter)
+                      const lastYear = lastCompetencia.substring(3);
+                      const yearCompetenciasInFilter = sortedCompetencias.filter(comp => comp.endsWith(lastYear));
+                      
+                      const yearReturns = yearCompetenciasInFilter.map(competencia => {
+                        const assetData = filteredAssetData.find(item => item.Competencia === competencia);
+                        return assetData ? assetData.Rendimento : 0;
+                      });
+                      const yearReturn = calculateCompoundReturn(yearReturns);
+                      
+                      // Inception return: compound return for all competencias in filter
+                      const monthlyReturns = sortedCompetencias.map(competencia => {
+                        const assetData = filteredAssetData.find(item => item.Competencia === competencia);
+                        return assetData ? assetData.Rendimento : 0;
+                      });
+                      const inceptionReturn = calculateCompoundReturn(monthlyReturns);
+                      
+                      return { monthReturn, yearReturn, inceptionReturn };
+                    };
+
                     // Calculate totals for each strategy
                     const strategyTotals = Object.entries(groupedData).map(([strategy, assets]) => {
                       const totalPosition = assets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
@@ -669,45 +712,48 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                   <div className="text-center text-muted-foreground">-</div>
                                 </div>
 
-                                {/* Individual Assets */}
-                                {assets.map((item, index) => (
-                                  <div key={item.id}>
-                                    <div className="grid grid-cols-8 gap-4 p-3 hover:bg-muted/20 transition-colors text-sm">
-                                      <div>
-                                        <div className="font-medium text-foreground text-xs">{item.Ativo}</div>
-                                      </div>
-                                      <div className="text-center text-foreground text-xs">
-                                        {totalPatrimonio > 0 ? `${((item.Posicao / totalPatrimonio) * 100).toFixed(2)}%` : "-"}
-                                      </div>
-                                      <div className="text-center text-foreground">{item.Posicao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                                      <div className="text-center">
-                                        <div className={`font-medium ${item.Rendimento >= 0 ? "text-success" : "text-destructive"}`}>
-                                          {item.Rendimento >= 0 ? "+" : ""}{(item.Rendimento * 100).toFixed(2)}%
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">-</div>
-                                      </div>
-                                      <div className="text-center">
-                                        <div className={`font-medium ${item.Rendimento >= 0 ? "text-success" : "text-destructive"}`}>
-                                          {item.Rendimento >= 0 ? "+" : ""}{(item.Rendimento * 100 * 12).toFixed(2)}%
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">-</div>
-                                      </div>
-                                      <div className="text-center">
-                                        <div className={`font-medium ${item.Rendimento >= 0 ? "text-success" : "text-destructive"}`}>
-                                          {item.Rendimento >= 0 ? "+" : ""}{(item.Rendimento * 100).toFixed(2)}%
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">-</div>
-                                      </div>
+                                 {/* Individual Assets */}
+                                 {assets.map((item, index) => {
+                                   const assetReturns = calculateAssetReturns(item.Ativo);
+                                   return (
+                                   <div key={item.id}>
+                                     <div className="grid grid-cols-8 gap-4 p-3 hover:bg-muted/20 transition-colors text-sm">
+                                       <div>
+                                         <div className="font-medium text-foreground text-xs">{item.Ativo}</div>
+                                       </div>
+                                       <div className="text-center text-foreground text-xs">
+                                         {totalPatrimonio > 0 ? `${((item.Posicao / totalPatrimonio) * 100).toFixed(2)}%` : "-"}
+                                       </div>
+                                       <div className="text-center text-foreground">{item.Posicao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                       <div className="text-center">
+                                         <div className={`font-medium ${assetReturns.monthReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                                           {assetReturns.monthReturn >= 0 ? "+" : ""}{(assetReturns.monthReturn * 100).toFixed(2)}%
+                                         </div>
+                                         <div className="text-xs text-muted-foreground">-</div>
+                                       </div>
+                                       <div className="text-center">
+                                         <div className={`font-medium ${assetReturns.yearReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                                           {assetReturns.yearReturn >= 0 ? "+" : ""}{(assetReturns.yearReturn * 100).toFixed(2)}%
+                                         </div>
+                                         <div className="text-xs text-muted-foreground">-</div>
+                                       </div>
+                                       <div className="text-center">
+                                         <div className={`font-medium ${assetReturns.inceptionReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                                           {assetReturns.inceptionReturn >= 0 ? "+" : ""}{(assetReturns.inceptionReturn * 100).toFixed(2)}%
+                                         </div>
+                                         <div className="text-xs text-muted-foreground">-</div>
+                                       </div>
                                       <div className="text-center text-foreground text-xs">{item.Emissor || "-"}</div>
                                       <div className="text-center text-foreground text-xs">
                                         {item.Vencimento ? new Date(item.Vencimento).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "-"}
                                       </div>
-                                    </div>
-                                    {index < assets.length - 1 && (
-                                      <div className="border-b border-border/20"></div>
-                                    )}
-                                  </div>
-                                ))}
+                                     </div>
+                                     {index < assets.length - 1 && (
+                                       <div className="border-b border-border/20"></div>
+                                     )}
+                                   </div>
+                                   );
+                                 })}
                               </div>
                             </CollapsibleContent>
                           </div>
