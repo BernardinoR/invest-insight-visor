@@ -117,36 +117,44 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
 
   // Add CDI data to chart data and ensure it starts from zero like portfolio
   const chartDataWithCDI = chartData.map((point, index) => {
-    let cdiRetorno = null;
-    
     if (index === 0) {
-      // First point (previous month) should be 0 for CDI too
-      cdiRetorno = 0;
+      // First point (previous month) should be 0 for both portfolio and CDI
+      return {
+        ...point,
+        cdiRetorno: 0
+      };
     } else {
-      // Find matching CDI data for this competencia
-      const cdiPoint = cdiData.find(cdi => cdi.competencia === point.competencia);
-      if (cdiPoint) {
-        // Reset CDI accumulated return to start from the filtered period
-        const firstCompetenciaInFilter = chartData[1]?.competencia;
-        const firstCDIPoint = cdiData.find(cdi => cdi.competencia === firstCompetenciaInFilter);
-        
-        if (firstCDIPoint) {
-          // Calculate relative CDI return from the start of the filtered period
-          const relativeReturn = (1 + cdiPoint.cdiAccumulated) / (1 + firstCDIPoint.cdiAccumulated) - 1;
+      // For subsequent points, find CDI data and calculate relative to first point
+      let cdiRetorno = null;
+      
+      // Find the first real competencia (index 1) to use as base
+      const firstCompetencia = chartData[1]?.competencia;
+      const currentCompetencia = point.competencia;
+      
+      const firstCDIPoint = cdiData.find(cdi => cdi.competencia === firstCompetencia);
+      const currentCDIPoint = cdiData.find(cdi => cdi.competencia === currentCompetencia);
+      
+      if (currentCDIPoint) {
+        if (currentCompetencia === firstCompetencia) {
+          // First real month shows monthly return directly
+          cdiRetorno = currentCDIPoint.cdiRate * 100;
+        } else if (firstCDIPoint) {
+          // Subsequent months show accumulated return relative to first month
+          const relativeReturn = (1 + currentCDIPoint.cdiAccumulated) / (1 + firstCDIPoint.cdiAccumulated) - 1;
           cdiRetorno = relativeReturn * 100;
         } else {
-          cdiRetorno = cdiPoint.cdiAccumulated * 100;
+          cdiRetorno = currentCDIPoint.cdiAccumulated * 100;
         }
       }
+      
+      return {
+        ...point,
+        cdiRetorno
+      };
     }
-    
-    return {
-      ...point,
-      cdiRetorno
-    };
   });
 
-  console.log('Chart data with CDI:', chartDataWithCDI.slice(0, 3));
+  console.log('Chart data with CDI:', chartDataWithCDI);
 
   // Calculate optimal Y axis scale for accumulated returns including CDI
   const portfolioValues = chartDataWithCDI.map(item => item.retornoAcumulado);
