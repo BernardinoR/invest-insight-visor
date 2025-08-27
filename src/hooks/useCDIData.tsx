@@ -28,8 +28,16 @@ export function useCDIData() {
         const startDate = new Date();
         startDate.setFullYear(endDate.getFullYear() - 2);
 
-        const startDateStr = startDate.toISOString().split('T')[0].replace(/-/g, '/');
-        const endDateStr = endDate.toISOString().split('T')[0].replace(/-/g, '/');
+        // Formato correto para API do BC: DD/MM/AAAA
+        const formatDateForAPI = (date: Date) => {
+          const day = date.getDate().toString().padStart(2, '0');
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          const year = date.getFullYear();
+          return `${day}/${month}/${year}`;
+        };
+
+        const startDateStr = formatDateForAPI(startDate);
+        const endDateStr = formatDateForAPI(endDate);
 
         const response = await fetch(
           `https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`
