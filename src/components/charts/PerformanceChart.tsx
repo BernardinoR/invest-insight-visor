@@ -2,11 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { TrendingUp, Calendar as CalendarIcon } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useCDIData } from "@/hooks/useCDIData";
 
 interface PerformanceChartProps {
   consolidadoData: Array<{
@@ -26,6 +27,8 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
   const [customStartDate, setCustomStartDate] = useState<Date>();
   const [customEndDate, setCustomEndDate] = useState<Date>();
   const [showCustomCalendar, setShowCustomCalendar] = useState(false);
+  
+  const { cdiData, loading: cdiLoading, error: cdiError } = useCDIData();
 
   // Sort data by competencia date
   const sortedData = [...consolidadoData].sort((a, b) => {
@@ -112,8 +115,19 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
 
   const chartData = calculateAccumulatedReturns(filteredData);
 
-  // Calculate optimal Y axis scale for accumulated returns
-  const allValues = chartData.map(item => item.retornoAcumulado);
+  // Add CDI data to chart data
+  const chartDataWithCDI = chartData.map(point => {
+    const cdiPoint = cdiData.find(cdi => cdi.competencia === point.competencia);
+    return {
+      ...point,
+      cdiRetorno: cdiPoint ? cdiPoint.cdiAccumulated * 100 : null
+    };
+  });
+
+  // Calculate optimal Y axis scale for accumulated returns including CDI
+  const portfolioValues = chartDataWithCDI.map(item => item.retornoAcumulado);
+  const cdiValues = chartDataWithCDI.map(item => item.cdiRetorno).filter(v => v !== null) as number[];
+  const allValues = [...portfolioValues, ...cdiValues];
   const minValue = Math.min(...allValues, 0);
   const maxValue = Math.max(...allValues);
   
@@ -157,8 +171,10 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
               <TrendingUp className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <CardTitle className="text-foreground text-xl font-semibold">Retorno Acumulado</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">Evolução do retorno acumulado da carteira</p>
+              <CardTitle className="text-foreground text-xl font-semibold">Retorno Acumulado vs CDI</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Comparativo de performance da carteira com o CDI</p>
+              {cdiLoading && <p className="text-xs text-muted-foreground">Carregando dados do CDI...</p>}
+              {cdiError && <p className="text-xs text-destructive">Erro ao carregar CDI: {cdiError}</p>}
             </div>
           </div>
           
@@ -227,8 +243,8 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
       <CardContent className="pt-0 pb-6">
         <div className="h-96 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart 
-              data={chartData} 
+            <LineChart 
+              data={chartDataWithCDI} 
               margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
             >
               <defs>
@@ -275,7 +291,10 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
                 }}
                 formatter={(value: any, name: string) => {
                   if (name === 'retornoAcumulado') {
-                    return [`${value.toFixed(2)}%`, 'Retorno Acumulado'];
+                    return [`${value.toFixed(2)}%`, 'Portfolio'];
+                  }
+                  if (name === 'cdiRetorno') {
+                    return [`${value.toFixed(2)}%`, 'CDI'];
                   }
                   return [`${value.toFixed(2)}%`, name];
                 }}
@@ -286,12 +305,11 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
                 }}
                 cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
               />
-              <Area 
+              <Line 
                 type="monotone" 
                 dataKey="retornoAcumulado" 
                 stroke="hsl(var(--primary))"
                 strokeWidth={3}
-                fill="url(#retornoGradient)"
                 dot={{ 
                   fill: 'hsl(var(--primary))', 
                   strokeWidth: 2, 
@@ -306,7 +324,26 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
                   filter: 'drop-shadow(0 4px 8px hsl(var(--primary) / 0.3))'
                 }}
               />
-            </AreaChart>
+              <Line 
+                type="monotone" 
+                dataKey="cdiRetorno" 
+                stroke="hsl(var(--muted-foreground))"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={{ 
+                  fill: 'hsl(var(--muted-foreground))', 
+                  strokeWidth: 2, 
+                  stroke: 'hsl(var(--card))',
+                  r: 3
+                }}
+                activeDot={{ 
+                  r: 5, 
+                  fill: 'hsl(var(--muted-foreground))', 
+                  strokeWidth: 2, 
+                  stroke: 'hsl(var(--card))'
+                }}
+              />
+            </LineChart>
           </ResponsiveContainer>
         </div>
       </CardContent>
