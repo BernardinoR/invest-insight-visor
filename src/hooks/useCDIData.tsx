@@ -82,12 +82,14 @@ export function useCDIData() {
           let monthlyReturn = 0;
           
           if (dailyRates.length > 0) {
-            // Compor as taxas diárias para obter o retorno mensal
-            monthlyReturn = dailyRates.reduce((acc, rate) => (1 + acc) * (1 + rate / 252) - 1, 0);
+            // Usar fórmula correta: produto de (1 + taxa_diaria) - 1
+            monthlyReturn = dailyRates.reduce((acc, rate) => acc * (1 + rate / 100), 1) - 1;
           }
 
           // Calcular retorno acumulado usando juros compostos
           accumulatedReturn = (1 + accumulatedReturn) * (1 + monthlyReturn) - 1;
+
+          console.log(`CDI ${competencia}: ${dailyRates.length} dias, mensal: ${(monthlyReturn * 100).toFixed(4)}%, acum: ${(accumulatedReturn * 100).toFixed(4)}%`);
 
           processedData.push({
             competencia,
