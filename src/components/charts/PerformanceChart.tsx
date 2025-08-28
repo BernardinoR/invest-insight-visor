@@ -115,7 +115,7 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
 
   const chartData = calculateAccumulatedReturns(filteredData);
 
-  // Add CDI data to chart data and ensure it starts from zero like portfolio
+  // Add CDI data to chart data using the same logic as portfolio
   const chartDataWithCDI = chartData.map((point, index) => {
     if (index === 0) {
       // First point (previous month) should be 0 for both portfolio and CDI
@@ -124,26 +124,24 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
         cdiRetorno: 0
       };
     } else {
-      // For subsequent points, find CDI data and calculate relative to first point
+      // For subsequent points, calculate CDI accumulated return using same base logic
       let cdiRetorno = null;
       
-      // Find the first real competencia (index 1) to use as base
+      // Find the first real competencia (index 1) to use as base - same as portfolio logic
       const firstCompetencia = chartData[1]?.competencia;
       const currentCompetencia = point.competencia;
       
       const firstCDIPoint = cdiData.find(cdi => cdi.competencia === firstCompetencia);
       const currentCDIPoint = cdiData.find(cdi => cdi.competencia === currentCompetencia);
       
-      if (currentCDIPoint) {
+      if (currentCDIPoint && firstCDIPoint) {
         if (currentCompetencia === firstCompetencia) {
-          // First real month starts at 0 (like portfolio)
-          cdiRetorno = 0;
-        } else if (firstCDIPoint) {
-          // Show accumulated CDI return from the start (relative to first month)
+          // First real month: start with the monthly return (like portfolio starts with its first monthly return)
+          cdiRetorno = currentCDIPoint.cdiRate * 100;
+        } else {
+          // Subsequent months: show accumulated return relative to the start point
           const relativeReturn = (1 + currentCDIPoint.cdiAccumulated) / (1 + firstCDIPoint.cdiAccumulated) - 1;
           cdiRetorno = relativeReturn * 100;
-        } else {
-          cdiRetorno = currentCDIPoint.cdiAccumulated * 100;
         }
       }
       
