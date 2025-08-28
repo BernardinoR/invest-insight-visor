@@ -136,10 +136,10 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
       
       if (currentCDIPoint) {
         if (currentCompetencia === firstCompetencia) {
-          // First real month shows monthly return directly
-          cdiRetorno = currentCDIPoint.cdiRate * 100;
+          // First real month starts at 0 (like portfolio)
+          cdiRetorno = 0;
         } else if (firstCDIPoint) {
-          // Subsequent months show accumulated return relative to first month
+          // Show accumulated CDI return from the start (relative to first month)
           const relativeReturn = (1 + currentCDIPoint.cdiAccumulated) / (1 + firstCDIPoint.cdiAccumulated) - 1;
           cdiRetorno = relativeReturn * 100;
         } else {
