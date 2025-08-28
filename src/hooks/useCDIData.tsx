@@ -84,9 +84,16 @@ export function useCDIData() {
           return dateA.getTime() - dateB.getTime();
         });
 
-        sortedEntries.forEach(([competencia, data]) => {
+        sortedEntries.forEach(([competencia, data], index) => {
           const monthlyReturn = data.sum - 1; // Convert back to rate
-          accumulatedReturn = (1 + accumulatedReturn) * (1 + monthlyReturn) - 1;
+          
+          // For the first month, accumulated return equals monthly return
+          if (index === 0) {
+            accumulatedReturn = monthlyReturn;
+          } else {
+            // For subsequent months, compound the returns
+            accumulatedReturn = (1 + accumulatedReturn) * (1 + monthlyReturn) - 1;
+          }
           
           processedData.push({
             competencia,
