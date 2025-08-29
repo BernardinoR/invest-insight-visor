@@ -47,6 +47,14 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   const { cdiData, loading: cdiLoading, error: cdiError } = useCDIData();
   const decodedClientName = decodeClientName(clientName);
   const { marketData, clientTarget, loading: marketLoading, error: marketError } = useMarketIndicators(decodedClientName);
+  
+  console.log('PerformanceChart - Debug data:', {
+    clientName,
+    decodedClientName,
+    clientTarget,
+    marketLoading,
+    marketError
+  });
 
   // Consolidate data by competencia (sum patrimônio, weighted average rendimento)
   const consolidateByCompetencia = (data: typeof consolidadoData) => {
