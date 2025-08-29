@@ -83,10 +83,43 @@ export default function DataManagement() {
 
   const [selectedCompetencia, setSelectedCompetencia] = useState<string>("all");
   const [searchAtivo, setSearchAtivo] = useState<string>("");
+  const [classesAtivo, setClassesAtivo] = useState<string[]>([]);
 
   useEffect(() => {
     fetchData();
+    fetchClassesAtivo();
   }, [decodedClientName]);
+
+  const fetchClassesAtivo = async () => {
+    try {
+      // Define a list of asset classes based on PoliticaInvestimentos table structure
+      const classesAtivoStatic = [
+        'CDI - Liquidez',
+        'CDI - Títulos', 
+        'CDI - Fundos',
+        'Inflação - Títulos',
+        'Inflação - Fundos',
+        'Pré Fixado - Títulos',
+        'Pré Fixado - Fundos',
+        'Multimercado',
+        'Imobiliário - Ativos',
+        'Imobiliário - Fundos',
+        'Ações - Ativos',
+        'Ações - ETFs',
+        'Ações - Fundos',
+        'Ações - Long Biased',
+        'Private Equity/Venture Capital/Special Sits',
+        'Exterior - Renda Fixa',
+        'Exterior - Ações',
+        'COE',
+        'Criptoativos',
+        'Ouro'
+      ];
+      setClassesAtivo(classesAtivoStatic);
+    } catch (error) {
+      console.error('Erro ao buscar classes de ativo:', error);
+    }
+  };
 
   const fetchData = async () => {
     if (!decodedClientName) return;
@@ -662,11 +695,21 @@ export default function DataManagement() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="classe">Classe do Ativo</Label>
-                      <Input
-                        id="classe"
-                        value={editingItem["Classe do ativo"] || ''}
-                        onChange={(e) => setEditingItem({...editingItem, "Classe do ativo": e.target.value})}
-                      />
+                      <Select 
+                        value={editingItem["Classe do ativo"] || ''} 
+                        onValueChange={(value) => setEditingItem({...editingItem, "Classe do ativo": value})}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selecione a classe do ativo" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border-border z-50">
+                          {classesAtivo.map((classe) => (
+                            <SelectItem key={classe} value={classe}>
+                              {classe}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label htmlFor="posicao">Posição</Label>
