@@ -141,7 +141,7 @@ export default function ClientList() {
                 className="bg-gradient-card border-border/50 shadow-elegant-md hover:shadow-glow transition-all duration-300 cursor-pointer group"
                 onClick={() => handleClientClick(client.Cliente)}
               >
-                <CardContent className="p-6">
+                <CardContent className="p-6 px-6">
                   <div className="flex items-center justify-between">
                     <div className="space-y-2">
                       <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
