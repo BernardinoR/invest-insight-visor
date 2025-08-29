@@ -759,10 +759,23 @@ export default function DataManagement() {
                       <Label htmlFor="posicao">Posição</Label>
                       <Input
                         id="posicao"
-                        type="number"
-                        step="0.01"
-                        value={editingItem.Posicao || 0}
-                        onChange={(e) => setEditingItem({...editingItem, Posicao: parseFloat(e.target.value) || 0})}
+                        type="text"
+                        value={editingItem.Posicao ? Number(editingItem.Posicao).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                        onChange={(e) => {
+                          // Remove R$, espaços e converte vírgulas para pontos
+                          let value = e.target.value.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+                          const numericValue = parseFloat(value) || 0;
+                          setEditingItem({...editingItem, Posicao: numericValue});
+                        }}
+                        onPaste={(e) => {
+                          e.preventDefault();
+                          const pastedData = e.clipboardData.getData('text');
+                          // Remove R$, espaços e converte formato brasileiro para decimal
+                          let value = pastedData.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+                          const numericValue = parseFloat(value) || 0;
+                          setEditingItem({...editingItem, Posicao: numericValue});
+                        }}
+                        placeholder="285.549,21"
                       />
                     </div>
                   </div>
