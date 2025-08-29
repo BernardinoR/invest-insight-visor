@@ -203,15 +203,26 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         }
       }
       
-      // Target data (simplified as annual target / 12)
+      // Target data (calculate proper monthly target based on annual target)
       let targetRetorno = null;
-      if (clientTarget && currentCompetencia === firstCompetencia) {
-        targetRetorno = clientTarget.targetValue / 12; // Monthly approximation
-      } else if (clientTarget) {
-        // Calculate accumulated target return
-        const monthsPassed = index; // Approximate months since start
-        targetRetorno = Math.pow(1 + clientTarget.targetValue / 1200, monthsPassed) - 1;
-        targetRetorno *= 100;
+      if (clientTarget) {
+        if (currentCompetencia === firstCompetencia) {
+          // First month: monthly target approximation (annual target / 12)
+          targetRetorno = (clientTarget.targetValue / 12);
+        } else {
+          // Subsequent months: calculate compound annual target up to current month
+          const [currentMonth, currentYear] = currentCompetencia.split('/');
+          const [firstMonth, firstYear] = firstCompetencia.split('/');
+          
+          // Calculate months elapsed (simplified)
+          const monthsElapsed = (parseInt(currentYear) - parseInt(firstYear)) * 12 + 
+                               (parseInt(currentMonth) - parseInt(firstMonth)) + 1;
+          
+          // Calculate target accumulated return using compound annual rate
+          const annualRate = clientTarget.targetValue / 100;
+          const monthlyRate = Math.pow(1 + annualRate, 1/12) - 1;
+          targetRetorno = (Math.pow(1 + monthlyRate, monthsElapsed) - 1) * 100;
+        }
       }
       
       // Market indicators

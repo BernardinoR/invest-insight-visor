@@ -20,34 +20,66 @@ export function useMarketIndicators(clientName?: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Mock data for Ibovespa and IFIX (in real app, this would come from an external API)
+  // Mock data for Ibovespa and IFIX with more realistic historical patterns
   const generateMockMarketData = (): MarketIndicatorData[] => {
     const data: MarketIndicatorData[] = [];
-    const startDate = new Date('2023-01-01');
-    const endDate = new Date();
+    
+    // Fixed realistic data based on Brazilian market patterns
+    // Each competencia represents: Month N = from day 30 of month N-1 to day 31 of month N
+    const marketReturns = [
+      // 2023 data
+      { competencia: '01/2023', ibovespa: 0.0234, ifix: 0.0156 }, // Jan 2023
+      { competencia: '02/2023', ibovespa: -0.0187, ifix: 0.0089 }, // Feb 2023
+      { competencia: '03/2023', ibovespa: 0.0298, ifix: 0.0201 }, // Mar 2023
+      { competencia: '04/2023', ibovespa: 0.0145, ifix: -0.0034 }, // Apr 2023
+      { competencia: '05/2023', ibovespa: -0.0067, ifix: 0.0178 }, // May 2023
+      { competencia: '06/2023', ibovespa: 0.0456, ifix: 0.0234 }, // Jun 2023
+      { competencia: '07/2023', ibovespa: 0.0234, ifix: 0.0123 }, // Jul 2023
+      { competencia: '08/2023', ibovespa: -0.0298, ifix: -0.0156 }, // Aug 2023
+      { competencia: '09/2023', ibovespa: 0.0189, ifix: 0.0089 }, // Sep 2023
+      { competencia: '10/2023', ibovespa: -0.0123, ifix: 0.0045 }, // Oct 2023
+      { competencia: '11/2023', ibovespa: 0.0367, ifix: 0.0167 }, // Nov 2023
+      { competencia: '12/2023', ibovespa: 0.0289, ifix: 0.0134 }, // Dec 2023
+      
+      // 2024 data
+      { competencia: '01/2024', ibovespa: -0.0145, ifix: 0.0078 }, // Jan 2024
+      { competencia: '02/2024', ibovespa: 0.0267, ifix: 0.0156 }, // Feb 2024
+      { competencia: '03/2024', ibovespa: 0.0198, ifix: -0.0023 }, // Mar 2024
+      { competencia: '04/2024', ibovespa: -0.0089, ifix: 0.0201 }, // Apr 2024
+      { competencia: '05/2024', ibovespa: 0.0156, ifix: 0.0089 }, // May 2024
+      { competencia: '06/2024', ibovespa: 0.0234, ifix: 0.0134 }, // Jun 2024
+      { competencia: '07/2024', ibovespa: -0.0167, ifix: 0.0167 }, // Jul 2024
+      { competencia: '08/2024', ibovespa: 0.0289, ifix: -0.0045 }, // Aug 2024
+      { competencia: '09/2024', ibovespa: 0.0098, ifix: 0.0178 }, // Sep 2024
+      { competencia: '10/2024', ibovespa: -0.0234, ifix: 0.0089 }, // Oct 2024
+      { competencia: '11/2024', ibovespa: 0.0345, ifix: 0.0201 }, // Nov 2024
+      { competencia: '12/2024', ibovespa: 0.0178, ifix: 0.0134 }, // Dec 2024
+      
+      // 2025 data
+      { competencia: '01/2025', ibovespa: 0.0267, ifix: 0.0089 }, // Jan 2025
+      { competencia: '02/2025', ibovespa: -0.0098, ifix: 0.0156 }, // Feb 2025
+      { competencia: '03/2025', ibovespa: 0.0189, ifix: 0.0123 }, // Mar 2025
+      { competencia: '04/2025', ibovespa: 0.0234, ifix: -0.0034 }, // Apr 2025
+      { competencia: '05/2025', ibovespa: -0.0156, ifix: 0.0167 }, // May 2025
+      { competencia: '06/2025', ibovespa: 0.0298, ifix: 0.0201 }, // Jun 2025
+      { competencia: '07/2025', ibovespa: 0.0123, ifix: 0.0089 }, // Jul 2025
+    ];
     
     let ibovespaAccumulated = 0;
     let ifixAccumulated = 0;
     
-    for (let d = new Date(startDate); d <= endDate; d.setMonth(d.getMonth() + 1)) {
-      const competencia = `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-      
-      // Generate realistic monthly returns (mock data)
-      const ibovespaMonthly = (Math.random() - 0.5) * 0.06; // -3% to +3% monthly
-      const ifixMonthly = (Math.random() - 0.5) * 0.04; // -2% to +2% monthly
-      
-      // Calculate accumulated returns
-      ibovespaAccumulated = (1 + ibovespaAccumulated) * (1 + ibovespaMonthly) - 1;
-      ifixAccumulated = (1 + ifixAccumulated) * (1 + ifixMonthly) - 1;
+    marketReturns.forEach(item => {
+      ibovespaAccumulated = (1 + ibovespaAccumulated) * (1 + item.ibovespa) - 1;
+      ifixAccumulated = (1 + ifixAccumulated) * (1 + item.ifix) - 1;
       
       data.push({
-        competencia,
-        ibovespa: ibovespaMonthly,
-        ifix: ifixMonthly,
+        competencia: item.competencia,
+        ibovespa: item.ibovespa,
+        ifix: item.ifix,
         accumulatedIbovespa: ibovespaAccumulated,
         accumulatedIfix: ifixAccumulated
       });
-    }
+    });
     
     return data;
   };
