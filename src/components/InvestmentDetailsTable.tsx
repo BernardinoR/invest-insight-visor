@@ -559,23 +559,8 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
                           {(() => {
                             const cdiRelative = calculateCDIRelative(item.name);
                             if (cdiRelative === null) return "-";
-                            
-                            const strategyReturn = accumulatedReturnsData[item.name];
-                            if (strategyReturn === undefined) return "-";
-                            
                             const percentage = (cdiRelative * 100).toFixed(0);
-                            const strategyReturnPercent = (strategyReturn * 100).toFixed(2);
-                            
-                            return (
-                              <div className="space-y-0.5">
-                                <div className="text-foreground font-medium">
-                                  {strategyReturn >= 0 ? "+" : ""}{strategyReturnPercent}%
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {percentage}%
-                                </div>
-                              </div>
-                            );
+                            return `${percentage}% do CDI`;
                           })()}
                         </TableCell>
                       </TableRow>
