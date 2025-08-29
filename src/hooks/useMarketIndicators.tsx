@@ -6,9 +6,11 @@ interface MarketIndicatorData {
   ibovespa: number;
   ifix: number;
   ipca: number;
+  clientTarget: number;
   accumulatedIbovespa: number;
   accumulatedIfix: number;
   accumulatedIpca: number;
+  accumulatedClientTarget: number;
 }
 
 interface ClientTarget {
@@ -175,6 +177,7 @@ export function useMarketIndicators(clientName?: string) {
       let ibovespaAccumulated = 0;
       let ifixAccumulated = 0;
       let ipcaAccumulated = 0;
+      let clientTargetAccumulated = 0;
 
       // Sort competencias chronologically
       const sortedCompetencias = Array.from(competenciaMap.keys()).sort((a, b) => {
@@ -202,6 +205,12 @@ export function useMarketIndicators(clientName?: string) {
         let ibovespaMonthly = avgIbovespa !== null ? avgIbovespa : 0;
         let ifixMonthly = avgIfix !== null ? avgIfix : 0;
 
+        // Calculate client target return if we have both IPCA and target value
+        let clientTargetMonthly = 0;
+        if (monthlyIpca !== 0 && clientTarget && clientTarget.targetValue > 0) {
+          clientTargetMonthly = calculateMonthlyTarget(monthlyIpca, clientTarget.targetValue);
+        }
+
         // Update accumulated returns only when we have non-zero data
         if (ibovespaMonthly !== 0) {
           ibovespaAccumulated = (1 + ibovespaAccumulated) * (1 + ibovespaMonthly) - 1;
@@ -216,23 +225,32 @@ export function useMarketIndicators(clientName?: string) {
           ipcaAccumulated = (1 + ipcaAccumulated) * (1 + monthlyIpca) - 1;
         }
 
+        // Client target accumulation
+        if (clientTargetMonthly !== 0) {
+          clientTargetAccumulated = (1 + clientTargetAccumulated) * (1 + clientTargetMonthly) - 1;
+        }
+
         result.push({
           competencia,
           ibovespa: ibovespaMonthly,
           ifix: ifixMonthly,
           ipca: monthlyIpca,
+          clientTarget: clientTargetMonthly,
           accumulatedIbovespa: ibovespaAccumulated,
           accumulatedIfix: ifixAccumulated,
-          accumulatedIpca: ipcaAccumulated
+          accumulatedIpca: ipcaAccumulated,
+          accumulatedClientTarget: clientTargetAccumulated
         });
 
         console.log(`Processed ${competencia}:`, {
           ibovespaMonthly,
           ifixMonthly,
           monthlyIpca,
+          clientTargetMonthly,
           ibovespaAccumulated,
           ifixAccumulated,
-          ipcaAccumulated
+          ipcaAccumulated,
+          clientTargetAccumulated
         });
       });
 
@@ -276,6 +294,14 @@ export function useMarketIndicators(clientName?: string) {
       console.error('Erro ao buscar meta do cliente:', err);
       return null;
     }
+  };
+
+  // Calculate monthly target return based on IPCA + annual target
+  const calculateMonthlyTarget = (ipcaMonthly: number, annualTarget: number): number => {
+    // Convert annual target to monthly: (1 + annual%)^(1/12) - 1
+    const monthlyTargetRate = Math.pow(1 + (annualTarget / 100), 1/12) - 1;
+    // Add IPCA monthly + monthly target rate
+    return ipcaMonthly + monthlyTargetRate;
   };
 
   useEffect(() => {

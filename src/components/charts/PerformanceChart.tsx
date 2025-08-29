@@ -33,7 +33,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   const [showIndicators, setShowIndicators] = useState(false);
   const [selectedIndicators, setSelectedIndicators] = useState({
     cdi: true,
-    target: false,
+    target: true,
     ibovespa: false,
     ifix: false,
     ipca: false
@@ -205,27 +205,8 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         }
       }
       
-      // Target data (calculate proper monthly target based on annual target)
+      // Target data (calculate properly using market indicators which already include the correct calculation)
       let targetRetorno = null;
-      if (clientTarget) {
-        if (currentCompetencia === firstCompetencia) {
-          // First month: monthly target approximation (annual target / 12)
-          targetRetorno = (clientTarget.targetValue / 12);
-        } else {
-          // Subsequent months: calculate compound annual target up to current month
-          const [currentMonth, currentYear] = currentCompetencia.split('/');
-          const [firstMonth, firstYear] = firstCompetencia.split('/');
-          
-          // Calculate months elapsed (simplified)
-          const monthsElapsed = (parseInt(currentYear) - parseInt(firstYear)) * 12 + 
-                               (parseInt(currentMonth) - parseInt(firstMonth)) + 1;
-          
-          // Calculate target accumulated return using compound annual rate
-          const annualRate = clientTarget.targetValue / 100;
-          const monthlyRate = Math.pow(1 + annualRate, 1/12) - 1;
-          targetRetorno = (Math.pow(1 + monthlyRate, monthsElapsed) - 1) * 100;
-        }
-      }
       
       // Market indicators - only show if data exists
       let ibovespaRetorno = null;
@@ -234,6 +215,15 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
       
       const firstMarketPoint = marketData.find(m => m.competencia === firstCompetencia);
       const currentMarketPoint = marketData.find(m => m.competencia === currentCompetencia);
+      
+      if (currentMarketPoint && firstMarketPoint && currentMarketPoint.accumulatedClientTarget !== undefined) {
+        if (currentCompetencia === firstCompetencia) {
+          targetRetorno = currentMarketPoint.clientTarget * 100;
+        } else {
+          const targetRelativeReturn = (1 + currentMarketPoint.accumulatedClientTarget) / (1 + firstMarketPoint.accumulatedClientTarget) - 1;
+          targetRetorno = targetRelativeReturn * 100;
+        }
+      }
       
       console.log('Market data processing:', {
         firstCompetencia,
