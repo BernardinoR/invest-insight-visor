@@ -572,7 +572,7 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
                                   {strategyReturn >= 0 ? "+" : ""}{strategyReturnPercent}%
                                 </div>
                                 <div className="text-xs text-muted-foreground">
-                                  {percentage}% do CDI
+                                  {percentage}%
                                 </div>
                               </div>
                             );
