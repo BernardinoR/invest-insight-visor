@@ -742,10 +742,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                         <div>
                           <p className="text-sm text-muted-foreground">Meta de Retorno</p>
                           <p className="text-2xl font-semibold text-foreground">
-                            {clientTarget.targetValue.toFixed(1)}%
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            anual
+                            {clientTarget.meta}
                           </p>
                         </div>
                       </div>
