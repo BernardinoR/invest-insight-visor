@@ -675,8 +675,8 @@ export default function DataManagement() {
                           id="rendimento"
                           type="number"
                           step="0.0001"
-                          value={editingItem.Rendimento || 0}
-                          onChange={(e) => setEditingItem({...editingItem, Rendimento: parseFloat(e.target.value) || 0})}
+                          value={(editingItem.Rendimento || 0) * 100}
+                          onChange={(e) => setEditingItem({...editingItem, Rendimento: (parseFloat(e.target.value) || 0) / 100})}
                           className="pr-8"
                         />
                         <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
@@ -794,8 +794,8 @@ export default function DataManagement() {
                         id="rendimento"
                         type="number"
                         step="0.0001"
-                        value={editingItem.Rendimento || 0}
-                        onChange={(e) => setEditingItem({...editingItem, Rendimento: parseFloat(e.target.value) || 0})}
+                        value={(editingItem.Rendimento || 0) * 100}
+                        onChange={(e) => setEditingItem({...editingItem, Rendimento: (parseFloat(e.target.value) || 0) / 100})}
                         className="pr-8"
                       />
                       <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
