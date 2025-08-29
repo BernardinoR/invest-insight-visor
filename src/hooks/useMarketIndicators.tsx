@@ -205,10 +205,9 @@ export function useMarketIndicators(clientName?: string) {
         let ibovespaMonthly = avgIbovespa !== null ? avgIbovespa : 0;
         let ifixMonthly = avgIfix !== null ? avgIfix : 0;
 
-        // Calculate client target return if we have target value
+        // Calculate client target return ONLY if we have both IPCA data and target value
         let clientTargetMonthly = 0;
-        if (clientTargetValue && clientTargetValue.targetValue > 0) {
-          // If we have IPCA data, use it; otherwise use 0 for IPCA
+        if (monthlyIpca !== 0 && clientTargetValue && clientTargetValue.targetValue > 0) {
           clientTargetMonthly = calculateMonthlyTarget(monthlyIpca, clientTargetValue.targetValue);
           console.log(`Calculated target for ${competencia}:`, {
             monthlyIpca: monthlyIpca * 100,
@@ -216,11 +215,12 @@ export function useMarketIndicators(clientName?: string) {
             clientTargetMonthly: clientTargetMonthly * 100,
             meta: clientTargetValue.meta
           });
-        } else if (clientTargetValue) {
+        } else {
           console.log(`No target calculated for ${competencia}:`, {
             monthlyIpca: monthlyIpca * 100,
-            hasTargetValue: !!clientTargetValue.targetValue,
-            targetValue: clientTargetValue.targetValue
+            hasIPCA: monthlyIpca !== 0,
+            hasTargetValue: !!(clientTargetValue?.targetValue),
+            targetValue: clientTargetValue?.targetValue
           });
         }
 
