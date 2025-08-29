@@ -25,6 +25,11 @@ interface PerformanceChartProps {
   clientName?: string;
 }
 
+function decodeClientName(clientName?: string): string | undefined {
+  if (!clientName) return undefined;
+  return decodeURIComponent(clientName);
+}
+
 export function PerformanceChart({ consolidadoData, clientName }: PerformanceChartProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'custom'>('12months');
   const [customStartDate, setCustomStartDate] = useState<Date>();
@@ -40,7 +45,8 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   });
   
   const { cdiData, loading: cdiLoading, error: cdiError } = useCDIData();
-  const { marketData, clientTarget, loading: marketLoading, error: marketError } = useMarketIndicators(clientName);
+  const decodedClientName = decodeClientName(clientName);
+  const { marketData, clientTarget, loading: marketLoading, error: marketError } = useMarketIndicators(decodedClientName);
 
   // Consolidate data by competencia (sum patrimônio, weighted average rendimento)
   const consolidateByCompetencia = (data: typeof consolidadoData) => {
@@ -216,12 +222,17 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
       const firstMarketPoint = marketData.find(m => m.competencia === firstCompetencia);
       const currentMarketPoint = marketData.find(m => m.competencia === currentCompetencia);
       
-      if (currentMarketPoint && firstMarketPoint && currentMarketPoint.accumulatedClientTarget !== undefined) {
-        if (currentCompetencia === firstCompetencia) {
-          targetRetorno = currentMarketPoint.clientTarget * 100;
-        } else {
-          const targetRelativeReturn = (1 + currentMarketPoint.accumulatedClientTarget) / (1 + firstMarketPoint.accumulatedClientTarget) - 1;
-          targetRetorno = targetRelativeReturn * 100;
+      if (currentMarketPoint && firstMarketPoint) {
+        // Check if we have actual target data (not zero)
+        const hasTargetData = currentMarketPoint.clientTarget !== 0 || currentMarketPoint.accumulatedClientTarget !== 0;
+        
+        if (hasTargetData) {
+          if (currentCompetencia === firstCompetencia) {
+            targetRetorno = currentMarketPoint.clientTarget * 100;
+          } else {
+            const targetRelativeReturn = (1 + currentMarketPoint.accumulatedClientTarget) / (1 + firstMarketPoint.accumulatedClientTarget) - 1;
+            targetRetorno = targetRelativeReturn * 100;
+          }
         }
       }
       
@@ -370,7 +381,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                         }
                       />
                       <label htmlFor="target" className="text-sm">
-                        Meta {clientTarget ? `(${clientTarget.meta})` : '(Carregando...)'}
+                        Meta {marketLoading ? '(Carregando...)' : clientTarget ? `(${clientTarget.meta})` : '(Não disponível)'}
                       </label>
                     </div>
                     
@@ -582,18 +593,19 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                    }}
                  />
                )}
-               
-               {selectedIndicators.target && clientTarget && (
-                 <Line 
-                   type="monotone" 
-                   dataKey="targetRetorno" 
-                   stroke="hsl(var(--success))"
-                   strokeWidth={2}
-                   dot={{ 
-                     fill: 'hsl(var(--success))', 
-                     strokeWidth: 1, 
-                     stroke: 'hsl(var(--background))',
-                     r: 3
+                
+                {selectedIndicators.target && (
+                  <Line 
+                    type="monotone" 
+                    dataKey="targetRetorno" 
+                    stroke="hsl(var(--success))"
+                    strokeWidth={2}
+                    connectNulls={false}
+                    dot={{ 
+                      fill: 'hsl(var(--success))', 
+                      strokeWidth: 1, 
+                      stroke: 'hsl(var(--background))',
+                      r: 3
                    }}
                    activeDot={{ 
                      r: 5, 
