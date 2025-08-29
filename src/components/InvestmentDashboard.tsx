@@ -12,6 +12,7 @@ import { PortfolioTable } from "./PortfolioTable";
 import { InvestmentDetailsTable } from "./InvestmentDetailsTable";
 import { ClientDataDisplay } from "./ClientDataDisplay";
 import { CompetenciaSeletor } from "./CompetenciaSeletor";
+import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
 import { useClientData } from "@/hooks/useClientData";
 import { TrendingUp, DollarSign, Target, Building2, Calendar, ChevronDown, ChevronRight } from "lucide-react";
 import { useState, useCallback } from "react";
@@ -268,6 +269,11 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Portfolio Performance Chart */}
+        <div className="mb-8">
+          <PortfolioPerformanceChart clientName={selectedClient} />
         </div>
 
         {/* Client Data Display */}
