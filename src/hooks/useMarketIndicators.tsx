@@ -279,6 +279,8 @@ export function useMarketIndicators(clientName?: string) {
   const fetchClientTarget = async (clientName: string) => {
     try {
       console.log('Buscando meta para cliente:', clientName);
+      console.log('Tipo do clientName:', typeof clientName);
+      console.log('ClientName encoded:', encodeURIComponent(clientName));
       
       const { data, error } = await supabase
         .from('PoliticaInvestimentos')
