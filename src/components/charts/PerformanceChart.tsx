@@ -413,7 +413,12 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                         }
                       />
                        <label htmlFor="target" className="text-sm">
-                         Meta {marketLoading ? '(Carregando...)' : (clientTarget && clientTarget.meta) ? `(${clientTarget.meta})` : '(Não disponível)'}
+                         Meta {(() => {
+                           console.log('Debug clientTarget:', clientTarget, 'marketLoading:', marketLoading);
+                           if (marketLoading) return '(Carregando...)';
+                           if (clientTarget && clientTarget.meta) return `(${clientTarget.meta})`;
+                           return '(Não disponível)';
+                         })()}
                        </label>
                     </div>
                     
