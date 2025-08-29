@@ -670,13 +670,17 @@ export default function DataManagement() {
                     </div>
                     <div>
                       <Label htmlFor="rendimento">Rendimento (%)</Label>
-                      <Input
-                        id="rendimento"
-                        type="number"
-                        step="0.0001"
-                        value={editingItem.Rendimento || 0}
-                        onChange={(e) => setEditingItem({...editingItem, Rendimento: parseFloat(e.target.value) || 0})}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="rendimento"
+                          type="number"
+                          step="0.0001"
+                          value={editingItem.Rendimento || 0}
+                          onChange={(e) => setEditingItem({...editingItem, Rendimento: parseFloat(e.target.value) || 0})}
+                          className="pr-8"
+                        />
+                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                      </div>
                     </div>
                   </div>
                 </>
@@ -785,13 +789,17 @@ export default function DataManagement() {
                   
                   <div>
                     <Label htmlFor="rendimento">Rendimento (%)</Label>
-                    <Input
-                      id="rendimento"
-                      type="number"
-                      step="0.0001"
-                      value={editingItem.Rendimento || 0}
-                      onChange={(e) => setEditingItem({...editingItem, Rendimento: parseFloat(e.target.value) || 0})}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="rendimento"
+                        type="number"
+                        step="0.0001"
+                        value={editingItem.Rendimento || 0}
+                        onChange={(e) => setEditingItem({...editingItem, Rendimento: parseFloat(e.target.value) || 0})}
+                        className="pr-8"
+                      />
+                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                    </div>
                   </div>
                 </>
               )}
