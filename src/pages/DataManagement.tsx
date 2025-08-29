@@ -83,7 +83,28 @@ export default function DataManagement() {
 
   const [selectedCompetencia, setSelectedCompetencia] = useState<string>("all");
   const [searchAtivo, setSearchAtivo] = useState<string>("");
-  const [classesAtivo, setClassesAtivo] = useState<string[]>([]);
+  const [classesAtivo, setClassesAtivo] = useState<string[]>([
+    'CDI - Liquidez',
+    'CDI - Títulos', 
+    'CDI - Fundos',
+    'Inflação - Títulos',
+    'Inflação - Fundos',
+    'Pré Fixado - Títulos',
+    'Pré Fixado - Fundos',
+    'Multimercado',
+    'Imobiliário - Ativos',
+    'Imobiliário - Fundos',
+    'Ações - Ativos',
+    'Ações - ETFs',
+    'Ações - Fundos',
+    'Ações - Long Biased',
+    'Private Equity/Venture Capital/Special Sits',
+    'Exterior - Renda Fixa',
+    'Exterior - Ações',
+    'COE',
+    'Criptoativos',
+    'Ouro'
+  ]);
 
   useEffect(() => {
     fetchData();
@@ -115,6 +136,7 @@ export default function DataManagement() {
         'Criptoativos',
         'Ouro'
       ];
+      console.log('Classes de ativo carregadas:', classesAtivoStatic);
       setClassesAtivo(classesAtivoStatic);
     } catch (error) {
       console.error('Erro ao buscar classes de ativo:', error);
@@ -702,12 +724,16 @@ export default function DataManagement() {
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Selecione a classe do ativo" />
                         </SelectTrigger>
-                        <SelectContent className="bg-background border-border z-50">
-                          {classesAtivo.map((classe) => (
+                        <SelectContent className="bg-background border-border z-50 max-h-[200px] overflow-y-auto">
+                          {classesAtivo.length > 0 ? classesAtivo.map((classe) => (
                             <SelectItem key={classe} value={classe}>
                               {classe}
                             </SelectItem>
-                          ))}
+                          )) : (
+                            <SelectItem value="" disabled>
+                              Carregando classes...
+                            </SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
