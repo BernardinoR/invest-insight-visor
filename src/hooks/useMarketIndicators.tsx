@@ -340,7 +340,9 @@ export function useMarketIndicators(clientName?: string) {
   };
 
   useEffect(() => {
+    console.log('useMarketIndicators useEffect triggered with clientName:', clientName);
     const loadData = async () => {
+      console.log('loadData function started');
       setLoading(true);
       setError(null);
       
