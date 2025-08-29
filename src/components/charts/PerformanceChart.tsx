@@ -245,34 +245,42 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
 
   console.log('Chart data with indicators:', chartDataWithIndicators);
 
-  // Calculate optimal Y axis scale for accumulated returns including all indicators
+  // Calculate optimal Y axis scale with better padding
   const portfolioValues = chartDataWithIndicators.map(item => item.retornoAcumulado);
   const cdiValues = chartDataWithIndicators.map(item => item.cdiRetorno).filter(v => v !== null) as number[];
   const targetValues = chartDataWithIndicators.map(item => item.targetRetorno).filter(v => v !== null) as number[];
   const ibovespaValues = chartDataWithIndicators.map(item => item.ibovespaRetorno).filter(v => v !== null) as number[];
   const ifixValues = chartDataWithIndicators.map(item => item.ifixRetorno).filter(v => v !== null) as number[];
-  const allValues = [...portfolioValues, ...cdiValues, ...targetValues, ...ibovespaValues, ...ifixValues];
+  
+  // Only include values from selected indicators
+  let allValues = [...portfolioValues];
+  if (selectedIndicators.cdi) allValues = [...allValues, ...cdiValues];
+  if (selectedIndicators.target) allValues = [...allValues, ...targetValues];
+  if (selectedIndicators.ibovespa) allValues = [...allValues, ...ibovespaValues];
+  if (selectedIndicators.ifix) allValues = [...allValues, ...ifixValues];
+  
   const minValue = Math.min(...allValues, 0);
   const maxValue = Math.max(...allValues);
   
   const range = maxValue - minValue;
-  const buffer = Math.max(range * 0.2, 1);
+  const buffer = Math.max(range * 0.1, 0.5); // Reduced buffer for tighter scale
   
-  const yAxisMin = minValue - buffer;
-  const yAxisMax = maxValue + buffer;
+  const yAxisMin = Math.floor((minValue - buffer) * 2) / 2; // Round to nearest 0.5
+  const yAxisMax = Math.ceil((maxValue + buffer) * 2) / 2;  // Round to nearest 0.5
   
   const generateTicks = (min: number, max: number) => {
     const range = max - min;
     let step;
     
-    if (range <= 5) step = 1;
-    else if (range <= 10) step = 2;
-    else if (range <= 20) step = 5;
-    else step = Math.ceil(range / 8);
+    if (range <= 2) step = 0.25;
+    else if (range <= 5) step = 0.5;
+    else if (range <= 10) step = 1;
+    else if (range <= 20) step = 2;
+    else step = Math.ceil(range / 10);
     
     const ticks = [];
     for (let i = Math.floor(min / step) * step; i <= max; i += step) {
-      ticks.push(Number(i.toFixed(1)));
+      ticks.push(Number(i.toFixed(2)));
     }
     return ticks;
   };
@@ -435,55 +443,6 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
               data={chartDataWithIndicators} 
               margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
             >
-              <defs>
-                {/* Portfolio gradient */}
-                <linearGradient id="portfolioGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={1}/>
-                  <stop offset="50%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.6}/>
-                </linearGradient>
-                
-                {/* CDI gradient */}
-                <linearGradient id="cdiGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.8}/>
-                  <stop offset="100%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.5}/>
-                </linearGradient>
-                
-                {/* Target gradient */}
-                <linearGradient id="targetGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="hsl(var(--accent-foreground))" stopOpacity={1}/>
-                  <stop offset="100%" stopColor="hsl(var(--accent-foreground))" stopOpacity={0.7}/>
-                </linearGradient>
-                
-                {/* Ibovespa gradient */}
-                <linearGradient id="ibovespaGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={1}/>
-                  <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.6}/>
-                </linearGradient>
-                
-                {/* IFIX gradient */}
-                <linearGradient id="ifixGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="hsl(var(--warning))" stopOpacity={1}/>
-                  <stop offset="100%" stopColor="hsl(var(--warning))" stopOpacity={0.7}/>
-                </linearGradient>
-                
-                {/* Glow filters */}
-                <filter id="portfolioGlow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                  <feMerge> 
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                  </feMerge>
-                </filter>
-                
-                <filter id="indicatorGlow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                  <feMerge> 
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                  </feMerge>
-                </filter>
-              </defs>
               <CartesianGrid 
                 strokeDasharray="3 3" 
                 stroke="hsl(var(--border))" 
@@ -544,50 +503,42 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                 }}
                 cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
               />
-              {/* Portfolio Line - Main focus with sophisticated styling */}
+              {/* Portfolio Line - Main line with emphasis */}
               <Line 
                 type="monotone" 
                 dataKey="retornoAcumulado" 
-                stroke="url(#portfolioGradient)"
-                strokeWidth={4}
-                filter="url(#portfolioGlow)"
+                stroke="hsl(var(--primary))"
+                strokeWidth={3}
                 dot={{ 
                   fill: 'hsl(var(--primary))', 
-                  strokeWidth: 3, 
+                  strokeWidth: 2, 
                   stroke: 'hsl(var(--background))',
-                  r: 5,
-                  filter: 'drop-shadow(0 2px 4px hsl(var(--primary) / 0.3))'
+                  r: 4
                 }}
                 activeDot={{ 
-                  r: 8, 
+                  r: 6, 
                   fill: 'hsl(var(--primary))', 
-                  strokeWidth: 4, 
-                  stroke: 'hsl(var(--background))',
-                  filter: 'drop-shadow(0 4px 8px hsl(var(--primary) / 0.4))',
-                  className: 'animate-pulse'
+                  strokeWidth: 3, 
+                  stroke: 'hsl(var(--background))'
                 }}
               />
                {selectedIndicators.cdi && (
                  <Line 
                    type="monotone" 
                    dataKey="cdiRetorno" 
-                   stroke="url(#cdiGradient)"
-                   strokeWidth={3}
-                   strokeDasharray="8 4"
-                   filter="url(#indicatorGlow)"
+                   stroke="hsl(var(--muted-foreground))"
+                   strokeWidth={2}
                    dot={{ 
                      fill: 'hsl(var(--muted-foreground))', 
-                     strokeWidth: 2, 
+                     strokeWidth: 1, 
                      stroke: 'hsl(var(--background))',
-                     r: 4,
-                     opacity: 0.8
+                     r: 3
                    }}
                    activeDot={{ 
-                     r: 6, 
+                     r: 5, 
                      fill: 'hsl(var(--muted-foreground))', 
-                     strokeWidth: 3, 
-                     stroke: 'hsl(var(--background))',
-                     filter: 'drop-shadow(0 2px 4px hsl(var(--muted-foreground) / 0.3))'
+                     strokeWidth: 2, 
+                     stroke: 'hsl(var(--background))'
                    }}
                  />
                )}
@@ -596,23 +547,19 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                  <Line 
                    type="monotone" 
                    dataKey="targetRetorno" 
-                   stroke="url(#targetGradient)"
-                   strokeWidth={3}
-                   strokeDasharray="12 3 3 3"
-                   filter="url(#indicatorGlow)"
+                   stroke="hsl(var(--success))"
+                   strokeWidth={2}
                    dot={{ 
-                     fill: 'hsl(var(--accent-foreground))', 
-                     strokeWidth: 2, 
+                     fill: 'hsl(var(--success))', 
+                     strokeWidth: 1, 
                      stroke: 'hsl(var(--background))',
-                     r: 4,
-                     opacity: 0.9
+                     r: 3
                    }}
                    activeDot={{ 
-                     r: 6, 
-                     fill: 'hsl(var(--accent-foreground))', 
-                     strokeWidth: 3, 
-                     stroke: 'hsl(var(--background))',
-                     filter: 'drop-shadow(0 2px 4px hsl(var(--accent-foreground) / 0.3))'
+                     r: 5, 
+                     fill: 'hsl(var(--success))', 
+                     strokeWidth: 2, 
+                     stroke: 'hsl(var(--background))'
                    }}
                  />
                )}
@@ -621,23 +568,19 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                  <Line 
                    type="monotone" 
                    dataKey="ibovespaRetorno" 
-                   stroke="url(#ibovespaGradient)"
-                   strokeWidth={3}
-                   strokeDasharray="15 5"
-                   filter="url(#indicatorGlow)"
+                   stroke="hsl(var(--destructive))"
+                   strokeWidth={2}
                    dot={{ 
                      fill: 'hsl(var(--destructive))', 
-                     strokeWidth: 2, 
+                     strokeWidth: 1, 
                      stroke: 'hsl(var(--background))',
-                     r: 4,
-                     opacity: 0.85
+                     r: 3
                    }}
                    activeDot={{ 
-                     r: 6, 
+                     r: 5, 
                      fill: 'hsl(var(--destructive))', 
-                     strokeWidth: 3, 
-                     stroke: 'hsl(var(--background))',
-                     filter: 'drop-shadow(0 2px 4px hsl(var(--destructive) / 0.3))'
+                     strokeWidth: 2, 
+                     stroke: 'hsl(var(--background))'
                    }}
                  />
                )}
@@ -646,23 +589,19 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                  <Line 
                    type="monotone" 
                    dataKey="ifixRetorno" 
-                   stroke="url(#ifixGradient)"
-                   strokeWidth={3}
-                   strokeDasharray="6 2 6 2"
-                   filter="url(#indicatorGlow)"
+                   stroke="hsl(var(--warning))"
+                   strokeWidth={2}
                    dot={{ 
                      fill: 'hsl(var(--warning))', 
-                     strokeWidth: 2, 
+                     strokeWidth: 1, 
                      stroke: 'hsl(var(--background))',
-                     r: 4,
-                     opacity: 0.9
+                     r: 3
                    }}
                    activeDot={{ 
-                     r: 6, 
+                     r: 5, 
                      fill: 'hsl(var(--warning))', 
-                     strokeWidth: 3, 
-                     stroke: 'hsl(var(--background))',
-                     filter: 'drop-shadow(0 2px 4px hsl(var(--warning) / 0.3))'
+                     strokeWidth: 2, 
+                     stroke: 'hsl(var(--background))'
                    }}
                  />
                )}
