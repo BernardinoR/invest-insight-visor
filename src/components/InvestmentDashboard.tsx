@@ -184,19 +184,24 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
               <Building2 className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {(() => {
-                  if (!hasData || dadosData.length === 0) return "--";
-                  
-                  // Filter to get only the most recent competencia
-                  const mostRecentCompetencia = dadosData.reduce((latest, current) => {
-                    return current.Competencia > latest.Competencia ? current : latest;
-                  }).Competencia;
-                  
-                  const filteredData = dadosData.filter(item => item.Competencia === mostRecentCompetencia);
-                  return filteredData.length;
-                })()}
-              </div>
+               <div className="text-2xl font-bold text-foreground">
+                 {(() => {
+                   if (!hasData || filteredDadosData.length === 0) return "--";
+                   
+                   // Count unique assets for the selected competencia range
+                   const finalCompetencia = filteredRange.fim;
+                   if (!finalCompetencia) {
+                     return filteredDadosData.length;
+                   }
+                   
+                   // Filter data for the final competencia and count unique assets
+                   const assetsInFinalCompetencia = filteredDadosData.filter(
+                     item => item.Competencia === finalCompetencia
+                   );
+                   
+                   return assetsInFinalCompetencia.length;
+                 })()}
+               </div>
               <p className="text-xs text-muted-foreground">
                 {hasData ? "Ativos na carteira" : "Aguardando dados"}
               </p>
