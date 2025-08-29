@@ -205,14 +205,22 @@ export function useMarketIndicators(clientName?: string) {
         let ibovespaMonthly = avgIbovespa !== null ? avgIbovespa : 0;
         let ifixMonthly = avgIfix !== null ? avgIfix : 0;
 
-        // Calculate client target return if we have both IPCA and target value
+        // Calculate client target return if we have target value
         let clientTargetMonthly = 0;
-        if (monthlyIpca !== 0 && clientTargetValue && clientTargetValue.targetValue > 0) {
+        if (clientTargetValue && clientTargetValue.targetValue > 0) {
+          // If we have IPCA data, use it; otherwise use 0 for IPCA
           clientTargetMonthly = calculateMonthlyTarget(monthlyIpca, clientTargetValue.targetValue);
           console.log(`Calculated target for ${competencia}:`, {
-            monthlyIpca,
+            monthlyIpca: monthlyIpca * 100,
             targetValue: clientTargetValue.targetValue,
-            clientTargetMonthly
+            clientTargetMonthly: clientTargetMonthly * 100,
+            meta: clientTargetValue.meta
+          });
+        } else if (clientTargetValue) {
+          console.log(`No target calculated for ${competencia}:`, {
+            monthlyIpca: monthlyIpca * 100,
+            hasTargetValue: !!clientTargetValue.targetValue,
+            targetValue: clientTargetValue.targetValue
           });
         }
 
@@ -230,7 +238,7 @@ export function useMarketIndicators(clientName?: string) {
           ipcaAccumulated = (1 + ipcaAccumulated) * (1 + monthlyIpca) - 1;
         }
 
-        // Client target accumulation
+        // Client target accumulation - always accumulate if we have a target
         if (clientTargetMonthly !== 0) {
           clientTargetAccumulated = (1 + clientTargetAccumulated) * (1 + clientTargetMonthly) - 1;
         }
@@ -270,11 +278,15 @@ export function useMarketIndicators(clientName?: string) {
 
   const fetchClientTarget = async (clientName: string) => {
     try {
+      console.log('Buscando meta para cliente:', clientName);
+      
       const { data, error } = await supabase
         .from('PoliticaInvestimentos')
-        .select('Meta de Retorno')
+        .select('Cliente, Meta de Retorno')
         .eq('Cliente', clientName)
         .limit(1);
+
+      console.log('Resultado da busca de meta:', { data, error });
 
       if (error) {
         console.error('Erro ao buscar meta do cliente:', error);
@@ -283,10 +295,13 @@ export function useMarketIndicators(clientName?: string) {
 
       if (data && data.length > 0) {
         const meta = data[0]['Meta de Retorno'];
+        console.log('Meta encontrada:', meta);
         
         // Extract numeric value from meta (e.g., "IPCA+5%" -> 5)
         const match = meta?.match(/(\d+(?:\.\d+)?)/);
         const targetValue = match ? parseFloat(match[1]) : 0;
+        
+        console.log('Valor da meta extraído:', targetValue);
         
         return {
           meta: meta || '',
@@ -294,6 +309,7 @@ export function useMarketIndicators(clientName?: string) {
         };
       }
       
+      console.log('Nenhuma meta encontrada para o cliente');
       return null;
     } catch (err) {
       console.error('Erro ao buscar meta do cliente:', err);
