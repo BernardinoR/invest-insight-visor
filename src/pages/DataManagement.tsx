@@ -775,7 +775,6 @@ export default function DataManagement() {
                           const numericValue = parseFloat(value) || 0;
                           setEditingItem({...editingItem, Posicao: numericValue});
                         }}
-                        placeholder="285.549,21"
                       />
                     </div>
                   </div>
