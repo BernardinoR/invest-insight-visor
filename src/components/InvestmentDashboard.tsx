@@ -587,7 +587,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                         monthReturn: returns.monthReturn,
                         yearReturn: returns.yearReturn,
                         inceptionReturn: returns.inceptionReturn,
-                        percentage: totalPatrimonio > 0 ? (totalPosition / totalPatrimonio) * 100 : 0
+                        percentage: displayPatrimonio > 0 ? (totalPosition / displayPatrimonio) * 100 : 0
                       };
                     }).sort((a, b) => {
                       const indexA = strategyOrder.indexOf(a.strategy);
@@ -750,7 +750,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                          <div className="font-medium text-foreground text-xs">{item.Ativo}</div>
                                        </div>
                                        <div className="text-center text-foreground text-xs">
-                                         {totalPatrimonio > 0 ? `${((item.Posicao / totalPatrimonio) * 100).toFixed(2)}%` : "-"}
+                                         {displayPatrimonio > 0 ? `${((item.Posicao / displayPatrimonio) * 100).toFixed(2)}%` : "-"}
                                        </div>
                                        <div className="text-center text-foreground">{item.Posicao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                                        <div className="text-center">
