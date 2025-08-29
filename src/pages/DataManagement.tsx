@@ -167,16 +167,28 @@ export default function DataManagement() {
     if (!editingItem) return;
 
     try {
+      console.log('Saving item:', editingItem);
       const { type, ...itemData } = editingItem;
       const tableName = type === 'consolidado' ? 'ConsolidadoPerformance' : 'DadosPerformance';
+      
+      // Remove undefined values and prepare data properly
+      const cleanedData = Object.fromEntries(
+        Object.entries(itemData).filter(([_, value]) => value !== undefined && value !== '')
+      );
+      
+      console.log('Cleaned data:', cleanedData);
+      console.log('Table name:', tableName);
 
       if (editingItem.id) {
         // Update existing
-        const { error } = await supabase
+        console.log('Updating existing record with ID:', editingItem.id);
+        const { data, error } = await supabase
           .from(tableName)
-          .update(itemData)
-          .eq('id', editingItem.id);
+          .update(cleanedData)
+          .eq('id', editingItem.id)
+          .select();
 
+        console.log('Update response:', { data, error });
         if (error) throw error;
         
         toast({
@@ -185,10 +197,16 @@ export default function DataManagement() {
         });
       } else {
         // Create new
-        const { error } = await supabase
+        console.log('Creating new record');
+        // Ensure required fields are present
+        cleanedData.Nome = decodedClientName;
+        
+        const { data, error } = await supabase
           .from(tableName)
-          .insert([itemData]);
+          .insert([cleanedData])
+          .select();
 
+        console.log('Insert response:', { data, error });
         if (error) throw error;
         
         toast({
@@ -199,12 +217,12 @@ export default function DataManagement() {
 
       setIsDialogOpen(false);
       setEditingItem(null);
-      fetchData();
+      await fetchData(); // Wait for data to be fetched
     } catch (error) {
       console.error('Erro ao salvar:', error);
       toast({
         title: "Erro",
-        description: "Erro ao salvar registro",
+        description: `Erro ao salvar registro: ${error.message}`,
         variant: "destructive",
       });
     }
