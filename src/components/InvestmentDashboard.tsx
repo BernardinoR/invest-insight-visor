@@ -68,18 +68,22 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
   const displayRendimento = getRendimentoFromFinalCompetencia();
 
-  // Calculate patrimônio from the final competencia selected
+  // Calculate patrimônio from the final competencia selected - sum across all institutions
   const getPatrimonioFromFinalCompetencia = () => {
     if (!filteredRange.fim || filteredConsolidadoData.length === 0) {
       return totalPatrimonio; // fallback to original
     }
     
-    // Find the entry with the final competencia
-    const finalCompetenciaEntry = filteredConsolidadoData.find(
+    // Find all entries with the final competencia and sum their patrimônio
+    const finalCompetenciaEntries = filteredConsolidadoData.filter(
       item => item.Competencia === filteredRange.fim
     );
     
-    return finalCompetenciaEntry ? finalCompetenciaEntry["Patrimonio Final"] || 0 : totalPatrimonio;
+    const sumPatrimonio = finalCompetenciaEntries.reduce((sum, entry) => {
+      return sum + (entry["Patrimonio Final"] || 0);
+    }, 0);
+    
+    return sumPatrimonio > 0 ? sumPatrimonio : totalPatrimonio;
   };
 
   const displayPatrimonio = getPatrimonioFromFinalCompetencia();
