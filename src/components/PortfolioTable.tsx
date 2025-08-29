@@ -31,12 +31,62 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   const [consolidadoData, setConsolidadoData] = useState<ConsolidadoData[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Consolidate data by competencia (sum values, weighted average for rendimento)
+  const consolidateByCompetencia = (data: ConsolidadoData[]) => {
+    const competenciaMap = new Map();
+    
+    data.forEach(item => {
+      const competencia = item.Competencia;
+      if (!competenciaMap.has(competencia)) {
+        competenciaMap.set(competencia, {
+          id: item.id,
+          Competencia: competencia,
+          "Patrimonio Inicial": 0,
+          "Movimentação": 0,
+          "Impostos": 0,
+          "Ganho Financeiro": 0,
+          "Patrimonio Final": 0,
+          rendimentoSum: 0,
+          patrimonioForWeightedAvg: 0
+        });
+      }
+      
+      const consolidated = competenciaMap.get(competencia);
+      consolidated["Patrimonio Inicial"] += item["Patrimonio Inicial"] || 0;
+      consolidated["Movimentação"] += item["Movimentação"] || 0;
+      consolidated["Impostos"] += item.Impostos || 0;
+      consolidated["Ganho Financeiro"] += item["Ganho Financeiro"] || 0;
+      consolidated["Patrimonio Final"] += item["Patrimonio Final"] || 0;
+      
+      // For weighted average rendimento
+      const patrimonio = item["Patrimonio Final"] || 0;
+      const rendimento = item.Rendimento || 0;
+      consolidated.rendimentoSum += rendimento * patrimonio;
+      consolidated.patrimonioForWeightedAvg += patrimonio;
+    });
+    
+    // Calculate weighted average rendimento and convert to final format
+    return Array.from(competenciaMap.values()).map(item => ({
+      id: item.id,
+      Competencia: item.Competencia,
+      "Patrimonio Inicial": item["Patrimonio Inicial"],
+      "Movimentação": item["Movimentação"],
+      "Impostos": item.Impostos,
+      "Ganho Financeiro": item["Ganho Financeiro"],
+      "Patrimonio Final": item["Patrimonio Final"],
+      Rendimento: item.patrimonioForWeightedAvg > 0 ? item.rendimentoSum / item.patrimonioForWeightedAvg : 0
+    }));
+  };
+
   // Use filtered data if available, otherwise use internal data
-  const displayData = filteredConsolidadoData && filteredRange?.inicio && filteredRange?.fim 
+  const rawData = filteredConsolidadoData && filteredRange?.inicio && filteredRange?.fim 
     ? filteredConsolidadoData.filter(item => 
         item.Competencia >= filteredRange.inicio && item.Competencia <= filteredRange.fim
-      ).sort((a, b) => b.Competencia.localeCompare(a.Competencia))
+      )
     : consolidadoData;
+  
+  // Consolidate and sort data
+  const displayData = consolidateByCompetencia(rawData).sort((a, b) => b.Competencia.localeCompare(a.Competencia));
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
