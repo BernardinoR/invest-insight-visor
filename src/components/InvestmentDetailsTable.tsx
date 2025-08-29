@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCDIData } from "@/hooks/useCDIData";
 
 const COLORS = [
   'hsl(210 16% 82%)', // Light blue-gray
@@ -44,6 +45,7 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
   const [yearlyAccumulatedData, setYearlyAccumulatedData] = useState<Record<string, number>>({});
   const [accumulatedReturnsData, setAccumulatedReturnsData] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
+  const { cdiData } = useCDIData();
 
   // Function to group strategy names according to original specification
   const groupStrategy = (strategy: string): string => {
@@ -479,14 +481,50 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
                     }
                   };
 
+                  // Calculate CDI relative performance for strategies that compare to CDI
+                  const calculateCDIRelative = (strategyName: string) => {
+                    const benchmark = getBenchmark(strategyName);
+                    if (benchmark !== '± CDI') return null;
+
+                    const strategyReturn = accumulatedReturnsData[strategyName];
+                    if (strategyReturn === undefined) return null;
+
+                    // Calculate CDI return for the same period
+                    let cdiReturn = 0;
+                    if (filteredRange && cdiData.length > 0) {
+                      const [startMonth, startYear] = filteredRange.inicio.split('/');
+                      const [endMonth, endYear] = filteredRange.fim.split('/');
+                      
+                      const relevantCDIData = cdiData.filter(item => {
+                        const [month, year] = item.competencia.split('/');
+                        const itemDate = new Date(parseInt(year), parseInt(month) - 1);
+                        const startDate = new Date(parseInt(startYear), parseInt(startMonth) - 1);
+                        const endDate = new Date(parseInt(endYear), parseInt(endMonth) - 1);
+                        return itemDate >= startDate && itemDate <= endDate;
+                      });
+
+                      // Calculate accumulated CDI return
+                      let accumulatedCDI = 1;
+                      relevantCDIData.forEach(item => {
+                        accumulatedCDI *= (1 + item.cdiRate);
+                      });
+                      cdiReturn = accumulatedCDI - 1;
+                    }
+
+                    if (cdiReturn === 0) return null;
+                    
+                    const relativeReturn = strategyReturn / cdiReturn;
+                    return relativeReturn;
+                  };
+                  
                   return (
                     <>
                       <TableRow key={item.name} className="border-border/50">
                         <TableCell className="font-medium text-foreground flex items-center gap-2 py-2">
                           <div 
-                            className="w-1 h-4 rounded-sm" 
+                            className="w-3 h-3 rounded-full" 
                             style={{ backgroundColor: getStrategyColor(item.name) }}
-                          ></div>
+                          />
                           {item.name}
                         </TableCell>
                         <TableCell className={`text-center py-2 ${item.avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
@@ -517,7 +555,13 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
                         <TableCell className="text-center text-muted-foreground py-1">-</TableCell>
                         <TableCell className="text-center text-muted-foreground py-1">-</TableCell>
                         <TableCell className="text-center text-muted-foreground py-1">-</TableCell>
-                        <TableCell className="text-center text-muted-foreground py-1">-</TableCell>
+                        <TableCell className="text-center text-muted-foreground py-1">
+                          {(() => {
+                            const cdiRelative = calculateCDIRelative(item.name);
+                            if (cdiRelative === null) return "-";
+                            return `${cdiRelative.toFixed(2)}x CDI`;
+                          })()}
+                        </TableCell>
                       </TableRow>
                     </>
                   );
