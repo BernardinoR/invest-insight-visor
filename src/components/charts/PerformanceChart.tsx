@@ -254,14 +254,40 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         if (currentCompetencia === firstCompetencia) {
           ibovespaRetorno = currentMarketPoint.ibovespa * 100;
           ifixRetorno = currentMarketPoint.ifix * 100;
-          ipcaRetorno = currentMarketPoint.ipca * 100;
+          // Para IPCA, usar composição mensal como CDI
+          const startMarketIndex = marketData.findIndex(m => m.competencia === firstCompetencia);
+          const currentMarketIndex = marketData.findIndex(m => m.competencia === currentCompetencia);
+          
+          if (startMarketIndex !== -1 && currentMarketIndex !== -1) {
+            let accumulatedIPCA = 1;
+            for (let i = startMarketIndex; i <= currentMarketIndex; i++) {
+              accumulatedIPCA *= (1 + marketData[i].ipca);
+            }
+            ipcaRetorno = (accumulatedIPCA - 1) * 100;
+          } else {
+            ipcaRetorno = currentMarketPoint.ipca * 100;
+          }
         } else {
           const ibovespaRelativeReturn = (1 + currentMarketPoint.accumulatedIbovespa) / (1 + firstMarketPoint.accumulatedIbovespa) - 1;
           const ifixRelativeReturn = (1 + currentMarketPoint.accumulatedIfix) / (1 + firstMarketPoint.accumulatedIfix) - 1;
-          const ipcaRelativeReturn = (1 + currentMarketPoint.accumulatedIpca) / (1 + firstMarketPoint.accumulatedIpca) - 1;
+          
+          // Para IPCA, usar composição mensal como CDI
+          const startMarketIndex = marketData.findIndex(m => m.competencia === firstCompetencia);
+          const currentMarketIndex = marketData.findIndex(m => m.competencia === currentCompetencia);
+          
+          if (startMarketIndex !== -1 && currentMarketIndex !== -1) {
+            let accumulatedIPCA = 1;
+            for (let i = startMarketIndex; i <= currentMarketIndex; i++) {
+              accumulatedIPCA *= (1 + marketData[i].ipca);
+            }
+            ipcaRetorno = (accumulatedIPCA - 1) * 100;
+          } else {
+            const ipcaRelativeReturn = (1 + currentMarketPoint.accumulatedIpca) / (1 + firstMarketPoint.accumulatedIpca) - 1;
+            ipcaRetorno = ipcaRelativeReturn * 100;
+          }
+          
           ibovespaRetorno = ibovespaRelativeReturn * 100;
           ifixRetorno = ifixRelativeReturn * 100;
-          ipcaRetorno = ipcaRelativeReturn * 100;
         }
         
         console.log('Calculated market returns:', {
