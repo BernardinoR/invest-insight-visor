@@ -340,9 +340,13 @@ export function useMarketIndicators(clientName?: string) {
   };
 
   useEffect(() => {
-    console.log('useMarketIndicators useEffect triggered with clientName:', clientName);
+    console.log('=== useMarketIndicators useEffect triggered ===');
+    console.log('clientName received:', clientName);
+    console.log('clientName type:', typeof clientName);
+    console.log('clientName length:', clientName?.length);
+    
     const loadData = async () => {
-      console.log('loadData function started');
+      console.log('=== loadData function started ===');
       setLoading(true);
       setError(null);
       
@@ -350,22 +354,30 @@ export function useMarketIndicators(clientName?: string) {
         // Fetch client target first if clientName is provided
         let targetData = null;
         if (clientName) {
+          console.log('=== About to fetch client target ===');
           console.log('Fetching client target for:', clientName);
           targetData = await fetchClientTarget(clientName);
+          console.log('=== Client target fetched result ===');
           console.log('Client target fetched:', targetData);
           setClientTarget(targetData);
+        } else {
+          console.log('=== No clientName provided ===');
         }
         
         // Fetch real market data from APIs with client target data
+        console.log('=== About to fetch market data ===');
         const realData = await fetchMarketData(targetData);
+        console.log('=== Market data loaded ===');
         console.log('Market data loaded:', realData);
         setMarketData(realData);
         
       } catch (err) {
+        console.error('=== Error loading market data ===');
         console.error('Erro ao carregar dados de mercado:', err);
         // Don't set error, and don't set fallback data - just empty
         setMarketData([]);
       } finally {
+        console.log('=== Setting loading to false ===');
         setLoading(false);
       }
     };
