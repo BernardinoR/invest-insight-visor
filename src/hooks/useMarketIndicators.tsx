@@ -25,7 +25,7 @@ export function useMarketIndicators(clientName?: string) {
   const [error, setError] = useState<string | null>(null);
 
   // Fetch real market data from B3 and Banco Central APIs
-  const fetchMarketData = async (): Promise<MarketIndicatorData[]> => {
+  const fetchMarketData = async (clientTargetValue?: ClientTarget | null): Promise<MarketIndicatorData[]> => {
     try {
       const endDate = new Date();
       const startDate = new Date();
@@ -207,8 +207,13 @@ export function useMarketIndicators(clientName?: string) {
 
         // Calculate client target return if we have both IPCA and target value
         let clientTargetMonthly = 0;
-        if (monthlyIpca !== 0 && clientTarget && clientTarget.targetValue > 0) {
-          clientTargetMonthly = calculateMonthlyTarget(monthlyIpca, clientTarget.targetValue);
+        if (monthlyIpca !== 0 && clientTargetValue && clientTargetValue.targetValue > 0) {
+          clientTargetMonthly = calculateMonthlyTarget(monthlyIpca, clientTargetValue.targetValue);
+          console.log(`Calculated target for ${competencia}:`, {
+            monthlyIpca,
+            targetValue: clientTargetValue.targetValue,
+            clientTargetMonthly
+          });
         }
 
         // Update accumulated returns only when we have non-zero data
@@ -310,16 +315,20 @@ export function useMarketIndicators(clientName?: string) {
       setError(null);
       
       try {
-        // Fetch real market data from APIs
-        const realData = await fetchMarketData();
+        // Fetch client target first if clientName is provided
+        let targetData = null;
+        if (clientName) {
+          console.log('Fetching client target for:', clientName);
+          targetData = await fetchClientTarget(clientName);
+          console.log('Client target fetched:', targetData);
+          setClientTarget(targetData);
+        }
+        
+        // Fetch real market data from APIs with client target data
+        const realData = await fetchMarketData(targetData);
         console.log('Market data loaded:', realData);
         setMarketData(realData);
         
-        // Fetch client target if clientName is provided
-        if (clientName) {
-          const target = await fetchClientTarget(clientName);
-          setClientTarget(target);
-        }
       } catch (err) {
         console.error('Erro ao carregar dados de mercado:', err);
         // Don't set error, and don't set fallback data - just empty

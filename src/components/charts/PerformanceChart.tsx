@@ -361,18 +361,18 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                       <label htmlFor="cdi" className="text-sm">CDI</label>
                     </div>
                     
-                    {clientTarget && (
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="target" 
-                          checked={selectedIndicators.target}
-                          onCheckedChange={(checked) => 
-                            setSelectedIndicators(prev => ({ ...prev, target: checked as boolean }))
-                          }
-                        />
-                        <label htmlFor="target" className="text-sm">Meta ({clientTarget.meta})</label>
-                      </div>
-                    )}
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="target" 
+                        checked={selectedIndicators.target}
+                        onCheckedChange={(checked) => 
+                          setSelectedIndicators(prev => ({ ...prev, target: checked as boolean }))
+                        }
+                      />
+                      <label htmlFor="target" className="text-sm">
+                        Meta {clientTarget ? `(${clientTarget.meta})` : '(Carregando...)'}
+                      </label>
+                    </div>
                     
                     <div className="flex items-center space-x-2">
                       <Checkbox 
