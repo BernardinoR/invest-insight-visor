@@ -559,7 +559,8 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
                           {(() => {
                             const cdiRelative = calculateCDIRelative(item.name);
                             if (cdiRelative === null) return "-";
-                            return `${cdiRelative.toFixed(2)}x CDI`;
+                            const percentage = (cdiRelative * 100).toFixed(0);
+                            return `${percentage}% do CDI`;
                           })()}
                         </TableCell>
                       </TableRow>
