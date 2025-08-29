@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { InvestmentDashboard } from "@/components/InvestmentDashboard";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function Dashboard() {
@@ -14,14 +14,24 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-hero">
       <div className="container mx-auto px-6 py-4">
         <div className="flex justify-between items-center mb-4">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate("/")}
-            className="bg-card/50 border-primary/20 hover:bg-primary/10"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar à Lista
-          </Button>
+          <div className="flex gap-4">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate("/")}
+              className="bg-card/50 border-primary/20 hover:bg-primary/10"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar à Lista
+            </Button>
+            <Button 
+              variant="default" 
+              onClick={() => navigate(`/data-management/${encodeURIComponent(decodedClientName)}`)}
+              className="bg-primary hover:bg-primary/90"
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Gerenciar Dados
+            </Button>
+          </div>
           <ThemeToggle />
         </div>
       </div>
