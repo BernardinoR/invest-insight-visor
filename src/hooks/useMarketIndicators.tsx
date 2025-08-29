@@ -298,7 +298,7 @@ export function useMarketIndicators(clientName?: string) {
         console.log('Meta encontrada:', meta);
         
         // Extract numeric value from meta (e.g., "IPCA+5%" -> 5)
-        const match = meta?.match(/(\d+(?:\.\d+)?)/);
+        const match = meta?.match(/IPCA\+\s*(\d+(?:\.\d+)?)/i);
         const targetValue = match ? parseFloat(match[1]) : 0;
         
         console.log('Valor da meta extraído:', targetValue);
@@ -320,9 +320,21 @@ export function useMarketIndicators(clientName?: string) {
   // Calculate monthly target return based on IPCA + annual target
   const calculateMonthlyTarget = (ipcaMonthly: number, annualTarget: number): number => {
     // Convert annual target to monthly: (1 + annual%)^(1/12) - 1
+    // Por exemplo, se annualTarget é 5, então (1.05^(1/12)) - 1
     const monthlyTargetRate = Math.pow(1 + (annualTarget / 100), 1/12) - 1;
-    // Add IPCA monthly + monthly target rate
-    return ipcaMonthly + monthlyTargetRate;
+    
+    // IPCA do mês + taxa mensal equivalente ao target anual
+    // Por exemplo: IPCA 0.26% + ((1.05^(1/12)) - 1)
+    const totalMonthlyReturn = ipcaMonthly + monthlyTargetRate;
+    
+    console.log('Cálculo da meta mensal:', {
+      ipcaMonthly: (ipcaMonthly * 100).toFixed(4) + '%',
+      annualTarget: annualTarget + '%',
+      monthlyTargetRate: (monthlyTargetRate * 100).toFixed(4) + '%',
+      totalMonthlyReturn: (totalMonthlyReturn * 100).toFixed(4) + '%'
+    });
+    
+    return totalMonthlyReturn;
   };
 
   useEffect(() => {
