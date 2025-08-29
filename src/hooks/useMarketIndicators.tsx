@@ -139,6 +139,13 @@ export function useMarketIndicators(clientName?: string) {
           accumulatedIfix: ifixAccumulated
         });
 
+        console.log(`Processed ${competencia}:`, {
+          ibovespaMonthly,
+          ifixMonthly,
+          ibovespaAccumulated,
+          ifixAccumulated
+        });
+
         // Update previous values for next iteration
         if (avgIbovespa !== null) previousIbovespa = avgIbovespa;
         if (avgIfix !== null) previousIfix = avgIfix;
@@ -193,6 +200,7 @@ export function useMarketIndicators(clientName?: string) {
       try {
         // Fetch real market data from APIs
         const realData = await fetchMarketData();
+        console.log('Market data loaded:', realData);
         setMarketData(realData);
         
         // Fetch client target if clientName is provided

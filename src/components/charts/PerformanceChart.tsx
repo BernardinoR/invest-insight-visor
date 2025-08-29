@@ -232,6 +232,14 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
       const firstMarketPoint = marketData.find(m => m.competencia === firstCompetencia);
       const currentMarketPoint = marketData.find(m => m.competencia === currentCompetencia);
       
+      console.log('Market data processing:', {
+        firstCompetencia,
+        currentCompetencia,
+        firstMarketPoint,
+        currentMarketPoint,
+        marketDataLength: marketData.length
+      });
+      
       if (currentMarketPoint && firstMarketPoint) {
         if (currentCompetencia === firstCompetencia) {
           ibovespaRetorno = currentMarketPoint.ibovespa * 100;
@@ -242,6 +250,13 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
           ibovespaRetorno = ibovespaRelativeReturn * 100;
           ifixRetorno = ifixRelativeReturn * 100;
         }
+        
+        console.log('Calculated market returns:', {
+          ibovespaRetorno,
+          ifixRetorno
+        });
+      } else {
+        console.log('No market data found for competencias');
       }
       
       return {
@@ -581,6 +596,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                    dataKey="ibovespaRetorno" 
                    stroke="hsl(var(--destructive))"
                    strokeWidth={2}
+                   connectNulls={false}
                    dot={{ 
                      fill: 'hsl(var(--destructive))', 
                      strokeWidth: 1, 
@@ -602,6 +618,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                    dataKey="ifixRetorno" 
                    stroke="hsl(var(--warning))"
                    strokeWidth={2}
+                   connectNulls={false}
                    dot={{ 
                      fill: 'hsl(var(--warning))', 
                      strokeWidth: 1, 
