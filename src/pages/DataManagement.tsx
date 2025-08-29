@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -82,6 +82,7 @@ export default function DataManagement() {
   ])].sort().reverse();
 
   const [selectedCompetencia, setSelectedCompetencia] = useState<string>("all");
+  const [searchAtivo, setSearchAtivo] = useState<string>("");
 
   useEffect(() => {
     fetchData();
@@ -265,14 +266,23 @@ export default function DataManagement() {
     }).format(value || 0);
   };
 
-  // Filter data by selected competencia
+  // Filter data by selected competencia and search term
   const filteredConsolidadoData = selectedCompetencia === "all" 
     ? consolidadoData 
     : consolidadoData.filter(item => item.Competencia === selectedCompetencia);
 
-  const filteredDadosData = selectedCompetencia === "all" 
+  let filteredDadosData = selectedCompetencia === "all" 
     ? dadosData 
     : dadosData.filter(item => item.Competencia === selectedCompetencia);
+
+  // Apply search filter for ativos
+  if (searchAtivo.trim()) {
+    filteredDadosData = filteredDadosData.filter(item => 
+      item.Ativo?.toLowerCase().includes(searchAtivo.toLowerCase()) ||
+      item.Emissor?.toLowerCase().includes(searchAtivo.toLowerCase()) ||
+      item["Classe do ativo"]?.toLowerCase().includes(searchAtivo.toLowerCase())
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-hero">
@@ -418,10 +428,21 @@ export default function DataManagement() {
                     Dados detalhados de ativos por competência
                   </p>
                 </div>
-                <Button onClick={() => handleCreate('dados')}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Novo Registro
-                </Button>
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Buscar por ativo, emissor ou classe..."
+                      value={searchAtivo}
+                      onChange={(e) => setSearchAtivo(e.target.value)}
+                      className="pl-10 w-64"
+                    />
+                  </div>
+                  <Button onClick={() => handleCreate('dados')}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Novo Registro
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
