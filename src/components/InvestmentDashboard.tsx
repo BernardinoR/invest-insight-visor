@@ -429,32 +429,32 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       return strategy;
                     };
 
-                    // Filter to get only the most recent competencia
-                    const getMostRecentData = (data: typeof dadosData) => {
+                    // Filter to get only data from the final competencia selected in filter
+                    const getFilteredFinalCompetenciaData = (data: typeof dadosData) => {
                       if (data.length === 0) return [];
                       
-                      // Find the most recent competencia
-                      const mostRecentCompetencia = data.reduce((latest, current) => {
+                      // Use the final competencia from filter if available, otherwise use the most recent
+                      const targetCompetencia = filteredRange.fim || data.reduce((latest, current) => {
                         return current.Competencia > latest.Competencia ? current : latest;
                       }).Competencia;
                       
-                      // Return all records with the most recent competencia
-                      return data.filter(item => item.Competencia === mostRecentCompetencia);
+                      // Return all records with the target competencia
+                      return data.filter(item => item.Competencia === targetCompetencia);
                     };
 
-                    const filteredDadosData = getMostRecentData(dadosData);
+                    const finalCompetenciaData = getFilteredFinalCompetenciaData(filteredDadosData);
 
-                    // Group data by strategy using filtered data
-                    const groupedData = filteredDadosData.reduce((acc, item) => {
-                      const originalStrategy = item["Classe do ativo"] || "Outros";
-                      const groupedStrategy = groupStrategy(originalStrategy);
-                      
-                      if (!acc[groupedStrategy]) {
-                        acc[groupedStrategy] = [];
-                      }
-                      acc[groupedStrategy].push(item);
-                      return acc;
-                    }, {} as Record<string, typeof filteredDadosData>);
+                     // Group data by strategy using final competencia data only
+                     const groupedData = finalCompetenciaData.reduce((acc, item) => {
+                       const originalStrategy = item["Classe do ativo"] || "Outros";
+                       const groupedStrategy = groupStrategy(originalStrategy);
+                       
+                       if (!acc[groupedStrategy]) {
+                         acc[groupedStrategy] = [];
+                       }
+                       acc[groupedStrategy].push(item);
+                       return acc;
+                     }, {} as Record<string, typeof finalCompetenciaData>);
 
                     // Function to calculate compound returns
                     const calculateCompoundReturn = (monthlyReturns: number[]): number => {
