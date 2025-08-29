@@ -134,7 +134,7 @@ export default function ClientList() {
             ))}
           </div>
         ) : (
-          <div className="max-w-4xl space-y-4">
+          <div className="max-w-5xl mx-auto space-y-4">
             {filteredClients.map((client) => (
               <Card 
                 key={client.Cliente}
