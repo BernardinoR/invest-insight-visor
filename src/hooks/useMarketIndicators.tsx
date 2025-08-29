@@ -22,7 +22,7 @@ export function useMarketIndicators(clientName?: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch real market data from APIs
+  // Fetch real market data from B3 and Banco Central APIs
   const fetchMarketData = async (): Promise<MarketIndicatorData[]> => {
     try {
       const endDate = new Date();
@@ -36,13 +36,23 @@ export function useMarketIndicators(clientName?: string) {
       const startDateStr = formatDate(startDate);
       const endDateStr = formatDate(endDate);
 
-      // Fetch data from Banco Central APIs in parallel
+      // Headers for B3 API
+      const b3Headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Content-Type': 'application/json'
+      };
+
+      // Fetch data from B3 and Banco Central APIs in parallel
       const [ibovespaResponse, ifixResponse, ipcaResponse] = await Promise.allSettled([
-        // Ibovespa - Série 1 (Índice Bovespa)
-        fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`),
-        // IFIX - Trying available real estate series
-        fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.25402/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`),
-        // IPCA - Série 433 (como especificado)
+        // Ibovespa - B3 API
+        fetch('https://sistemaswebb3-listados.b3.com.br/indexProxy/indexCall/GetPortfolioDay/IBOV', {
+          headers: b3Headers
+        }),
+        // IFIX - B3 API
+        fetch('https://sistemaswebb3-listados.b3.com.br/indexProxy/indexCall/GetPortfolioDay/IFIX', {
+          headers: b3Headers
+        }),
+        // IPCA - Banco Central (continua igual)
         fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`)
       ]);
 
@@ -53,25 +63,31 @@ export function useMarketIndicators(clientName?: string) {
       });
 
       // Handle responses more gracefully
-      let ibovespaData = [];
-      let ifixData = [];
+      let ibovespaData = null;
+      let ifixData = null;
       let ipcaData = [];
 
+      // Process B3 data (current day data)
       if (ibovespaResponse.status === 'fulfilled' && ibovespaResponse.value.ok) {
-        ibovespaData = await ibovespaResponse.value.json();
+        const ibovData = await ibovespaResponse.value.json();
+        console.log('Ibovespa B3 data:', ibovData);
+        ibovespaData = ibovData;
       }
 
       if (ifixResponse.status === 'fulfilled' && ifixResponse.value.ok) {
-        ifixData = await ifixResponse.value.json();
+        const ifixJson = await ifixResponse.value.json();
+        console.log('IFIX B3 data:', ifixJson);
+        ifixData = ifixJson;
       }
 
+      // Process IPCA data from Banco Central (historical data)
       if (ipcaResponse.status === 'fulfilled' && ipcaResponse.value.ok) {
         ipcaData = await ipcaResponse.value.json();
       }
 
       console.log('Market data fetched:', {
-        ibovespaDataLength: ibovespaData.length,
-        ifixDataLength: ifixData.length,
+        ibovespaDataExists: !!ibovespaData,
+        ifixDataExists: !!ifixData,
         ipcaDataLength: ipcaData.length
       });
 
@@ -88,31 +104,34 @@ export function useMarketIndicators(clientName?: string) {
         return `${month}/${year}`;
       };
 
-      // Process Ibovespa data
-      ibovespaData.forEach((item: any) => {
-        const competencia = dateToCompetencia(item.data);
-        if (!competenciaMap.has(competencia)) {
-          competenciaMap.set(competencia, { ibovespa: [], ifix: [], ipca: [] });
-        }
-        const value = parseFloat(item.valor);
-        if (!isNaN(value)) {
-          competenciaMap.get(competencia)!.ibovespa.push(value);
-        }
-      });
+      // Current competencia (for B3 current data)
+      const currentDate = new Date();
+      const currentCompetencia = `${String(currentDate.getMonth() + 1).padStart(2, '0')}/${currentDate.getFullYear()}`;
 
-      // Process IFIX data
-      ifixData.forEach((item: any) => {
-        const competencia = dateToCompetencia(item.data);
-        if (!competenciaMap.has(competencia)) {
-          competenciaMap.set(competencia, { ibovespa: [], ifix: [], ipca: [] });
+      // Process B3 current data for current competencia
+      if (ibovespaData?.index) {
+        if (!competenciaMap.has(currentCompetencia)) {
+          competenciaMap.set(currentCompetencia, { ibovespa: [], ifix: [], ipca: [] });
         }
-        const value = parseFloat(item.valor);
-        if (!isNaN(value)) {
-          competenciaMap.get(competencia)!.ifix.push(value);
+        // Get percentage variation from B3 data
+        const variation = parseFloat(ibovespaData.index.oscilacao) / 100; // Convert percentage to decimal
+        if (!isNaN(variation)) {
+          competenciaMap.get(currentCompetencia)!.ibovespa.push(variation);
         }
-      });
+      }
 
-      // Process IPCA data (monthly values)
+      if (ifixData?.index) {
+        if (!competenciaMap.has(currentCompetencia)) {
+          competenciaMap.set(currentCompetencia, { ibovespa: [], ifix: [], ipca: [] });
+        }
+        // Get percentage variation from B3 data
+        const variation = parseFloat(ifixData.index.oscilacao) / 100; // Convert percentage to decimal
+        if (!isNaN(variation)) {
+          competenciaMap.get(currentCompetencia)!.ifix.push(variation);
+        }
+      }
+
+      // Process IPCA historical data (monthly values)
       ipcaData.forEach((item: any) => {
         const competencia = dateToCompetencia(item.data);
         if (!competenciaMap.has(competencia)) {
@@ -155,24 +174,16 @@ export function useMarketIndicators(clientName?: string) {
         // IPCA is typically one value per month
         const monthlyIpca = data.ipca.length > 0 ? data.ipca[0] : 0;
 
-        // Calculate monthly returns (percentage change from previous month)
-        let ibovespaMonthly = 0;
-        let ifixMonthly = 0;
-
-        if (previousIbovespa !== null && avgIbovespa !== null) {
-          ibovespaMonthly = (avgIbovespa - previousIbovespa) / previousIbovespa;
-        }
-
-        if (previousIfix !== null && avgIfix !== null) {
-          ifixMonthly = (avgIfix - previousIfix) / previousIfix;
-        }
+        // For B3 data, use the variation directly as monthly return
+        let ibovespaMonthly = avgIbovespa || 0;
+        let ifixMonthly = avgIfix || 0;
 
         // Update accumulated returns
-        if (previousIbovespa !== null && avgIbovespa !== null) {
+        if (ibovespaMonthly !== 0) {
           ibovespaAccumulated = (1 + ibovespaAccumulated) * (1 + ibovespaMonthly) - 1;
         }
         
-        if (previousIfix !== null && avgIfix !== null) {
+        if (ifixMonthly !== 0) {
           ifixAccumulated = (1 + ifixAccumulated) * (1 + ifixMonthly) - 1;
         }
 
@@ -198,9 +209,8 @@ export function useMarketIndicators(clientName?: string) {
           ipcaAccumulated
         });
 
-        // Update previous values for next iteration
-        if (avgIbovespa !== null) previousIbovespa = avgIbovespa;
-        if (avgIfix !== null) previousIfix = avgIfix;
+        // Update previous values for next iteration (not needed for B3 current data)
+        // This logic was for historical price comparison, B3 gives us direct variation
       });
 
       // Only return data if we have actual market data - no fallback
