@@ -719,7 +719,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         
         {/* Performance Metrics */}
         {chartDataWithIndicators.length > 1 && (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
             {(() => {
               const lastDataPoint = chartDataWithIndicators[chartDataWithIndicators.length - 1];
               const portfolioReturn = lastDataPoint.retornoAcumulado;
@@ -736,6 +736,22 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
               
               return (
                 <>
+                  {clientTarget && (
+                    <div className="bg-card border border-border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Meta de Retorno</p>
+                          <p className="text-2xl font-semibold text-foreground">
+                            {clientTarget.targetValue.toFixed(1)}%
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            anual
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {cdiRelative !== null && (
                     <div className="bg-card border border-border rounded-lg p-4">
                       <div className="flex items-center justify-between">
