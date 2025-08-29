@@ -412,9 +412,9 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                           setSelectedIndicators(prev => ({ ...prev, target: checked as boolean }))
                         }
                       />
-                      <label htmlFor="target" className="text-sm">
-                        Meta {marketLoading ? '(Carregando...)' : clientTarget ? `(${clientTarget.meta})` : '(Não disponível)'}
-                      </label>
+                       <label htmlFor="target" className="text-sm">
+                         Meta {marketLoading ? '(Carregando...)' : (clientTarget && clientTarget.meta) ? `(${clientTarget.meta})` : '(Não disponível)'}
+                       </label>
                     </div>
                     
                     <div className="flex items-center space-x-2">
