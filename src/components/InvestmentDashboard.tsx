@@ -52,22 +52,37 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     setFilteredRange({ inicio: inicioCompetencia, fim: fimCompetencia });
   }, []);
 
-  // Calculate rendimento from the final competencia selected - sum across all institutions
+  // Calculate rendimento from the final competencia selected - weighted average across all institutions
   const getRendimentoFromFinalCompetencia = () => {
     if (!filteredRange.fim || filteredConsolidadoData.length === 0) {
       return totalRendimento; // fallback to original
     }
     
-    // Find all entries with the final competencia and sum their rendimento
+    // Find all entries with the final competencia
     const finalCompetenciaEntries = filteredConsolidadoData.filter(
       item => item.Competencia === filteredRange.fim
     );
     
-    const sumRendimento = finalCompetenciaEntries.reduce((sum, entry) => {
-      return sum + (entry.Rendimento || 0);
+    if (finalCompetenciaEntries.length === 0) {
+      return totalRendimento;
+    }
+    
+    // Calculate weighted average using patrimônio as weight
+    const totalPatrimonioWeighted = finalCompetenciaEntries.reduce((sum, entry) => {
+      return sum + (entry["Patrimonio Final"] || 0);
     }, 0);
     
-    return sumRendimento !== 0 ? sumRendimento : totalRendimento;
+    if (totalPatrimonioWeighted === 0) {
+      return totalRendimento;
+    }
+    
+    const weightedRendimento = finalCompetenciaEntries.reduce((sum, entry) => {
+      const patrimonio = entry["Patrimonio Final"] || 0;
+      const rendimento = entry.Rendimento || 0;
+      return sum + (rendimento * patrimonio);
+    }, 0);
+    
+    return weightedRendimento / totalPatrimonioWeighted;
   };
 
   const displayRendimento = getRendimentoFromFinalCompetencia();
