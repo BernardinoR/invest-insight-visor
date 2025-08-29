@@ -590,8 +590,15 @@ export default function DataManagement() {
                       <Input
                         id="competencia"
                         value={editingItem.Competencia || ''}
-                        onChange={(e) => setEditingItem({...editingItem, Competencia: e.target.value})}
+                        onChange={(e) => {
+                          let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                          if (value.length >= 2) {
+                            value = value.substring(0, 2) + '/' + value.substring(2, 6);
+                          }
+                          setEditingItem({...editingItem, Competencia: value});
+                        }}
                         placeholder="MM/YYYY"
+                        maxLength={7}
                       />
                     </div>
                     <div>
@@ -681,8 +688,15 @@ export default function DataManagement() {
                       <Input
                         id="competencia"
                         value={editingItem.Competencia || ''}
-                        onChange={(e) => setEditingItem({...editingItem, Competencia: e.target.value})}
+                        onChange={(e) => {
+                          let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                          if (value.length >= 2) {
+                            value = value.substring(0, 2) + '/' + value.substring(2, 6);
+                          }
+                          setEditingItem({...editingItem, Competencia: value});
+                        }}
                         placeholder="MM/YYYY"
+                        maxLength={7}
                       />
                     </div>
                     <div>
