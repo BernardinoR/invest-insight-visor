@@ -145,7 +145,7 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
 
       {/* Performance Chart - positioned after Consolidado Performance */}
       {filteredConsolidadoData.length > 0 && (
-        <PerformanceChart consolidadoData={consolidadoData} />
+        <PerformanceChart consolidadoData={consolidadoData} clientName={clientName} />
       )}
 
       {consolidadoData.length === 0 && dadosData.length === 0 && (

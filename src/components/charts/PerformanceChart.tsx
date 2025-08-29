@@ -2,12 +2,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { TrendingUp, Calendar as CalendarIcon } from "lucide-react";
+import { TrendingUp, Calendar as CalendarIcon, Settings } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useCDIData } from "@/hooks/useCDIData";
+import { useMarketIndicators } from "@/hooks/useMarketIndicators";
 
 interface PerformanceChartProps {
   consolidadoData: Array<{
@@ -20,15 +22,24 @@ interface PerformanceChartProps {
     Impostos: number;
     Competencia: string;
   }>;
+  clientName?: string;
 }
 
-export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
+export function PerformanceChart({ consolidadoData, clientName }: PerformanceChartProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'custom'>('12months');
   const [customStartDate, setCustomStartDate] = useState<Date>();
   const [customEndDate, setCustomEndDate] = useState<Date>();
   const [showCustomCalendar, setShowCustomCalendar] = useState(false);
+  const [showIndicators, setShowIndicators] = useState(false);
+  const [selectedIndicators, setSelectedIndicators] = useState({
+    cdi: true,
+    target: false,
+    ibovespa: false,
+    ifix: false
+  });
   
   const { cdiData, loading: cdiLoading, error: cdiError } = useCDIData();
+  const { marketData, clientTarget, loading: marketLoading, error: marketError } = useMarketIndicators(clientName);
 
   // Consolidate data by competencia (sum patrimônio, weighted average rendimento)
   const consolidateByCompetencia = (data: typeof consolidadoData) => {
@@ -163,49 +174,84 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
 
   const chartData = calculateAccumulatedReturns(filteredData);
 
-  // Add CDI data to chart data using the same logic as portfolio
-  const chartDataWithCDI = chartData.map((point, index) => {
+  // Add all indicators data to chart data
+  const chartDataWithIndicators = chartData.map((point, index) => {
     if (index === 0) {
-      // First point (previous month) should be 0 for both portfolio and CDI
+      // First point (previous month) should be 0 for all indicators
       return {
         ...point,
-        cdiRetorno: 0
+        cdiRetorno: 0,
+        targetRetorno: 0,
+        ibovespaRetorno: 0,
+        ifixRetorno: 0
       };
     } else {
-      // For subsequent points, calculate CDI accumulated return using same base logic
-      let cdiRetorno = null;
-      
-      // Find the first real competencia (index 1) to use as base - same as portfolio logic
       const firstCompetencia = chartData[1]?.competencia;
       const currentCompetencia = point.competencia;
       
+      // CDI data
+      let cdiRetorno = null;
       const firstCDIPoint = cdiData.find(cdi => cdi.competencia === firstCompetencia);
       const currentCDIPoint = cdiData.find(cdi => cdi.competencia === currentCompetencia);
       
       if (currentCDIPoint && firstCDIPoint) {
         if (currentCompetencia === firstCompetencia) {
-          // First real month: start with the monthly return (like portfolio starts with its first monthly return)
           cdiRetorno = currentCDIPoint.cdiRate * 100;
         } else {
-          // Subsequent months: show accumulated return relative to the start point
           const relativeReturn = (1 + currentCDIPoint.cdiAccumulated) / (1 + firstCDIPoint.cdiAccumulated) - 1;
           cdiRetorno = relativeReturn * 100;
         }
       }
       
+      // Target data (simplified as annual target / 12)
+      let targetRetorno = null;
+      if (clientTarget && currentCompetencia === firstCompetencia) {
+        targetRetorno = clientTarget.targetValue / 12; // Monthly approximation
+      } else if (clientTarget) {
+        // Calculate accumulated target return
+        const monthsPassed = index; // Approximate months since start
+        targetRetorno = Math.pow(1 + clientTarget.targetValue / 1200, monthsPassed) - 1;
+        targetRetorno *= 100;
+      }
+      
+      // Market indicators
+      let ibovespaRetorno = null;
+      let ifixRetorno = null;
+      
+      const firstMarketPoint = marketData.find(m => m.competencia === firstCompetencia);
+      const currentMarketPoint = marketData.find(m => m.competencia === currentCompetencia);
+      
+      if (currentMarketPoint && firstMarketPoint) {
+        if (currentCompetencia === firstCompetencia) {
+          ibovespaRetorno = currentMarketPoint.ibovespa * 100;
+          ifixRetorno = currentMarketPoint.ifix * 100;
+        } else {
+          const ibovespaRelativeReturn = (1 + currentMarketPoint.accumulatedIbovespa) / (1 + firstMarketPoint.accumulatedIbovespa) - 1;
+          const ifixRelativeReturn = (1 + currentMarketPoint.accumulatedIfix) / (1 + firstMarketPoint.accumulatedIfix) - 1;
+          ibovespaRetorno = ibovespaRelativeReturn * 100;
+          ifixRetorno = ifixRelativeReturn * 100;
+        }
+      }
+      
       return {
         ...point,
-        cdiRetorno
+        cdiRetorno,
+        targetRetorno,
+        ibovespaRetorno,
+        ifixRetorno
       };
     }
   });
 
-  console.log('Chart data with CDI:', chartDataWithCDI);
+  console.log('Chart data with indicators:', chartDataWithIndicators);
 
-  // Calculate optimal Y axis scale for accumulated returns including CDI
-  const portfolioValues = chartDataWithCDI.map(item => item.retornoAcumulado);
-  const cdiValues = chartDataWithCDI.map(item => item.cdiRetorno).filter(v => v !== null) as number[];
-  const allValues = [...portfolioValues, ...cdiValues];
+  // Calculate optimal Y axis scale for accumulated returns including all indicators
+  const portfolioValues = chartDataWithIndicators.map(item => item.retornoAcumulado);
+  const cdiValues = chartDataWithIndicators.map(item => item.cdiRetorno).filter(v => v !== null) as number[];
+  const targetValues = chartDataWithIndicators.map(item => item.targetRetorno).filter(v => v !== null) as number[];
+  const ibovespaValues = chartDataWithIndicators.map(item => item.ibovespaRetorno).filter(v => v !== null) as number[];
+  const ifixValues = chartDataWithIndicators.map(item => item.ifixRetorno).filter(v => v !== null) as number[];
+  const allValues = [...portfolioValues, ...cdiValues, ...targetValues, ...ibovespaValues, ...ifixValues];
   const minValue = Math.min(...allValues, 0);
   const maxValue = Math.max(...allValues);
   
@@ -249,15 +295,78 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
               <TrendingUp className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <CardTitle className="text-foreground text-xl font-semibold">Retorno Acumulado vs CDI</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">Comparativo de performance da carteira com o CDI</p>
-              {cdiLoading && <p className="text-xs text-muted-foreground">Carregando dados do CDI...</p>}
-              {cdiError && <p className="text-xs text-destructive">Erro ao carregar CDI: {cdiError}</p>}
+              <CardTitle className="text-foreground text-xl font-semibold">Retorno Acumulado</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Comparativo de performance da carteira com indicadores</p>
+              {(cdiLoading || marketLoading) && <p className="text-xs text-muted-foreground">Carregando dados...</p>}
+              {(cdiError || marketError) && <p className="text-xs text-destructive">Erro ao carregar dados: {cdiError || marketError}</p>}
             </div>
           </div>
           
-          {/* Period Selection Buttons */}
-          <div className="flex items-center gap-1">
+          {/* Period Selection and Indicators */}
+          <div className="flex items-center gap-2">
+            {/* Indicators Selector */}
+            <Popover open={showIndicators} onOpenChange={setShowIndicators}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Indicadores
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 bg-background border-border z-50" align="end">
+                <div className="space-y-3 p-2">
+                  <h4 className="font-medium text-sm">Selecionar Indicadores</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="cdi" 
+                        checked={selectedIndicators.cdi}
+                        onCheckedChange={(checked) => 
+                          setSelectedIndicators(prev => ({ ...prev, cdi: checked as boolean }))
+                        }
+                      />
+                      <label htmlFor="cdi" className="text-sm">CDI</label>
+                    </div>
+                    
+                    {clientTarget && (
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="target" 
+                          checked={selectedIndicators.target}
+                          onCheckedChange={(checked) => 
+                            setSelectedIndicators(prev => ({ ...prev, target: checked as boolean }))
+                          }
+                        />
+                        <label htmlFor="target" className="text-sm">Meta ({clientTarget.meta})</label>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="ibovespa" 
+                        checked={selectedIndicators.ibovespa}
+                        onCheckedChange={(checked) => 
+                          setSelectedIndicators(prev => ({ ...prev, ibovespa: checked as boolean }))
+                        }
+                      />
+                      <label htmlFor="ibovespa" className="text-sm">Ibovespa</label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="ifix" 
+                        checked={selectedIndicators.ifix}
+                        onCheckedChange={(checked) => 
+                          setSelectedIndicators(prev => ({ ...prev, ifix: checked as boolean }))
+                        }
+                      />
+                      <label htmlFor="ifix" className="text-sm">IFIX</label>
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+            
+            <div className="flex items-center gap-1">
             {periodButtons.map((button) => (
               <Button
                 key={button.id}
@@ -314,6 +423,7 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
                 </PopoverContent>
               </Popover>
             )}
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -322,7 +432,7 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
         <div className="h-96 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart 
-              data={chartDataWithCDI} 
+              data={chartDataWithIndicators} 
               margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
             >
               <defs>
@@ -367,15 +477,24 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
                   fontSize: '13px',
                   padding: '12px'
                 }}
-                formatter={(value: any, name: string) => {
-                  if (name === 'retornoAcumulado') {
-                    return [`${value.toFixed(2)}%`, 'Portfolio'];
-                  }
-                  if (name === 'cdiRetorno') {
-                    return [`${value.toFixed(2)}%`, 'CDI'];
-                  }
-                  return [`${value.toFixed(2)}%`, name];
-                }}
+                 formatter={(value: any, name: string) => {
+                   if (name === 'retornoAcumulado') {
+                     return [`${value.toFixed(2)}%`, 'Portfolio'];
+                   }
+                   if (name === 'cdiRetorno') {
+                     return [`${value.toFixed(2)}%`, 'CDI'];
+                   }
+                   if (name === 'targetRetorno') {
+                     return [`${value.toFixed(2)}%`, 'Meta'];
+                   }
+                   if (name === 'ibovespaRetorno') {
+                     return [`${value.toFixed(2)}%`, 'Ibovespa'];
+                   }
+                   if (name === 'ifixRetorno') {
+                     return [`${value.toFixed(2)}%`, 'IFIX'];
+                   }
+                   return [`${value.toFixed(2)}%`, name];
+                 }}
                 labelStyle={{ 
                   color: 'hsl(var(--foreground))', 
                   fontWeight: '600',
@@ -402,25 +521,93 @@ export function PerformanceChart({ consolidadoData }: PerformanceChartProps) {
                   filter: 'drop-shadow(0 4px 8px hsl(var(--primary) / 0.3))'
                 }}
               />
-              <Line 
-                type="monotone" 
-                dataKey="cdiRetorno" 
-                stroke="hsl(var(--muted-foreground))"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                dot={{ 
-                  fill: 'hsl(var(--muted-foreground))', 
-                  strokeWidth: 2, 
-                  stroke: 'hsl(var(--card))',
-                  r: 3
-                }}
-                activeDot={{ 
-                  r: 5, 
-                  fill: 'hsl(var(--muted-foreground))', 
-                  strokeWidth: 2, 
-                  stroke: 'hsl(var(--card))'
-                }}
-              />
+               {selectedIndicators.cdi && (
+                 <Line 
+                   type="monotone" 
+                   dataKey="cdiRetorno" 
+                   stroke="hsl(var(--muted-foreground))"
+                   strokeWidth={2}
+                   strokeDasharray="5 5"
+                   dot={{ 
+                     fill: 'hsl(var(--muted-foreground))', 
+                     strokeWidth: 2, 
+                     stroke: 'hsl(var(--card))',
+                     r: 3
+                   }}
+                   activeDot={{ 
+                     r: 5, 
+                     fill: 'hsl(var(--muted-foreground))', 
+                     strokeWidth: 2, 
+                     stroke: 'hsl(var(--card))'
+                   }}
+                 />
+               )}
+               
+               {selectedIndicators.target && clientTarget && (
+                 <Line 
+                   type="monotone" 
+                   dataKey="targetRetorno" 
+                   stroke="hsl(var(--accent))"
+                   strokeWidth={2}
+                   strokeDasharray="3 3"
+                   dot={{ 
+                     fill: 'hsl(var(--accent))', 
+                     strokeWidth: 2, 
+                     stroke: 'hsl(var(--card))',
+                     r: 3
+                   }}
+                   activeDot={{ 
+                     r: 5, 
+                     fill: 'hsl(var(--accent))', 
+                     strokeWidth: 2, 
+                     stroke: 'hsl(var(--card))'
+                   }}
+                 />
+               )}
+               
+               {selectedIndicators.ibovespa && (
+                 <Line 
+                   type="monotone" 
+                   dataKey="ibovespaRetorno" 
+                   stroke="hsl(var(--destructive))"
+                   strokeWidth={2}
+                   strokeDasharray="8 4"
+                   dot={{ 
+                     fill: 'hsl(var(--destructive))', 
+                     strokeWidth: 2, 
+                     stroke: 'hsl(var(--card))',
+                     r: 3
+                   }}
+                   activeDot={{ 
+                     r: 5, 
+                     fill: 'hsl(var(--destructive))', 
+                     strokeWidth: 2, 
+                     stroke: 'hsl(var(--card))'
+                   }}
+                 />
+               )}
+               
+               {selectedIndicators.ifix && (
+                 <Line 
+                   type="monotone" 
+                   dataKey="ifixRetorno" 
+                   stroke="hsl(var(--warning))"
+                   strokeWidth={2}
+                   strokeDasharray="10 2"
+                   dot={{ 
+                     fill: 'hsl(var(--warning))', 
+                     strokeWidth: 2, 
+                     stroke: 'hsl(var(--card))',
+                     r: 3
+                   }}
+                   activeDot={{ 
+                     r: 5, 
+                     fill: 'hsl(var(--warning))', 
+                     strokeWidth: 2, 
+                     stroke: 'hsl(var(--card))'
+                   }}
+                 />
+               )}
             </LineChart>
           </ResponsiveContainer>
         </div>
