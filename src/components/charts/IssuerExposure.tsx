@@ -34,19 +34,27 @@ export function IssuerExposure({ clientName }: { clientName?: string }) {
     .reduce((acc, investment) => {
       const issuer = investment.Emissor!;
       const position = Number(investment.Posicao) || 0;
+      const vencimento = investment.Vencimento;
       
       if (!acc[issuer]) {
         acc[issuer] = { 
           name: issuer, 
           exposure: 0, 
           count: 0,
-          exceedsLimit: false
+          exceedsLimit: false,
+          vencimentos: []
         };
       }
       acc[issuer].exposure += position;
       acc[issuer].count += 1;
+      
+      // Add maturity date if it exists and isn't already in the list
+      if (vencimento && !acc[issuer].vencimentos.includes(vencimento)) {
+        acc[issuer].vencimentos.push(vencimento);
+      }
+      
       return acc;
-    }, {} as Record<string, IssuerData>);
+    }, {} as Record<string, IssuerData & { vencimentos: string[] }>);
 
   const LIMIT = 250000; // R$ 250.000
 
@@ -65,15 +73,39 @@ export function IssuerExposure({ clientName }: { clientName?: string }) {
       const exceedsLimit = data.exposure > LIMIT;
       const excess = data.exposure - LIMIT;
       
+      // Format maturity dates
+      const formatVencimentos = (vencimentos: string[]) => {
+        if (!vencimentos || vencimentos.length === 0) return "N/A";
+        
+        const sortedVencimentos = vencimentos
+          .filter(v => v) // Remove null/undefined
+          .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+        
+        if (sortedVencimentos.length <= 3) {
+          return sortedVencimentos.map(v => {
+            const date = new Date(v);
+            return date.toLocaleDateString('pt-BR');
+          }).join(', ');
+        } else {
+          const first = new Date(sortedVencimentos[0]).toLocaleDateString('pt-BR');
+          const last = new Date(sortedVencimentos[sortedVencimentos.length - 1]).toLocaleDateString('pt-BR');
+          return `${first} ... ${last} (+${sortedVencimentos.length - 2} outros)`;
+        }
+      };
+      
       return (
-        <div className="bg-card border border-border rounded-lg p-3 shadow-elegant-md">
+        <div className="bg-card border border-border rounded-lg p-3 shadow-elegant-md max-w-xs">
           <p className="text-foreground font-medium">{data.name}</p>
           <p className="text-primary">
             Exposição: R$ {data.exposure.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
           <p className="text-muted-foreground">Ativos: {data.count}</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            <span className="font-medium">Vencimentos:</span><br />
+            {formatVencimentos(data.vencimentos)}
+          </p>
           {exceedsLimit && (
-            <p className="text-destructive font-medium">
+            <p className="text-destructive font-medium mt-1">
               Acima do limite em: R$ {excess.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </p>
           )}
