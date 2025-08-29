@@ -35,7 +35,8 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
     cdi: true,
     target: false,
     ibovespa: false,
-    ifix: false
+    ifix: false,
+    ipca: false
   });
   
   const { cdiData, loading: cdiLoading, error: cdiError } = useCDIData();
@@ -183,7 +184,8 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         cdiRetorno: 0,
         targetRetorno: 0,
         ibovespaRetorno: 0,
-        ifixRetorno: 0
+        ifixRetorno: 0,
+        ipcaRetorno: 0
       };
     } else {
       const firstCompetencia = chartData[1]?.competencia;
@@ -225,9 +227,10 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         }
       }
       
-      // Market indicators
+      // Market indicators - only show if data exists
       let ibovespaRetorno = null;
       let ifixRetorno = null;
+      let ipcaRetorno = null;
       
       const firstMarketPoint = marketData.find(m => m.competencia === firstCompetencia);
       const currentMarketPoint = marketData.find(m => m.competencia === currentCompetencia);
@@ -244,16 +247,20 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         if (currentCompetencia === firstCompetencia) {
           ibovespaRetorno = currentMarketPoint.ibovespa * 100;
           ifixRetorno = currentMarketPoint.ifix * 100;
+          ipcaRetorno = currentMarketPoint.ipca * 100;
         } else {
           const ibovespaRelativeReturn = (1 + currentMarketPoint.accumulatedIbovespa) / (1 + firstMarketPoint.accumulatedIbovespa) - 1;
           const ifixRelativeReturn = (1 + currentMarketPoint.accumulatedIfix) / (1 + firstMarketPoint.accumulatedIfix) - 1;
+          const ipcaRelativeReturn = (1 + currentMarketPoint.accumulatedIpca) / (1 + firstMarketPoint.accumulatedIpca) - 1;
           ibovespaRetorno = ibovespaRelativeReturn * 100;
           ifixRetorno = ifixRelativeReturn * 100;
+          ipcaRetorno = ipcaRelativeReturn * 100;
         }
         
         console.log('Calculated market returns:', {
           ibovespaRetorno,
-          ifixRetorno
+          ifixRetorno,
+          ipcaRetorno
         });
       } else {
         console.log('No market data found for competencias');
@@ -264,7 +271,8 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         cdiRetorno,
         targetRetorno,
         ibovespaRetorno,
-        ifixRetorno
+        ifixRetorno,
+        ipcaRetorno
       };
     }
   });
@@ -277,6 +285,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   const targetValues = chartDataWithIndicators.map(item => item.targetRetorno).filter(v => v !== null) as number[];
   const ibovespaValues = chartDataWithIndicators.map(item => item.ibovespaRetorno).filter(v => v !== null) as number[];
   const ifixValues = chartDataWithIndicators.map(item => item.ifixRetorno).filter(v => v !== null) as number[];
+  const ipcaValues = chartDataWithIndicators.map(item => item.ipcaRetorno).filter(v => v !== null) as number[];
   
   // Only include values from selected indicators
   let allValues = [...portfolioValues];
@@ -284,6 +293,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   if (selectedIndicators.target) allValues = [...allValues, ...targetValues];
   if (selectedIndicators.ibovespa) allValues = [...allValues, ...ibovespaValues];
   if (selectedIndicators.ifix) allValues = [...allValues, ...ifixValues];
+  if (selectedIndicators.ipca) allValues = [...allValues, ...ipcaValues];
   
   const minValue = Math.min(...allValues, 0);
   const maxValue = Math.max(...allValues);
@@ -394,6 +404,17 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                         }
                       />
                       <label htmlFor="ifix" className="text-sm">IFIX</label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="ipca" 
+                        checked={selectedIndicators.ipca}
+                        onCheckedChange={(checked) => 
+                          setSelectedIndicators(prev => ({ ...prev, ipca: checked as boolean }))
+                        }
+                      />
+                      <label htmlFor="ipca" className="text-sm">IPCA</label>
                     </div>
                   </div>
                 </div>
@@ -520,6 +541,9 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                    if (name === 'ifixRetorno') {
                      return [`${value.toFixed(2)}%`, 'IFIX'];
                    }
+                   if (name === 'ipcaRetorno') {
+                     return [`${value.toFixed(2)}%`, 'IPCA'];
+                   }
                    return [`${value.toFixed(2)}%`, name];
                  }}
                 labelStyle={{ 
@@ -628,6 +652,28 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                    activeDot={{ 
                      r: 5, 
                      fill: 'hsl(var(--warning))', 
+                     strokeWidth: 2, 
+                     stroke: 'hsl(var(--background))'
+                   }}
+                 />
+               )}
+               
+               {selectedIndicators.ipca && (
+                 <Line 
+                   type="monotone" 
+                   dataKey="ipcaRetorno" 
+                   stroke="hsl(var(--info))"
+                   strokeWidth={2}
+                   connectNulls={false}
+                   dot={{ 
+                     fill: 'hsl(var(--info))', 
+                     strokeWidth: 1, 
+                     stroke: 'hsl(var(--background))',
+                     r: 3
+                   }}
+                   activeDot={{ 
+                     r: 5, 
+                     fill: 'hsl(var(--info))', 
                      strokeWidth: 2, 
                      stroke: 'hsl(var(--background))'
                    }}

@@ -5,8 +5,10 @@ interface MarketIndicatorData {
   competencia: string;
   ibovespa: number;
   ifix: number;
+  ipca: number;
   accumulatedIbovespa: number;
   accumulatedIfix: number;
+  accumulatedIpca: number;
 }
 
 interface ClientTarget {
@@ -35,24 +37,25 @@ export function useMarketIndicators(clientName?: string) {
       const endDateStr = formatDate(endDate);
 
       // Fetch data from Banco Central APIs in parallel
-      // Note: Some series might not be available, so we'll handle errors gracefully
-      const [ibovespaResponse, ifixResponse] = await Promise.allSettled([
-        // Ibovespa - Trying different series that might be available
-        fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`)
-          .catch(() => fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.7/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`)),
-        // IFIX - Try alternative series
-        fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.25402/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`)
-          .catch(() => fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.26004/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`))
+      const [ibovespaResponse, ifixResponse, ipcaResponse] = await Promise.allSettled([
+        // Ibovespa - Série 1 (Índice Bovespa)
+        fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`),
+        // IFIX - Trying available real estate series
+        fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.25402/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`),
+        // IPCA - Série 433 (como especificado)
+        fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`)
       ]);
 
       console.log('API responses:', {
         ibovespaStatus: ibovespaResponse.status,
-        ifixStatus: ifixResponse.status
+        ifixStatus: ifixResponse.status,
+        ipcaStatus: ipcaResponse.status
       });
 
       // Handle responses more gracefully
       let ibovespaData = [];
       let ifixData = [];
+      let ipcaData = [];
 
       if (ibovespaResponse.status === 'fulfilled' && ibovespaResponse.value.ok) {
         ibovespaData = await ibovespaResponse.value.json();
@@ -62,15 +65,21 @@ export function useMarketIndicators(clientName?: string) {
         ifixData = await ifixResponse.value.json();
       }
 
+      if (ipcaResponse.status === 'fulfilled' && ipcaResponse.value.ok) {
+        ipcaData = await ipcaResponse.value.json();
+      }
+
       console.log('Market data fetched:', {
         ibovespaDataLength: ibovespaData.length,
-        ifixDataLength: ifixData.length
+        ifixDataLength: ifixData.length,
+        ipcaDataLength: ipcaData.length
       });
 
       // Process and consolidate data by competencia
       const competenciaMap = new Map<string, {
         ibovespa: number[];
         ifix: number[];
+        ipca: number[];
       }>();
 
       // Helper to convert date to competencia (MM/YYYY)
@@ -83,7 +92,7 @@ export function useMarketIndicators(clientName?: string) {
       ibovespaData.forEach((item: any) => {
         const competencia = dateToCompetencia(item.data);
         if (!competenciaMap.has(competencia)) {
-          competenciaMap.set(competencia, { ibovespa: [], ifix: [] });
+          competenciaMap.set(competencia, { ibovespa: [], ifix: [], ipca: [] });
         }
         const value = parseFloat(item.valor);
         if (!isNaN(value)) {
@@ -95,7 +104,7 @@ export function useMarketIndicators(clientName?: string) {
       ifixData.forEach((item: any) => {
         const competencia = dateToCompetencia(item.data);
         if (!competenciaMap.has(competencia)) {
-          competenciaMap.set(competencia, { ibovespa: [], ifix: [] });
+          competenciaMap.set(competencia, { ibovespa: [], ifix: [], ipca: [] });
         }
         const value = parseFloat(item.valor);
         if (!isNaN(value)) {
@@ -103,10 +112,23 @@ export function useMarketIndicators(clientName?: string) {
         }
       });
 
+      // Process IPCA data (monthly values)
+      ipcaData.forEach((item: any) => {
+        const competencia = dateToCompetencia(item.data);
+        if (!competenciaMap.has(competencia)) {
+          competenciaMap.set(competencia, { ibovespa: [], ifix: [], ipca: [] });
+        }
+        const value = parseFloat(item.valor) / 100; // Convert percentage to decimal
+        if (!isNaN(value)) {
+          competenciaMap.get(competencia)!.ipca.push(value);
+        }
+      });
+
       // Calculate monthly returns and accumulated returns
       const result: MarketIndicatorData[] = [];
       let ibovespaAccumulated = 0;
       let ifixAccumulated = 0;
+      let ipcaAccumulated = 0;
 
       // Sort competencias chronologically
       const sortedCompetencias = Array.from(competenciaMap.keys()).sort((a, b) => {
@@ -130,6 +152,9 @@ export function useMarketIndicators(clientName?: string) {
         const avgIfix = data.ifix.length > 0 ? 
           data.ifix.reduce((sum, val) => sum + val, 0) / data.ifix.length : null;
 
+        // IPCA is typically one value per month
+        const monthlyIpca = data.ipca.length > 0 ? data.ipca[0] : 0;
+
         // Calculate monthly returns (percentage change from previous month)
         let ibovespaMonthly = 0;
         let ifixMonthly = 0;
@@ -143,27 +168,34 @@ export function useMarketIndicators(clientName?: string) {
         }
 
         // Update accumulated returns
-        if (previousIbovespa !== null) {
+        if (previousIbovespa !== null && avgIbovespa !== null) {
           ibovespaAccumulated = (1 + ibovespaAccumulated) * (1 + ibovespaMonthly) - 1;
         }
         
-        if (previousIfix !== null) {
+        if (previousIfix !== null && avgIfix !== null) {
           ifixAccumulated = (1 + ifixAccumulated) * (1 + ifixMonthly) - 1;
         }
+
+        // IPCA accumulation
+        ipcaAccumulated = (1 + ipcaAccumulated) * (1 + monthlyIpca) - 1;
 
         result.push({
           competencia,
           ibovespa: ibovespaMonthly,
           ifix: ifixMonthly,
+          ipca: monthlyIpca,
           accumulatedIbovespa: ibovespaAccumulated,
-          accumulatedIfix: ifixAccumulated
+          accumulatedIfix: ifixAccumulated,
+          accumulatedIpca: ipcaAccumulated
         });
 
         console.log(`Processed ${competencia}:`, {
           ibovespaMonthly,
           ifixMonthly,
+          monthlyIpca,
           ibovespaAccumulated,
-          ifixAccumulated
+          ifixAccumulated,
+          ipcaAccumulated
         });
 
         // Update previous values for next iteration
@@ -171,31 +203,8 @@ export function useMarketIndicators(clientName?: string) {
         if (avgIfix !== null) previousIfix = avgIfix;
       });
 
-      // If no data was processed, create some basic mock data as fallback
-      if (result.length === 0) {
-        console.log('No real data available, using fallback data');
-        const fallbackData = [
-          { competencia: '07/2025', ibovespa: 0.0123, ifix: 0.0089 },
-          // Add more months as needed based on portfolio data
-        ];
-        
-        let ibovespaAcc = 0;
-        let ifixAcc = 0;
-        
-        fallbackData.forEach(item => {
-          ibovespaAcc = (1 + ibovespaAcc) * (1 + item.ibovespa) - 1;
-          ifixAcc = (1 + ifixAcc) * (1 + item.ifix) - 1;
-          
-          result.push({
-            competencia: item.competencia,
-            ibovespa: item.ibovespa,
-            ifix: item.ifix,
-            accumulatedIbovespa: ibovespaAcc,
-            accumulatedIfix: ifixAcc
-          });
-        });
-      }
-
+      // Only return data if we have actual market data - no fallback
+      console.log('Final result length:', result.length);
       return result;
 
     } catch (error) {
@@ -255,13 +264,8 @@ export function useMarketIndicators(clientName?: string) {
         }
       } catch (err) {
         console.error('Erro ao carregar dados de mercado:', err);
-        // Don't set error, just use fallback data
-        
-        // Create minimal fallback data based on existing competencias
-        const fallbackData = [
-          { competencia: '07/2025', ibovespa: 0.0123, ifix: 0.0089, accumulatedIbovespa: 0.0123, accumulatedIfix: 0.0089 }
-        ];
-        setMarketData(fallbackData);
+        // Don't set error, and don't set fallback data - just empty
+        setMarketData([]);
       } finally {
         setLoading(false);
       }
