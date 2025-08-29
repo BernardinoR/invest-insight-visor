@@ -197,17 +197,23 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
       const firstCompetencia = chartData[1]?.competencia;
       const currentCompetencia = point.competencia;
       
-      // CDI data
+      // CDI data - composição mensal correta
       let cdiRetorno = null;
-      const firstCDIPoint = cdiData.find(cdi => cdi.competencia === firstCompetencia);
-      const currentCDIPoint = cdiData.find(cdi => cdi.competencia === currentCompetencia);
       
-      if (currentCDIPoint && firstCDIPoint) {
+      // Get all CDI data from first competencia to current competencia
+      const startCompetenciaIndex = cdiData.findIndex(cdi => cdi.competencia === firstCompetencia);
+      const currentCompetenciaIndex = cdiData.findIndex(cdi => cdi.competencia === currentCompetencia);
+      
+      if (startCompetenciaIndex !== -1 && currentCompetenciaIndex !== -1) {
         if (currentCompetencia === firstCompetencia) {
-          cdiRetorno = currentCDIPoint.cdiRate * 100;
+          cdiRetorno = cdiData[currentCompetenciaIndex].cdiRate * 100;
         } else {
-          const relativeReturn = (1 + currentCDIPoint.cdiAccumulated) / (1 + firstCDIPoint.cdiAccumulated) - 1;
-          cdiRetorno = relativeReturn * 100;
+          // Composição mensal: 1.0110 * 1.0128 * ... para cada mês no período
+          let accumulatedCDI = 1;
+          for (let i = startCompetenciaIndex; i <= currentCompetenciaIndex; i++) {
+            accumulatedCDI *= (1 + cdiData[i].cdiRate);
+          }
+          cdiRetorno = (accumulatedCDI - 1) * 100;
         }
       }
       
