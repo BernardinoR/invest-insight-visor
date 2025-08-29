@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ConsolidadoData {
   id: number;
@@ -74,6 +75,11 @@ export default function DataManagement() {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("consolidado");
+  
+  // Multi-selection state
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+  const [bulkEditData, setBulkEditData] = useState<any>({});
   
   // Get unique competencias for filtering
   const competencias = [...new Set([
@@ -313,6 +319,111 @@ export default function DataManagement() {
     }
   };
 
+  // Multi-selection functions
+  const toggleItemSelection = (id: number) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  const selectAllVisibleItems = () => {
+    const visibleItems = activeTab === 'consolidado' ? filteredConsolidadoData : filteredDadosData;
+    const allIds = new Set(visibleItems.map(item => item.id));
+    setSelectedItems(allIds);
+  };
+
+  const clearSelection = () => {
+    setSelectedItems(new Set());
+  };
+
+  const handleBulkEdit = () => {
+    setIsBulkEditOpen(true);
+    setBulkEditData({});
+  };
+
+  const handleBulkSave = async () => {
+    if (selectedItems.size === 0) return;
+
+    try {
+      const tableName = activeTab === 'consolidado' ? 'ConsolidadoPerformance' : 'DadosPerformance';
+      const cleanedData = Object.fromEntries(
+        Object.entries(bulkEditData).filter(([_, value]) => value !== undefined && value !== '')
+      );
+
+      if (Object.keys(cleanedData).length === 0) {
+        toast({
+          title: "Aviso",
+          description: "Nenhum campo foi preenchido para edição",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const updatePromises = Array.from(selectedItems).map(id =>
+        supabase
+          .from(tableName)
+          .update(cleanedData)
+          .eq('id', id)
+      );
+
+      await Promise.all(updatePromises);
+
+      toast({
+        title: "Sucesso",
+        description: `${selectedItems.size} registros atualizados com sucesso`,
+      });
+
+      setIsBulkEditOpen(false);
+      setBulkEditData({});
+      setSelectedItems(new Set());
+      await fetchData();
+    } catch (error) {
+      console.error('Erro ao atualizar em lote:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar registros em lote",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedItems.size === 0) return;
+    if (!confirm(`Tem certeza que deseja excluir ${selectedItems.size} registros?`)) return;
+
+    try {
+      const tableName = activeTab === 'consolidado' ? 'ConsolidadoPerformance' : 'DadosPerformance';
+      
+      const deletePromises = Array.from(selectedItems).map(id =>
+        supabase
+          .from(tableName)
+          .delete()
+          .eq('id', id)
+      );
+
+      await Promise.all(deletePromises);
+
+      toast({
+        title: "Sucesso",
+        description: `${selectedItems.size} registros excluídos com sucesso`,
+      });
+
+      setSelectedItems(new Set());
+      await fetchData();
+    } catch (error) {
+      console.error('Erro ao excluir em lote:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir registros em lote",
+        variant: "destructive",
+      });
+    }
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -364,7 +475,73 @@ export default function DataManagement() {
           <ThemeToggle />
         </div>
 
-        {/* Competencia Filter */}
+        <div className="flex gap-6">
+          {/* Asset Selector Sidebar */}
+          <Card className="w-80 h-fit">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Seletor de Ativos
+                <span className="text-sm font-normal text-muted-foreground">
+                  {selectedItems.size} selecionados
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={selectAllVisibleItems}
+                  className="flex-1"
+                >
+                  <CheckSquare className="mr-1 h-3 w-3" />
+                  Todos
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={clearSelection}
+                  className="flex-1"
+                >
+                  <Square className="mr-1 h-3 w-3" />
+                  Limpar
+                </Button>
+              </div>
+              
+              {selectedItems.size > 0 && (
+                <div className="space-y-2">
+                  <Button 
+                    size="sm" 
+                    onClick={handleBulkEdit}
+                    className="w-full"
+                  >
+                    <Edit className="mr-2 h-3 w-3" />
+                    Editar Selecionados
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="destructive"
+                    onClick={handleBulkDelete}
+                    className="w-full"
+                  >
+                    <Trash2 className="mr-2 h-3 w-3" />
+                    Excluir Selecionados
+                  </Button>
+                </div>
+              )}
+              
+              <div className="text-xs text-muted-foreground">
+                {selectedItems.size === 0 
+                  ? "Selecione ativos nas tabelas para editar em lote"
+                  : `${selectedItems.size} ativo(s) selecionado(s) para edição em lote`
+                }
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Main Content */}
+          <div className="flex-1">
+            {/* Competencia Filter */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Filtrar por Competência</CardTitle>
@@ -409,19 +586,31 @@ export default function DataManagement() {
               <CardContent>
                 <div className="overflow-x-auto">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Competência</TableHead>
-                        <TableHead>Instituição</TableHead>
-                        <TableHead>Patrimônio Inicial</TableHead>
-                        <TableHead>Movimentação</TableHead>
-                        <TableHead>Impostos</TableHead>
-                        <TableHead>Ganho Financeiro</TableHead>
-                        <TableHead>Patrimônio Final</TableHead>
-                        <TableHead>Rendimento %</TableHead>
-                        <TableHead>Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
+                     <TableHeader>
+                       <TableRow>
+                         <TableHead className="w-12">
+                           <Checkbox
+                             checked={selectedItems.size === filteredConsolidadoData.length && filteredConsolidadoData.length > 0}
+                             onCheckedChange={(checked) => {
+                               if (checked) {
+                                 selectAllVisibleItems();
+                               } else {
+                                 clearSelection();
+                               }
+                             }}
+                           />
+                         </TableHead>
+                         <TableHead>Competência</TableHead>
+                         <TableHead>Instituição</TableHead>
+                         <TableHead>Patrimônio Inicial</TableHead>
+                         <TableHead>Movimentação</TableHead>
+                         <TableHead>Impostos</TableHead>
+                         <TableHead>Ganho Financeiro</TableHead>
+                         <TableHead>Patrimônio Final</TableHead>
+                         <TableHead>Rendimento %</TableHead>
+                         <TableHead>Ações</TableHead>
+                       </TableRow>
+                     </TableHeader>
                     <TableBody>
                       {loading ? (
                         <TableRow>
@@ -429,43 +618,49 @@ export default function DataManagement() {
                             Carregando...
                           </TableCell>
                         </TableRow>
-                      ) : filteredConsolidadoData.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={9} className="text-center">
-                            Nenhum dado encontrado
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredConsolidadoData.map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell className="font-medium">{item.Competencia}</TableCell>
-                            <TableCell>{item.Instituicao}</TableCell>
-                            <TableCell>{formatCurrency(item["Patrimonio Inicial"])}</TableCell>
-                            <TableCell>{formatCurrency(item["Movimentação"])}</TableCell>
-                            <TableCell>{formatCurrency(item.Impostos)}</TableCell>
-                            <TableCell>{formatCurrency(item["Ganho Financeiro"])}</TableCell>
-                            <TableCell>{formatCurrency(item["Patrimonio Final"])}</TableCell>
-                            <TableCell>{((item.Rendimento || 0) * 100).toFixed(2)}%</TableCell>
-                            <TableCell>
-                              <div className="flex gap-2">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => handleEdit(item, 'consolidado')}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="destructive"
-                                  onClick={() => handleDelete(item.id, 'consolidado')}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
+                       ) : filteredConsolidadoData.length === 0 ? (
+                         <TableRow>
+                           <TableCell colSpan={10} className="text-center">
+                             Nenhum dado encontrado
+                           </TableCell>
+                         </TableRow>
+                       ) : (
+                         filteredConsolidadoData.map((item) => (
+                           <TableRow key={item.id} className={selectedItems.has(item.id) ? "bg-accent/50" : ""}>
+                             <TableCell>
+                               <Checkbox
+                                 checked={selectedItems.has(item.id)}
+                                 onCheckedChange={() => toggleItemSelection(item.id)}
+                               />
+                             </TableCell>
+                             <TableCell className="font-medium">{item.Competencia}</TableCell>
+                             <TableCell>{item.Instituicao}</TableCell>
+                             <TableCell>{formatCurrency(item["Patrimonio Inicial"])}</TableCell>
+                             <TableCell>{formatCurrency(item["Movimentação"])}</TableCell>
+                             <TableCell>{formatCurrency(item.Impostos)}</TableCell>
+                             <TableCell>{formatCurrency(item["Ganho Financeiro"])}</TableCell>
+                             <TableCell>{formatCurrency(item["Patrimonio Final"])}</TableCell>
+                             <TableCell>{((item.Rendimento || 0) * 100).toFixed(2)}%</TableCell>
+                             <TableCell>
+                               <div className="flex gap-2">
+                                 <Button 
+                                   size="sm" 
+                                   variant="outline"
+                                   onClick={() => handleEdit(item, 'consolidado')}
+                                 >
+                                   <Edit className="h-4 w-4" />
+                                 </Button>
+                                 <Button 
+                                   size="sm" 
+                                   variant="destructive"
+                                   onClick={() => handleDelete(item.id, 'consolidado')}
+                                 >
+                                   <Trash2 className="h-4 w-4" />
+                                 </Button>
+                               </div>
+                             </TableCell>
+                           </TableRow>
+                         ))
                       )}
                     </TableBody>
                   </Table>
@@ -502,20 +697,32 @@ export default function DataManagement() {
               <CardContent>
                 <div className="overflow-x-auto">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Competência</TableHead>
-                        <TableHead>Instituição</TableHead>
-                        <TableHead>Ativo</TableHead>
-                        <TableHead>Emissor</TableHead>
-                        <TableHead>Classe</TableHead>
-                        <TableHead>Posição</TableHead>
-                        <TableHead>Taxa</TableHead>
-                        <TableHead>Vencimento</TableHead>
-                        <TableHead>Rendimento %</TableHead>
-                        <TableHead>Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
+                     <TableHeader>
+                       <TableRow>
+                         <TableHead className="w-12">
+                           <Checkbox
+                             checked={selectedItems.size === filteredDadosData.length && filteredDadosData.length > 0}
+                             onCheckedChange={(checked) => {
+                               if (checked) {
+                                 selectAllVisibleItems();
+                               } else {
+                                 clearSelection();
+                               }
+                             }}
+                           />
+                         </TableHead>
+                         <TableHead>Competência</TableHead>
+                         <TableHead>Instituição</TableHead>
+                         <TableHead>Ativo</TableHead>
+                         <TableHead>Emissor</TableHead>
+                         <TableHead>Classe</TableHead>
+                         <TableHead>Posição</TableHead>
+                         <TableHead>Taxa</TableHead>
+                         <TableHead>Vencimento</TableHead>
+                         <TableHead>Rendimento %</TableHead>
+                         <TableHead>Ações</TableHead>
+                       </TableRow>
+                     </TableHeader>
                     <TableBody>
                       {loading ? (
                         <TableRow>
@@ -523,44 +730,50 @@ export default function DataManagement() {
                             Carregando...
                           </TableCell>
                         </TableRow>
-                      ) : filteredDadosData.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={10} className="text-center">
-                            Nenhum dado encontrado
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredDadosData.map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell className="font-medium">{item.Competencia}</TableCell>
-                            <TableCell>{item.Instituicao}</TableCell>
-                            <TableCell>{item.Ativo}</TableCell>
-                            <TableCell>{item.Emissor}</TableCell>
-                            <TableCell>{item["Classe do ativo"]}</TableCell>
-                            <TableCell>{formatCurrency(item.Posicao || 0)}</TableCell>
-                            <TableCell>{item.Taxa}</TableCell>
-                            <TableCell>{item.Vencimento}</TableCell>
-                            <TableCell>{((item.Rendimento || 0) * 100).toFixed(2)}%</TableCell>
-                            <TableCell>
-                              <div className="flex gap-2">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => handleEdit(item, 'dados')}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="destructive"
-                                  onClick={() => handleDelete(item.id, 'dados')}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
+                       ) : filteredDadosData.length === 0 ? (
+                         <TableRow>
+                           <TableCell colSpan={11} className="text-center">
+                             Nenhum dado encontrado
+                           </TableCell>
+                         </TableRow>
+                       ) : (
+                         filteredDadosData.map((item) => (
+                           <TableRow key={item.id} className={selectedItems.has(item.id) ? "bg-accent/50" : ""}>
+                             <TableCell>
+                               <Checkbox
+                                 checked={selectedItems.has(item.id)}
+                                 onCheckedChange={() => toggleItemSelection(item.id)}
+                               />
+                             </TableCell>
+                             <TableCell className="font-medium">{item.Competencia}</TableCell>
+                             <TableCell>{item.Instituicao}</TableCell>
+                             <TableCell>{item.Ativo}</TableCell>
+                             <TableCell>{item.Emissor}</TableCell>
+                             <TableCell>{item["Classe do ativo"]}</TableCell>
+                             <TableCell>{formatCurrency(item.Posicao || 0)}</TableCell>
+                             <TableCell>{item.Taxa}</TableCell>
+                             <TableCell>{item.Vencimento}</TableCell>
+                             <TableCell>{((item.Rendimento || 0) * 100).toFixed(2)}%</TableCell>
+                             <TableCell>
+                               <div className="flex gap-2">
+                                 <Button 
+                                   size="sm" 
+                                   variant="outline"
+                                   onClick={() => handleEdit(item, 'dados')}
+                                 >
+                                   <Edit className="h-4 w-4" />
+                                 </Button>
+                                 <Button 
+                                   size="sm" 
+                                   variant="destructive"
+                                   onClick={() => handleDelete(item.id, 'dados')}
+                                 >
+                                   <Trash2 className="h-4 w-4" />
+                                 </Button>
+                               </div>
+                             </TableCell>
+                           </TableRow>
+                         ))
                       )}
                     </TableBody>
                   </Table>
@@ -568,7 +781,9 @@ export default function DataManagement() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
+          </Tabs>
+          </div>
+        </div>
       </div>
 
       {/* Edit/Create Dialog */}
@@ -828,6 +1043,166 @@ export default function DataManagement() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Edit Dialog */}
+      <Dialog open={isBulkEditOpen} onOpenChange={setIsBulkEditOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Editar {selectedItems.size} Registros em Lote
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              Preencha apenas os campos que deseja alterar. Campos vazios não serão modificados.
+            </div>
+            
+            {activeTab === 'consolidado' ? (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="bulk-competencia">Competência</Label>
+                    <Input
+                      id="bulk-competencia"
+                      value={bulkEditData.Competencia || ''}
+                      onChange={(e) => {
+                        let value = e.target.value.replace(/\D/g, '');
+                        if (value.length >= 2) {
+                          value = value.substring(0, 2) + '/' + value.substring(2, 6);
+                        }
+                        setBulkEditData({...bulkEditData, Competencia: value});
+                      }}
+                      placeholder="MM/YYYY"
+                      maxLength={7}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bulk-instituicao">Instituição</Label>
+                    <Input
+                      id="bulk-instituicao"
+                      value={bulkEditData.Instituicao || ''}
+                      onChange={(e) => setBulkEditData({...bulkEditData, Instituicao: e.target.value})}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="bulk-rendimento">Rendimento (%)</Label>
+                    <div className="relative">
+                      <Input
+                        id="bulk-rendimento"
+                        type="number"
+                        step="0.0001"
+                        value={bulkEditData.Rendimento ? (bulkEditData.Rendimento * 100) : ''}
+                        onChange={(e) => setBulkEditData({...bulkEditData, Rendimento: e.target.value ? (parseFloat(e.target.value) / 100) : undefined})}
+                        className="pr-8"
+                      />
+                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="bulk-competencia">Competência</Label>
+                    <Input
+                      id="bulk-competencia"
+                      value={bulkEditData.Competencia || ''}
+                      onChange={(e) => {
+                        let value = e.target.value.replace(/\D/g, '');
+                        if (value.length >= 2) {
+                          value = value.substring(0, 2) + '/' + value.substring(2, 6);
+                        }
+                        setBulkEditData({...bulkEditData, Competencia: value});
+                      }}
+                      placeholder="MM/YYYY"
+                      maxLength={7}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bulk-instituicao">Instituição</Label>
+                    <Input
+                      id="bulk-instituicao"
+                      value={bulkEditData.Instituicao || ''}
+                      onChange={(e) => setBulkEditData({...bulkEditData, Instituicao: e.target.value})}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="bulk-emissor">Emissor</Label>
+                    <Input
+                      id="bulk-emissor"
+                      value={bulkEditData.Emissor || ''}
+                      onChange={(e) => setBulkEditData({...bulkEditData, Emissor: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bulk-classe">Classe do Ativo</Label>
+                    <Select 
+                      value={bulkEditData["Classe do ativo"] || ''} 
+                      onValueChange={(value) => setBulkEditData({...bulkEditData, "Classe do ativo": value})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecione a classe do ativo" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border-border z-50 max-h-[200px] overflow-y-auto">
+                        <SelectItem value="">Não alterar</SelectItem>
+                        {classesAtivo.map((classe) => (
+                          <SelectItem key={classe} value={classe}>
+                            {classe}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="bulk-taxa">Taxa</Label>
+                    <Input
+                      id="bulk-taxa"
+                      value={bulkEditData.Taxa || ''}
+                      onChange={(e) => setBulkEditData({...bulkEditData, Taxa: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bulk-rendimento">Rendimento (%)</Label>
+                    <div className="relative">
+                      <Input
+                        id="bulk-rendimento"
+                        type="number"
+                        step="0.0001"
+                        value={bulkEditData.Rendimento ? (bulkEditData.Rendimento * 100) : ''}
+                        onChange={(e) => setBulkEditData({...bulkEditData, Rendimento: e.target.value ? (parseFloat(e.target.value) / 100) : undefined})}
+                        className="pr-8"
+                      />
+                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+            
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setIsBulkEditOpen(false)}>
+                <X className="mr-2 h-4 w-4" />
+                Cancelar
+              </Button>
+              <Button onClick={handleBulkSave}>
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Alterações
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
