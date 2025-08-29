@@ -107,36 +107,37 @@ export function IssuerExposure({ clientName }: { clientName?: string }) {
         </div>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={400}>
+        <ResponsiveContainer width="100%" height={600}>
           <BarChart 
             data={chartData} 
-            layout="horizontal"
-            margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
+            margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis 
-              type="number"
+              dataKey="name" 
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={10}
+              angle={-45}
+              textAnchor="end"
+              height={80}
+              interval={0}
+            />
+            <YAxis 
               stroke="hsl(var(--muted-foreground))"
               fontSize={12}
               tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
             />
-            <YAxis 
-              type="category"
-              dataKey="name" 
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={10}
-              width={95}
-            />
             <Tooltip content={<CustomTooltip />} />
             <ReferenceLine 
-              x={LIMIT} 
+              y={LIMIT} 
               stroke="hsl(var(--destructive))" 
               strokeDasharray="5 5"
               strokeWidth={2}
+              label={{ value: "Limite R$ 250k", position: "right" }}
             />
             <Bar 
               dataKey="exposure" 
-              radius={[0, 4, 4, 0]}
+              radius={[4, 4, 0, 0]}
               opacity={0.8}
             >
               {chartData.map((entry, index) => (
