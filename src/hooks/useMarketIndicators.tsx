@@ -20,68 +20,136 @@ export function useMarketIndicators(clientName?: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Mock data for Ibovespa and IFIX with more realistic historical patterns
-  const generateMockMarketData = (): MarketIndicatorData[] => {
-    const data: MarketIndicatorData[] = [];
-    
-    // Fixed realistic data based on Brazilian market patterns
-    // Each competencia represents: Month N = from day 30 of month N-1 to day 31 of month N
-    const marketReturns = [
-      // 2023 data
-      { competencia: '01/2023', ibovespa: 0.0234, ifix: 0.0156 }, // Jan 2023
-      { competencia: '02/2023', ibovespa: -0.0187, ifix: 0.0089 }, // Feb 2023
-      { competencia: '03/2023', ibovespa: 0.0298, ifix: 0.0201 }, // Mar 2023
-      { competencia: '04/2023', ibovespa: 0.0145, ifix: -0.0034 }, // Apr 2023
-      { competencia: '05/2023', ibovespa: -0.0067, ifix: 0.0178 }, // May 2023
-      { competencia: '06/2023', ibovespa: 0.0456, ifix: 0.0234 }, // Jun 2023
-      { competencia: '07/2023', ibovespa: 0.0234, ifix: 0.0123 }, // Jul 2023
-      { competencia: '08/2023', ibovespa: -0.0298, ifix: -0.0156 }, // Aug 2023
-      { competencia: '09/2023', ibovespa: 0.0189, ifix: 0.0089 }, // Sep 2023
-      { competencia: '10/2023', ibovespa: -0.0123, ifix: 0.0045 }, // Oct 2023
-      { competencia: '11/2023', ibovespa: 0.0367, ifix: 0.0167 }, // Nov 2023
-      { competencia: '12/2023', ibovespa: 0.0289, ifix: 0.0134 }, // Dec 2023
-      
-      // 2024 data
-      { competencia: '01/2024', ibovespa: -0.0145, ifix: 0.0078 }, // Jan 2024
-      { competencia: '02/2024', ibovespa: 0.0267, ifix: 0.0156 }, // Feb 2024
-      { competencia: '03/2024', ibovespa: 0.0198, ifix: -0.0023 }, // Mar 2024
-      { competencia: '04/2024', ibovespa: -0.0089, ifix: 0.0201 }, // Apr 2024
-      { competencia: '05/2024', ibovespa: 0.0156, ifix: 0.0089 }, // May 2024
-      { competencia: '06/2024', ibovespa: 0.0234, ifix: 0.0134 }, // Jun 2024
-      { competencia: '07/2024', ibovespa: -0.0167, ifix: 0.0167 }, // Jul 2024
-      { competencia: '08/2024', ibovespa: 0.0289, ifix: -0.0045 }, // Aug 2024
-      { competencia: '09/2024', ibovespa: 0.0098, ifix: 0.0178 }, // Sep 2024
-      { competencia: '10/2024', ibovespa: -0.0234, ifix: 0.0089 }, // Oct 2024
-      { competencia: '11/2024', ibovespa: 0.0345, ifix: 0.0201 }, // Nov 2024
-      { competencia: '12/2024', ibovespa: 0.0178, ifix: 0.0134 }, // Dec 2024
-      
-      // 2025 data
-      { competencia: '01/2025', ibovespa: 0.0267, ifix: 0.0089 }, // Jan 2025
-      { competencia: '02/2025', ibovespa: -0.0098, ifix: 0.0156 }, // Feb 2025
-      { competencia: '03/2025', ibovespa: 0.0189, ifix: 0.0123 }, // Mar 2025
-      { competencia: '04/2025', ibovespa: 0.0234, ifix: -0.0034 }, // Apr 2025
-      { competencia: '05/2025', ibovespa: -0.0156, ifix: 0.0167 }, // May 2025
-      { competencia: '06/2025', ibovespa: 0.0298, ifix: 0.0201 }, // Jun 2025
-      { competencia: '07/2025', ibovespa: 0.0123, ifix: 0.0089 }, // Jul 2025
-    ];
-    
-    let ibovespaAccumulated = 0;
-    let ifixAccumulated = 0;
-    
-    marketReturns.forEach(item => {
-      ibovespaAccumulated = (1 + ibovespaAccumulated) * (1 + item.ibovespa) - 1;
-      ifixAccumulated = (1 + ifixAccumulated) * (1 + item.ifix) - 1;
-      
-      data.push({
-        competencia: item.competencia,
-        ibovespa: item.ibovespa,
-        ifix: item.ifix,
-        accumulatedIbovespa: ibovespaAccumulated,
-        accumulatedIfix: ifixAccumulated
+  // Fetch real market data from APIs
+  const fetchMarketData = async (): Promise<MarketIndicatorData[]> => {
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setFullYear(startDate.getFullYear() - 2); // Last 2 years
+
+      const formatDate = (date: Date) => {
+        return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+      };
+
+      const startDateStr = formatDate(startDate);
+      const endDateStr = formatDate(endDate);
+
+      // Fetch data from Banco Central APIs in parallel
+      const [ibovespaResponse, ifixResponse] = await Promise.all([
+        // Ibovespa - Série 7
+        fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.7/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`),
+        // IFIX - Série 26004 
+        fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.26004/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`)
+      ]);
+
+      const [ibovespaData, ifixData] = await Promise.all([
+        ibovespaResponse.json(),
+        ifixResponse.json()
+      ]);
+
+      // Process and consolidate data by competencia
+      const competenciaMap = new Map<string, {
+        ibovespa: number[];
+        ifix: number[];
+      }>();
+
+      // Helper to convert date to competencia (MM/YYYY)
+      const dateToCompetencia = (dateStr: string) => {
+        const [day, month, year] = dateStr.split('/');
+        return `${month}/${year}`;
+      };
+
+      // Process Ibovespa data
+      ibovespaData.forEach((item: any) => {
+        const competencia = dateToCompetencia(item.data);
+        if (!competenciaMap.has(competencia)) {
+          competenciaMap.set(competencia, { ibovespa: [], ifix: [] });
+        }
+        const value = parseFloat(item.valor);
+        if (!isNaN(value)) {
+          competenciaMap.get(competencia)!.ibovespa.push(value);
+        }
       });
-    });
-    
-    return data;
+
+      // Process IFIX data
+      ifixData.forEach((item: any) => {
+        const competencia = dateToCompetencia(item.data);
+        if (!competenciaMap.has(competencia)) {
+          competenciaMap.set(competencia, { ibovespa: [], ifix: [] });
+        }
+        const value = parseFloat(item.valor);
+        if (!isNaN(value)) {
+          competenciaMap.get(competencia)!.ifix.push(value);
+        }
+      });
+
+      // Calculate monthly returns and accumulated returns
+      const result: MarketIndicatorData[] = [];
+      let ibovespaAccumulated = 0;
+      let ifixAccumulated = 0;
+
+      // Sort competencias chronologically
+      const sortedCompetencias = Array.from(competenciaMap.keys()).sort((a, b) => {
+        const [monthA, yearA] = a.split('/');
+        const [monthB, yearB] = b.split('/');
+        const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+        const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+        return dateA.getTime() - dateB.getTime();
+      });
+
+      let previousIbovespa: number | null = null;
+      let previousIfix: number | null = null;
+
+      sortedCompetencias.forEach(competencia => {
+        const data = competenciaMap.get(competencia)!;
+        
+        // Calculate average values for the month
+        const avgIbovespa = data.ibovespa.length > 0 ? 
+          data.ibovespa.reduce((sum, val) => sum + val, 0) / data.ibovespa.length : null;
+        
+        const avgIfix = data.ifix.length > 0 ? 
+          data.ifix.reduce((sum, val) => sum + val, 0) / data.ifix.length : null;
+
+        // Calculate monthly returns (percentage change from previous month)
+        let ibovespaMonthly = 0;
+        let ifixMonthly = 0;
+
+        if (previousIbovespa !== null && avgIbovespa !== null) {
+          ibovespaMonthly = (avgIbovespa - previousIbovespa) / previousIbovespa;
+        }
+
+        if (previousIfix !== null && avgIfix !== null) {
+          ifixMonthly = (avgIfix - previousIfix) / previousIfix;
+        }
+
+        // Update accumulated returns
+        if (previousIbovespa !== null) {
+          ibovespaAccumulated = (1 + ibovespaAccumulated) * (1 + ibovespaMonthly) - 1;
+        }
+        
+        if (previousIfix !== null) {
+          ifixAccumulated = (1 + ifixAccumulated) * (1 + ifixMonthly) - 1;
+        }
+
+        result.push({
+          competencia,
+          ibovespa: ibovespaMonthly,
+          ifix: ifixMonthly,
+          accumulatedIbovespa: ibovespaAccumulated,
+          accumulatedIfix: ifixAccumulated
+        });
+
+        // Update previous values for next iteration
+        if (avgIbovespa !== null) previousIbovespa = avgIbovespa;
+        if (avgIfix !== null) previousIfix = avgIfix;
+      });
+
+      return result;
+
+    } catch (error) {
+      console.error('Erro ao buscar dados de mercado:', error);
+      throw error;
+    }
   };
 
   const fetchClientTarget = async (clientName: string) => {
@@ -123,9 +191,9 @@ export function useMarketIndicators(clientName?: string) {
       setError(null);
       
       try {
-        // Generate mock market data
-        const mockData = generateMockMarketData();
-        setMarketData(mockData);
+        // Fetch real market data from APIs
+        const realData = await fetchMarketData();
+        setMarketData(realData);
         
         // Fetch client target if clientName is provided
         if (clientName) {
@@ -135,6 +203,9 @@ export function useMarketIndicators(clientName?: string) {
       } catch (err) {
         setError('Erro ao carregar dados de mercado');
         console.error('Erro ao carregar dados de mercado:', err);
+        
+        // Fallback: set empty data instead of mock data
+        setMarketData([]);
       } finally {
         setLoading(false);
       }
