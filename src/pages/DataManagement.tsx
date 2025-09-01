@@ -657,8 +657,52 @@ export default function DataManagement() {
                   <p className="text-sm text-muted-foreground">
                     Dados detalhados de ativos por competência
                   </p>
+                  {activeTab === 'detalhados' && selectedItems.size > 0 && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-sm text-muted-foreground">
+                        {selectedItems.size} item(s) selecionado(s)
+                      </span>
+                      <Button 
+                        size="sm" 
+                        onClick={handleBulkEdit}
+                        className="h-7"
+                      >
+                        <Edit className="mr-1 h-3 w-3" />
+                        Editar
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={handleBulkDelete}
+                        className="h-7"
+                      >
+                        <Trash2 className="mr-1 h-3 w-3" />
+                        Excluir
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={clearSelection}
+                        className="h-7"
+                      >
+                        <X className="mr-1 h-3 w-3" />
+                        Limpar
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-4">
+                  {activeTab === 'detalhados' && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={selectAllVisibleItems}
+                      className="h-8"
+                    >
+                      <CheckSquare className="mr-1 h-3 w-3" />
+                      Selecionar Todos
+                    </Button>
+                  )}
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
