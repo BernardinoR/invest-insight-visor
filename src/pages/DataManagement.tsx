@@ -351,7 +351,9 @@ export default function DataManagement() {
     try {
       const tableName = activeTab === 'consolidado' ? 'ConsolidadoPerformance' : 'DadosPerformance';
       const cleanedData = Object.fromEntries(
-        Object.entries(bulkEditData).filter(([_, value]) => value !== undefined && value !== '')
+        Object.entries(bulkEditData).filter(([_, value]) => 
+          value !== undefined && value !== '' && value !== 'no-change'
+        )
       );
 
       if (Object.keys(cleanedData).length === 0) {
@@ -487,7 +489,7 @@ export default function DataManagement() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as Competências</SelectItem>
-                {competencias.map((competencia) => (
+                {competencias.filter(comp => comp && comp.trim() !== '').map((competencia) => (
                   <SelectItem key={competencia} value={competencia}>
                     {competencia}
                   </SelectItem>
@@ -985,7 +987,7 @@ export default function DataManagement() {
                               {classe}
                             </SelectItem>
                           )) : (
-                            <SelectItem value="" disabled>
+                            <SelectItem value="carregando" disabled>
                               Carregando classes...
                             </SelectItem>
                           )}
@@ -1176,7 +1178,7 @@ export default function DataManagement() {
                         <SelectValue placeholder="Selecione a classe do ativo" />
                       </SelectTrigger>
                       <SelectContent className="bg-background border-border z-50 max-h-[200px] overflow-y-auto">
-                        <SelectItem value="">Não alterar</SelectItem>
+                        <SelectItem value="no-change">Não alterar</SelectItem>
                         {classesAtivo.map((classe) => (
                           <SelectItem key={classe} value={classe}>
                             {classe}
