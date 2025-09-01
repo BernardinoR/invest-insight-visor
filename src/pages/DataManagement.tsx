@@ -475,73 +475,7 @@ export default function DataManagement() {
           <ThemeToggle />
         </div>
 
-        <div className="flex gap-6">
-          {/* Asset Selector Sidebar */}
-          <Card className="w-80 h-fit">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Seletor de Ativos
-                <span className="text-sm font-normal text-muted-foreground">
-                  {selectedItems.size} selecionados
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={selectAllVisibleItems}
-                  className="flex-1"
-                >
-                  <CheckSquare className="mr-1 h-3 w-3" />
-                  Todos
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={clearSelection}
-                  className="flex-1"
-                >
-                  <Square className="mr-1 h-3 w-3" />
-                  Limpar
-                </Button>
-              </div>
-              
-              {selectedItems.size > 0 && (
-                <div className="space-y-2">
-                  <Button 
-                    size="sm" 
-                    onClick={handleBulkEdit}
-                    className="w-full"
-                  >
-                    <Edit className="mr-2 h-3 w-3" />
-                    Editar Selecionados
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="destructive"
-                    onClick={handleBulkDelete}
-                    className="w-full"
-                  >
-                    <Trash2 className="mr-2 h-3 w-3" />
-                    Excluir Selecionados
-                  </Button>
-                </div>
-              )}
-              
-              <div className="text-xs text-muted-foreground">
-                {selectedItems.size === 0 
-                  ? "Selecione ativos nas tabelas para editar em lote"
-                  : `${selectedItems.size} ativo(s) selecionado(s) para edição em lote`
-                }
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Competencia Filter */}
+        {/* Competencia Filter */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Filtrar por Competência</CardTitle>
@@ -577,11 +511,57 @@ export default function DataManagement() {
                   <p className="text-sm text-muted-foreground">
                     Performance consolidada por competência e instituição
                   </p>
+                  {activeTab === 'consolidado' && selectedItems.size > 0 && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-sm text-muted-foreground">
+                        {selectedItems.size} item(s) selecionado(s)
+                      </span>
+                      <Button 
+                        size="sm" 
+                        onClick={handleBulkEdit}
+                        className="h-7"
+                      >
+                        <Edit className="mr-1 h-3 w-3" />
+                        Editar
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={handleBulkDelete}
+                        className="h-7"
+                      >
+                        <Trash2 className="mr-1 h-3 w-3" />
+                        Excluir
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={clearSelection}
+                        className="h-7"
+                      >
+                        <X className="mr-1 h-3 w-3" />
+                        Limpar
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                <Button onClick={() => handleCreate('consolidado')}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Novo Registro
-                </Button>
+                <div className="flex items-center gap-2">
+                  {activeTab === 'consolidado' && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={selectAllVisibleItems}
+                      className="h-8"
+                    >
+                      <CheckSquare className="mr-1 h-3 w-3" />
+                      Selecionar Todos
+                    </Button>
+                  )}
+                  <Button onClick={() => handleCreate('consolidado')}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Novo Registro
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -781,9 +761,7 @@ export default function DataManagement() {
               </CardContent>
             </Card>
           </TabsContent>
-          </Tabs>
-          </div>
-        </div>
+        </Tabs>
       </div>
 
       {/* Edit/Create Dialog */}
