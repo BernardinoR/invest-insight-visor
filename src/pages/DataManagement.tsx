@@ -86,13 +86,12 @@ export default function DataManagement() {
   const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
   const [bulkEditData, setBulkEditData] = useState<any>({});
   
-  // Get unique competencias for filtering
+  // Get unique values for filtering
   const competencias = [...new Set([
     ...consolidadoData.map(item => item.Competencia),
     ...dadosData.map(item => item.Competencia)
   ])].filter(comp => comp && comp.trim() !== '').sort().reverse();
 
-  // Get unique instituicoes for filtering
   const instituicoes = [...new Set([
     ...consolidadoData.map(item => item.Instituicao),
     ...dadosData.map(item => item.Instituicao)
@@ -498,6 +497,62 @@ export default function DataManagement() {
     );
   }
 
+  // Multi-Select Component
+  const MultiSelectFilter = ({ 
+    label, 
+    options, 
+    selected, 
+    onChange 
+  }: { 
+    label: string; 
+    options: string[]; 
+    selected: string[]; 
+    onChange: (values: string[]) => void 
+  }) => (
+    <div>
+      <Label>{label}</Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="w-[200px] justify-between">
+            {selected.length === 0 
+              ? `Todos ${label.toLowerCase()}` 
+              : selected.length === 1 
+                ? selected[0] 
+                : `${selected.length} selecionados`
+            }
+            <ChevronDown className="ml-2 h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[200px] p-0">
+          <div className="p-2 space-y-1 max-h-64 overflow-y-auto">
+            <div className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
+              <Checkbox
+                checked={selected.length === 0}
+                onCheckedChange={() => onChange([])}
+              />
+              <span className="text-sm">Todos</span>
+            </div>
+            {options.map((option) => (
+              <div key={option} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
+                <Checkbox
+                  checked={selected.includes(option)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      onChange([...selected, option]);
+                    } else {
+                      onChange(selected.filter(item => item !== option));
+                    }
+                  }}
+                />
+                <span className="text-sm">{option}</span>
+              </div>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-hero">
       <div className="container mx-auto px-6 py-4">
@@ -523,99 +578,40 @@ export default function DataManagement() {
           <ThemeToggle />
         </div>
 
-        {/* Multi-Select Component */}
-        {(() => {
-          const MultiSelectFilter = ({ 
-            label, 
-            options, 
-            selected, 
-            onChange 
-          }: { 
-            label: string; 
-            options: string[]; 
-            selected: string[]; 
-            onChange: (values: string[]) => void 
-          }) => (
-            <div>
-              <Label>{label}</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-[200px] justify-between">
-                    {selected.length === 0 
-                      ? `Todos ${label.toLowerCase()}` 
-                      : selected.length === 1 
-                        ? selected[0] 
-                        : `${selected.length} selecionados`
-                    }
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0">
-                  <div className="p-2 space-y-1 max-h-64 overflow-y-auto">
-                    <div className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
-                      <Checkbox
-                        checked={selected.length === 0}
-                        onCheckedChange={() => onChange([])}
-                      />
-                      <span className="text-sm">Todos</span>
-                    </div>
-                    {options.map((option) => (
-                      <div key={option} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
-                        <Checkbox
-                          checked={selected.includes(option)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              onChange([...selected, option]);
-                            } else {
-                              onChange(selected.filter(item => item !== option));
-                            }
-                          }}
-                        />
-                        <span className="text-sm">{option}</span>
-                      </div>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
+        {/* Multi-Select Filters */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Filtros</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <MultiSelectFilter
+                label="Competências"
+                options={competencias}
+                selected={selectedCompetencias}
+                onChange={setSelectedCompetencias}
+              />
+              <MultiSelectFilter
+                label="Instituições"
+                options={instituicoes}
+                selected={selectedInstituicoes}
+                onChange={setSelectedInstituicoes}
+              />
+              <MultiSelectFilter
+                label="Classes de Ativo"
+                options={classesAtivoUnique}
+                selected={selectedClasses}
+                onChange={setSelectedClasses}
+              />
+              <MultiSelectFilter
+                label="Emissores"
+                options={emissores}
+                selected={selectedEmissores}
+                onChange={setSelectedEmissores}
+              />
             </div>
-          );
-
-          return (
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Filtros</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <MultiSelectFilter
-                    label="Competências"
-                    options={competencias}
-                    selected={selectedCompetencias}
-                    onChange={setSelectedCompetencias}
-                  />
-                  <MultiSelectFilter
-                    label="Instituições"
-                    options={instituicoes}
-                    selected={selectedInstituicoes}
-                    onChange={setSelectedInstituicoes}
-                  />
-                  <MultiSelectFilter
-                    label="Classes de Ativo"
-                    options={classesAtivoUnique}
-                    selected={selectedClasses}
-                    onChange={setSelectedClasses}
-                  />
-                  <MultiSelectFilter
-                    label="Emissores"
-                    options={emissores}
-                    selected={selectedEmissores}
-                    onChange={setSelectedEmissores}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })()}
+          </CardContent>
+        </Card>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
@@ -714,7 +710,7 @@ export default function DataManagement() {
                     <TableBody>
                       {loading ? (
                         <TableRow>
-                          <TableCell colSpan={9} className="text-center">
+                          <TableCell colSpan={10} className="text-center">
                             Carregando...
                           </TableCell>
                         </TableRow>
@@ -726,33 +722,33 @@ export default function DataManagement() {
                          </TableRow>
                        ) : (
                          filteredConsolidadoData.map((item) => (
-                           <TableRow key={item.id} className={selectedItems.has(item.id) ? "bg-accent/50" : ""}>
+                           <TableRow key={item.id}>
                              <TableCell>
                                <Checkbox
                                  checked={selectedItems.has(item.id)}
                                  onCheckedChange={() => toggleItemSelection(item.id)}
                                />
                              </TableCell>
-                             <TableCell className="font-medium">{item.Competencia}</TableCell>
+                             <TableCell>{item.Competencia}</TableCell>
                              <TableCell>{item.Instituicao}</TableCell>
                              <TableCell>{formatCurrency(item["Patrimonio Inicial"])}</TableCell>
                              <TableCell>{formatCurrency(item["Movimentação"])}</TableCell>
                              <TableCell>{formatCurrency(item.Impostos)}</TableCell>
                              <TableCell>{formatCurrency(item["Ganho Financeiro"])}</TableCell>
                              <TableCell>{formatCurrency(item["Patrimonio Final"])}</TableCell>
-                             <TableCell>{((item.Rendimento || 0) * 100).toFixed(2)}%</TableCell>
+                             <TableCell>{(item.Rendimento || 0).toFixed(2)}%</TableCell>
                              <TableCell>
                                <div className="flex gap-2">
-                                 <Button 
-                                   size="sm" 
+                                 <Button
                                    variant="outline"
+                                   size="sm"
                                    onClick={() => handleEdit(item, 'consolidado')}
                                  >
                                    <Edit className="h-4 w-4" />
                                  </Button>
-                                 <Button 
-                                   size="sm" 
-                                   variant="destructive"
+                                 <Button
+                                   variant="outline"
+                                   size="sm"
                                    onClick={() => handleDelete(item.id, 'consolidado')}
                                  >
                                    <Trash2 className="h-4 w-4" />
@@ -841,90 +837,90 @@ export default function DataManagement() {
               <CardContent>
                 <div className="overflow-x-auto">
                   <Table>
-                     <TableHeader>
-                       <TableRow>
-                         <TableHead className="w-12">
-                           <Checkbox
-                             checked={selectedItems.size === filteredDadosData.length && filteredDadosData.length > 0}
-                             onCheckedChange={(checked) => {
-                               if (checked) {
-                                 selectAllVisibleItems();
-                               } else {
-                                 clearSelection();
-                               }
-                             }}
-                           />
-                         </TableHead>
-                         <TableHead>Competência</TableHead>
-                         <TableHead>Instituição</TableHead>
-                         <TableHead>Ativo</TableHead>
-                         <TableHead>Emissor</TableHead>
-                         <TableHead>Classe</TableHead>
-                         <TableHead>Posição</TableHead>
-                         <TableHead>Taxa</TableHead>
-                         <TableHead>Vencimento</TableHead>
-                         <TableHead>Rendimento %</TableHead>
-                         <TableHead>Ações</TableHead>
-                       </TableRow>
-                     </TableHeader>
-                    <TableBody>
-                      {loading ? (
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={10} className="text-center">
-                            Carregando...
-                          </TableCell>
+                          <TableHead className="w-12">
+                            <Checkbox
+                              checked={selectedItems.size === filteredDadosData.length && filteredDadosData.length > 0}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  selectAllVisibleItems();
+                                } else {
+                                  clearSelection();
+                                }
+                              }}
+                            />
+                          </TableHead>
+                          <TableHead>Competência</TableHead>
+                          <TableHead>Instituição</TableHead>
+                          <TableHead>Ativo</TableHead>
+                          <TableHead>Emissor</TableHead>
+                          <TableHead>Classe</TableHead>
+                          <TableHead>Posição</TableHead>
+                          <TableHead>Taxa</TableHead>
+                          <TableHead>Vencimento</TableHead>
+                          <TableHead>Rendimento %</TableHead>
+                          <TableHead>Ações</TableHead>
                         </TableRow>
-                       ) : filteredDadosData.length === 0 ? (
-                         <TableRow>
-                           <TableCell colSpan={11} className="text-center">
-                             Nenhum dado encontrado
-                           </TableCell>
-                         </TableRow>
-                       ) : (
-                         filteredDadosData.map((item) => (
-                           <TableRow key={item.id} className={selectedItems.has(item.id) ? "bg-accent/50" : ""}>
-                             <TableCell>
-                               <Checkbox
-                                 checked={selectedItems.has(item.id)}
-                                 onCheckedChange={() => toggleItemSelection(item.id)}
-                               />
-                             </TableCell>
-                             <TableCell className="font-medium">{item.Competencia}</TableCell>
-                             <TableCell>{item.Instituicao}</TableCell>
-                             <TableCell>{item.Ativo}</TableCell>
-                             <TableCell>{item.Emissor}</TableCell>
-                             <TableCell>{item["Classe do ativo"]}</TableCell>
-                             <TableCell>{formatCurrency(item.Posicao || 0)}</TableCell>
-                             <TableCell>{item.Taxa}</TableCell>
-                             <TableCell>{item.Vencimento}</TableCell>
-                             <TableCell>{((item.Rendimento || 0) * 100).toFixed(2)}%</TableCell>
-                             <TableCell>
-                               <div className="flex gap-2">
-                                 <Button 
-                                   size="sm" 
-                                   variant="outline"
-                                   onClick={() => handleEdit(item, 'dados')}
-                                 >
-                                   <Edit className="h-4 w-4" />
-                                 </Button>
-                                 <Button 
-                                   size="sm" 
-                                   variant="destructive"
-                                   onClick={() => handleDelete(item.id, 'dados')}
-                                 >
-                                   <Trash2 className="h-4 w-4" />
-                                 </Button>
-                               </div>
-                             </TableCell>
-                           </TableRow>
-                         ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                      </TableHeader>
+                      <TableBody>
+                        {loading ? (
+                          <TableRow>
+                            <TableCell colSpan={11} className="text-center">
+                              Carregando...
+                            </TableCell>
+                          </TableRow>
+                        ) : filteredDadosData.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={11} className="text-center">
+                              Nenhum dado encontrado
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredDadosData.map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell>
+                                <Checkbox
+                                  checked={selectedItems.has(item.id)}
+                                  onCheckedChange={() => toggleItemSelection(item.id)}
+                                />
+                              </TableCell>
+                              <TableCell>{item.Competencia}</TableCell>
+                              <TableCell>{item.Instituicao}</TableCell>
+                              <TableCell>{item.Ativo}</TableCell>
+                              <TableCell>{item.Emissor}</TableCell>
+                              <TableCell>{item["Classe do ativo"]}</TableCell>
+                              <TableCell>{formatCurrency(item.Posicao)}</TableCell>
+                              <TableCell>{item.Taxa}</TableCell>
+                              <TableCell>{item.Vencimento}</TableCell>
+                              <TableCell>{(item.Rendimento || 0).toFixed(2)}%</TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEdit(item, 'dados')}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDelete(item.id, 'dados')}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                       )}
+                     </TableBody>
+                   </Table>
+                 </div>
+               </CardContent>
+             </Card>
+           </TabsContent>
         </Tabs>
       </div>
 
@@ -985,8 +981,8 @@ export default function DataManagement() {
                         id="movimentacao"
                         type="number"
                         step="0.01"
-                        value={editingItem["Movimentação"] || 0}
-                        onChange={(e) => setEditingItem({...editingItem, "Movimentação": parseFloat(e.target.value) || 0})}
+                        value={editingItem["Movimentacao"] || 0}
+                        onChange={(e) => setEditingItem({...editingItem, "Movimentacao": parseFloat(e.target.value) || 0})}
                       />
                     </div>
                   </div>
