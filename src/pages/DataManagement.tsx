@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +32,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface ConsolidadoData {
   id: number;
@@ -97,10 +102,10 @@ export default function DataManagement() {
   const classesAtivoUnique = [...new Set(dadosData.map(item => item["Classe do ativo"]))].filter(classe => classe && classe.trim() !== '').sort();
   const emissores = [...new Set(dadosData.map(item => item.Emissor))].filter(emissor => emissor && emissor.trim() !== '').sort();
 
-  const [selectedCompetencia, setSelectedCompetencia] = useState<string>("all");
-  const [selectedInstituicao, setSelectedInstituicao] = useState<string>("all");
-  const [selectedClasse, setSelectedClasse] = useState<string>("all");
-  const [selectedEmissor, setSelectedEmissor] = useState<string>("all");
+  const [selectedCompetencias, setSelectedCompetencias] = useState<string[]>([]);
+  const [selectedInstituicoes, setSelectedInstituicoes] = useState<string[]>([]);
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
+  const [selectedEmissores, setSelectedEmissores] = useState<string[]>([]);
   const [searchAtivo, setSearchAtivo] = useState<string>("");
   const [classesAtivo, setClassesAtivo] = useState<string[]>([
     'CDI - Liquidez',
@@ -447,29 +452,41 @@ export default function DataManagement() {
     }).format(value || 0);
   };
 
-  // Filter data by selected competencia and instituicao
+  // Filter data by selected filters
   let filteredConsolidadoData = consolidadoData;
-  if (selectedCompetencia !== "all") {
-    filteredConsolidadoData = filteredConsolidadoData.filter(item => item.Competencia === selectedCompetencia);
+  if (selectedCompetencias.length > 0) {
+    filteredConsolidadoData = filteredConsolidadoData.filter(item => 
+      selectedCompetencias.includes(item.Competencia)
+    );
   }
-  if (selectedInstituicao !== "all") {
-    filteredConsolidadoData = filteredConsolidadoData.filter(item => item.Instituicao === selectedInstituicao);
+  if (selectedInstituicoes.length > 0) {
+    filteredConsolidadoData = filteredConsolidadoData.filter(item => 
+      selectedInstituicoes.includes(item.Instituicao)
+    );
   }
 
   let filteredDadosData = dadosData;
-  if (selectedCompetencia !== "all") {
-    filteredDadosData = filteredDadosData.filter(item => item.Competencia === selectedCompetencia);
+  if (selectedCompetencias.length > 0) {
+    filteredDadosData = filteredDadosData.filter(item => 
+      selectedCompetencias.includes(item.Competencia)
+    );
   }
-  if (selectedInstituicao !== "all") {
-    filteredDadosData = filteredDadosData.filter(item => item.Instituicao === selectedInstituicao);
+  if (selectedInstituicoes.length > 0) {
+    filteredDadosData = filteredDadosData.filter(item => 
+      selectedInstituicoes.includes(item.Instituicao)
+    );
   }
 
   // Apply additional filters for dados detalhados
-  if (selectedClasse !== "all") {
-    filteredDadosData = filteredDadosData.filter(item => item["Classe do ativo"] === selectedClasse);
+  if (selectedClasses.length > 0) {
+    filteredDadosData = filteredDadosData.filter(item => 
+      selectedClasses.includes(item["Classe do ativo"])
+    );
   }
-  if (selectedEmissor !== "all") {
-    filteredDadosData = filteredDadosData.filter(item => item.Emissor === selectedEmissor);
+  if (selectedEmissores.length > 0) {
+    filteredDadosData = filteredDadosData.filter(item => 
+      selectedEmissores.includes(item.Emissor)
+    );
   }
 
   // Apply search filter for ativos
@@ -506,48 +523,99 @@ export default function DataManagement() {
           <ThemeToggle />
         </div>
 
-        {/* Filters */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Filtros</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4 items-end">
-              <div>
-                <Label htmlFor="competencia-filter">Competência</Label>
-                <Select value={selectedCompetencia} onValueChange={setSelectedCompetencia}>
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Selecione a competência" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as Competências</SelectItem>
-                    {competencias.filter(comp => comp && comp.trim() !== '').map((competencia) => (
-                      <SelectItem key={competencia} value={competencia}>
-                        {competencia}
-                      </SelectItem>
+        {/* Multi-Select Component */}
+        {(() => {
+          const MultiSelectFilter = ({ 
+            label, 
+            options, 
+            selected, 
+            onChange 
+          }: { 
+            label: string; 
+            options: string[]; 
+            selected: string[]; 
+            onChange: (values: string[]) => void 
+          }) => (
+            <div>
+              <Label>{label}</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-[200px] justify-between">
+                    {selected.length === 0 
+                      ? `Todos ${label.toLowerCase()}` 
+                      : selected.length === 1 
+                        ? selected[0] 
+                        : `${selected.length} selecionados`
+                    }
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[200px] p-0">
+                  <div className="p-2 space-y-1 max-h-64 overflow-y-auto">
+                    <div className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
+                      <Checkbox
+                        checked={selected.length === 0}
+                        onCheckedChange={() => onChange([])}
+                      />
+                      <span className="text-sm">Todos</span>
+                    </div>
+                    {options.map((option) => (
+                      <div key={option} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
+                        <Checkbox
+                          checked={selected.includes(option)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              onChange([...selected, option]);
+                            } else {
+                              onChange(selected.filter(item => item !== option));
+                            }
+                          }}
+                        />
+                        <span className="text-sm">{option}</span>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="instituicao-filter">Instituição</Label>
-                <Select value={selectedInstituicao} onValueChange={setSelectedInstituicao}>
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Selecione a instituição" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as Instituições</SelectItem>
-                    {instituicoes.map((instituicao) => (
-                      <SelectItem key={instituicao} value={instituicao}>
-                        {instituicao}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
-          </CardContent>
-        </Card>
+          );
+
+          return (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Filtros</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <MultiSelectFilter
+                    label="Competências"
+                    options={competencias}
+                    selected={selectedCompetencias}
+                    onChange={setSelectedCompetencias}
+                  />
+                  <MultiSelectFilter
+                    label="Instituições"
+                    options={instituicoes}
+                    selected={selectedInstituicoes}
+                    onChange={setSelectedInstituicoes}
+                  />
+                  <MultiSelectFilter
+                    label="Classes de Ativo"
+                    options={classesAtivoUnique}
+                    selected={selectedClasses}
+                    onChange={setSelectedClasses}
+                  />
+                  <MultiSelectFilter
+                    label="Emissores"
+                    options={emissores}
+                    selected={selectedEmissores}
+                    onChange={setSelectedEmissores}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
@@ -755,34 +823,6 @@ export default function DataManagement() {
                       Selecionar Todos
                     </Button>
                   )}
-                  <div className="flex gap-2">
-                    <Select value={selectedClasse} onValueChange={setSelectedClasse}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filtrar por classe" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todas as Classes</SelectItem>
-                        {classesAtivoUnique.map((classe) => (
-                          <SelectItem key={classe} value={classe}>
-                            {classe}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={selectedEmissor} onValueChange={setSelectedEmissor}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filtrar por emissor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos os Emissores</SelectItem>
-                        {emissores.map((emissor) => (
-                          <SelectItem key={emissor} value={emissor}>
-                            {emissor}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
