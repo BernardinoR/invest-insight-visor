@@ -508,50 +508,58 @@ export default function DataManagement() {
     options: string[]; 
     selected: string[]; 
     onChange: (values: string[]) => void 
-  }) => (
-    <div>
-      <Label>{label}</Label>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="w-[200px] justify-between">
-            {selected.length === 0 
-              ? `Todos ${label.toLowerCase()}` 
-              : selected.length === 1 
-                ? selected[0] 
-                : `${selected.length} selecionados`
-            }
-            <ChevronDown className="ml-2 h-4 w-4" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[200px] p-0">
-          <div className="p-2 space-y-1 max-h-64 overflow-y-auto">
-            <div className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
-              <Checkbox
-                checked={selected.length === 0}
-                onCheckedChange={() => onChange([])}
-              />
-              <span className="text-sm">Todos</span>
-            </div>
-            {options.map((option) => (
-              <div key={option} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
+  }) => {
+    const [open, setOpen] = useState(false);
+
+    return (
+      <div>
+        <Label>{label}</Label>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-[200px] justify-between">
+              {selected.length === 0 
+                ? `Todos ${label.toLowerCase()}` 
+                : selected.length === 1 
+                  ? selected[0] 
+                  : `${selected.length} selecionados`
+              }
+              <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-0">
+            <div className="p-2 space-y-1 max-h-64 overflow-y-auto">
+              <div className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
                 <Checkbox
-                  checked={selected.includes(option)}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      onChange([...selected, option]);
-                    } else {
-                      onChange(selected.filter(item => item !== option));
-                    }
+                  checked={selected.length === 0}
+                  onCheckedChange={() => {
+                    onChange([]);
+                    // Não fechar o popover aqui
                   }}
                 />
-                <span className="text-sm">{option}</span>
+                <span className="text-sm">Todos</span>
               </div>
-            ))}
-          </div>
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
+              {options.map((option) => (
+                <div key={option} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
+                  <Checkbox
+                    checked={selected.includes(option)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        onChange([...selected, option]);
+                      } else {
+                        onChange(selected.filter(item => item !== option));
+                      }
+                      // Não fechar o popover aqui
+                    }}
+                  />
+                  <span className="text-sm">{option}</span>
+                </div>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-hero">
