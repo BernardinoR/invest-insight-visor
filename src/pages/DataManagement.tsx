@@ -93,8 +93,14 @@ export default function DataManagement() {
     ...dadosData.map(item => item.Instituicao)
   ])].filter(inst => inst && inst.trim() !== '').sort();
 
+  // Get unique classes and emissores for filtering (dados detalhados)
+  const classesAtivoUnique = [...new Set(dadosData.map(item => item["Classe do ativo"]))].filter(classe => classe && classe.trim() !== '').sort();
+  const emissores = [...new Set(dadosData.map(item => item.Emissor))].filter(emissor => emissor && emissor.trim() !== '').sort();
+
   const [selectedCompetencia, setSelectedCompetencia] = useState<string>("all");
   const [selectedInstituicao, setSelectedInstituicao] = useState<string>("all");
+  const [selectedClasse, setSelectedClasse] = useState<string>("all");
+  const [selectedEmissor, setSelectedEmissor] = useState<string>("all");
   const [searchAtivo, setSearchAtivo] = useState<string>("");
   const [classesAtivo, setClassesAtivo] = useState<string[]>([
     'CDI - Liquidez',
@@ -458,6 +464,14 @@ export default function DataManagement() {
     filteredDadosData = filteredDadosData.filter(item => item.Instituicao === selectedInstituicao);
   }
 
+  // Apply additional filters for dados detalhados
+  if (selectedClasse !== "all") {
+    filteredDadosData = filteredDadosData.filter(item => item["Classe do ativo"] === selectedClasse);
+  }
+  if (selectedEmissor !== "all") {
+    filteredDadosData = filteredDadosData.filter(item => item.Emissor === selectedEmissor);
+  }
+
   // Apply search filter for ativos
   if (searchAtivo.trim()) {
     filteredDadosData = filteredDadosData.filter(item => 
@@ -741,6 +755,34 @@ export default function DataManagement() {
                       Selecionar Todos
                     </Button>
                   )}
+                  <div className="flex gap-2">
+                    <Select value={selectedClasse} onValueChange={setSelectedClasse}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filtrar por classe" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas as Classes</SelectItem>
+                        {classesAtivoUnique.map((classe) => (
+                          <SelectItem key={classe} value={classe}>
+                            {classe}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={selectedEmissor} onValueChange={setSelectedEmissor}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filtrar por emissor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos os Emissores</SelectItem>
+                        {emissores.map((emissor) => (
+                          <SelectItem key={emissor} value={emissor}>
+                            {emissor}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
