@@ -85,9 +85,16 @@ export default function DataManagement() {
   const competencias = [...new Set([
     ...consolidadoData.map(item => item.Competencia),
     ...dadosData.map(item => item.Competencia)
-  ])].sort().reverse();
+  ])].filter(comp => comp && comp.trim() !== '').sort().reverse();
+
+  // Get unique instituicoes for filtering
+  const instituicoes = [...new Set([
+    ...consolidadoData.map(item => item.Instituicao),
+    ...dadosData.map(item => item.Instituicao)
+  ])].filter(inst => inst && inst.trim() !== '').sort();
 
   const [selectedCompetencia, setSelectedCompetencia] = useState<string>("all");
+  const [selectedInstituicao, setSelectedInstituicao] = useState<string>("all");
   const [searchAtivo, setSearchAtivo] = useState<string>("");
   const [classesAtivo, setClassesAtivo] = useState<string[]>([
     'CDI - Liquidez',
@@ -434,14 +441,22 @@ export default function DataManagement() {
     }).format(value || 0);
   };
 
-  // Filter data by selected competencia and search term
-  const filteredConsolidadoData = selectedCompetencia === "all" 
-    ? consolidadoData 
-    : consolidadoData.filter(item => item.Competencia === selectedCompetencia);
+  // Filter data by selected competencia and instituicao
+  let filteredConsolidadoData = consolidadoData;
+  if (selectedCompetencia !== "all") {
+    filteredConsolidadoData = filteredConsolidadoData.filter(item => item.Competencia === selectedCompetencia);
+  }
+  if (selectedInstituicao !== "all") {
+    filteredConsolidadoData = filteredConsolidadoData.filter(item => item.Instituicao === selectedInstituicao);
+  }
 
-  let filteredDadosData = selectedCompetencia === "all" 
-    ? dadosData 
-    : dadosData.filter(item => item.Competencia === selectedCompetencia);
+  let filteredDadosData = dadosData;
+  if (selectedCompetencia !== "all") {
+    filteredDadosData = filteredDadosData.filter(item => item.Competencia === selectedCompetencia);
+  }
+  if (selectedInstituicao !== "all") {
+    filteredDadosData = filteredDadosData.filter(item => item.Instituicao === selectedInstituicao);
+  }
 
   // Apply search filter for ativos
   if (searchAtivo.trim()) {
@@ -477,25 +492,46 @@ export default function DataManagement() {
           <ThemeToggle />
         </div>
 
-        {/* Competencia Filter */}
+        {/* Filters */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Filtrar por Competência</CardTitle>
+            <CardTitle>Filtros</CardTitle>
           </CardHeader>
           <CardContent>
-            <Select value={selectedCompetencia} onValueChange={setSelectedCompetencia}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Selecione a competência" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as Competências</SelectItem>
-                {competencias.filter(comp => comp && comp.trim() !== '').map((competencia) => (
-                  <SelectItem key={competencia} value={competencia}>
-                    {competencia}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-4 items-end">
+              <div>
+                <Label htmlFor="competencia-filter">Competência</Label>
+                <Select value={selectedCompetencia} onValueChange={setSelectedCompetencia}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Selecione a competência" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as Competências</SelectItem>
+                    {competencias.filter(comp => comp && comp.trim() !== '').map((competencia) => (
+                      <SelectItem key={competencia} value={competencia}>
+                        {competencia}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="instituicao-filter">Instituição</Label>
+                <Select value={selectedInstituicao} onValueChange={setSelectedInstituicao}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Selecione a instituição" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as Instituições</SelectItem>
+                    {instituicoes.map((instituicao) => (
+                      <SelectItem key={instituicao} value={instituicao}>
+                        {instituicao}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
