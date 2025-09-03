@@ -555,12 +555,12 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
                         <TableCell className="text-center text-muted-foreground py-1">-</TableCell>
                         <TableCell className="text-center text-muted-foreground py-1">-</TableCell>
                         <TableCell className="text-center text-muted-foreground py-1">-</TableCell>
-                        <TableCell className="text-center text-muted-foreground py-1">
+                        <TableCell className="text-center text-muted-foreground py-1 text-xs">
                           {(() => {
                             const cdiRelative = calculateCDIRelative(item.name);
                             if (cdiRelative === null) return "-";
                             const percentage = (cdiRelative * 100).toFixed(0);
-                            return `${percentage}% do CDI`;
+                            return `${percentage}%`;
                           })()}
                         </TableCell>
                       </TableRow>
