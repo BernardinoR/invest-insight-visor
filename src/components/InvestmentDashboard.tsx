@@ -230,9 +230,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                <div className="text-2xl font-bold text-foreground">
                  {hasData ? `${(displayRendimento * 100).toFixed(2)}%` : "--%"}
                </div>
-              <p className="text-xs text-success">
-                {hasData ? "vs CDI: 4,4%" : "Aguardando dados"}
-              </p>
+               <p className="text-xs text-success">
+                 {hasData ? "vs IPCA: +0,38%" : "Aguardando dados"}
+               </p>
             </CardContent>
           </Card>
 
