@@ -6,6 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { TrendingUp, TrendingDown, Calendar, DollarSign, Target, ChevronDown, ChevronUp, Share2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useClientData } from "@/hooks/useClientData";
+import { useMarketIndicators } from "@/hooks/useMarketIndicators";
 import { PortfolioTable } from "@/components/PortfolioTable";
 import { CompetenciaSeletor } from "@/components/CompetenciaSeletor";
 import { InvestmentDetailsTable } from "@/components/InvestmentDetailsTable";
@@ -27,6 +28,7 @@ interface InvestmentDashboardProps {
 
 export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps) {
   const { consolidadoData, dadosData, loading, totalPatrimonio, totalRendimento, hasData } = useClientData(selectedClient);
+  const { marketData } = useMarketIndicators(selectedClient);
   const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
   const [filteredRange, setFilteredRange] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
 
@@ -231,7 +233,24 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                  {hasData ? `${(displayRendimento * 100).toFixed(2)}%` : "--%"}
                </div>
                <p className="text-xs text-success">
-                 {hasData ? "vs IPCA: +0,38%" : "Aguardando dados"}
+                 {(() => {
+                   if (!hasData) return "Aguardando dados";
+                   
+                   // Get IPCA for the selected month from marketData
+                   const targetCompetencia = filteredRange.fim || 
+                     (consolidadoData.length > 0 ? consolidadoData.reduce((latest, current) => {
+                       return current.Competencia > latest.Competencia ? current : latest;
+                     }).Competencia : null);
+                   
+                   if (!targetCompetencia) return "vs IPCA: --";
+                   
+                   const ipcaData = marketData.find(item => item.competencia === targetCompetencia);
+                   if (ipcaData && ipcaData.ipca !== 0) {
+                     return `vs IPCA: ${ipcaData.ipca >= 0 ? "+" : ""}${(ipcaData.ipca * 100).toFixed(2)}%`;
+                   }
+                   
+                   return "vs IPCA: --";
+                 })()}
                </p>
             </CardContent>
           </Card>
