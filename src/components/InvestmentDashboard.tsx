@@ -1,20 +1,25 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useState, useMemo } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
-import { StrategyBreakdown } from "./charts/StrategyBreakdown";
-import { MaturityTimeline } from "./charts/MaturityTimeline";
-import { IssuerExposure } from "./charts/IssuerExposure";
-import { StrategyScatterChart } from "./charts/StrategyScatterChart";
-import { PortfolioTable } from "./PortfolioTable";
-import { InvestmentDetailsTable } from "./InvestmentDetailsTable";
-import { ClientDataDisplay } from "./ClientDataDisplay";
-import { CompetenciaSeletor } from "./CompetenciaSeletor";
+import { TrendingUp, TrendingDown, Calendar, DollarSign, Target, ChevronDown, ChevronUp, Share2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { useClientData } from "@/hooks/useClientData";
-import { TrendingUp, DollarSign, Target, Building2, Calendar, ChevronDown, ChevronRight } from "lucide-react";
-import { useState, useCallback } from "react";
+import { PortfolioTable } from "@/components/PortfolioTable";
+import { CompetenciaSeletor } from "@/components/CompetenciaSeletor";
+import { InvestmentDetailsTable } from "@/components/InvestmentDetailsTable";
+import { StrategyBreakdown } from "@/components/charts/StrategyBreakdown";
+import { MaturityTimeline } from "@/components/charts/MaturityTimeline";
+import { IssuerExposure } from "@/components/charts/IssuerExposure";
+import { StrategyScatterChart } from "@/components/charts/StrategyScatterChart";
+import { ClientDataDisplay } from "@/components/ClientDataDisplay";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Building2, ChevronRight } from "lucide-react";
+import { useCallback } from "react";
 
 interface InvestmentDashboardProps {
   selectedClient: string;
@@ -105,6 +110,17 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     return sumPatrimonio > 0 ? sumPatrimonio : totalPatrimonio;
   };
 
+  const copyShareLink = () => {
+    const currentHost = window.location.origin;
+    const shareUrl = `${currentHost}/client/${encodeURIComponent(selectedClient)}`;
+    
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      toast.success("Link copiado para o clipboard!");
+    }).catch(() => {
+      toast.error("Erro ao copiar o link");
+    });
+  };
+
   const displayPatrimonio = getPatrimonioFromFinalCompetencia();
 
   return (
@@ -122,8 +138,13 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                 <p className="text-sm text-muted-foreground">Relatório de Performance de Investimentos</p>
               </div>
             </div>
-            <Button variant="outline" className="bg-card/50 border-primary/20 hover:bg-primary/10">
-              Exportar Relatório
+            <Button 
+              variant="outline" 
+              className="bg-card/50 border-primary/20 hover:bg-primary/10"
+              onClick={copyShareLink}
+            >
+              <Share2 className="mr-2 h-4 w-4" />
+              Compartilhar Link
             </Button>
           </div>
         </div>
