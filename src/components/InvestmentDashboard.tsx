@@ -123,6 +123,40 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
   const displayPatrimonio = getPatrimonioFromFinalCompetencia();
 
+  // Calculate patrimônio growth from previous month
+  const getPatrimonioGrowth = () => {
+    if (!filteredRange.fim || filteredConsolidadoData.length === 0) {
+      return { growth: 0, hasData: false };
+    }
+
+    // Get all unique competencias and sort them
+    const allCompetencias = [...new Set(filteredConsolidadoData.map(item => item.Competencia))].sort();
+    const currentCompetenciaIndex = allCompetencias.indexOf(filteredRange.fim);
+    
+    if (currentCompetenciaIndex <= 0) {
+      return { growth: 0, hasData: false };
+    }
+
+    const previousCompetencia = allCompetencias[currentCompetenciaIndex - 1];
+    
+    // Calculate current month patrimônio
+    const currentMonthEntries = filteredConsolidadoData.filter(item => item.Competencia === filteredRange.fim);
+    const currentPatrimonio = currentMonthEntries.reduce((sum, entry) => sum + (entry["Patrimonio Final"] || 0), 0);
+    
+    // Calculate previous month patrimônio
+    const previousMonthEntries = filteredConsolidadoData.filter(item => item.Competencia === previousCompetencia);
+    const previousPatrimonio = previousMonthEntries.reduce((sum, entry) => sum + (entry["Patrimonio Final"] || 0), 0);
+    
+    if (previousPatrimonio === 0) {
+      return { growth: 0, hasData: false };
+    }
+    
+    const growth = ((currentPatrimonio - previousPatrimonio) / previousPatrimonio) * 100;
+    return { growth, hasData: true };
+  };
+
+  const patrimonioGrowth = getPatrimonioGrowth();
+
   return (
     <div className="min-h-screen bg-gradient-hero">
       {/* Header */}
@@ -178,9 +212,12 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                <div className="text-2xl font-bold text-foreground">
                  {hasData ? `R$ ${displayPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : "R$ --"}
                </div>
-              <p className="text-xs text-success">
-                {hasData ? "+0,58% no período" : "Aguardando dados"}
-              </p>
+               <p className={`text-xs ${patrimonioGrowth.hasData && patrimonioGrowth.growth >= 0 ? "text-success" : patrimonioGrowth.hasData ? "text-destructive" : "text-muted-foreground"}`}>
+                 {patrimonioGrowth.hasData 
+                   ? `${patrimonioGrowth.growth >= 0 ? "+" : ""}${patrimonioGrowth.growth.toFixed(2)}% vs mês anterior`
+                   : hasData ? "Sem mês anterior para comparar" : "Aguardando dados"
+                 }
+               </p>
             </CardContent>
           </Card>
           
