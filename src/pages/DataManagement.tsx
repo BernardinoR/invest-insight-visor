@@ -977,20 +977,44 @@ export default function DataManagement() {
                       <Label htmlFor="patrimonioInicial">Patrimônio Inicial</Label>
                       <Input
                         id="patrimonioInicial"
-                        type="number"
-                        step="0.01"
-                        value={editingItem["Patrimonio Inicial"] || 0}
-                        onChange={(e) => setEditingItem({...editingItem, "Patrimonio Inicial": parseFloat(e.target.value) || 0})}
+                        type="text"
+                        value={editingItem["Patrimonio Inicial"] ? Number(editingItem["Patrimonio Inicial"]).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                        onChange={(e) => {
+                          // Remove pontos e substitui vírgula por ponto para conversão
+                          let value = e.target.value.replace(/\./g, '').replace(',', '.');
+                          const numericValue = parseFloat(value) || 0;
+                          setEditingItem({...editingItem, "Patrimonio Inicial": numericValue});
+                        }}
+                        onPaste={(e) => {
+                          e.preventDefault();
+                          const pastedData = e.clipboardData.getData('text');
+                          // Remove R$, espaços, pontos e substitui vírgula por ponto
+                          let value = pastedData.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+                          const numericValue = parseFloat(value) || 0;
+                          setEditingItem({...editingItem, "Patrimonio Inicial": numericValue});
+                        }}
                       />
                     </div>
                     <div>
                       <Label htmlFor="movimentacao">Movimentação</Label>
                       <Input
                         id="movimentacao"
-                        type="number"
-                        step="0.01"
-                        value={editingItem["Movimentação"] || 0}
-                        onChange={(e) => setEditingItem({...editingItem, "Movimentação": parseFloat(e.target.value) || 0})}
+                        type="text"
+                        value={editingItem["Movimentação"] ? Number(editingItem["Movimentação"]).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                        onChange={(e) => {
+                          // Remove pontos e substitui vírgula por ponto para conversão
+                          let value = e.target.value.replace(/\./g, '').replace(',', '.');
+                          const numericValue = parseFloat(value) || 0;
+                          setEditingItem({...editingItem, "Movimentação": numericValue});
+                        }}
+                        onPaste={(e) => {
+                          e.preventDefault();
+                          const pastedData = e.clipboardData.getData('text');
+                          // Remove R$, espaços, pontos e substitui vírgula por ponto
+                          let value = pastedData.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+                          const numericValue = parseFloat(value) || 0;
+                          setEditingItem({...editingItem, "Movimentação": numericValue});
+                        }}
                       />
                     </div>
                   </div>
@@ -1000,20 +1024,44 @@ export default function DataManagement() {
                       <Label htmlFor="impostos">Impostos</Label>
                       <Input
                         id="impostos"
-                        type="number"
-                        step="0.01"
-                        value={editingItem.Impostos || 0}
-                        onChange={(e) => setEditingItem({...editingItem, Impostos: parseFloat(e.target.value) || 0})}
+                        type="text"
+                        value={editingItem.Impostos ? Number(editingItem.Impostos).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                        onChange={(e) => {
+                          // Remove pontos e substitui vírgula por ponto para conversão
+                          let value = e.target.value.replace(/\./g, '').replace(',', '.');
+                          const numericValue = parseFloat(value) || 0;
+                          setEditingItem({...editingItem, Impostos: numericValue});
+                        }}
+                        onPaste={(e) => {
+                          e.preventDefault();
+                          const pastedData = e.clipboardData.getData('text');
+                          // Remove R$, espaços, pontos e substitui vírgula por ponto
+                          let value = pastedData.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+                          const numericValue = parseFloat(value) || 0;
+                          setEditingItem({...editingItem, Impostos: numericValue});
+                        }}
                       />
                     </div>
                     <div>
                       <Label htmlFor="ganhoFinanceiro">Ganho Financeiro</Label>
                       <Input
                         id="ganhoFinanceiro"
-                        type="number"
-                        step="0.01"
-                        value={editingItem["Ganho Financeiro"] || 0}
-                        onChange={(e) => setEditingItem({...editingItem, "Ganho Financeiro": parseFloat(e.target.value) || 0})}
+                        type="text"
+                        value={editingItem["Ganho Financeiro"] ? Number(editingItem["Ganho Financeiro"]).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                        onChange={(e) => {
+                          // Remove pontos e substitui vírgula por ponto para conversão
+                          let value = e.target.value.replace(/\./g, '').replace(',', '.');
+                          const numericValue = parseFloat(value) || 0;
+                          setEditingItem({...editingItem, "Ganho Financeiro": numericValue});
+                        }}
+                        onPaste={(e) => {
+                          e.preventDefault();
+                          const pastedData = e.clipboardData.getData('text');
+                          // Remove R$, espaços, pontos e substitui vírgula por ponto
+                          let value = pastedData.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+                          const numericValue = parseFloat(value) || 0;
+                          setEditingItem({...editingItem, "Ganho Financeiro": numericValue});
+                        }}
                       />
                     </div>
                   </div>
@@ -1023,10 +1071,22 @@ export default function DataManagement() {
                       <Label htmlFor="patrimonioFinal">Patrimônio Final</Label>
                       <Input
                         id="patrimonioFinal"
-                        type="number"
-                        step="0.01"
-                        value={editingItem["Patrimonio Final"] || 0}
-                        onChange={(e) => setEditingItem({...editingItem, "Patrimonio Final": parseFloat(e.target.value) || 0})}
+                        type="text"
+                        value={editingItem["Patrimonio Final"] ? Number(editingItem["Patrimonio Final"]).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                        onChange={(e) => {
+                          // Remove pontos e substitui vírgula por ponto para conversão
+                          let value = e.target.value.replace(/\./g, '').replace(',', '.');
+                          const numericValue = parseFloat(value) || 0;
+                          setEditingItem({...editingItem, "Patrimonio Final": numericValue});
+                        }}
+                        onPaste={(e) => {
+                          e.preventDefault();
+                          const pastedData = e.clipboardData.getData('text');
+                          // Remove R$, espaços, pontos e substitui vírgula por ponto
+                          let value = pastedData.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+                          const numericValue = parseFloat(value) || 0;
+                          setEditingItem({...editingItem, "Patrimonio Final": numericValue});
+                        }}
                       />
                     </div>
                     <div>
@@ -1120,10 +1180,22 @@ export default function DataManagement() {
                       <Label htmlFor="posicao">Posição</Label>
                       <Input
                         id="posicao"
-                        type="number"
-                        step="0.01"
-                        value={editingItem.Posicao || 0}
-                        onChange={(e) => setEditingItem({...editingItem, Posicao: parseFloat(e.target.value) || 0})}
+                        type="text"
+                        value={editingItem.Posicao ? Number(editingItem.Posicao).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                        onChange={(e) => {
+                          // Remove pontos e substitui vírgula por ponto para conversão
+                          let value = e.target.value.replace(/\./g, '').replace(',', '.');
+                          const numericValue = parseFloat(value) || 0;
+                          setEditingItem({...editingItem, Posicao: numericValue});
+                        }}
+                        onPaste={(e) => {
+                          e.preventDefault();
+                          const pastedData = e.clipboardData.getData('text');
+                          // Remove R$, espaços, pontos e substitui vírgula por ponto
+                          let value = pastedData.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+                          const numericValue = parseFloat(value) || 0;
+                          setEditingItem({...editingItem, Posicao: numericValue});
+                        }}
                       />
                     </div>
                   </div>
