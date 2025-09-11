@@ -7,8 +7,8 @@ interface MaturityTimelineProps {
   selectedClient?: string;
 }
 
-interface MaturityDataItem {
-  date: string;
+interface MaturityYearDataItem {
+  year: string;
   strategies: Record<string, { amount: number; count: number; rates: string[] }>;
   totalAmount: number;
   avgRate: string;
@@ -49,16 +49,17 @@ export function MaturityTimeline({ selectedClient }: MaturityTimelineProps) {
     fetchData();
   }, [selectedClient]);
 
-  // Group investments by maturity date
+  // Group investments by maturity year
   const maturityData = dadosData
     .filter(investment => investment.Vencimento && investment["Classe do ativo"])
     .reduce((acc, investment) => {
-      const maturityDate = investment.Vencimento;
+      const maturityDate = new Date(investment.Vencimento);
+      const maturityYear = maturityDate.getFullYear().toString();
       const strategy = investment["Classe do ativo"];
       
-      if (!acc[maturityDate]) {
-        acc[maturityDate] = { 
-          date: maturityDate, 
+      if (!acc[maturityYear]) {
+        acc[maturityYear] = { 
+          year: maturityYear, 
           strategies: {},
           totalAmount: 0,
           avgRate: "",
@@ -66,30 +67,30 @@ export function MaturityTimeline({ selectedClient }: MaturityTimelineProps) {
         };
       }
       
-      if (!acc[maturityDate].strategies[strategy]) {
-        acc[maturityDate].strategies[strategy] = {
+      if (!acc[maturityYear].strategies[strategy]) {
+        acc[maturityYear].strategies[strategy] = {
           amount: 0,
           count: 0,
           rates: [] as string[]
         };
       }
       
-      acc[maturityDate].strategies[strategy].amount += Number(investment.Posicao) || 0;
-      acc[maturityDate].strategies[strategy].count += 1;
+      acc[maturityYear].strategies[strategy].amount += Number(investment.Posicao) || 0;
+      acc[maturityYear].strategies[strategy].count += 1;
       if (investment.Taxa) {
-        acc[maturityDate].strategies[strategy].rates.push(investment.Taxa);
+        acc[maturityYear].strategies[strategy].rates.push(investment.Taxa);
       }
       
-      acc[maturityDate].totalAmount += Number(investment.Posicao) || 0;
-      acc[maturityDate].totalInvestments += 1;
+      acc[maturityYear].totalAmount += Number(investment.Posicao) || 0;
+      acc[maturityYear].totalInvestments += 1;
       
       return acc;
-    }, {} as Record<string, MaturityDataItem>);
+    }, {} as Record<string, MaturityYearDataItem>);
 
   // Calculate average rates and prepare chart data
   const chartData = Object.values(maturityData)
-    .map((item: MaturityDataItem) => {
-      // Get the most common rate for this maturity date
+    .map((item: MaturityYearDataItem) => {
+      // Get the most common rate for this maturity year
       const allRates = Object.values(item.strategies).flatMap((strategy: any) => strategy.rates);
       const rateCount = allRates.reduce((acc, rate) => {
         acc[rate] = (acc[rate] || 0) + 1;
@@ -102,10 +103,8 @@ export function MaturityTimeline({ selectedClient }: MaturityTimelineProps) {
       item.avgRate = mostCommonRate;
       return item;
     })
-    .sort((a: MaturityDataItem, b: MaturityDataItem) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
-      return dateA.getTime() - dateB.getTime();
+    .sort((a: MaturityYearDataItem, b: MaturityYearDataItem) => {
+      return parseInt(a.year) - parseInt(b.year);
     });
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -113,7 +112,7 @@ export function MaturityTimeline({ selectedClient }: MaturityTimelineProps) {
       const data = payload[0].payload;
       return (
         <div className="bg-card border border-border rounded-lg p-3 shadow-elegant-md">
-          <p className="text-foreground font-medium">Data: {new Date(data.date).toLocaleDateString('pt-BR')}</p>
+          <p className="text-foreground font-medium">Ano: {data.year}</p>
           <p className="text-primary">Valor Total: R$ {data.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
           <p className="text-muted-foreground">Taxa Média: {data.avgRate}</p>
           <div className="mt-2">
@@ -162,13 +161,11 @@ export function MaturityTimeline({ selectedClient }: MaturityTimelineProps) {
             <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
-                dataKey="date" 
+                dataKey="year" 
                 stroke="hsl(var(--muted-foreground))"
-                fontSize={11}
-                angle={-45}
-                textAnchor="end"
-                height={60}
-                tickFormatter={(value) => new Date(value).toLocaleDateString('pt-BR')}
+                fontSize={12}
+                textAnchor="middle"
+                height={40}
               />
               <YAxis 
                 stroke="hsl(var(--muted-foreground))"
