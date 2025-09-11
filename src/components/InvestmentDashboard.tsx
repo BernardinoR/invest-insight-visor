@@ -382,7 +382,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 gap-6 mb-8">
-          <MaturityTimeline />
+          <MaturityTimeline selectedClient={selectedClient} />
         </div>
 
         {/* Issuer Exposure Chart - Full Width */}
