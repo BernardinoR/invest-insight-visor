@@ -989,8 +989,8 @@ export default function DataManagement() {
                         id="movimentacao"
                         type="number"
                         step="0.01"
-                        value={editingItem["Movimentacao"] || 0}
-                        onChange={(e) => setEditingItem({...editingItem, "Movimentacao": parseFloat(e.target.value) || 0})}
+                        value={editingItem["Movimentação"] || 0}
+                        onChange={(e) => setEditingItem({...editingItem, "Movimentação": parseFloat(e.target.value) || 0})}
                       />
                     </div>
                   </div>
