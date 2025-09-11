@@ -978,20 +978,18 @@ export default function DataManagement() {
                       <Input
                         id="patrimonioInicial"
                         type="text"
-                        value={editingItem["Patrimonio Inicial"] ? Number(editingItem["Patrimonio Inicial"]).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                        value={editingItem["Patrimonio Inicial"] || ''}
                         onChange={(e) => {
-                          // Remove pontos e substitui vírgula por ponto para conversão
-                          let value = e.target.value.replace(/\./g, '').replace(',', '.');
-                          const numericValue = parseFloat(value) || 0;
-                          setEditingItem({...editingItem, "Patrimonio Inicial": numericValue});
-                        }}
-                        onPaste={(e) => {
-                          e.preventDefault();
-                          const pastedData = e.clipboardData.getData('text');
-                          // Remove R$, espaços, pontos e substitui vírgula por ponto
-                          let value = pastedData.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
-                          const numericValue = parseFloat(value) || 0;
-                          setEditingItem({...editingItem, "Patrimonio Inicial": numericValue});
+                          const value = e.target.value;
+                          // Se contém vírgula, trata como formato brasileiro
+                          if (value.includes(',')) {
+                            const numericValue = parseFloat(value.replace(',', '.')) || 0;
+                            setEditingItem({...editingItem, "Patrimonio Inicial": numericValue});
+                          } else {
+                            // Se não contém vírgula, trata como número normal
+                            const numericValue = parseFloat(value) || 0;
+                            setEditingItem({...editingItem, "Patrimonio Inicial": numericValue});
+                          }
                         }}
                       />
                     </div>
@@ -1000,20 +998,18 @@ export default function DataManagement() {
                       <Input
                         id="movimentacao"
                         type="text"
-                        value={editingItem["Movimentação"] ? Number(editingItem["Movimentação"]).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                        value={editingItem["Movimentação"] || ''}
                         onChange={(e) => {
-                          // Remove pontos e substitui vírgula por ponto para conversão
-                          let value = e.target.value.replace(/\./g, '').replace(',', '.');
-                          const numericValue = parseFloat(value) || 0;
-                          setEditingItem({...editingItem, "Movimentação": numericValue});
-                        }}
-                        onPaste={(e) => {
-                          e.preventDefault();
-                          const pastedData = e.clipboardData.getData('text');
-                          // Remove R$, espaços, pontos e substitui vírgula por ponto
-                          let value = pastedData.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
-                          const numericValue = parseFloat(value) || 0;
-                          setEditingItem({...editingItem, "Movimentação": numericValue});
+                          const value = e.target.value;
+                          // Se contém vírgula, trata como formato brasileiro
+                          if (value.includes(',')) {
+                            const numericValue = parseFloat(value.replace(',', '.')) || 0;
+                            setEditingItem({...editingItem, "Movimentação": numericValue});
+                          } else {
+                            // Se não contém vírgula, trata como número normal
+                            const numericValue = parseFloat(value) || 0;
+                            setEditingItem({...editingItem, "Movimentação": numericValue});
+                          }
                         }}
                       />
                     </div>
@@ -1025,20 +1021,18 @@ export default function DataManagement() {
                       <Input
                         id="impostos"
                         type="text"
-                        value={editingItem.Impostos ? Number(editingItem.Impostos).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                        value={editingItem.Impostos || ''}
                         onChange={(e) => {
-                          // Remove pontos e substitui vírgula por ponto para conversão
-                          let value = e.target.value.replace(/\./g, '').replace(',', '.');
-                          const numericValue = parseFloat(value) || 0;
-                          setEditingItem({...editingItem, Impostos: numericValue});
-                        }}
-                        onPaste={(e) => {
-                          e.preventDefault();
-                          const pastedData = e.clipboardData.getData('text');
-                          // Remove R$, espaços, pontos e substitui vírgula por ponto
-                          let value = pastedData.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
-                          const numericValue = parseFloat(value) || 0;
-                          setEditingItem({...editingItem, Impostos: numericValue});
+                          const value = e.target.value;
+                          // Se contém vírgula, trata como formato brasileiro
+                          if (value.includes(',')) {
+                            const numericValue = parseFloat(value.replace(',', '.')) || 0;
+                            setEditingItem({...editingItem, Impostos: numericValue});
+                          } else {
+                            // Se não contém vírgula, trata como número normal
+                            const numericValue = parseFloat(value) || 0;
+                            setEditingItem({...editingItem, Impostos: numericValue});
+                          }
                         }}
                       />
                     </div>
@@ -1047,20 +1041,18 @@ export default function DataManagement() {
                       <Input
                         id="ganhoFinanceiro"
                         type="text"
-                        value={editingItem["Ganho Financeiro"] ? Number(editingItem["Ganho Financeiro"]).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                        value={editingItem["Ganho Financeiro"] || ''}
                         onChange={(e) => {
-                          // Remove pontos e substitui vírgula por ponto para conversão
-                          let value = e.target.value.replace(/\./g, '').replace(',', '.');
-                          const numericValue = parseFloat(value) || 0;
-                          setEditingItem({...editingItem, "Ganho Financeiro": numericValue});
-                        }}
-                        onPaste={(e) => {
-                          e.preventDefault();
-                          const pastedData = e.clipboardData.getData('text');
-                          // Remove R$, espaços, pontos e substitui vírgula por ponto
-                          let value = pastedData.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
-                          const numericValue = parseFloat(value) || 0;
-                          setEditingItem({...editingItem, "Ganho Financeiro": numericValue});
+                          const value = e.target.value;
+                          // Se contém vírgula, trata como formato brasileiro
+                          if (value.includes(',')) {
+                            const numericValue = parseFloat(value.replace(',', '.')) || 0;
+                            setEditingItem({...editingItem, "Ganho Financeiro": numericValue});
+                          } else {
+                            // Se não contém vírgula, trata como número normal
+                            const numericValue = parseFloat(value) || 0;
+                            setEditingItem({...editingItem, "Ganho Financeiro": numericValue});
+                          }
                         }}
                       />
                     </div>
@@ -1072,20 +1064,18 @@ export default function DataManagement() {
                       <Input
                         id="patrimonioFinal"
                         type="text"
-                        value={editingItem["Patrimonio Final"] ? Number(editingItem["Patrimonio Final"]).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                        value={editingItem["Patrimonio Final"] || ''}
                         onChange={(e) => {
-                          // Remove pontos e substitui vírgula por ponto para conversão
-                          let value = e.target.value.replace(/\./g, '').replace(',', '.');
-                          const numericValue = parseFloat(value) || 0;
-                          setEditingItem({...editingItem, "Patrimonio Final": numericValue});
-                        }}
-                        onPaste={(e) => {
-                          e.preventDefault();
-                          const pastedData = e.clipboardData.getData('text');
-                          // Remove R$, espaços, pontos e substitui vírgula por ponto
-                          let value = pastedData.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
-                          const numericValue = parseFloat(value) || 0;
-                          setEditingItem({...editingItem, "Patrimonio Final": numericValue});
+                          const value = e.target.value;
+                          // Se contém vírgula, trata como formato brasileiro
+                          if (value.includes(',')) {
+                            const numericValue = parseFloat(value.replace(',', '.')) || 0;
+                            setEditingItem({...editingItem, "Patrimonio Final": numericValue});
+                          } else {
+                            // Se não contém vírgula, trata como número normal
+                            const numericValue = parseFloat(value) || 0;
+                            setEditingItem({...editingItem, "Patrimonio Final": numericValue});
+                          }
                         }}
                       />
                     </div>
@@ -1181,20 +1171,18 @@ export default function DataManagement() {
                       <Input
                         id="posicao"
                         type="text"
-                        value={editingItem.Posicao ? Number(editingItem.Posicao).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                        value={editingItem.Posicao || ''}
                         onChange={(e) => {
-                          // Remove pontos e substitui vírgula por ponto para conversão
-                          let value = e.target.value.replace(/\./g, '').replace(',', '.');
-                          const numericValue = parseFloat(value) || 0;
-                          setEditingItem({...editingItem, Posicao: numericValue});
-                        }}
-                        onPaste={(e) => {
-                          e.preventDefault();
-                          const pastedData = e.clipboardData.getData('text');
-                          // Remove R$, espaços, pontos e substitui vírgula por ponto
-                          let value = pastedData.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
-                          const numericValue = parseFloat(value) || 0;
-                          setEditingItem({...editingItem, Posicao: numericValue});
+                          const value = e.target.value;
+                          // Se contém vírgula, trata como formato brasileiro
+                          if (value.includes(',')) {
+                            const numericValue = parseFloat(value.replace(',', '.')) || 0;
+                            setEditingItem({...editingItem, Posicao: numericValue});
+                          } else {
+                            // Se não contém vírgula, trata como número normal
+                            const numericValue = parseFloat(value) || 0;
+                            setEditingItem({...editingItem, Posicao: numericValue});
+                          }
                         }}
                       />
                     </div>
