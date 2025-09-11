@@ -744,7 +744,7 @@ export default function DataManagement() {
                              <TableCell>{formatCurrency(item.Impostos)}</TableCell>
                              <TableCell>{formatCurrency(item["Ganho Financeiro"])}</TableCell>
                              <TableCell>{formatCurrency(item["Patrimonio Final"])}</TableCell>
-                             <TableCell>{(item.Rendimento || 0).toFixed(2)}%</TableCell>
+                              <TableCell>{((item.Rendimento || 0) * 100).toString().replace('.', ',')}%</TableCell>
                              <TableCell>
                                <div className="flex gap-2">
                                  <Button
@@ -901,7 +901,7 @@ export default function DataManagement() {
                               <TableCell>{formatCurrency(item.Posicao)}</TableCell>
                               <TableCell>{item.Taxa}</TableCell>
                               <TableCell>{item.Vencimento}</TableCell>
-                              <TableCell>{(item.Rendimento || 0).toFixed(2)}%</TableCell>
+                              <TableCell>{((item.Rendimento || 0) * 100).toString().replace('.', ',')}%</TableCell>
                               <TableCell>
                                 <div className="flex gap-2">
                                   <Button
