@@ -473,9 +473,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       if (strategyLower.includes('inflação - titulos') || strategyLower.includes('inflação - fundos')) {
                         return 'Inflação';
                       }
-                      if (strategyLower.includes('pré fixado - titulos') || strategyLower.includes('pré fixado - fundos')) {
-                        return 'Pré Fixado';
-                      }
+                       if (strategyLower.includes('pré fixado - titulos') || strategyLower.includes('pré fixado - títulos') || strategyLower.includes('pré fixado - titulo') || strategyLower.includes('pré fixado - fundos')) {
+                         return 'Pré Fixado';
+                       }
                       if (strategyLower.includes('multimercado')) {
                         return 'Multimercado';
                       }
