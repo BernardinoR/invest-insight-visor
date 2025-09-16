@@ -9,8 +9,22 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const decodedClientName = clientName ? decodeURIComponent(clientName) : "";
+  // Handle URL decoding more safely
+  const decodedClientName = clientName ? 
+    decodeURIComponent(clientName).replace(/\+/g, ' ') : "";
+  
+  // Log for debugging
+  console.log('Raw clientName:', clientName);
+  console.log('Decoded clientName:', decodedClientName);
+  
   const isClientView = location.pathname.startsWith('/client/');
+
+  // Redirect to home if no client name is provided
+  if (!decodedClientName || decodedClientName.trim() === "") {
+    console.error('No client name provided, redirecting to home');
+    navigate("/");
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-hero">

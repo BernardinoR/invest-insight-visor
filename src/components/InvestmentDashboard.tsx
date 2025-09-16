@@ -114,7 +114,13 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
   const copyShareLink = () => {
     const currentHost = window.location.origin;
-    const shareUrl = `${currentHost}/client/${encodeURIComponent(selectedClient)}`;
+    // Use double encoding to handle special characters properly
+    const encodedClient = encodeURIComponent(selectedClient);
+    const shareUrl = `${currentHost}/client/${encodedClient}`;
+    
+    console.log('Original client name:', selectedClient);
+    console.log('Encoded client name:', encodedClient);
+    console.log('Share URL:', shareUrl);
     
     navigator.clipboard.writeText(shareUrl).then(() => {
       toast.success("Link copiado para o clipboard!");
