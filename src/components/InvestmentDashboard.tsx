@@ -114,19 +114,32 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
   const copyShareLink = () => {
     const currentHost = window.location.origin;
-    // Use double encoding to handle special characters properly
-    const encodedClient = encodeURIComponent(selectedClient);
-    const shareUrl = `${currentHost}/client/${encodedClient}`;
     
-    console.log('Original client name:', selectedClient);
-    console.log('Encoded client name:', encodedClient);
-    console.log('Share URL:', shareUrl);
-    
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      toast.success("Link copiado para o clipboard!");
-    }).catch(() => {
-      toast.error("Erro ao copiar o link");
-    });
+    try {
+      // Encode the client name properly for URL
+      const encodedClient = encodeURIComponent(selectedClient);
+      const shareUrl = `${currentHost}/client/${encodedClient}`;
+      
+      console.log('InvestmentDashboard - Original client name:', selectedClient);
+      console.log('InvestmentDashboard - Encoded client name:', encodedClient);
+      console.log('InvestmentDashboard - Generated share URL:', shareUrl);
+      
+      // Test the URL by creating a test URL object
+      const testUrl = new URL(shareUrl);
+      console.log('InvestmentDashboard - URL validation successful');
+      
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        toast.success("Link copiado para o clipboard!");
+        console.log('InvestmentDashboard - Link copied successfully');
+      }).catch((err) => {
+        console.error('InvestmentDashboard - Erro ao copiar o link:', err);
+        toast.error("Erro ao copiar o link");
+      });
+      
+    } catch (error) {
+      console.error('InvestmentDashboard - Error generating share link:', error);
+      toast.error("Erro ao gerar o link de compartilhamento");
+    }
   };
 
   const displayPatrimonio = getPatrimonioFromFinalCompetencia();

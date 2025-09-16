@@ -10,12 +10,28 @@ export default function Dashboard() {
   const location = useLocation();
 
   // Handle URL decoding more safely
-  const decodedClientName = clientName ? 
-    decodeURIComponent(clientName).replace(/\+/g, ' ') : "";
+  let decodedClientName = "";
   
-  // Log for debugging
-  console.log('Raw clientName:', clientName);
-  console.log('Decoded clientName:', decodedClientName);
+  if (clientName) {
+    try {
+      // Try to decode the client name properly
+      decodedClientName = decodeURIComponent(clientName);
+      console.log('Dashboard - Raw clientName from URL:', clientName);
+      console.log('Dashboard - After decodeURIComponent:', decodedClientName);
+      
+      // Additional handling for spaces encoded as %20 or +
+      decodedClientName = decodedClientName.replace(/\+/g, ' ');
+      console.log('Dashboard - After replacing + with space:', decodedClientName);
+      
+    } catch (error) {
+      console.error('Dashboard - Error decoding client name:', error);
+      console.log('Dashboard - Using raw clientName as fallback');
+      decodedClientName = clientName;
+    }
+  }
+  
+  console.log('Dashboard - Final decoded client name:', decodedClientName);
+  console.log('Dashboard - Current location pathname:', location.pathname);
   
   const isClientView = location.pathname.startsWith('/client/');
 

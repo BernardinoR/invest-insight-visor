@@ -44,7 +44,8 @@ export function ClientSelector({ onClientChange, selectedClient }: ClientSelecto
         { Cliente: "Alisson JOSE CUNHA CARNEIRO", "Meta de Retorno": "IPCA+5%" },
         { Cliente: "Ana Elizabeth Da Silva Laranjeira", "Meta de Retorno": "IPCA+5%" },
         { Cliente: "Andre Do Valle Abreu", "Meta de Retorno": "IPCA+5%" },
-        { Cliente: "Andres Machado Ritter", "Meta de Retorno": "IPCA+5%" }
+        { Cliente: "Andres Machado Ritter", "Meta de Retorno": "IPCA+5%" },
+        { Cliente: "Bruno Bussadori Orlandini", "Meta de Retorno": "IPCA+5%" }
       ];
 
       // Simulate loading delay
