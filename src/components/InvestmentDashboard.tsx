@@ -430,7 +430,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
 
         {/* Investment Details Table - moved to end */}
-        {dadosData.length > 0 && (
+        {filteredDadosData.length > 0 && (
           <div className="mb-8 mt-8">
             <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
               <CardHeader>
@@ -580,7 +580,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                     // Calculate returns for strategies
                     const calculateStrategyReturns = (strategy: string) => {
                       // Get all data for this strategy (using original dadosData to respect filter)
-                      const allStrategyData = dadosData.filter(item => groupStrategy(item["Classe do ativo"] || "Outros") === strategy);
+                      const allStrategyData = filteredDadosData.filter(item => groupStrategy(item["Classe do ativo"] || "Outros") === strategy);
                       
                       if (allStrategyData.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
                       
