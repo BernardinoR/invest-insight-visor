@@ -384,6 +384,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           dadosData={filteredDadosData}
           loading={loading}
           clientName={selectedClient}
+          originalConsolidadoData={consolidadoData}
         />
 
         {/* Portfolio Table */}

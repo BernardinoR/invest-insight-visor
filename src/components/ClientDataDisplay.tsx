@@ -38,9 +38,10 @@ interface ClientDataDisplayProps {
   dadosData: DadosPerformance[];
   loading: boolean;
   clientName: string;
+  originalConsolidadoData?: ConsolidadoPerformance[]; // Original unfiltered data for latest month display
 }
 
-export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientName }: ClientDataDisplayProps) {
+export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientName, originalConsolidadoData }: ClientDataDisplayProps) {
   if (!clientName) {
     return null;
   }
@@ -80,7 +81,8 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
     return data.filter(item => item.Competencia === mostRecentCompetencia);
   };
 
-  const filteredConsolidadoData = getMostRecentData(consolidadoData);
+  // Always use original unfiltered data for the latest month, fallback to filtered data if not provided
+  const filteredConsolidadoData = getMostRecentData(originalConsolidadoData || consolidadoData);
 
   return (
     <div className="space-y-6 mb-8">
