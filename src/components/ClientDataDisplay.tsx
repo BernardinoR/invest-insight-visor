@@ -89,8 +89,8 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
     return data.filter(item => item.Competencia === mostRecentCompetencia);
   };
 
-  // Always use original unfiltered data for the latest month, fallback to filtered data if not provided
-  const filteredConsolidadoData = getMostRecentData(originalConsolidadoData || consolidadoData);
+  // Use filtered data to get the most recent competencia within the selected period
+  const filteredConsolidadoData = getMostRecentData(consolidadoData);
 
   return (
     <div className="space-y-6 mb-8">
