@@ -32,22 +32,34 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
   const [filteredRange, setFilteredRange] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
 
+  // Helper function to convert competencia string to comparable date
+  const competenciaToDate = (competencia: string) => {
+    const [month, year] = competencia.split('/');
+    return new Date(parseInt(year), parseInt(month) - 1);
+  };
+
   // Filter data based on selected competencia range
   const getFilteredDadosData = (data: typeof dadosData) => {
     if (!filteredRange.inicio || !filteredRange.fim) return data;
     
+    const startDate = competenciaToDate(filteredRange.inicio);
+    const endDate = competenciaToDate(filteredRange.fim);
+    
     return data.filter(item => {
-      const competencia = item.Competencia;
-      return competencia >= filteredRange.inicio && competencia <= filteredRange.fim;
+      const itemDate = competenciaToDate(item.Competencia);
+      return itemDate >= startDate && itemDate <= endDate;
     });
   };
 
   const getFilteredConsolidadoData = (data: typeof consolidadoData) => {
     if (!filteredRange.inicio || !filteredRange.fim) return data;
     
+    const startDate = competenciaToDate(filteredRange.inicio);
+    const endDate = competenciaToDate(filteredRange.fim);
+    
     return data.filter(item => {
-      const competencia = item.Competencia;
-      return competencia >= filteredRange.inicio && competencia <= filteredRange.fim;
+      const itemDate = competenciaToDate(item.Competencia);
+      return itemDate >= startDate && itemDate <= endDate;
     });
   };
 
