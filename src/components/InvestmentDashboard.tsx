@@ -542,20 +542,28 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       return strategy;
                     };
 
-                    // Filter to get only data from the final competencia selected in filter
-                    const getFilteredFinalCompetenciaData = (data: typeof dadosData) => {
+                    // Filter to get only data from the most recent competencia within the filtered period (same logic as consolidated performance)
+                    const getMostRecentData = (data: typeof dadosData) => {
                       if (data.length === 0) return [];
                       
-                      // Use the final competencia from filter if available, otherwise use the most recent
-                      const targetCompetencia = filteredRange.fim || data.reduce((latest, current) => {
-                        return current.Competencia > latest.Competencia ? current : latest;
+                      // Convert competencia string to date for proper comparison
+                      const competenciaToDate = (competencia: string) => {
+                        const [month, year] = competencia.split('/');
+                        return new Date(parseInt(year), parseInt(month) - 1);
+                      };
+                      
+                      // Find the most recent competencia using date comparison
+                      const mostRecentCompetencia = data.reduce((latest, current) => {
+                        const latestDate = competenciaToDate(latest.Competencia);
+                        const currentDate = competenciaToDate(current.Competencia);
+                        return currentDate > latestDate ? current : latest;
                       }).Competencia;
                       
-                      // Return all records with the target competencia
-                      return data.filter(item => item.Competencia === targetCompetencia);
+                      // Return all records with the most recent competencia
+                      return data.filter(item => item.Competencia === mostRecentCompetencia);
                     };
 
-                    const finalCompetenciaData = getFilteredFinalCompetenciaData(filteredDadosData);
+                    const finalCompetenciaData = getMostRecentData(filteredDadosData);
 
                      // Group data by strategy using final competencia data only
                      const groupedData = finalCompetenciaData.reduce((acc, item) => {
