@@ -5,6 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface MaturityTimelineProps {
   selectedClient?: string;
+  dadosData?: Array<{
+    "Classe do ativo": string;
+    Posicao: number;
+    Vencimento: string;
+    Taxa: string;
+    Competencia: string;
+  }>;
 }
 
 interface MaturityYearDataItem {
@@ -15,11 +22,18 @@ interface MaturityYearDataItem {
   totalInvestments: number;
 }
 
-export function MaturityTimeline({ selectedClient }: MaturityTimelineProps) {
+export function MaturityTimeline({ selectedClient, dadosData: propDadosData }: MaturityTimelineProps) {
   const [dadosData, setDadosData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (propDadosData) {
+      // Use provided data instead of fetching
+      setDadosData(propDadosData);
+      setLoading(false);
+      return;
+    }
+
     const fetchData = async () => {
       if (!selectedClient) {
         setLoading(false);
@@ -47,10 +61,34 @@ export function MaturityTimeline({ selectedClient }: MaturityTimelineProps) {
     };
 
     fetchData();
-  }, [selectedClient]);
+  }, [selectedClient, propDadosData]);
 
-  // Group investments by maturity year
-  const maturityData = dadosData
+  // Filter to get only the most recent competencia within the filtered period (same logic as consolidated performance)
+  const getMostRecentData = (data: typeof dadosData) => {
+    if (data.length === 0) return [];
+    
+    // Convert competencia string to date for proper comparison
+    const competenciaToDate = (competencia: string) => {
+      const [month, year] = competencia.split('/');
+      return new Date(parseInt(year), parseInt(month) - 1);
+    };
+    
+    // Find the most recent competencia using date comparison
+    const mostRecentCompetencia = data.reduce((latest, current) => {
+      const latestDate = competenciaToDate(latest.Competencia);
+      const currentDate = competenciaToDate(current.Competencia);
+      return currentDate > latestDate ? current : latest;
+    }).Competencia;
+    
+    // Return all records with the most recent competencia
+    return data.filter(item => item.Competencia === mostRecentCompetencia);
+  };
+
+  // Use the most recent data within the filtered period
+  const filteredData = getMostRecentData(dadosData);
+
+  // Group investments by maturity year using filtered data
+  const maturityData = filteredData
     .filter(investment => investment.Vencimento && investment["Classe do ativo"])
     .reduce((acc, investment) => {
       const maturityDate = new Date(investment.Vencimento);
