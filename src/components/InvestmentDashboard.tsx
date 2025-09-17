@@ -893,12 +893,12 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                           </div>
                                           <div className="text-xs text-muted-foreground">-</div>
                                         </div>
-                                        <div className="text-center">
-                                          <div className={`font-medium ${assetReturns.yearReturn >= 0 ? "text-success" : "text-destructive"}`}>
-                                            {assetReturns.yearReturn >= 0 ? "+" : ""}{(assetReturns.yearReturn * 100).toFixed(2)}%
-                                          </div>
-                                          <div className="text-xs text-muted-foreground">-</div>
-                                        </div>
+                                         <div className="text-center">
+                                           <div className={`font-medium ${assetReturns.yearReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                                             {assetReturns.yearReturn >= 0 ? "+" : ""}{(assetReturns.yearReturn * 100).toFixed(2)}%
+                                           </div>
+                                           <div className="text-xs text-muted-foreground">Acum. Ano</div>
+                                         </div>
                                         <div className="text-center">
                                           <div className={`font-medium ${assetReturns.inceptionReturn >= 0 ? "text-success" : "text-destructive"}`}>
                                             {assetReturns.inceptionReturn >= 0 ? "+" : ""}{(assetReturns.inceptionReturn * 100).toFixed(2)}%
