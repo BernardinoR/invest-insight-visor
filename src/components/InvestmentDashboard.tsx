@@ -587,40 +587,45 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
                     // Calculate returns for strategies
                     const calculateStrategyReturns = (strategy: string) => {
-                      // Get all data for this strategy (using original dadosData to respect filter)
+                      // Get all data for this strategy (using filteredDadosData which already respects the date filter)
                       const allStrategyData = filteredDadosData.filter(item => groupStrategy(item["Classe do ativo"] || "Outros") === strategy);
                       
                       if (allStrategyData.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
                       
-                      // Apply filter to get filtered data
-                      const filteredStrategyData = filteredRange.inicio && filteredRange.fim 
-                        ? allStrategyData.filter(item => item.Competencia >= filteredRange.inicio && item.Competencia <= filteredRange.fim)
-                        : allStrategyData;
+                      // Convert competencia string to date for proper comparison
+                      const competenciaToDate = (competencia: string) => {
+                        const [month, year] = competencia.split('/');
+                        return new Date(parseInt(year), parseInt(month) - 1);
+                      };
                       
-                      if (filteredStrategyData.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
+                      // Find the most recent competencia using date comparison (same logic as other components)
+                      const mostRecentCompetencia = allStrategyData.reduce((latest, current) => {
+                        const latestDate = competenciaToDate(latest.Competencia);
+                        const currentDate = competenciaToDate(current.Competencia);
+                        return currentDate > latestDate ? current : latest;
+                      }).Competencia;
                       
-                      // Group by competencia
-                      const competenciaGroups = filteredStrategyData.reduce((acc, item) => {
+                      // Get only assets from the most recent competencia for monthly return calculation
+                      const lastMonthAssets = allStrategyData.filter(item => item.Competencia === mostRecentCompetencia);
+                      const lastMonthTotalPosition = lastMonthAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
+                      const lastMonthTotalReturn = lastMonthAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
+                      const monthReturn = lastMonthTotalPosition > 0 ? (lastMonthTotalReturn / lastMonthTotalPosition) : 0;
+                      
+                      // Group by competencia for year and inception calculations
+                      const competenciaGroups = allStrategyData.reduce((acc, item) => {
                         if (!acc[item.Competencia]) {
                           acc[item.Competencia] = [];
                         }
                         acc[item.Competencia].push(item);
                         return acc;
-                      }, {} as Record<string, typeof filteredStrategyData>);
+                      }, {} as Record<string, typeof allStrategyData>);
                       
                       const sortedCompetencias = Object.keys(competenciaGroups).sort();
                       
-                      if (sortedCompetencias.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
+                      if (sortedCompetencias.length === 0) return { monthReturn, yearReturn: 0, inceptionReturn: 0 };
                       
-                      // Last competencia for "Mês"
-                      const lastCompetencia = sortedCompetencias[sortedCompetencias.length - 1];
-                      const lastMonthAssets = competenciaGroups[lastCompetencia];
-                      const lastMonthTotalPosition = lastMonthAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
-                      const lastMonthTotalReturn = lastMonthAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
-                      const monthReturn = lastMonthTotalPosition > 0 ? (lastMonthTotalReturn / lastMonthTotalPosition) : 0;
-                      
-                      // Year return: compound return for the year of the last competencia (within filter)
-                      const lastYear = lastCompetencia.substring(3);
+                      // Year return: compound return for the year of the most recent competencia (within filter)
+                      const lastYear = mostRecentCompetencia.substring(3);
                       const yearCompetenciasInFilter = sortedCompetencias.filter(comp => comp.endsWith(lastYear));
                       
                       const yearReturns = yearCompetenciasInFilter.map(competencia => {
@@ -643,7 +648,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       console.log(`${strategy} - Strategy Calculation:`, {
                         filteredRange,
                         sortedCompetencias,
-                        lastCompetencia,
+                        mostRecentCompetencia,
                         yearCompetenciasInFilter,
                         monthReturn: (monthReturn * 100).toFixed(2) + '%',
                         yearReturn: (yearReturn * 100).toFixed(2) + '%',
