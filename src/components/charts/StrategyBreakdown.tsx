@@ -28,8 +28,28 @@ interface StrategyBreakdownProps {
 }
 
 export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
-  // Use all data from the selected period (already filtered by parent component)
-  const filteredData = dadosData;
+  // Filter to get only the most recent competencia within the filtered period (same logic as consolidated performance)
+  const getMostRecentData = (data: typeof dadosData) => {
+    if (data.length === 0) return [];
+    
+    // Convert competencia string to date for proper comparison
+    const competenciaToDate = (competencia: string) => {
+      const [month, year] = competencia.split('/');
+      return new Date(parseInt(year), parseInt(month) - 1);
+    };
+    
+    // Find the most recent competencia using date comparison
+    const mostRecentCompetencia = data.reduce((latest, current) => {
+      const latestDate = competenciaToDate(latest.Competencia);
+      const currentDate = competenciaToDate(current.Competencia);
+      return currentDate > latestDate ? current : latest;
+    }).Competencia;
+    
+    // Return all records with the most recent competencia
+    return data.filter(item => item.Competencia === mostRecentCompetencia);
+  };
+
+  const filteredData = getMostRecentData(dadosData);
 
   // Function to group strategy names according to original specification
   const groupStrategy = (strategy: string): string => {
