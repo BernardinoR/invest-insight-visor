@@ -419,7 +419,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
         {/* Issuer Exposure Chart - Full Width */}
         <div className="mb-8">
-          <IssuerExposure clientName={selectedClient} />
+          <IssuerExposure clientName={selectedClient} dadosData={filteredDadosData} />
         </div>
 
         {/* Strategy Scatter Chart */}

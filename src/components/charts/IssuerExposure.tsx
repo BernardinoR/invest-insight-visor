@@ -9,10 +9,21 @@ interface IssuerData {
   exceedsLimit: boolean;
 }
 
-export function IssuerExposure({ clientName }: { clientName?: string }) {
-  const { dadosData, loading } = useClientData(clientName || "");
+export function IssuerExposure({ clientName, dadosData: propDadosData }: { 
+  clientName?: string;
+  dadosData?: Array<{
+    Emissor: string;
+    Posicao: number;
+    Vencimento: string;
+    Competencia: string;
+  }>;
+}) {
+  const { dadosData: hookDadosData, loading } = useClientData(clientName || "");
   
-  if (loading) {
+  // Use provided data if available, otherwise use hook data
+  const rawData = propDadosData || hookDadosData;
+  
+  if (loading && !propDadosData) {
     return (
       <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
         <CardHeader>
@@ -28,8 +39,31 @@ export function IssuerExposure({ clientName }: { clientName?: string }) {
     );
   }
 
+  // Filter to get only the most recent competencia within the filtered period (same logic as consolidated performance)
+  const getMostRecentData = (data: typeof rawData) => {
+    if (data.length === 0) return [];
+    
+    // Convert competencia string to date for proper comparison
+    const competenciaToDate = (competencia: string) => {
+      const [month, year] = competencia.split('/');
+      return new Date(parseInt(year), parseInt(month) - 1);
+    };
+    
+    // Find the most recent competencia using date comparison
+    const mostRecentCompetencia = data.reduce((latest, current) => {
+      const latestDate = competenciaToDate(latest.Competencia);
+      const currentDate = competenciaToDate(current.Competencia);
+      return currentDate > latestDate ? current : latest;
+    }).Competencia;
+    
+    // Return all records with the most recent competencia
+    return data.filter(item => item.Competencia === mostRecentCompetencia);
+  };
+
+  const filteredData = getMostRecentData(rawData);
+
   // Group investments by issuer and calculate totals
-  const issuerData = dadosData
+  const issuerData = filteredData
     .filter(investment => investment.Emissor && investment.Posicao)
     .reduce((acc, investment) => {
       const issuer = investment.Emissor!;
