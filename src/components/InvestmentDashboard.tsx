@@ -655,45 +655,50 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
                     // Calculate returns for individual assets
                     const calculateAssetReturns = (assetName: string) => {
-                      // Get all data for this asset (using original dadosData to respect filter)
-                      const allAssetData = dadosData.filter(item => item.Ativo === assetName);
+                      // Get all data for this asset from filtered data
+                      const allAssetData = filteredDadosData.filter(item => item.Ativo === assetName);
                       
                       if (allAssetData.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
                       
-                      // Apply filter to get filtered data
-                      const filteredAssetData = filteredRange.inicio && filteredRange.fim 
-                        ? allAssetData.filter(item => item.Competencia >= filteredRange.inicio && item.Competencia <= filteredRange.fim)
-                        : allAssetData;
+                      // Convert competencia string to date for proper comparison
+                      const competenciaToDate = (competencia: string) => {
+                        const [month, year] = competencia.split('/');
+                        return new Date(parseInt(year), parseInt(month) - 1);
+                      };
                       
-                      if (filteredAssetData.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
+                      // Find the most recent competencia using date comparison
+                      const mostRecentCompetencia = allAssetData.reduce((latest, current) => {
+                        const latestDate = competenciaToDate(latest.Competencia);
+                        const currentDate = competenciaToDate(current.Competencia);
+                        return currentDate > latestDate ? current : latest;
+                      }).Competencia;
                       
-                      const sortedCompetencias = [...new Set(filteredAssetData.map(item => item.Competencia))].sort();
-                      
-                      if (sortedCompetencias.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
-                      
-                      // Last competencia for "Mês"
-                      const lastCompetencia = sortedCompetencias[sortedCompetencias.length - 1];
-                      const lastMonthData = filteredAssetData.find(item => item.Competencia === lastCompetencia);
+                      // Get data from the most recent competencia for "Mês"
+                      const lastMonthData = allAssetData.find(item => item.Competencia === mostRecentCompetencia);
                       const monthReturn = lastMonthData ? lastMonthData.Rendimento : 0;
                       
-                      // Year return: compound return for the year of the last competencia (within filter)
-                      const lastYear = lastCompetencia.substring(3);
-                      const yearCompetenciasInFilter = sortedCompetencias.filter(comp => comp.endsWith(lastYear));
-                      
-                      const yearReturns = yearCompetenciasInFilter.map(competencia => {
-                        const assetData = filteredAssetData.find(item => item.Competencia === competencia);
-                        return assetData ? assetData.Rendimento : 0;
-                      });
-                      const yearReturn = calculateCompoundReturn(yearReturns);
-                      
-                      // Inception return: compound return for all competencias in filter
-                      const monthlyReturns = sortedCompetencias.map(competencia => {
-                        const assetData = filteredAssetData.find(item => item.Competencia === competencia);
-                        return assetData ? assetData.Rendimento : 0;
-                      });
-                      const inceptionReturn = calculateCompoundReturn(monthlyReturns);
-                      
-                      return { monthReturn, yearReturn, inceptionReturn };
+                       const sortedCompetencias = [...new Set(allAssetData.map(item => item.Competencia))].sort();
+                       
+                       if (sortedCompetencias.length === 0) return { monthReturn, yearReturn: 0, inceptionReturn: 0 };
+                       
+                       // Year return: compound return for the year of the most recent competencia
+                       const lastYear = mostRecentCompetencia.substring(3);
+                       const yearCompetenciasInFilter = sortedCompetencias.filter(comp => comp.endsWith(lastYear));
+                       
+                       const yearReturns = yearCompetenciasInFilter.map(competencia => {
+                         const assetData = allAssetData.find(item => item.Competencia === competencia);
+                         return assetData ? assetData.Rendimento : 0;
+                       });
+                       const yearReturn = calculateCompoundReturn(yearReturns);
+                       
+                       // Inception return: compound return for all competencias in filter
+                       const monthlyReturns = sortedCompetencias.map(competencia => {
+                         const assetData = allAssetData.find(item => item.Competencia === competencia);
+                         return assetData ? assetData.Rendimento : 0;
+                       });
+                       const inceptionReturn = calculateCompoundReturn(monthlyReturns);
+                       
+                       return { monthReturn, yearReturn, inceptionReturn };
                     };
 
                     // Calculate totals for each strategy
