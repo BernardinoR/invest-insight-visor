@@ -175,8 +175,6 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
       
       setLoading(true);
       try {
-        const currentYear = new Date().getFullYear().toString();
-        
         // Fetch all historical data for accumulated returns calculation
         const { data: allData, error: allError } = await supabase
           .from('DadosPerformance')
@@ -200,7 +198,7 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
         });
 
         strategies.forEach(strategy => {
-          // Calculate yearly accumulated returns based on filtered range
+          // Calculate yearly accumulated returns based on the current year of the last competencia
           let yearFilterData;
           let allFilteredData;
           
@@ -222,15 +220,17 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
               
               const lastYear = lastCompetencia.split('/')[1]; // Get year from MM/YYYY
               
-              // Filter for only the competencias from that year within the filtered range
-              yearFilterData = allFilteredData.filter(item => 
-                item.Competencia.includes(lastYear)
-              );
+              // Get ALL data for that year (not just within filtered range) to calculate accumulated return for the full year
+              yearFilterData = allData?.filter(item => {
+                const originalStrategy = item["Classe do ativo"] || "Outros";
+                const groupedStrategy = groupStrategy(originalStrategy);
+                return groupedStrategy === strategy && item.Competencia.includes(lastYear);
+              });
               
-              console.log(`${strategy} - Year filter (${lastYear}):`, yearFilterData.map(i => i.Competencia));
+              console.log(`${strategy} - Year filter (${lastYear}):`, yearFilterData?.map(i => i.Competencia));
             }
           } else {
-            // Default fallback (shouldn't happen with proper filtering)
+            // Default fallback: use current year
             const currentYear = new Date().getFullYear().toString();
             yearFilterData = allData?.filter(item => {
               const originalStrategy = item["Classe do ativo"] || "Outros";
