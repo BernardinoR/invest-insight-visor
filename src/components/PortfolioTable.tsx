@@ -148,9 +148,19 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   // Extract years from competencia data and set available years
   useEffect(() => {
     if (consolidadoData.length > 0) {
-      const years = [...new Set(consolidadoData.map(item => item.Competencia.split('/')[1]))].sort().reverse();
+      console.log('Raw consolidado data:', consolidadoData.map(item => ({ competencia: item.Competencia, id: item.id })));
+      
+      const years = [...new Set(consolidadoData.map(item => {
+        const year = item.Competencia.split('/')[1];
+        console.log(`Competencia: ${item.Competencia}, extracted year: ${year}`);
+        return year;
+      }))].sort().reverse();
+      
+      console.log('Available years:', years);
       setAvailableYears(years);
+      
       if (!selectedYear && years.length > 0) {
+        console.log('Setting default year to:', years[0]);
         setSelectedYear(years[0]); // Default to most recent year
       }
     }
@@ -165,8 +175,18 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
 
   // Filter by selected year
   const yearFilteredData = selectedYear 
-    ? rawData.filter(item => item.Competencia.includes(selectedYear))
+    ? rawData.filter(item => {
+        const itemYear = item.Competencia.split('/')[1];
+        const matches = itemYear === selectedYear;
+        console.log(`Filtering: ${item.Competencia} (year: ${itemYear}) against selected year: ${selectedYear} = ${matches}`);
+        return matches;
+      })
     : rawData;
+  
+  console.log('Selected year:', selectedYear);
+  console.log('Raw data length:', rawData.length);
+  console.log('Year filtered data length:', yearFilteredData.length);
+  console.log('Year filtered data:', yearFilteredData.map(item => item.Competencia));
   
   // Consolidate and sort data
   const displayData = consolidateByCompetencia(yearFilteredData).sort((a, b) => b.Competencia.localeCompare(a.Competencia));
