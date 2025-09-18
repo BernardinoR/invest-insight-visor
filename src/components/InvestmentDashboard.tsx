@@ -31,6 +31,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const { marketData } = useMarketIndicators(selectedClient);
   const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
   const [filteredRange, setFilteredRange] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
+  const [yearTotals, setYearTotals] = useState<{ totalPatrimonio: number; totalRendimento: number } | null>(null);
 
   // Helper function to convert competencia string to comparable date
   const competenciaToDate = (competencia: string) => {
@@ -71,6 +72,12 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     setFilteredRange({ inicio: inicioCompetencia, fim: fimCompetencia });
   }, []);
 
+  const handleYearTotalsChange = useCallback((totals: { totalPatrimonio: number; totalRendimento: number } | null) => {
+    console.log('=== YEAR TOTALS RECEIVED IN DASHBOARD ===');
+    console.log('Year totals received:', totals);
+    setYearTotals(totals);
+  }, []);
+
   // Calculate rendimento from the final competencia selected - weighted average across all institutions
   const getRendimentoFromFinalCompetencia = () => {
     if (!filteredRange.fim || filteredConsolidadoData.length === 0) {
@@ -104,7 +111,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     return weightedRendimento / totalPatrimonioWeighted;
   };
 
-  const displayRendimento = getRendimentoFromFinalCompetencia();
+  
 
   // Calculate patrimônio from the final competencia selected - sum across all institutions
   const getPatrimonioFromFinalCompetencia = () => {
@@ -154,7 +161,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     }
   };
 
-  const displayPatrimonio = getPatrimonioFromFinalCompetencia();
+  // Use yearTotals if available, otherwise fallback to original calculation
+  const displayPatrimonio = yearTotals?.totalPatrimonio || getPatrimonioFromFinalCompetencia();
+  const displayRendimentoValue = yearTotals?.totalRendimento !== undefined ? yearTotals.totalRendimento : getRendimentoFromFinalCompetencia();
 
   // Calculate patrimônio growth from previous month
   const getPatrimonioGrowth = () => {
@@ -261,7 +270,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             </CardHeader>
             <CardContent>
                <div className="text-2xl font-bold text-foreground">
-                 {hasData ? `${(displayRendimento * 100).toFixed(2)}%` : "--%"}
+                 {hasData ? `${(displayRendimentoValue * 100).toFixed(2)}%` : "--%"}
                </div>
                <p className="text-xs text-success">
                  {(() => {
@@ -390,7 +399,8 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
         {/* Portfolio Table */}
         <div className="mb-8">
           <PortfolioTable 
-            selectedClient={selectedClient} 
+            selectedClient={selectedClient}
+            onYearTotalsChange={handleYearTotalsChange}
             filteredConsolidadoData={consolidadoData}
             filteredRange={filteredRange}
           />
