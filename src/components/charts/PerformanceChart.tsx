@@ -54,6 +54,8 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
     marketLoading,
     marketError
   });
+  
+  console.log('Debug clientTarget:', clientTarget, 'marketLoading:', marketLoading);
 
   // Consolidate data by competencia (sum patrimônio, weighted average rendimento)
   const consolidateByCompetencia = (data: typeof consolidadoData) => {
@@ -242,18 +244,25 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
       const firstMarketPoint = marketData.find(m => m.competencia === firstCompetencia);
       const currentMarketPoint = marketData.find(m => m.competencia === currentCompetencia);
       
-      if (currentMarketPoint && firstMarketPoint) {
-        // Check if we have actual target data (not zero)
-        const hasTargetData = currentMarketPoint.clientTarget !== 0 || currentMarketPoint.accumulatedClientTarget !== 0;
-        
-        if (hasTargetData) {
-          if (currentCompetencia === firstCompetencia) {
-            targetRetorno = currentMarketPoint.clientTarget * 100;
-          } else {
-            const targetRelativeReturn = (1 + currentMarketPoint.accumulatedClientTarget) / (1 + firstMarketPoint.accumulatedClientTarget) - 1;
-            targetRetorno = targetRelativeReturn * 100;
-          }
+      if (currentMarketPoint && firstMarketPoint && clientTarget) {
+        // Use clientTarget to calculate target performance based on IPCA + target percentage
+        if (currentCompetencia === firstCompetencia) {
+          // For first month, just use the monthly target value
+          targetRetorno = currentMarketPoint.accumulatedClientTarget * 100;
+        } else {
+          // Calculate accumulated target performance from first to current period
+          const targetRelativeReturn = (1 + currentMarketPoint.accumulatedClientTarget) / (1 + firstMarketPoint.accumulatedClientTarget) - 1;
+          targetRetorno = targetRelativeReturn * 100;
         }
+        
+        console.log('Target calculation:', {
+          currentCompetencia,
+          firstCompetencia,
+          clientTargetValue: clientTarget?.targetValue || 0,
+          currentAccumulated: currentMarketPoint.accumulatedClientTarget,
+          firstAccumulated: firstMarketPoint.accumulatedClientTarget,
+          targetRetorno
+        });
       }
       
       console.log('Market data processing:', {
