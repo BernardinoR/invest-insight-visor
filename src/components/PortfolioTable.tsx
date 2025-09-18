@@ -7,6 +7,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,12 +36,61 @@ interface ConsolidadoData {
   "Competencia": string;
 }
 
+interface ConsolidadoDataWithReturns extends ConsolidadoData {
+  return3Months?: number;
+  return6Months?: number;
+  return12Months?: number;
+}
+
 export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange }: PortfolioTableProps) {
   const [consolidadoData, setConsolidadoData] = useState<ConsolidadoData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [availableYears, setAvailableYears] = useState<string[]>([]);
 
-  // Consolidate data by competencia (sum values, weighted average for rendimento)
-  const consolidateByCompetencia = (data: ConsolidadoData[]) => {
+  // Function to calculate compound return over multiple months
+  const calculateCompoundReturn = (monthlyReturns: number[]): number => {
+    if (monthlyReturns.length === 0) return 0;
+    return monthlyReturns.reduce((acc, monthReturn) => {
+      return (1 + acc) * (1 + monthReturn) - 1;
+    }, 0);
+  };
+
+  // Function to get returns for 3, 6, and 12 months
+  const calculateMultiMonthReturns = (data: ConsolidadoData[], targetCompetencia: string) => {
+    const sortedData = [...data].sort((a, b) => a.Competencia.localeCompare(b.Competencia));
+    const targetIndex = sortedData.findIndex(item => item.Competencia === targetCompetencia);
+    
+    if (targetIndex === -1) return { return3Months: 0, return6Months: 0, return12Months: 0 };
+
+    const get3MonthReturn = () => {
+      const start = Math.max(0, targetIndex - 2);
+      const returns = sortedData.slice(start, targetIndex + 1).map(item => item.Rendimento || 0);
+      return calculateCompoundReturn(returns);
+    };
+
+    const get6MonthReturn = () => {
+      const start = Math.max(0, targetIndex - 5);
+      const returns = sortedData.slice(start, targetIndex + 1).map(item => item.Rendimento || 0);
+      return calculateCompoundReturn(returns);
+    };
+
+    const get12MonthReturn = () => {
+      const start = Math.max(0, targetIndex - 11);
+      const returns = sortedData.slice(start, targetIndex + 1).map(item => item.Rendimento || 0);
+      return calculateCompoundReturn(returns);
+    };
+
+    return {
+      return3Months: get3MonthReturn(),
+      return6Months: get6MonthReturn(),
+      return12Months: get12MonthReturn()
+    };
+  };
+
+  // Consolidate data by competencia and add multi-month returns
+  const consolidateByCompetencia = (data: ConsolidadoData[]): ConsolidadoDataWithReturns[] => {
     const competenciaMap = new Map();
     
     data.forEach(item => {
@@ -65,8 +123,8 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
       consolidated.patrimonioForWeightedAvg += patrimonio;
     });
     
-    // Calculate weighted average rendimento and convert to final format
-    return Array.from(competenciaMap.values()).map(item => ({
+    // Calculate weighted average rendimento and multi-month returns
+    const consolidatedData = Array.from(competenciaMap.values()).map(item => ({
       id: item.id,
       Competencia: item.Competencia,
       "Patrimonio Inicial": item["Patrimonio Inicial"],
@@ -76,7 +134,27 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
       "Patrimonio Final": item["Patrimonio Final"],
       Rendimento: item.patrimonioForWeightedAvg > 0 ? item.rendimentoSum / item.patrimonioForWeightedAvg : 0
     }));
+
+    // Add multi-month returns to each competencia
+    return consolidatedData.map(item => {
+      const multiMonthReturns = calculateMultiMonthReturns(consolidatedData, item.Competencia);
+      return {
+        ...item,
+        ...multiMonthReturns
+      };
+    });
   };
+
+  // Extract years from competencia data and set available years
+  useEffect(() => {
+    if (consolidadoData.length > 0) {
+      const years = [...new Set(consolidadoData.map(item => item.Competencia.split('/')[1]))].sort().reverse();
+      setAvailableYears(years);
+      if (!selectedYear && years.length > 0) {
+        setSelectedYear(years[0]); // Default to most recent year
+      }
+    }
+  }, [consolidadoData, selectedYear]);
 
   // Use filtered data if available, otherwise use internal data
   const rawData = filteredConsolidadoData && filteredRange?.inicio && filteredRange?.fim 
@@ -84,9 +162,14 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
         item.Competencia >= filteredRange.inicio && item.Competencia <= filteredRange.fim
       )
     : consolidadoData;
+
+  // Filter by selected year
+  const yearFilteredData = selectedYear 
+    ? rawData.filter(item => item.Competencia.includes(selectedYear))
+    : rawData;
   
   // Consolidate and sort data
-  const displayData = consolidateByCompetencia(rawData).sort((a, b) => b.Competencia.localeCompare(a.Competencia));
+  const displayData = consolidateByCompetencia(yearFilteredData).sort((a, b) => b.Competencia.localeCompare(a.Competencia));
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -94,6 +177,21 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
       currency: 'BRL',
       minimumFractionDigits: 2
     }).format(value || 0);
+  };
+
+  const formatPercentage = (value: number) => {
+    const percentage = (value * 100).toFixed(2);
+    return value >= 0 ? `+${percentage}%` : `${percentage}%`;
+  };
+
+  const toggleRowExpansion = (competencia: string) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(competencia)) {
+      newExpanded.delete(competencia);
+    } else {
+      newExpanded.add(competencia);
+    }
+    setExpandedRows(newExpanded);
   };
 
   useEffect(() => {
@@ -127,63 +225,121 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   return (
     <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
       <CardHeader>
-        <CardTitle className="text-foreground">Resumo do Patrimônio</CardTitle>
-        <p className="text-sm text-muted-foreground">Evolução patrimonial consolidada</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle className="text-foreground">Resumo do Patrimônio</CardTitle>
+            <p className="text-sm text-muted-foreground">Evolução patrimonial consolidada com retornos acumulados</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Ano" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map(year => (
+                  <SelectItem key={year} value={year}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="border-border/50">
+                <TableHead className="text-muted-foreground w-8"></TableHead>
                 <TableHead className="text-muted-foreground">Competência</TableHead>
                 <TableHead className="text-muted-foreground">Patrimônio Inicial</TableHead>
                 <TableHead className="text-muted-foreground">Movimentações</TableHead>
                 <TableHead className="text-muted-foreground">Impostos</TableHead>
                 <TableHead className="text-muted-foreground">Ganho Financeiro</TableHead>
                 <TableHead className="text-muted-foreground">Patrimônio Final</TableHead>
-                <TableHead className="text-muted-foreground">Retorno %</TableHead>
+                <TableHead className="text-muted-foreground">Mês %</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
                     Carregando dados...
                   </TableCell>
                 </TableRow>
               ) : displayData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    Nenhum dado encontrado
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
+                    Nenhum dado encontrado para {selectedYear}
                   </TableCell>
                 </TableRow>
               ) : (
                 displayData.map((item) => (
-                  <TableRow key={item.id} className="border-border/50">
-                    <TableCell className="font-medium text-foreground">
-                      {item.Competencia}
-                    </TableCell>
-                    <TableCell className="font-medium text-foreground">
-                      {formatCurrency(item["Patrimonio Inicial"])}
-                    </TableCell>
-                    <TableCell className="text-red-600 font-medium">
-                      {formatCurrency(item["Movimentação"])}
-                    </TableCell>
-                    <TableCell className="text-red-600 font-medium">
-                      {formatCurrency(item.Impostos)}
-                    </TableCell>
-                    <TableCell className="text-green-600 font-medium">
-                      {formatCurrency(item["Ganho Financeiro"])}
-                    </TableCell>
-                    <TableCell className="font-medium text-foreground">
-                      {formatCurrency(item["Patrimonio Final"])}
-                    </TableCell>
-                    <TableCell>
-                      <span className="bg-yellow-500 text-white px-2 py-1 rounded-full text-sm font-medium">
-                        {((item.Rendimento || 0) * 100).toFixed(2)}%
-                      </span>
-                    </TableCell>
-                  </TableRow>
+                  <>
+                    <TableRow key={item.id} className="border-border/50">
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleRowExpansion(item.Competencia)}
+                          className="h-6 w-6 p-0"
+                        >
+                          {expandedRows.has(item.Competencia) ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TableCell>
+                      <TableCell className="font-medium text-foreground">
+                        {item.Competencia}
+                      </TableCell>
+                      <TableCell className="font-medium text-foreground">
+                        {formatCurrency(item["Patrimonio Inicial"])}
+                      </TableCell>
+                      <TableCell className="text-destructive font-medium">
+                        {formatCurrency(item["Movimentação"])}
+                      </TableCell>
+                      <TableCell className="text-destructive font-medium">
+                        {formatCurrency(item.Impostos)}
+                      </TableCell>
+                      <TableCell className="text-success font-medium">
+                        {formatCurrency(item["Ganho Financeiro"])}
+                      </TableCell>
+                      <TableCell className="font-medium text-foreground">
+                        {formatCurrency(item["Patrimonio Final"])}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                          (item.Rendimento || 0) >= 0 
+                            ? 'bg-success/20 text-success' 
+                            : 'bg-destructive/20 text-destructive'
+                        }`}>
+                          {formatPercentage(item.Rendimento || 0)}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                    {expandedRows.has(item.Competencia) && (
+                      <TableRow className="bg-muted/20">
+                        <TableCell></TableCell>
+                        <TableCell colSpan={4} className="text-sm text-muted-foreground">
+                          <div className="flex gap-6">
+                            <div>3 Meses: <span className={`font-medium ${(item.return3Months || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
+                              {formatPercentage(item.return3Months || 0)}
+                            </span></div>
+                            <div>6 Meses: <span className={`font-medium ${(item.return6Months || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
+                              {formatPercentage(item.return6Months || 0)}
+                            </span></div>
+                            <div>12 Meses: <span className={`font-medium ${(item.return12Months || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
+                              {formatPercentage(item.return12Months || 0)}
+                            </span></div>
+                          </div>
+                        </TableCell>
+                        <TableCell colSpan={3}></TableCell>
+                      </TableRow>
+                    )}
+                  </>
                 ))
               )}
             </TableBody>
