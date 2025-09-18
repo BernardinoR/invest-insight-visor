@@ -198,7 +198,7 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
         });
 
         strategies.forEach(strategy => {
-          // Calculate yearly accumulated returns based on the current year of the last competencia
+          // Calculate yearly accumulated returns using the most recent competencia only
           let yearFilterData;
           let allFilteredData;
           
@@ -212,32 +212,37 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
                      item.Competencia <= filteredRange.fim;
             });
             
-            // For year calculation: get the year of the last competencia in the filter
+            // For year calculation: use only the most recent competencia (same as monthly)
             if (allFilteredData && allFilteredData.length > 0) {
-              const lastCompetencia = allFilteredData.reduce((latest, current) => {
+              const mostRecentCompetencia = allFilteredData.reduce((latest, current) => {
                 return current.Competencia > latest.Competencia ? current : latest;
               }).Competencia;
               
-              const lastYear = lastCompetencia.split('/')[1]; // Get year from MM/YYYY
+              // Filter to get only the most recent competencia data
+              yearFilterData = allFilteredData.filter(item => 
+                item.Competencia === mostRecentCompetencia
+              );
               
-              // Get ALL data for that year (not just within filtered range) to calculate accumulated return for the full year
-              yearFilterData = allData?.filter(item => {
-                const originalStrategy = item["Classe do ativo"] || "Outros";
-                const groupedStrategy = groupStrategy(originalStrategy);
-                return groupedStrategy === strategy && item.Competencia.includes(lastYear);
-              });
-              
-              console.log(`${strategy} - Year filter (${lastYear}):`, yearFilterData?.map(i => i.Competencia));
+              console.log(`${strategy} - Year filter (most recent):`, yearFilterData?.map(i => i.Competencia));
             }
           } else {
-            // Default fallback: use current year
-            const currentYear = new Date().getFullYear().toString();
-            yearFilterData = allData?.filter(item => {
+            // Default fallback: use most recent competencia from all data
+            const strategyData = allData?.filter(item => {
               const originalStrategy = item["Classe do ativo"] || "Outros";
               const groupedStrategy = groupStrategy(originalStrategy);
-              return groupedStrategy === strategy && item.Competencia.includes(currentYear);
+              return groupedStrategy === strategy;
             });
-            allFilteredData = yearFilterData;
+            
+            if (strategyData && strategyData.length > 0) {
+              const mostRecentCompetencia = strategyData.reduce((latest, current) => {
+                return current.Competencia > latest.Competencia ? current : latest;
+              }).Competencia;
+              
+              yearFilterData = strategyData.filter(item => 
+                item.Competencia === mostRecentCompetencia
+              );
+              allFilteredData = yearFilterData;
+            }
           }
 
           const currentYearData = yearFilterData?.sort((a, b) => {
