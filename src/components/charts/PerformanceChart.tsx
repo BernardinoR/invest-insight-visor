@@ -38,11 +38,11 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   const [showCustomSelector, setShowCustomSelector] = useState(false);
   const [showIndicators, setShowIndicators] = useState(false);
   const [selectedIndicators, setSelectedIndicators] = useState({
-    cdi: true,
+    cdi: false,
     target: true,
     ibovespa: false,
     ifix: false,
-    ipca: false
+    ipca: true
   });
   
   const { cdiData, loading: cdiLoading, error: cdiError } = useCDIData();
