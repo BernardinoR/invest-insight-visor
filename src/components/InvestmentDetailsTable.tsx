@@ -380,38 +380,87 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     return index !== -1 ? COLORS[index] : COLORS[0];
   };
 
-  // Function to calculate compound return
-  const calculateCompoundReturn = (returns: number[]) => {
-    return returns.reduce((acc, returnValue) => acc * (1 + returnValue), 1) - 1;
+  // Function to calculate compound returns (same as Dashboard)
+  const calculateCompoundReturn = (monthlyReturns: number[]): number => {
+    if (monthlyReturns.length === 0) return 0;
+    return monthlyReturns.reduce((acc, monthReturn) => {
+      return (1 + acc) * (1 + monthReturn) - 1;
+    }, 0);
+  };
+
+  // Calculate returns for strategies (same logic as Dashboard)
+  const calculateStrategyReturns = (strategy: string) => {
+    // Get all data for this strategy from dadosData (not filtered to most recent)
+    const allStrategyData = dadosData.filter(item => groupStrategy(item["Classe do ativo"] || "Outros") === strategy);
+    
+    if (allStrategyData.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
+    
+    // Convert competencia string to date for proper comparison
+    const competenciaToDate = (competencia: string) => {
+      const [month, year] = competencia.split('/');
+      return new Date(parseInt(year), parseInt(month) - 1);
+    };
+    
+    // Find the most recent competencia using date comparison
+    const mostRecentCompetencia = allStrategyData.reduce((latest, current) => {
+      const latestDate = competenciaToDate(latest.Competencia);
+      const currentDate = competenciaToDate(current.Competencia);
+      return currentDate > latestDate ? current : latest;
+    }).Competencia;
+    
+    // Get only assets from the most recent competencia for monthly return calculation
+    const lastMonthAssets = allStrategyData.filter(item => item.Competencia === mostRecentCompetencia);
+    const lastMonthTotalPosition = lastMonthAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
+    const lastMonthTotalReturn = lastMonthAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
+    const monthReturn = lastMonthTotalPosition > 0 ? (lastMonthTotalReturn / lastMonthTotalPosition) : 0;
+    
+    // Group by competencia for year and inception calculations
+    const competenciaGroups = allStrategyData.reduce((acc, item) => {
+      if (!acc[item.Competencia]) {
+        acc[item.Competencia] = [];
+      }
+      acc[item.Competencia].push(item);
+      return acc;
+    }, {} as Record<string, typeof allStrategyData>);
+    
+    const sortedCompetencias = Object.keys(competenciaGroups).sort();
+    
+    if (sortedCompetencias.length === 0) return { monthReturn, yearReturn: 0, inceptionReturn: 0 };
+    
+    // Year return: compound return for the year of the most recent competencia
+    const lastYear = mostRecentCompetencia.substring(3);
+    const yearCompetenciasInFilter = sortedCompetencias.filter(comp => comp.endsWith(lastYear));
+    
+    const yearReturns = yearCompetenciasInFilter.map(competencia => {
+      const competenciaAssets = competenciaGroups[competencia];
+      const totalPosition = competenciaAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
+      const totalReturn = competenciaAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
+      return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
+    });
+    const yearReturn = calculateCompoundReturn(yearReturns);
+    
+    // Inception return: compound return for all competencias
+    const monthlyReturns = sortedCompetencias.map(competencia => {
+      const competenciaAssets = competenciaGroups[competencia];
+      const totalPosition = competenciaAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
+      const totalReturn = competenciaAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
+      return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
+    });
+    const inceptionReturn = calculateCompoundReturn(monthlyReturns);
+    
+    return { monthReturn, yearReturn, inceptionReturn };
   };
 
   const consolidatedData = Object.values(strategyData)
     .map((item) => {
-      // Calculate month return: use the most recent competencia data (weighted average)
-      const mostRecentData = filteredDadosData.filter(investment => {
-        const groupedStrategy = groupStrategy(investment["Classe do ativo"] || "Outros");
-        return groupedStrategy === item.name;
-      });
+      const strategyReturns = calculateStrategyReturns(item.name);
       
-      let monthReturn = 0;
-      if (mostRecentData.length > 0) {
-        let totalPosition = 0;
-        let totalWeightedReturn = 0;
-        
-        mostRecentData.forEach(investment => {
-          const position = Number(investment.Posicao) || 0;
-          const returnValue = Number(investment.Rendimento) || 0;
-          totalPosition += position;
-          totalWeightedReturn += returnValue * position;
-        });
-        
-        monthReturn = totalPosition > 0 ? totalWeightedReturn / totalPosition : 0;
-      }
-
       return {
         ...item,
         percentage: totalPatrimonio > 0 ? (item.value / totalPatrimonio) * 100 : 0,
-        avgReturn: monthReturn * 100, // Convert to percentage for display
+        avgReturn: strategyReturns.monthReturn * 100, // Month return
+        yearReturn: strategyReturns.yearReturn * 100, // Year return
+        inceptionReturn: strategyReturns.inceptionReturn * 100, // Inception return
       };
     })
     .sort((a, b) => {
@@ -554,21 +603,13 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
                         <TableCell className={`text-center py-2 ${item.avgReturn >= 0 ? "text-success" : "text-destructive"}`}>
                           {item.avgReturn >= 0 ? "+" : ""}{item.avgReturn.toFixed(2)}%
                         </TableCell>
-                        <TableCell className={`text-center py-2 ${(yearlyAccumulatedData[item.name] || 0) >= 0 ? "text-success" : "text-destructive"}`}>
-                          {loading ? "..." : (
-                            yearlyAccumulatedData[item.name] !== undefined
-                              ? `${yearlyAccumulatedData[item.name] >= 0 ? "+" : ""}${(yearlyAccumulatedData[item.name] * 100).toFixed(2)}%`
-                              : (item.avgReturn !== undefined ? `${item.avgReturn >= 0 ? "+" : ""}${item.avgReturn.toFixed(2)}%` : "-")
-                          )}
+                        <TableCell className={`text-center py-2 ${item.yearReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                          {item.yearReturn >= 0 ? "+" : ""}{item.yearReturn.toFixed(2)}%
                         </TableCell>
                         <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
                         <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
-                        <TableCell className={`text-center py-2 ${(accumulatedReturnsData[item.name] || 0) >= 0 ? "text-success" : "text-destructive"}`}>
-                          {loading ? "..." : (
-                            accumulatedReturnsData[item.name] !== undefined
-                              ? `${accumulatedReturnsData[item.name] >= 0 ? "+" : ""}${(accumulatedReturnsData[item.name] * 100).toFixed(2)}%`
-                              : "-"
-                          )}
+                        <TableCell className={`text-center py-2 ${item.inceptionReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                          {item.inceptionReturn >= 0 ? "+" : ""}{item.inceptionReturn.toFixed(2)}%
                         </TableCell>
                       </TableRow>
                       <TableRow key={`${item.name}-benchmark`} className="border-border/50 bg-muted/20">
