@@ -26,6 +26,7 @@ export function useMarketIndicators(clientName?: string) {
 
   // Fetch real market data from B3 and Banco Central APIs
   const fetchMarketData = async (clientTargetValue?: ClientTarget | null): Promise<MarketIndicatorData[]> => {
+    console.log('=== fetchMarketData called with clientTargetValue ===', clientTargetValue);
     try {
       const endDate = new Date();
       const startDate = new Date();
@@ -207,6 +208,15 @@ export function useMarketIndicators(clientName?: string) {
 
         // Calculate client target return ONLY if we have both IPCA data and target value
         let clientTargetMonthly = 0;
+        
+        console.log(`=== TARGET CALCULATION DEBUG for ${competencia} ===`, {
+          monthlyIpca,
+          monthlyIpcaNotZero: monthlyIpca !== 0,
+          clientTargetValue: !!clientTargetValue,
+          targetValue: clientTargetValue?.targetValue,
+          targetValueGreaterThanZero: (clientTargetValue?.targetValue || 0) > 0
+        });
+        
         if (monthlyIpca !== 0 && clientTargetValue && clientTargetValue.targetValue > 0) {
           clientTargetMonthly = calculateMonthlyTarget(monthlyIpca, clientTargetValue.targetValue);
           console.log(`Calculated target for ${competencia}:`, {
