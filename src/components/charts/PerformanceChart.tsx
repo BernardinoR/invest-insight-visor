@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { TrendingUp, Calendar as CalendarIcon, Settings } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useCDIData } from "@/hooks/useCDIData";
@@ -32,9 +33,9 @@ function decodeClientName(clientName?: string): string | undefined {
 
 export function PerformanceChart({ consolidadoData, clientName }: PerformanceChartProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'custom'>('12months');
-  const [customStartDate, setCustomStartDate] = useState<Date>();
-  const [customEndDate, setCustomEndDate] = useState<Date>();
-  const [showCustomCalendar, setShowCustomCalendar] = useState(false);
+  const [customStartCompetencia, setCustomStartCompetencia] = useState<string>('');
+  const [customEndCompetencia, setCustomEndCompetencia] = useState<string>('');
+  const [showCustomSelector, setShowCustomSelector] = useState(false);
   const [showIndicators, setShowIndicators] = useState(false);
   const [selectedIndicators, setSelectedIndicators] = useState({
     cdi: true,
@@ -113,6 +114,11 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
     return dateA.getTime() - dateB.getTime();
   });
 
+  // Get available competencias for custom selector
+  const availableCompetencias = useMemo(() => {
+    return [...new Set(consolidatedData.map(item => item.Competencia))].sort();
+  }, [consolidatedData]);
+
   // Filter data based on selected period
   const getFilteredData = () => {
     if (sortedData.length === 0) return [];
@@ -139,11 +145,9 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         filteredData = sortedData.slice(-12);
         break;
       case 'custom':
-        if (customStartDate && customEndDate) {
+        if (customStartCompetencia && customEndCompetencia) {
           filteredData = sortedData.filter(item => {
-            const [month, year] = item.Competencia.split('/');
-            const itemDate = new Date(parseInt(year), parseInt(month) - 1);
-            return itemDate >= customStartDate && itemDate <= customEndDate;
+            return item.Competencia >= customStartCompetencia && item.Competencia <= customEndCompetencia;
           });
         }
         break;
@@ -484,7 +488,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                 onClick={() => {
                   setSelectedPeriod(button.id as any);
                   if (button.id === 'custom') {
-                    setShowCustomCalendar(true);
+                    setShowCustomSelector(true);
                   }
                 }}
                 className="text-xs px-3 py-1 h-8"
@@ -494,7 +498,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
             ))}
             
             {selectedPeriod === 'custom' && (
-              <Popover open={showCustomCalendar} onOpenChange={setShowCustomCalendar}>
+              <Popover open={showCustomSelector} onOpenChange={setShowCustomSelector}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="ml-2">
                     <CalendarIcon className="h-4 w-4" />
@@ -503,27 +507,37 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                 <PopoverContent className="w-auto p-0" align="end">
                   <div className="p-4 space-y-4">
                     <div>
-                      <label className="text-sm font-medium mb-2 block">Data Inicial</label>
-                      <Calendar
-                        mode="single"
-                        selected={customStartDate}
-                        onSelect={setCustomStartDate}
-                        locale={ptBR}
-                        className="rounded-md border"
-                      />
+                      <label className="text-sm font-medium mb-2 block">Competência Inicial</label>
+                      <Select value={customStartCompetencia} onValueChange={setCustomStartCompetencia}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a competência inicial" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCompetencias.map((competencia) => (
+                            <SelectItem key={competencia} value={competencia}>
+                              {competencia}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
-                      <label className="text-sm font-medium mb-2 block">Data Final</label>
-                      <Calendar
-                        mode="single"
-                        selected={customEndDate}
-                        onSelect={setCustomEndDate}
-                        locale={ptBR}
-                        className="rounded-md border"
-                      />
+                      <label className="text-sm font-medium mb-2 block">Competência Final</label>
+                      <Select value={customEndCompetencia} onValueChange={setCustomEndCompetencia}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a competência final" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCompetencias.map((competencia) => (
+                            <SelectItem key={competencia} value={competencia}>
+                              {competencia}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <Button 
-                      onClick={() => setShowCustomCalendar(false)}
+                      onClick={() => setShowCustomSelector(false)}
                       className="w-full"
                     >
                       Aplicar
