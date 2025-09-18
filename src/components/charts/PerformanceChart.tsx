@@ -125,7 +125,15 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         filteredData = sortedData.slice(-1);
         break;
       case 'year':
-        filteredData = sortedData.slice(-12);
+        // Pegar todas as competências do ano da competência mais recente
+        if (sortedData.length > 0) {
+          const mostRecentCompetencia = sortedData[sortedData.length - 1].Competencia;
+          const mostRecentYear = mostRecentCompetencia.split('/')[1];
+          filteredData = sortedData.filter(item => {
+            const itemYear = item.Competencia.split('/')[1];
+            return itemYear === mostRecentYear;
+          });
+        }
         break;
       case '12months':
         filteredData = sortedData.slice(-12);
