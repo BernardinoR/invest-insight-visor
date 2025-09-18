@@ -294,7 +294,7 @@ export function useMarketIndicators(clientName?: string) {
       
       const { data, error } = await supabase
         .from('PoliticaInvestimentos')
-        .select('Cliente, Meta de Retorno')
+        .select('Cliente, "Meta de Retorno"')
         .eq('Cliente', clientName)
         .limit(1);
 
