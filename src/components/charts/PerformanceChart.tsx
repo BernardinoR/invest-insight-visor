@@ -692,18 +692,32 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
               
               return (
                 <>
-                  {clientTarget && (
-                    <div className="bg-card border border-border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Meta de Retorno</p>
-                          <p className="text-2xl font-semibold text-foreground">
-                            {clientTarget.meta}
-                          </p>
+                  {clientTarget && (() => {
+                    // Calculate difference from target
+                    const targetReturn = lastDataPoint?.targetRetorno || 0;
+                    const targetDifference = portfolioReturn - targetReturn;
+                    
+                    return (
+                      <div className="bg-card border border-border rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground">vs Meta</p>
+                            <p className="text-2xl font-semibold text-foreground">
+                              {targetDifference >= 0 ? '+' : ''}{targetDifference.toFixed(2)}pp
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {targetDifference >= 0 ? 'acima' : 'abaixo'} da meta ({clientTarget.meta})
+                            </p>
+                          </div>
+                          <div className={`text-sm px-2 py-1 rounded ${
+                            targetDifference >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                          }`}>
+                            {targetDifference >= 0 ? '↑' : '↓'}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {cdiRelative !== null && (
                     <div className="bg-card border border-border rounded-lg p-4">
