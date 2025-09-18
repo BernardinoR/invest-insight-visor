@@ -247,8 +247,9 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
       if (currentMarketPoint && firstMarketPoint && clientTarget) {
         // Use clientTarget to calculate target performance based on IPCA + target percentage
         if (currentCompetencia === firstCompetencia) {
-          // For first month, just use the monthly target value
-          targetRetorno = currentMarketPoint.accumulatedClientTarget * 100;
+          // For first month, use the monthly target value (not accumulated)
+          // This is the clientTarget field which contains the monthly target return
+          targetRetorno = currentMarketPoint.clientTarget * 100;
         } else {
           // Calculate accumulated target performance from first to current period
           const targetRelativeReturn = (1 + currentMarketPoint.accumulatedClientTarget) / (1 + firstMarketPoint.accumulatedClientTarget) - 1;
