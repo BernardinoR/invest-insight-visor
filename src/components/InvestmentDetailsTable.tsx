@@ -350,7 +350,6 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
       };
     }
     acc[groupedStrategy].value += Number(investment.Posicao) || 0;
-    acc[groupedStrategy].totalReturn += (Number(investment.Rendimento) || 0) * (Number(investment.Posicao) || 0);
     acc[groupedStrategy].count += 1;
     return acc;
   }, {} as Record<string, { name: string; value: number; count: number; totalReturn: number; avgReturnMonth: number }>);
@@ -381,18 +380,38 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     return index !== -1 ? COLORS[index] : COLORS[0];
   };
 
+  // Function to calculate compound return
+  const calculateCompoundReturn = (returns: number[]) => {
+    return returns.reduce((acc, returnValue) => acc * (1 + returnValue), 1) - 1;
+  };
+
   const consolidatedData = Object.values(strategyData)
     .map((item) => {
-      const avgReturn = item.value > 0 ? (item.totalReturn / item.value) * 100 : 0;
-      console.log(`Strategy ${item.name} avgReturn calculation:`, {
-        totalReturn: item.totalReturn,
-        value: item.value,
-        avgReturn: avgReturn
+      // Calculate month return: use the most recent competencia data (weighted average)
+      const mostRecentData = filteredDadosData.filter(investment => {
+        const groupedStrategy = groupStrategy(investment["Classe do ativo"] || "Outros");
+        return groupedStrategy === item.name;
       });
+      
+      let monthReturn = 0;
+      if (mostRecentData.length > 0) {
+        let totalPosition = 0;
+        let totalWeightedReturn = 0;
+        
+        mostRecentData.forEach(investment => {
+          const position = Number(investment.Posicao) || 0;
+          const returnValue = Number(investment.Rendimento) || 0;
+          totalPosition += position;
+          totalWeightedReturn += returnValue * position;
+        });
+        
+        monthReturn = totalPosition > 0 ? totalWeightedReturn / totalPosition : 0;
+      }
+
       return {
         ...item,
         percentage: totalPatrimonio > 0 ? (item.value / totalPatrimonio) * 100 : 0,
-        avgReturn: avgReturn,
+        avgReturn: monthReturn * 100, // Convert to percentage for display
       };
     })
     .sort((a, b) => {
