@@ -148,13 +148,32 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   // Extract years from competencia data and set available years
   useEffect(() => {
     if (consolidadoData.length > 0) {
-      console.log('Raw consolidado data:', consolidadoData.map(item => ({ competencia: item.Competencia, id: item.id })));
+      console.log('Raw consolidado data:', consolidadoData.map(item => ({ 
+        competencia: item.Competencia, 
+        id: item.id,
+        patrimonio: item["Patrimonio Final"]
+      })));
       
       const years = [...new Set(consolidadoData.map(item => {
-        const year = item.Competencia.split('/')[1];
-        console.log(`Competencia: ${item.Competencia}, extracted year: ${year}`);
+        // Handle different competencia formats and clean whitespace
+        const competencia = item.Competencia?.toString().trim();
+        if (!competencia) return null;
+        
+        let year = null;
+        if (competencia.includes('/')) {
+          // Format: MM/YYYY
+          year = competencia.split('/')[1]?.trim();
+        } else if (competencia.length === 6) {
+          // Format: MMYYYY
+          year = competencia.substring(2);
+        } else if (competencia.length === 4) {
+          // Format: YYYY
+          year = competencia;
+        }
+        
+        console.log(`Competencia: "${competencia}", extracted year: "${year}"`);
         return year;
-      }))].sort().reverse();
+      }).filter(Boolean))].sort().reverse();
       
       console.log('Available years:', years);
       setAvailableYears(years);
@@ -164,7 +183,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
         setSelectedYear(years[0]); // Default to most recent year
       }
     }
-  }, [consolidadoData, selectedYear]);
+  }, [consolidadoData]);
 
   // Use filtered data if available, otherwise use internal data
   const rawData = filteredConsolidadoData && filteredRange?.inicio && filteredRange?.fim 
@@ -176,9 +195,23 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   // Filter by selected year
   const yearFilteredData = selectedYear 
     ? rawData.filter(item => {
-        const itemYear = item.Competencia.split('/')[1];
+        const competencia = item.Competencia?.toString().trim();
+        if (!competencia) return false;
+        
+        let itemYear = null;
+        if (competencia.includes('/')) {
+          // Format: MM/YYYY
+          itemYear = competencia.split('/')[1]?.trim();
+        } else if (competencia.length === 6) {
+          // Format: MMYYYY
+          itemYear = competencia.substring(2);
+        } else if (competencia.length === 4) {
+          // Format: YYYY
+          itemYear = competencia;
+        }
+        
         const matches = itemYear === selectedYear;
-        console.log(`Filtering: ${item.Competencia} (year: ${itemYear}) against selected year: ${selectedYear} = ${matches}`);
+        console.log(`Filtering: "${competencia}" (year: "${itemYear}") against selected year: "${selectedYear}" = ${matches}`);
         return matches;
       })
     : rawData;
@@ -186,10 +219,37 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   console.log('Selected year:', selectedYear);
   console.log('Raw data length:', rawData.length);
   console.log('Year filtered data length:', yearFilteredData.length);
-  console.log('Year filtered data:', yearFilteredData.map(item => item.Competencia));
+  console.log('Year filtered data competencias:', yearFilteredData.map(item => item.Competencia));
   
   // Consolidate and sort data
-  const displayData = consolidateByCompetencia(yearFilteredData).sort((a, b) => b.Competencia.localeCompare(a.Competencia));
+  const consolidatedData = consolidateByCompetencia(yearFilteredData);
+  console.log('Consolidated data:', consolidatedData.map(item => ({ 
+    competencia: item.Competencia, 
+    patrimonio: item["Patrimonio Final"], 
+    rendimento: item.Rendimento 
+  })));
+  
+  const displayData = consolidatedData.sort((a, b) => {
+    // Ensure proper sorting by converting competencia to comparable format
+    const aComp = a.Competencia.toString().trim();
+    const bComp = b.Competencia.toString().trim();
+    
+    // For MM/YYYY format, convert to YYYY-MM for proper sorting
+    let aSortKey = aComp;
+    let bSortKey = bComp;
+    
+    if (aComp.includes('/')) {
+      const [month, year] = aComp.split('/');
+      aSortKey = `${year}-${month.padStart(2, '0')}`;
+    }
+    
+    if (bComp.includes('/')) {
+      const [month, year] = bComp.split('/');
+      bSortKey = `${year}-${month.padStart(2, '0')}`;
+    }
+    
+    return bSortKey.localeCompare(aSortKey); // Descending order (newest first)
+  });
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
