@@ -168,11 +168,16 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   }, [consolidadoData, selectedYear]);
 
   // Use filtered data if available, otherwise use internal data
-  const rawData = filteredConsolidadoData && filteredRange?.inicio && filteredRange?.fim 
-    ? filteredConsolidadoData.filter(item => 
-        item.Competencia >= filteredRange.inicio && item.Competencia <= filteredRange.fim
-      )
+  const rawData = filteredConsolidadoData && filteredConsolidadoData.length > 0
+    ? filteredConsolidadoData
     : consolidadoData;
+    
+  console.log('=== RAW DATA DEBUG ===');
+  console.log('filteredConsolidadoData length:', filteredConsolidadoData?.length || 0);
+  console.log('consolidadoData length:', consolidadoData.length);
+  console.log('Using filtered data:', filteredConsolidadoData && filteredConsolidadoData.length > 0);
+  console.log('Raw data length:', rawData.length);
+  console.log('Raw data competencias:', rawData.map(item => item.Competencia));
 
   // Filter by selected year
   const yearFilteredData = selectedYear 
