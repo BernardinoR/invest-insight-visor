@@ -31,6 +31,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const { marketData } = useMarketIndicators(selectedClient);
   const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
   const [filteredRange, setFilteredRange] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
+  const [yearTotals, setYearTotals] = useState<{ patrimonio: number; rendimento: number; year: string } | null>(null);
 
   // Helper function to convert competencia string to comparable date
   const competenciaToDate = (competencia: string) => {
@@ -104,8 +105,6 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     return weightedRendimento / totalPatrimonioWeighted;
   };
 
-  const displayRendimento = getRendimentoFromFinalCompetencia();
-
   // Calculate patrimônio from the final competencia selected - sum across all institutions
   const getPatrimonioFromFinalCompetencia = () => {
     if (!filteredRange.fim || filteredConsolidadoData.length === 0) {
@@ -154,7 +153,14 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     }
   };
 
-  const displayPatrimonio = getPatrimonioFromFinalCompetencia();
+  // Use year totals from PortfolioTable if available, otherwise fall back to original calculation
+  const displayPatrimonio = yearTotals ? yearTotals.patrimonio : getPatrimonioFromFinalCompetencia();
+  const displayRendimento = yearTotals ? yearTotals.rendimento : getRendimentoFromFinalCompetencia();
+
+  const handleYearTotalsChange = useCallback((totals: { patrimonio: number; rendimento: number; year: string }) => {
+    console.log('InvestmentDashboard - Received year totals:', totals);
+    setYearTotals(totals);
+  }, []);
 
   // Calculate patrimônio growth from previous month
   const getPatrimonioGrowth = () => {
@@ -260,9 +266,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
               <Target className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-               <div className="text-2xl font-bold text-foreground">
-                 {hasData ? `${(displayRendimento * 100).toFixed(2)}%` : "--%"}
-               </div>
+                <div className="text-2xl font-bold text-foreground">
+                  {hasData ? `${(displayRendimento * 100).toFixed(2)}%` : "--%"}
+                </div>
                <p className="text-xs text-success">
                  {(() => {
                    if (!hasData) return "Aguardando dados";
@@ -393,6 +399,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             selectedClient={selectedClient} 
             filteredConsolidadoData={consolidadoData}
             filteredRange={filteredRange}
+            onYearTotalsChange={handleYearTotalsChange}
           />
         </div>
 

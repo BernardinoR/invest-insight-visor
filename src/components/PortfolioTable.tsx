@@ -23,6 +23,7 @@ interface PortfolioTableProps {
   selectedClient: string;
   filteredConsolidadoData?: ConsolidadoData[];
   filteredRange?: { inicio: string; fim: string };
+  onYearTotalsChange?: (totals: { patrimonio: number; rendimento: number; year: string }) => void;
 }
 
 interface ConsolidadoData {
@@ -42,7 +43,7 @@ interface ConsolidadoDataWithReturns extends ConsolidadoData {
   return12Months?: number;
 }
 
-export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange }: PortfolioTableProps) {
+export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange, onYearTotalsChange }: PortfolioTableProps) {
   const [consolidadoData, setConsolidadoData] = useState<ConsolidadoData[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedYear, setSelectedYear] = useState<string>("");
@@ -250,6 +251,41 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     
     return bSortKey.localeCompare(aSortKey); // Descending order (newest first)
   });
+
+  // Calculate totals for the selected year and notify parent component
+  useEffect(() => {
+    if (displayData.length > 0 && selectedYear && onYearTotalsChange) {
+      // Calculate total patrimônio for the year (sum of final month patrimônio)
+      const totalPatrimonio = displayData.reduce((sum, item) => {
+        return sum + (item["Patrimonio Final"] || 0);
+      }, 0);
+      
+      // Calculate weighted average rendimento for the year
+      let totalWeightedRendimento = 0;
+      let totalWeight = 0;
+      
+      displayData.forEach(item => {
+        const patrimonio = item["Patrimonio Final"] || 0;
+        const rendimento = item.Rendimento || 0;
+        totalWeightedRendimento += rendimento * patrimonio;
+        totalWeight += patrimonio;
+      });
+      
+      const averageRendimento = totalWeight > 0 ? totalWeightedRendimento / totalWeight : 0;
+      
+      console.log('PortfolioTable - Calculated totals for year', selectedYear, ':', {
+        totalPatrimonio,
+        averageRendimento,
+        displayDataLength: displayData.length
+      });
+      
+      onYearTotalsChange({
+        patrimonio: totalPatrimonio,
+        rendimento: averageRendimento,
+        year: selectedYear
+      });
+    }
+  }, [displayData, selectedYear, onYearTotalsChange]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
