@@ -625,27 +625,27 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                  />
                )}
                 
-                {selectedIndicators.target && (
-                  <Line 
-                    type="monotone" 
-                    dataKey="targetRetorno" 
-                    stroke="hsl(var(--success))"
-                    strokeWidth={2}
-                    connectNulls={false}
-                    dot={{ 
-                      fill: 'hsl(var(--success))', 
-                      strokeWidth: 1, 
-                      stroke: 'hsl(var(--background))',
-                      r: 3
-                   }}
-                   activeDot={{ 
-                     r: 5, 
-                     fill: 'hsl(var(--success))', 
-                     strokeWidth: 2, 
-                     stroke: 'hsl(var(--background))'
-                   }}
-                 />
-               )}
+                 {selectedIndicators.target && (
+                   <Line 
+                     type="monotone" 
+                     dataKey="targetRetorno" 
+                     stroke="hsl(0 84% 60%)"
+                     strokeWidth={2}
+                     connectNulls={false}
+                     dot={{ 
+                       fill: "hsl(0 84% 60%)", 
+                       strokeWidth: 1, 
+                       stroke: 'hsl(var(--background))',
+                       r: 3
+                    }}
+                    activeDot={{ 
+                      r: 5, 
+                      fill: "hsl(0 84% 60%)", 
+                      strokeWidth: 2, 
+                      stroke: 'hsl(var(--background))'
+                    }}
+                  />
+                )}
                
                
                {selectedIndicators.ipca && (
