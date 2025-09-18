@@ -23,6 +23,7 @@ interface PortfolioTableProps {
   selectedClient: string;
   filteredConsolidadoData?: ConsolidadoData[];
   filteredRange?: { inicio: string; fim: string };
+  onYearTotalsChange?: (totals: { totalPatrimonio: number; totalRendimento: number } | null) => void;
 }
 
 interface ConsolidadoData {
@@ -42,7 +43,7 @@ interface ConsolidadoDataWithReturns extends ConsolidadoData {
   return12Months?: number;
 }
 
-export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange }: PortfolioTableProps) {
+export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange, onYearTotalsChange }: PortfolioTableProps) {
   const [consolidadoData, setConsolidadoData] = useState<ConsolidadoData[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedYear, setSelectedYear] = useState<string>("");
@@ -190,6 +191,33 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   
   // Consolidate and sort data
   const displayData = consolidateByCompetencia(yearFilteredData).sort((a, b) => b.Competencia.localeCompare(a.Competencia));
+
+  // Calculate correct totals for the selected year (from most recent month only)
+  useEffect(() => {
+    if (displayData.length > 0 && onYearTotalsChange) {
+      // Sort by competencia to get the most recent month (chronologically latest)
+      const sortedData = [...displayData].sort((a, b) => a.Competencia.localeCompare(b.Competencia));
+      const mostRecentMonth = sortedData[sortedData.length - 1];
+      
+      console.log('=== YEAR TOTALS CALCULATION ===');
+      console.log('Selected year:', selectedYear);
+      console.log('Display data for year:', displayData.map(item => ({ competencia: item.Competencia, patrimonio: item["Patrimonio Final"] })));
+      console.log('Most recent month identified:', mostRecentMonth?.Competencia);
+      console.log('Most recent month patrimonio:', mostRecentMonth?.["Patrimonio Final"]);
+      console.log('Most recent month rendimento:', mostRecentMonth?.Rendimento);
+      
+      const yearTotals = {
+        totalPatrimonio: mostRecentMonth["Patrimonio Final"] || 0,
+        totalRendimento: mostRecentMonth.Rendimento || 0
+      };
+      
+      console.log('Sending year totals:', yearTotals);
+      onYearTotalsChange(yearTotals);
+    } else if (onYearTotalsChange) {
+      console.log('No data for selected year, sending null');
+      onYearTotalsChange(null);
+    }
+  }, [displayData, selectedYear, onYearTotalsChange]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
