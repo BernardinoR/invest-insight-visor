@@ -258,8 +258,8 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     totalTotals["Patrimonio Final"] = sortedAllData[0]["Patrimonio Final"] || 0;
   }
 
-  // Calculate total return percentage based on initial patrimony
-  const totalReturn = totalTotals["Patrimonio Inicial"] > 0 ? totalTotals["Ganho Financeiro"] / totalTotals["Patrimonio Inicial"] : 0;
+  // Calculate total return percentage
+  const totalReturn = totalTotals["Patrimonio Final"] > 0 ? totalTotals["Ganho Financeiro"] / totalTotals["Patrimonio Final"] : 0;
 
   // Calculate total accumulated target since inception
   let totalAccumulatedTarget = 0;
@@ -272,27 +272,13 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
       return dateA.getTime() - dateB.getTime();
     });
     
-    // Start with 1 for compound calculation
-    let accumulatedTarget = 1;
     sortedAllData.forEach(monthData => {
       const marketPoint = marketData.find(point => point.competencia === monthData.Competencia);
-      if (marketPoint && marketPoint.clientTarget !== undefined) {
-        accumulatedTarget *= (1 + marketPoint.clientTarget);
+      if (marketPoint && marketPoint.clientTarget > 0) {
+        totalAccumulatedTarget = (1 + totalAccumulatedTarget) * (1 + marketPoint.clientTarget) - 1;
       }
     });
-    // Convert back to return percentage (subtract 1)
-    totalAccumulatedTarget = accumulatedTarget - 1;
   }
-
-  // Debug logging
-  console.log('=== TOTAL RETURN CALCULATION DEBUG ===');
-  console.log('Total Ganho Financeiro:', totalTotals["Ganho Financeiro"]);
-  console.log('Total Patrimonio Inicial:', totalTotals["Patrimonio Inicial"]);
-  console.log('Total Return (decimal):', totalReturn);
-  console.log('Total Return (%):', (totalReturn * 100).toFixed(2) + '%');
-  console.log('Total Accumulated Target (decimal):', totalAccumulatedTarget);
-  console.log('Total Accumulated Target (%):', (totalAccumulatedTarget * 100).toFixed(2) + '%');
-  console.log('Difference (pp):', ((totalReturn - totalAccumulatedTarget) * 100).toFixed(2) + 'pp');
 
   // Calculate correct totals for onYearTotalsChange
   useEffect(() => {
