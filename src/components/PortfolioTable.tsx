@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useMarketIndicators } from "@/hooks/useMarketIndicators";
 
 interface PortfolioTableProps {
   selectedClient: string;
@@ -49,6 +50,9 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [availableYears, setAvailableYears] = useState<string[]>([]);
+  
+  // Get market indicators including client target
+  const { marketData, clientTarget } = useMarketIndicators(selectedClient);
 
   // Function to calculate compound return over multiple months
   const calculateCompoundReturn = (monthlyReturns: number[]): number => {
@@ -237,6 +241,26 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     return value >= 0 ? `+${percentage}%` : `${percentage}%`;
   };
 
+  const formatPointsAboveTarget = (monthlyReturn: number, competencia: string) => {
+    if (!clientTarget || !marketData || marketData.length === 0) return "N/A";
+    
+    // Find the market data for this competencia
+    const marketPoint = marketData.find(point => point.competencia === competencia);
+    if (!marketPoint) return "N/A";
+    
+    // Calculate the difference in percentage points
+    const portfolioReturnPercent = monthlyReturn * 100;
+    const targetReturnPercent = marketPoint.clientTarget * 100;
+    const differencePoints = portfolioReturnPercent - targetReturnPercent;
+    
+    const formattedDifference = Math.abs(differencePoints).toFixed(2);
+    if (differencePoints >= 0) {
+      return `+${formattedDifference}pp`;
+    } else {
+      return `-${formattedDifference}pp`;
+    }
+  };
+
   const toggleRowExpansion = (competencia: string) => {
     const newExpanded = new Set(expandedRows);
     if (newExpanded.has(competencia)) {
@@ -308,22 +332,24 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                 <TableHead className="text-muted-foreground">Competência</TableHead>
                 <TableHead className="text-muted-foreground">Patrimônio Inicial</TableHead>
                 <TableHead className="text-muted-foreground">Movimentações</TableHead>
-                <TableHead className="text-muted-foreground">Impostos</TableHead>
-                <TableHead className="text-muted-foreground">Ganho Financeiro</TableHead>
+                <TableHead className="text-muted-foreground">IR Pago</TableHead>
+                <TableHead className="text-muted-foreground">IOF Pago</TableHead>
                 <TableHead className="text-muted-foreground">Patrimônio Final</TableHead>
-                <TableHead className="text-muted-foreground">Mês %</TableHead>
+                <TableHead className="text-muted-foreground">Rendimento</TableHead>
+                <TableHead className="text-muted-foreground">Rentabilidade</TableHead>
+                <TableHead className="text-muted-foreground">Rentabilidade (pp acima da meta)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground">
                     Carregando dados...
                   </TableCell>
                 </TableRow>
               ) : displayData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground">
                     Nenhum dado encontrado para {selectedYear}
                   </TableCell>
                 </TableRow>
@@ -357,11 +383,14 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                       <TableCell className="text-destructive font-medium">
                         {formatCurrency(item.Impostos)}
                       </TableCell>
-                      <TableCell className="text-success font-medium">
-                        {formatCurrency(item["Ganho Financeiro"])}
+                      <TableCell className="text-destructive font-medium">
+                        R$ 0,00
                       </TableCell>
                       <TableCell className="font-medium text-foreground">
                         {formatCurrency(item["Patrimonio Final"])}
+                      </TableCell>
+                      <TableCell className="text-success font-medium">
+                        {formatCurrency(item["Ganho Financeiro"])}
                       </TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded-full text-sm font-medium ${
@@ -372,11 +401,22 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                           {formatPercentage(item.Rendimento || 0)}
                         </span>
                       </TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                          formatPointsAboveTarget(item.Rendimento || 0, item.Competencia).startsWith('+')
+                            ? 'bg-success/20 text-success' 
+                            : formatPointsAboveTarget(item.Rendimento || 0, item.Competencia).startsWith('-')
+                            ? 'bg-destructive/20 text-destructive'
+                            : 'bg-muted/20 text-muted-foreground'
+                        }`}>
+                          {formatPointsAboveTarget(item.Rendimento || 0, item.Competencia)}
+                        </span>
+                      </TableCell>
                     </TableRow>
                     {expandedRows.has(item.Competencia) && (
                       <TableRow className="bg-muted/20">
                         <TableCell></TableCell>
-                        <TableCell colSpan={4} className="text-sm text-muted-foreground">
+                        <TableCell colSpan={6} className="text-sm text-muted-foreground">
                           <div className="flex gap-6">
                             <div>3 Meses: <span className={`font-medium ${(item.return3Months || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
                               {formatPercentage(item.return3Months || 0)}
