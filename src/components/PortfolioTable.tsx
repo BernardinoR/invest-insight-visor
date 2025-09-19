@@ -437,11 +437,15 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                         </TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-sm font-medium ${
-                            yearSummary.accumulatedTarget >= 0 
-                              ? 'bg-muted/20 text-muted-foreground' 
+                            yearSummary.accumulatedTarget > 0 && yearSummary.yearReturn >= yearSummary.accumulatedTarget
+                              ? 'bg-success/20 text-success' 
+                              : yearSummary.accumulatedTarget > 0 && yearSummary.yearReturn < yearSummary.accumulatedTarget
+                              ? 'bg-destructive/20 text-destructive'
                               : 'bg-muted/20 text-muted-foreground'
                           }`}>
-                            {yearSummary.accumulatedTarget > 0 ? formatPercentage(yearSummary.accumulatedTarget) : "N/A"}
+                            {yearSummary.accumulatedTarget > 0 ? 
+                              `${((yearSummary.yearReturn - yearSummary.accumulatedTarget) * 100).toFixed(2)}pp` : 
+                              "N/A"}
                           </span>
                         </TableCell>
                       </TableRow>
