@@ -15,7 +15,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMarketIndicators } from "@/hooks/useMarketIndicators";
@@ -47,8 +47,7 @@ interface ConsolidadoDataWithReturns extends ConsolidadoData {
 export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange, onYearTotalsChange }: PortfolioTableProps) {
   const [consolidadoData, setConsolidadoData] = useState<ConsolidadoData[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedYear, setSelectedYear] = useState<string>("");
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set(['2025'])); // Start with 2025 expanded
   const [availableYears, setAvailableYears] = useState<string[]>([]);
   
   // Get market indicators including client target
@@ -153,80 +152,115 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   // Extract years from competencia data and set available years
   useEffect(() => {
     if (consolidadoData.length > 0) {
-      console.log('Raw consolidado data:', consolidadoData.map(item => ({ competencia: item.Competencia, id: item.id })));
-      
       const years = [...new Set(consolidadoData.map(item => {
         const year = item.Competencia.split('/')[1];
-        console.log(`Competencia: ${item.Competencia}, extracted year: ${year}`);
         return year;
       }))].sort().reverse();
       
-      console.log('Available years:', years);
       setAvailableYears(years);
-      
-      if (!selectedYear && years.length > 0) {
-        console.log('Setting default year to:', years[0]);
-        setSelectedYear(years[0]); // Default to most recent year
-      }
     }
-  }, [consolidadoData, selectedYear]);
+  }, [consolidadoData]);
 
   // Use filtered data if available, otherwise use internal data
   const rawData = filteredConsolidadoData && filteredConsolidadoData.length > 0
     ? filteredConsolidadoData
     : consolidadoData;
+
+  // Consolidate data by competencia
+  const consolidatedData = consolidateByCompetencia(rawData);
+
+  // Group data by year
+  const dataByYear = consolidatedData.reduce((acc, item) => {
+    const year = item.Competencia.split('/')[1];
+    if (!acc[year]) {
+      acc[year] = [];
+    }
+    acc[year].push(item);
+    return acc;
+  }, {} as Record<string, ConsolidadoDataWithReturns[]>);
+
+  // Sort months within each year (newest first)
+  Object.keys(dataByYear).forEach(year => {
+    dataByYear[year].sort((a, b) => {
+      const [monthA, yearA] = a.Competencia.split('/');
+      const [monthB, yearB] = b.Competencia.split('/');
+      const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+      const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+      return dateB.getTime() - dateA.getTime();
+    });
+  });
+
+  // Calculate year totals and find best month
+  const yearSummaries = Object.keys(dataByYear).map(year => {
+    const yearData = dataByYear[year];
+    const mostRecentMonth = yearData[0]; // First item after sorting (most recent)
     
-  console.log('=== RAW DATA DEBUG ===');
-  console.log('filteredConsolidadoData length:', filteredConsolidadoData?.length || 0);
-  console.log('consolidadoData length:', consolidadoData.length);
-  console.log('Using filtered data:', filteredConsolidadoData && filteredConsolidadoData.length > 0);
-  console.log('Raw data length:', rawData.length);
-  console.log('Raw data competencias:', rawData.map(item => item.Competencia));
+    // Calculate year totals
+    const yearTotals = {
+      "Patrimonio Inicial": yearData.reduce((sum, item) => sum + (item["Patrimonio Inicial"] || 0), 0),
+      "Movimentação": yearData.reduce((sum, item) => sum + (item["Movimentação"] || 0), 0),
+      "Impostos": yearData.reduce((sum, item) => sum + (item.Impostos || 0), 0),
+      "Ganho Financeiro": yearData.reduce((sum, item) => sum + (item["Ganho Financeiro"] || 0), 0),
+      "Patrimonio Final": mostRecentMonth["Patrimonio Final"] || 0,
+      "Rendimento": yearData.reduce((sum, item) => sum + (item["Ganho Financeiro"] || 0), 0)
+    };
 
-  // Filter by selected year
-  const yearFilteredData = selectedYear 
-    ? rawData.filter(item => {
-        const itemYear = item.Competencia.split('/')[1];
-        const matches = itemYear === selectedYear;
-        console.log(`Filtering: ${item.Competencia} (year: ${itemYear}) against selected year: ${selectedYear} = ${matches}`);
-        return matches;
-      })
-    : rawData;
-  
-  console.log('Selected year:', selectedYear);
-  console.log('Raw data length:', rawData.length);
-  console.log('Year filtered data length:', yearFilteredData.length);
-  console.log('Year filtered data:', yearFilteredData.map(item => item.Competencia));
-  
-  // Consolidate and sort data
-  const displayData = consolidateByCompetencia(yearFilteredData).sort((a, b) => b.Competencia.localeCompare(a.Competencia));
+    // Calculate year percentage return
+    const initialPatrimonio = yearData[yearData.length - 1]?.["Patrimonio Inicial"] || 0;
+    const yearReturn = initialPatrimonio > 0 ? yearTotals["Ganho Financeiro"] / initialPatrimonio : 0;
 
-  // Calculate correct totals for the selected year (from most recent month only)
+    // Find best performing month
+    const bestMonth = yearData.reduce((best, current) => 
+      (current.Rendimento || 0) > (best.Rendimento || 0) ? current : best
+    );
+
+    return {
+      year,
+      data: yearData,
+      totals: yearTotals,
+      yearReturn,
+      bestMonth
+    };
+  });
+
+  // Calculate overall totals
+  const allData = Object.values(dataByYear).flat();
+  const totalTotals = {
+    "Patrimonio Inicial": 0, // Always 0 for total
+    "Movimentação": allData.reduce((sum, item) => sum + (item["Movimentação"] || 0), 0),
+    "Impostos": allData.reduce((sum, item) => sum + (item.Impostos || 0), 0),
+    "Ganho Financeiro": allData.reduce((sum, item) => sum + (item["Ganho Financeiro"] || 0), 0),
+    "Patrimonio Final": 0,
+    "Rendimento": 0
+  };
+
+  // Get most recent patrimonio final from all data
+  if (allData.length > 0) {
+    const sortedAllData = [...allData].sort((a, b) => {
+      const [monthA, yearA] = a.Competencia.split('/');
+      const [monthB, yearB] = b.Competencia.split('/');
+      const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+      const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+      return dateB.getTime() - dateA.getTime();
+    });
+    totalTotals["Patrimonio Final"] = sortedAllData[0]["Patrimonio Final"] || 0;
+  }
+
+  // Calculate total return percentage
+  const totalReturn = totalTotals["Patrimonio Final"] > 0 ? totalTotals["Ganho Financeiro"] / totalTotals["Patrimonio Final"] : 0;
+
+  // Calculate correct totals for onYearTotalsChange
   useEffect(() => {
-    if (displayData.length > 0 && onYearTotalsChange) {
-      // Sort by competencia to get the most recent month (chronologically latest)
-      const sortedData = [...displayData].sort((a, b) => a.Competencia.localeCompare(b.Competencia));
-      const mostRecentMonth = sortedData[sortedData.length - 1];
-      
-      console.log('=== YEAR TOTALS CALCULATION ===');
-      console.log('Selected year:', selectedYear);
-      console.log('Display data for year:', displayData.map(item => ({ competencia: item.Competencia, patrimonio: item["Patrimonio Final"] })));
-      console.log('Most recent month identified:', mostRecentMonth?.Competencia);
-      console.log('Most recent month patrimonio:', mostRecentMonth?.["Patrimonio Final"]);
-      console.log('Most recent month rendimento:', mostRecentMonth?.Rendimento);
-      
+    if (totalTotals && onYearTotalsChange) {
       const yearTotals = {
-        totalPatrimonio: mostRecentMonth["Patrimonio Final"] || 0,
-        totalRendimento: mostRecentMonth.Rendimento || 0
+        totalPatrimonio: totalTotals["Patrimonio Final"] || 0,
+        totalRendimento: totalReturn || 0
       };
-      
-      console.log('Sending year totals:', yearTotals);
       onYearTotalsChange(yearTotals);
     } else if (onYearTotalsChange) {
-      console.log('No data for selected year, sending null');
       onYearTotalsChange(null);
     }
-  }, [displayData, selectedYear, onYearTotalsChange]);
+  }, [totalTotals, totalReturn, onYearTotalsChange]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -241,34 +275,28 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     return value >= 0 ? `+${percentage}%` : `${percentage}%`;
   };
 
-  const formatPointsAboveTarget = (monthlyReturn: number, competencia: string) => {
-    if (!clientTarget || !marketData || marketData.length === 0) return "N/A";
+  const formatCDIComparison = (monthlyReturn: number, competencia: string) => {
+    if (!marketData || marketData.length === 0) return "N/A";
     
     // Find the market data for this competencia
     const marketPoint = marketData.find(point => point.competencia === competencia);
     if (!marketPoint) return "N/A";
     
-    // Calculate the difference in percentage points
+    // For now, just return the percentage as we don't have CDI data in the current structure
+    // This can be enhanced later when CDI data is available
     const portfolioReturnPercent = monthlyReturn * 100;
-    const targetReturnPercent = marketPoint.clientTarget * 100;
-    const differencePoints = portfolioReturnPercent - targetReturnPercent;
     
-    const formattedDifference = Math.abs(differencePoints).toFixed(2);
-    if (differencePoints >= 0) {
-      return `+${formattedDifference}pp`;
-    } else {
-      return `-${formattedDifference}pp`;
-    }
+    return `${portfolioReturnPercent.toFixed(2)}%`;
   };
 
-  const toggleRowExpansion = (competencia: string) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(competencia)) {
-      newExpanded.delete(competencia);
+  const toggleYearExpansion = (year: string) => {
+    const newExpanded = new Set(expandedYears);
+    if (newExpanded.has(year)) {
+      newExpanded.delete(year);
     } else {
-      newExpanded.add(competencia);
+      newExpanded.add(year);
     }
-    setExpandedRows(newExpanded);
+    setExpandedYears(newExpanded);
   };
 
   useEffect(() => {
@@ -302,25 +330,9 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   return (
     <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
       <CardHeader>
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle className="text-foreground">Resumo do Patrimônio</CardTitle>
-            <p className="text-sm text-muted-foreground">Evolução patrimonial consolidada com retornos acumulados</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Ano" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableYears.map(year => (
-                  <SelectItem key={year} value={year}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div>
+          <CardTitle className="text-foreground">Resumo do Patrimônio</CardTitle>
+          <p className="text-sm text-muted-foreground">Evolução patrimonial consolidada com retornos acumulados</p>
         </div>
       </CardHeader>
       <CardContent>
@@ -337,7 +349,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                 <TableHead className="text-muted-foreground">Patrimônio Final</TableHead>
                 <TableHead className="text-muted-foreground">Rendimento</TableHead>
                 <TableHead className="text-muted-foreground">Rentabilidade</TableHead>
-                <TableHead className="text-muted-foreground">Rentabilidade (pp acima da meta)</TableHead>
+                <TableHead className="text-muted-foreground">Rentabilidade (% CDI)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -347,97 +359,184 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                     Carregando dados...
                   </TableCell>
                 </TableRow>
-              ) : displayData.length === 0 ? (
+              ) : yearSummaries.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} className="text-center text-muted-foreground">
-                    Nenhum dado encontrado para {selectedYear}
+                    Nenhum dado encontrado
                   </TableCell>
                 </TableRow>
               ) : (
-                displayData.map((item) => (
-                  <>
-                    <TableRow key={item.id} className="border-border/50">
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleRowExpansion(item.Competencia)}
-                          className="h-6 w-6 p-0"
-                        >
-                          {expandedRows.has(item.Competencia) ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </TableCell>
-                      <TableCell className="font-medium text-foreground">
-                        {item.Competencia}
-                      </TableCell>
-                      <TableCell className="font-medium text-foreground">
-                        {formatCurrency(item["Patrimonio Inicial"])}
-                      </TableCell>
-                      <TableCell className="text-destructive font-medium">
-                        {formatCurrency(item["Movimentação"])}
-                      </TableCell>
-                      <TableCell className="text-destructive font-medium">
-                        {formatCurrency(item.Impostos)}
-                      </TableCell>
-                      <TableCell className="text-destructive font-medium">
-                        R$ 0,00
-                      </TableCell>
-                      <TableCell className="font-medium text-foreground">
-                        {formatCurrency(item["Patrimonio Final"])}
-                      </TableCell>
-                      <TableCell className="text-success font-medium">
-                        {formatCurrency(item["Ganho Financeiro"])}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-sm font-medium ${
-                          (item.Rendimento || 0) >= 0 
-                            ? 'bg-success/20 text-success' 
-                            : 'bg-destructive/20 text-destructive'
-                        }`}>
-                          {formatPercentage(item.Rendimento || 0)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-sm font-medium ${
-                          formatPointsAboveTarget(item.Rendimento || 0, item.Competencia).startsWith('+')
-                            ? 'bg-success/20 text-success' 
-                            : formatPointsAboveTarget(item.Rendimento || 0, item.Competencia).startsWith('-')
-                            ? 'bg-destructive/20 text-destructive'
-                            : 'bg-muted/20 text-muted-foreground'
-                        }`}>
-                          {formatPointsAboveTarget(item.Rendimento || 0, item.Competencia)}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                    {expandedRows.has(item.Competencia) && (
-                      <TableRow className="bg-muted/20">
-                        <TableCell></TableCell>
-                        <TableCell colSpan={6} className="text-sm text-muted-foreground">
-                          <div className="flex gap-6">
-                            <div>3 Meses: <span className={`font-medium ${(item.return3Months || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
-                              {formatPercentage(item.return3Months || 0)}
-                            </span></div>
-                            <div>6 Meses: <span className={`font-medium ${(item.return6Months || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
-                              {formatPercentage(item.return6Months || 0)}
-                            </span></div>
-                            <div>12 Meses: <span className={`font-medium ${(item.return12Months || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
-                              {formatPercentage(item.return12Months || 0)}
-                            </span></div>
-                          </div>
+                <>
+                  {/* Year rows */}
+                  {yearSummaries.sort((a, b) => b.year.localeCompare(a.year)).map((yearSummary) => (
+                    <>
+                      {/* Year header row */}
+                      <TableRow key={yearSummary.year} className="border-border/50 bg-muted/10">
+                        <TableCell className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleYearExpansion(yearSummary.year)}
+                            className="h-6 w-6 p-0"
+                          >
+                            {expandedYears.has(yearSummary.year) ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
                         </TableCell>
-                        <TableCell colSpan={3}></TableCell>
+                        <TableCell className="font-bold text-foreground">
+                          {yearSummary.year}
+                        </TableCell>
+                        <TableCell className="font-medium text-foreground">
+                          {formatCurrency(yearSummary.totals["Patrimonio Inicial"])}
+                        </TableCell>
+                        <TableCell className="text-destructive font-medium">
+                          {formatCurrency(yearSummary.totals["Movimentação"])}
+                        </TableCell>
+                        <TableCell className="text-destructive font-medium">
+                          {formatCurrency(yearSummary.totals.Impostos)}
+                        </TableCell>
+                        <TableCell className="text-destructive font-medium">
+                          R$ 0,00
+                        </TableCell>
+                        <TableCell className="font-medium text-foreground">
+                          {formatCurrency(yearSummary.totals["Patrimonio Final"])}
+                        </TableCell>
+                        <TableCell className="text-success font-medium">
+                          {formatCurrency(yearSummary.totals["Ganho Financeiro"])}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                            yearSummary.yearReturn >= 0 
+                              ? 'bg-success/20 text-success' 
+                              : 'bg-destructive/20 text-destructive'
+                          }`}>
+                            {formatPercentage(yearSummary.yearReturn)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="px-2 py-1 rounded-full text-sm font-medium bg-muted/20 text-muted-foreground">
+                            N/A
+                          </span>
+                        </TableCell>
                       </TableRow>
-                    )}
-                  </>
-                ))
+
+                      {/* Month rows (when expanded) */}
+                      {expandedYears.has(yearSummary.year) && yearSummary.data.map((item) => {
+                        const monthName = {
+                          '01': 'JAN', '02': 'FEV', '03': 'MAR', '04': 'ABR',
+                          '05': 'MAI', '06': 'JUN', '07': 'JUL', '08': 'AGO',
+                          '09': 'SET', '10': 'OUT', '11': 'NOV', '12': 'DEZ'
+                        }[item.Competencia.split('/')[0]] || item.Competencia.split('/')[0];
+                        
+                        const isBestMonth = item.Competencia === yearSummary.bestMonth.Competencia;
+                        
+                        return (
+                          <TableRow key={item.id} className="border-border/50">
+                            <TableCell className="flex items-center gap-2 pl-8">
+                              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                              {isBestMonth && <Trophy className="h-4 w-4 text-yellow-600" />}
+                            </TableCell>
+                            <TableCell className="font-medium text-foreground pl-8">
+                              {monthName}
+                            </TableCell>
+                            <TableCell className="font-medium text-foreground">
+                              {formatCurrency(item["Patrimonio Inicial"])}
+                            </TableCell>
+                            <TableCell className="text-destructive font-medium">
+                              {formatCurrency(item["Movimentação"])}
+                            </TableCell>
+                            <TableCell className="text-destructive font-medium">
+                              {formatCurrency(item.Impostos)}
+                            </TableCell>
+                            <TableCell className="text-destructive font-medium">
+                              R$ 0,00
+                            </TableCell>
+                            <TableCell className="font-medium text-foreground">
+                              {formatCurrency(item["Patrimonio Final"])}
+                            </TableCell>
+                            <TableCell className="text-success font-medium">
+                              {formatCurrency(item["Ganho Financeiro"])}
+                            </TableCell>
+                            <TableCell>
+                              <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                                (item.Rendimento || 0) >= 0 
+                                  ? 'bg-success/20 text-success' 
+                                  : 'bg-destructive/20 text-destructive'
+                              }`}>
+                                {formatPercentage(item.Rendimento || 0)}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="px-2 py-1 rounded-full text-sm font-medium bg-muted/20 text-muted-foreground">
+                                {formatCDIComparison(item.Rendimento || 0, item.Competencia)}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </>
+                  ))}
+
+                  {/* Total row */}
+                  <TableRow className="border-border/50 bg-muted/10 font-bold">
+                    <TableCell className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                    </TableCell>
+                    <TableCell className="font-bold text-foreground">
+                      Total
+                    </TableCell>
+                    <TableCell className="font-bold text-foreground">
+                      {formatCurrency(totalTotals["Patrimonio Inicial"])}
+                    </TableCell>
+                    <TableCell className="text-destructive font-bold">
+                      {formatCurrency(totalTotals["Movimentação"])}
+                    </TableCell>
+                    <TableCell className="text-destructive font-bold">
+                      {formatCurrency(totalTotals.Impostos)}
+                    </TableCell>
+                    <TableCell className="text-destructive font-bold">
+                      R$ 0,00
+                    </TableCell>
+                    <TableCell className="font-bold text-foreground">
+                      {formatCurrency(totalTotals["Patrimonio Final"])}
+                    </TableCell>
+                    <TableCell className="text-success font-bold">
+                      {formatCurrency(totalTotals["Ganho Financeiro"])}
+                    </TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded-full text-sm font-bold ${
+                        totalReturn >= 0 
+                          ? 'bg-success/20 text-success' 
+                          : 'bg-destructive/20 text-destructive'
+                      }`}>
+                        {formatPercentage(totalReturn)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="px-2 py-1 rounded-full text-sm font-bold bg-muted/20 text-muted-foreground">
+                        N/A
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                </>
               )}
             </TableBody>
           </Table>
         </div>
+        
+        {/* Best month section */}
+        {yearSummaries.length > 0 && (
+          <div className="mt-6 pt-4 border-t border-border/50">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Trophy className="h-4 w-4 text-yellow-600" />
+              <span className="font-medium">Mês com melhor rentabilidade do ano</span>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
