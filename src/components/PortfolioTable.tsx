@@ -275,18 +275,24 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     return value >= 0 ? `+${percentage}%` : `${percentage}%`;
   };
 
-  const formatCDIComparison = (monthlyReturn: number, competencia: string) => {
-    if (!marketData || marketData.length === 0) return "N/A";
+  const formatPointsAboveTarget = (monthlyReturn: number, competencia: string) => {
+    if (!clientTarget || !marketData || marketData.length === 0) return "N/A";
     
     // Find the market data for this competencia
     const marketPoint = marketData.find(point => point.competencia === competencia);
     if (!marketPoint) return "N/A";
     
-    // For now, just return the percentage as we don't have CDI data in the current structure
-    // This can be enhanced later when CDI data is available
+    // Calculate the difference in percentage points
     const portfolioReturnPercent = monthlyReturn * 100;
+    const targetReturnPercent = marketPoint.clientTarget * 100;
+    const differencePoints = portfolioReturnPercent - targetReturnPercent;
     
-    return `${portfolioReturnPercent.toFixed(2)}%`;
+    const formattedDifference = Math.abs(differencePoints).toFixed(2);
+    if (differencePoints >= 0) {
+      return `+${formattedDifference}pp`;
+    } else {
+      return `-${formattedDifference}pp`;
+    }
   };
 
   const toggleYearExpansion = (year: string) => {
@@ -349,7 +355,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                 <TableHead className="text-muted-foreground">Patrimônio Final</TableHead>
                 <TableHead className="text-muted-foreground">Rendimento</TableHead>
                 <TableHead className="text-muted-foreground">Rentabilidade</TableHead>
-                <TableHead className="text-muted-foreground">Rentabilidade (% CDI)</TableHead>
+                <TableHead className="text-muted-foreground">Rentabilidade (pp acima da meta)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -470,11 +476,17 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                                 {formatPercentage(item.Rendimento || 0)}
                               </span>
                             </TableCell>
-                            <TableCell>
-                              <span className="px-2 py-1 rounded-full text-sm font-medium bg-muted/20 text-muted-foreground">
-                                {formatCDIComparison(item.Rendimento || 0, item.Competencia)}
-                              </span>
-                            </TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                            formatPointsAboveTarget(item.Rendimento || 0, item.Competencia).startsWith('+')
+                              ? 'bg-success/20 text-success' 
+                              : formatPointsAboveTarget(item.Rendimento || 0, item.Competencia).startsWith('-')
+                              ? 'bg-destructive/20 text-destructive'
+                              : 'bg-muted/20 text-muted-foreground'
+                          }`}>
+                            {formatPointsAboveTarget(item.Rendimento || 0, item.Competencia)}
+                          </span>
+                        </TableCell>
                           </TableRow>
                         );
                       })}
