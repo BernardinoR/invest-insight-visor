@@ -195,7 +195,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     const yearData = dataByYear[year];
     const mostRecentMonth = yearData[0]; // First item after sorting (most recent)
     
-    // Calculate year totals
+    // Calculate year totals and find best month
     const yearTotals = {
       "Patrimonio Inicial": yearData.reduce((sum, item) => sum + (item["Patrimonio Inicial"] || 0), 0),
       "Movimentação": yearData.reduce((sum, item) => sum + (item["Movimentação"] || 0), 0),
@@ -209,6 +209,17 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     const initialPatrimonio = yearData[yearData.length - 1]?.["Patrimonio Inicial"] || 0;
     const yearReturn = initialPatrimonio > 0 ? yearTotals["Ganho Financeiro"] / initialPatrimonio : 0;
 
+    // Calculate accumulated target for the year
+    let accumulatedTarget = 0;
+    if (marketData && marketData.length > 0) {
+      yearData.forEach(monthData => {
+        const marketPoint = marketData.find(point => point.competencia === monthData.Competencia);
+        if (marketPoint && marketPoint.clientTarget > 0) {
+          accumulatedTarget = (1 + accumulatedTarget) * (1 + marketPoint.clientTarget) - 1;
+        }
+      });
+    }
+
     // Find best performing month
     const bestMonth = yearData.reduce((best, current) => 
       (current.Rendimento || 0) > (best.Rendimento || 0) ? current : best
@@ -219,6 +230,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
       data: yearData,
       totals: yearTotals,
       yearReturn,
+      accumulatedTarget,
       bestMonth
     };
   });
@@ -424,8 +436,12 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                           </span>
                         </TableCell>
                         <TableCell>
-                          <span className="px-2 py-1 rounded-full text-sm font-medium bg-muted/20 text-muted-foreground">
-                            N/A
+                          <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                            yearSummary.accumulatedTarget >= 0 
+                              ? 'bg-muted/20 text-muted-foreground' 
+                              : 'bg-muted/20 text-muted-foreground'
+                          }`}>
+                            {yearSummary.accumulatedTarget > 0 ? formatPercentage(yearSummary.accumulatedTarget) : "N/A"}
                           </span>
                         </TableCell>
                       </TableRow>
