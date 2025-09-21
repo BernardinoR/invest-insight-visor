@@ -276,8 +276,8 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     totalTotals["Patrimonio Final"] = sortedAllData[0]["Patrimonio Final"] || 0;
   }
 
-  // Calculate total return percentage
-  const totalReturn = totalTotals["Patrimonio Final"] > 0 ? totalTotals["Ganho Financeiro"] / totalTotals["Patrimonio Final"] : 0;
+  // Calculate total return percentage using Patrimonio Inicial (correct base for return calculation)
+  const totalReturn = totalTotals["Patrimonio Inicial"] > 0 ? totalTotals["Ganho Financeiro"] / totalTotals["Patrimonio Inicial"] : 0;
 
   // Calculate total accumulated target since inception
   let totalAccumulatedTarget = 0;
@@ -595,7 +595,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                           : 'bg-muted/20 text-muted-foreground'
                       }`}>
                         {totalAccumulatedTarget > 0 ? 
-                          `${((totalReturn - totalAccumulatedTarget) * 100).toFixed(2)}pp` : 
+                          `${(totalReturn - totalAccumulatedTarget).toFixed(4)}pp` : 
                           "N/A"}
                       </span>
                     </TableCell>
