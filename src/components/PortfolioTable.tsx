@@ -223,7 +223,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     const mostRecentMonth = yearData[0]; // First item after sorting (most recent)
     
     // Get the oldest month for this specific year to calculate initial patrimony
-    const oldestMonthOfYear = yearData.sort((a, b) => {
+    const oldestMonthOfYear = [...yearData].sort((a, b) => {
       const [monthA] = a.Competencia.split('/');
       const [monthB] = b.Competencia.split('/');
       return parseInt(monthA) - parseInt(monthB);
