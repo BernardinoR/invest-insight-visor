@@ -213,9 +213,16 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     const yearData = dataByYear[year];
     const mostRecentMonth = yearData[0]; // First item after sorting (most recent)
     
+    // Get the oldest month for this specific year to calculate initial patrimony
+    const oldestMonthOfYear = yearData.sort((a, b) => {
+      const [monthA] = a.Competencia.split('/');
+      const [monthB] = b.Competencia.split('/');
+      return parseInt(monthA) - parseInt(monthB);
+    })[0];
+    
     // Calculate year totals and find best month
     const yearTotals = {
-      "Patrimonio Inicial": yearData.reduce((sum, item) => sum + (item["Patrimonio Inicial"] || 0), 0),
+      "Patrimonio Inicial": oldestMonthOfYear["Patrimonio Inicial"] || 0,
       "Movimentação": yearData.reduce((sum, item) => sum + (item["Movimentação"] || 0), 0),
       "Impostos": yearData.reduce((sum, item) => sum + (item.Impostos || 0), 0),
       "Ganho Financeiro": yearData.reduce((sum, item) => sum + (item["Ganho Financeiro"] || 0), 0),
