@@ -255,8 +255,22 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
 
   // Calculate overall totals
   const allData = Object.values(dataByYear).flat();
+  
+  // Calculate initial patrimony correctly - get the earliest month's inicial patrimony
+  let initialPatrimony = 0;
+  if (allData.length > 0) {
+    const sortedAllDataByDate = [...allData].sort((a, b) => {
+      const [monthA, yearA] = a.Competencia.split('/');
+      const [monthB, yearB] = b.Competencia.split('/');
+      const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+      const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+      return dateA.getTime() - dateB.getTime(); // Ascending order - earliest first
+    });
+    initialPatrimony = sortedAllDataByDate[0]["Patrimonio Inicial"] || 0;
+  }
+  
   const totalTotals = {
-    "Patrimonio Inicial": 0, // Always 0 for total
+    "Patrimonio Inicial": initialPatrimony,
     "Movimentação": allData.reduce((sum, item) => sum + (item["Movimentação"] || 0), 0),
     "Impostos": allData.reduce((sum, item) => sum + (item.Impostos || 0), 0),
     "Ganho Financeiro": allData.reduce((sum, item) => sum + (item["Ganho Financeiro"] || 0), 0),
@@ -276,7 +290,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     totalTotals["Patrimonio Final"] = sortedAllData[0]["Patrimonio Final"] || 0;
   }
 
-  // Calculate total return percentage using Patrimonio Inicial (correct base for return calculation)
+  // Calculate total return percentage using correct initial patrimony
   const totalReturn = totalTotals["Patrimonio Inicial"] > 0 ? totalTotals["Ganho Financeiro"] / totalTotals["Patrimonio Inicial"] : 0;
 
   // Calculate total accumulated target since inception
