@@ -471,11 +471,12 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
 
                       {/* Month rows (when expanded) */}
                       {expandedYears.has(yearSummary.year) && yearSummary.data.map((item) => {
+                        const monthPart = item.Competencia.split('/')[0];
                         const monthName = {
                           '01': 'JAN', '02': 'FEV', '03': 'MAR', '04': 'ABR',
                           '05': 'MAI', '06': 'JUN', '07': 'JUL', '08': 'AGO',
                           '09': 'SET', '10': 'OUT', '11': 'NOV', '12': 'DEZ'
-                        }[item.Competencia.split('/')[0]] || item.Competencia.split('/')[0];
+                        }[monthPart] || monthPart;
                         
                         const isBestMonth = item.Competencia === yearSummary.bestMonth.Competencia;
                         
