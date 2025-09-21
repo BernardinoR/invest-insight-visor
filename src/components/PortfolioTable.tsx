@@ -223,9 +223,8 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
       "Rendimento": yearData.reduce((sum, item) => sum + (item["Ganho Financeiro"] || 0), 0)
     };
 
-    // Calculate year percentage return
-    const initialPatrimonio = yearData[yearData.length - 1]?.["Patrimonio Inicial"] || 0;
-    const yearReturn = initialPatrimonio > 0 ? yearTotals["Ganho Financeiro"] / initialPatrimonio : 0;
+    // Calculate year accumulated return (compound monthly returns)
+    const yearReturn = calculateCompoundReturn(yearData.map(item => item.Rendimento || 0));
 
     // Calculate accumulated target for the year
     let accumulatedTarget = 0;
