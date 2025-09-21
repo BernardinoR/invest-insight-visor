@@ -161,10 +161,28 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     }
   }, [consolidadoData]);
 
-  // Use filtered data if available, otherwise use internal data
+  // Apply filtering based on filteredRange if provided
+  const getFilteredData = (data: ConsolidadoData[]) => {
+    if (!filteredRange?.inicio || !filteredRange?.fim) return data;
+    
+    const competenciaToDate = (competencia: string) => {
+      const [month, year] = competencia.split('/');
+      return new Date(parseInt(year), parseInt(month) - 1);
+    };
+    
+    const startDate = competenciaToDate(filteredRange.inicio);
+    const endDate = competenciaToDate(filteredRange.fim);
+    
+    return data.filter(item => {
+      const itemDate = competenciaToDate(item.Competencia);
+      return itemDate >= startDate && itemDate <= endDate;
+    });
+  };
+
+  // Use filtered data if available, otherwise apply filtering to internal data
   const rawData = filteredConsolidadoData && filteredConsolidadoData.length > 0
     ? filteredConsolidadoData
-    : consolidadoData;
+    : getFilteredData(consolidadoData);
 
   // Consolidate data by competencia
   const consolidatedData = consolidateByCompetencia(rawData);
