@@ -266,11 +266,23 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
        return dateA.getTime() - dateB.getTime(); // Ascending order - earliest first
      });
      
-     // Sum all initial patrimony from the earliest month across all assets
+     // DEBUG: Log the sorted data to understand the calculation
+     console.log('PortfolioTable - Sorted data by date:', sortedAllDataByDate.map(d => ({
+       competencia: d.Competencia,
+       patrimonioInicial: d["Patrimonio Inicial"]
+     })));
+     
+     // Get the earliest competencia and sum all initial patrimony for that month
      const earliestCompetencia = sortedAllDataByDate[0].Competencia;
-     initialPatrimony = allData
-       .filter(item => item.Competencia === earliestCompetencia)
-       .reduce((sum, item) => sum + (item["Patrimonio Inicial"] || 0), 0);
+     const earliestMonthData = rawData.filter(item => item.Competencia === earliestCompetencia);
+     initialPatrimony = earliestMonthData.reduce((sum, item) => sum + (item["Patrimonio Inicial"] || 0), 0);
+     
+     console.log('PortfolioTable - Initial patrimony calculation:', {
+       earliestCompetencia,
+       earliestMonthDataCount: earliestMonthData.length,
+       individualValues: earliestMonthData.map(d => d["Patrimonio Inicial"]),
+       initialPatrimony
+     });
    }
    
    const totalTotals = {
@@ -313,6 +325,14 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
        if (marketPoint && marketPoint.clientTarget > 0) {
          totalAccumulatedTarget = (1 + totalAccumulatedTarget) * (1 + marketPoint.clientTarget) - 1;
        }
+     });
+     
+     console.log('PortfolioTable - Target calculation:', {
+       totalReturn,
+       totalAccumulatedTarget,
+       differenceInPoints: ((totalReturn - totalAccumulatedTarget) * 100).toFixed(2),
+       marketDataLength: marketData.length,
+       sortedDataLength: sortedAllData.length
      });
    }
 
