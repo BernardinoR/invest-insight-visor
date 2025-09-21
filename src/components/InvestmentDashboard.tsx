@@ -401,7 +401,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           <PortfolioTable 
             selectedClient={selectedClient}
             onYearTotalsChange={handleYearTotalsChange}
-            filteredConsolidadoData={consolidadoData}
+            filteredConsolidadoData={filteredConsolidadoData}
             filteredRange={filteredRange}
           />
         </div>
