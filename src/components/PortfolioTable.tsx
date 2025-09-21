@@ -197,7 +197,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     return acc;
   }, {} as Record<string, ConsolidadoDataWithReturns[]>);
 
-  // Sort months within each year (newest first)
+  // Sort months within each year (newest first - more recent months at top)
   Object.keys(dataByYear).forEach(year => {
     dataByYear[year].sort((a, b) => {
       const [monthA, yearA] = a.Competencia.split('/');
@@ -212,6 +212,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
       if (yearNumA !== yearNumB) {
         return yearNumB - yearNumA;
       }
+      // Return monthNumB - monthNumA to show August before January within the same year
       return monthNumB - monthNumA;
     });
   });
