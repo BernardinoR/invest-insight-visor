@@ -289,8 +289,8 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     totalTotals["Patrimonio Final"] = sortedAllData[0]["Patrimonio Final"] || 0;
   }
 
-  // Calculate total return percentage using correct initial patrimony
-  const totalReturn = totalTotals["Patrimonio Inicial"] > 0 ? totalTotals["Ganho Financeiro"] / totalTotals["Patrimonio Inicial"] : 0;
+  // Calculate total accumulated return (compound all monthly returns)
+  const totalReturn = calculateCompoundReturn(consolidatedData.map(item => item.Rendimento || 0));
 
   // Calculate total accumulated target since inception
   let totalAccumulatedTarget = 0;
