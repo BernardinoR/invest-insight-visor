@@ -292,23 +292,14 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   // Calculate total accumulated return (compound all monthly returns)
   const totalReturn = calculateCompoundReturn(consolidatedData.map(item => item.Rendimento || 0));
 
-  // Calculate total accumulated target since inception
-  let totalAccumulatedTarget = 0;
+  // Get target accumulated return from market data (same logic as chart)
+  let totalTargetReturn = 0;
   if (marketData && marketData.length > 0) {
-    const sortedAllData = [...allData].sort((a, b) => {
-      const [monthA, yearA] = a.Competencia.split('/');
-      const [monthB, yearB] = b.Competencia.split('/');
-      const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-      const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
-      return dateA.getTime() - dateB.getTime();
-    });
-    
-    sortedAllData.forEach(monthData => {
-      const marketPoint = marketData.find(point => point.competencia === monthData.Competencia);
-      if (marketPoint && marketPoint.clientTarget > 0) {
-        totalAccumulatedTarget = (1 + totalAccumulatedTarget) * (1 + marketPoint.clientTarget) - 1;
-      }
-    });
+    // Find the most recent market data point
+    const mostRecentMarketData = marketData[marketData.length - 1];
+    if (mostRecentMarketData && mostRecentMarketData.accumulatedClientTarget !== undefined) {
+      totalTargetReturn = mostRecentMarketData.accumulatedClientTarget;
+    }
   }
 
   // Calculate correct totals for onYearTotalsChange
@@ -599,19 +590,19 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                         {formatPercentage(totalReturn)}
                       </span>
                     </TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-sm font-bold ${
-                        totalAccumulatedTarget > 0 && totalReturn >= totalAccumulatedTarget
-                          ? 'bg-success/20 text-success' 
-                          : totalAccumulatedTarget > 0 && totalReturn < totalAccumulatedTarget
-                          ? 'bg-destructive/20 text-destructive'
-                          : 'bg-muted/20 text-muted-foreground'
-                      }`}>
-                        {totalAccumulatedTarget > 0 ? 
-                          `${((totalReturn - totalAccumulatedTarget) * 100).toFixed(2)}pp` : 
-                          "N/A"}
-                      </span>
-                    </TableCell>
+                     <TableCell>
+                       <span className={`px-2 py-1 rounded-full text-sm font-bold ${
+                         totalTargetReturn > 0 && totalReturn >= totalTargetReturn
+                           ? 'bg-success/20 text-success' 
+                           : totalTargetReturn > 0 && totalReturn < totalTargetReturn
+                           ? 'bg-destructive/20 text-destructive'
+                           : 'bg-muted/20 text-muted-foreground'
+                       }`}>
+                         {totalTargetReturn > 0 ? 
+                           `${((totalReturn - totalTargetReturn) * 100).toFixed(2)}pp` : 
+                           "N/A"}
+                       </span>
+                     </TableCell>
                   </TableRow>
                 </>
               )}
