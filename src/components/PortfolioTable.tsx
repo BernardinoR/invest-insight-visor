@@ -292,24 +292,23 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   // Calculate total accumulated return (compound all monthly returns)
   const totalReturn = calculateCompoundReturn(consolidatedData.map(item => item.Rendimento || 0));
 
-  // Get total accumulated target from market data (same as chart)
+  // Calculate total accumulated target since inception
   let totalAccumulatedTarget = 0;
-  if (marketData && marketData.length > 0 && allData.length > 0) {
-    // Get the most recent month's accumulated target
+  if (marketData && marketData.length > 0) {
     const sortedAllData = [...allData].sort((a, b) => {
       const [monthA, yearA] = a.Competencia.split('/');
       const [monthB, yearB] = b.Competencia.split('/');
       const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
       const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
-      return dateB.getTime() - dateA.getTime();
+      return dateA.getTime() - dateB.getTime();
     });
     
-    const mostRecentCompetencia = sortedAllData[0]?.Competencia;
-    const mostRecentMarketPoint = marketData.find(point => point.competencia === mostRecentCompetencia);
-    
-    if (mostRecentMarketPoint) {
-      totalAccumulatedTarget = mostRecentMarketPoint.accumulatedClientTarget;
-    }
+    sortedAllData.forEach(monthData => {
+      const marketPoint = marketData.find(point => point.competencia === monthData.Competencia);
+      if (marketPoint && marketPoint.clientTarget > 0) {
+        totalAccumulatedTarget = (1 + totalAccumulatedTarget) * (1 + marketPoint.clientTarget) - 1;
+      }
+    });
   }
 
   // Calculate correct totals for onYearTotalsChange
