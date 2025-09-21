@@ -202,9 +202,17 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     dataByYear[year].sort((a, b) => {
       const [monthA, yearA] = a.Competencia.split('/');
       const [monthB, yearB] = b.Competencia.split('/');
-      const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-      const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
-      return dateB.getTime() - dateA.getTime();
+      // Convert to numbers for proper comparison
+      const monthNumA = parseInt(monthA);
+      const monthNumB = parseInt(monthB);
+      const yearNumA = parseInt(yearA);
+      const yearNumB = parseInt(yearB);
+      
+      // First sort by year (most recent first), then by month (most recent first)
+      if (yearNumA !== yearNumB) {
+        return yearNumB - yearNumA;
+      }
+      return monthNumB - monthNumA;
     });
   });
 
