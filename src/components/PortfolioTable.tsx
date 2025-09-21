@@ -252,55 +252,69 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     };
   });
 
-  // Calculate overall totals
-  const allData = Object.values(dataByYear).flat();
-  
-  // Calculate initial patrimony correctly - get the earliest month's inicial patrimony
-  let initialPatrimony = 0;
-  if (allData.length > 0) {
-    const sortedAllDataByDate = [...allData].sort((a, b) => {
-      const [monthA, yearA] = a.Competencia.split('/');
-      const [monthB, yearB] = b.Competencia.split('/');
-      const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-      const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
-      return dateA.getTime() - dateB.getTime(); // Ascending order - earliest first
-    });
-    initialPatrimony = sortedAllDataByDate[0]["Patrimonio Inicial"] || 0;
-  }
-  
-  const totalTotals = {
-    "Patrimonio Inicial": initialPatrimony,
-    "Movimentação": allData.reduce((sum, item) => sum + (item["Movimentação"] || 0), 0),
-    "Impostos": allData.reduce((sum, item) => sum + (item.Impostos || 0), 0),
-    "Ganho Financeiro": allData.reduce((sum, item) => sum + (item["Ganho Financeiro"] || 0), 0),
-    "Patrimonio Final": 0,
-    "Rendimento": 0
-  };
+   // Calculate overall totals
+   const allData = Object.values(dataByYear).flat();
+   
+   // Calculate initial patrimony correctly - get the earliest month's inicial patrimony
+   let initialPatrimony = 0;
+   if (allData.length > 0) {
+     const sortedAllDataByDate = [...allData].sort((a, b) => {
+       const [monthA, yearA] = a.Competencia.split('/');
+       const [monthB, yearB] = b.Competencia.split('/');
+       const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+       const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+       return dateA.getTime() - dateB.getTime(); // Ascending order - earliest first
+     });
+     
+     // Sum all initial patrimony from the earliest month across all assets
+     const earliestCompetencia = sortedAllDataByDate[0].Competencia;
+     initialPatrimony = allData
+       .filter(item => item.Competencia === earliestCompetencia)
+       .reduce((sum, item) => sum + (item["Patrimonio Inicial"] || 0), 0);
+   }
+   
+   const totalTotals = {
+     "Patrimonio Inicial": initialPatrimony,
+     "Movimentação": allData.reduce((sum, item) => sum + (item["Movimentação"] || 0), 0),
+     "Impostos": allData.reduce((sum, item) => sum + (item.Impostos || 0), 0),
+     "Ganho Financeiro": allData.reduce((sum, item) => sum + (item["Ganho Financeiro"] || 0), 0),
+     "Patrimonio Final": 0,
+     "Rendimento": 0
+   };
 
-  // Get most recent patrimonio final from all data
-  if (allData.length > 0) {
-    const sortedAllData = [...allData].sort((a, b) => {
-      const [monthA, yearA] = a.Competencia.split('/');
-      const [monthB, yearB] = b.Competencia.split('/');
-      const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-      const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
-      return dateB.getTime() - dateA.getTime();
-    });
-    totalTotals["Patrimonio Final"] = sortedAllData[0]["Patrimonio Final"] || 0;
-  }
+   // Get most recent patrimonio final from all data
+   if (allData.length > 0) {
+     const sortedAllData = [...allData].sort((a, b) => {
+       const [monthA, yearA] = a.Competencia.split('/');
+       const [monthB, yearB] = b.Competencia.split('/');
+       const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+       const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+       return dateB.getTime() - dateA.getTime();
+     });
+     totalTotals["Patrimonio Final"] = sortedAllData[0]["Patrimonio Final"] || 0;
+   }
 
-  // Calculate total accumulated return (compound all monthly returns)
-  const totalReturn = calculateCompoundReturn(consolidatedData.map(item => item.Rendimento || 0));
+   // Calculate total accumulated return (compound all monthly returns)
+   const totalReturn = calculateCompoundReturn(consolidatedData.map(item => item.Rendimento || 0));
 
-  // Get target accumulated return from market data (same logic as chart)
-  let totalTargetReturn = 0;
-  if (marketData && marketData.length > 0) {
-    // Find the most recent market data point
-    const mostRecentMarketData = marketData[marketData.length - 1];
-    if (mostRecentMarketData && mostRecentMarketData.accumulatedClientTarget !== undefined) {
-      totalTargetReturn = mostRecentMarketData.accumulatedClientTarget;
-    }
-  }
+   // Calculate total accumulated target since inception (original logic)
+   let totalAccumulatedTarget = 0;
+   if (marketData && marketData.length > 0) {
+     const sortedAllData = [...allData].sort((a, b) => {
+       const [monthA, yearA] = a.Competencia.split('/');
+       const [monthB, yearB] = b.Competencia.split('/');
+       const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+       const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+       return dateA.getTime() - dateB.getTime();
+     });
+     
+     sortedAllData.forEach(monthData => {
+       const marketPoint = marketData.find(point => point.competencia === monthData.Competencia);
+       if (marketPoint && marketPoint.clientTarget > 0) {
+         totalAccumulatedTarget = (1 + totalAccumulatedTarget) * (1 + marketPoint.clientTarget) - 1;
+       }
+     });
+   }
 
   // Calculate correct totals for onYearTotalsChange
   useEffect(() => {
@@ -592,14 +606,14 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                     </TableCell>
                      <TableCell>
                        <span className={`px-2 py-1 rounded-full text-sm font-bold ${
-                         totalTargetReturn > 0 && totalReturn >= totalTargetReturn
+                         totalAccumulatedTarget > 0 && totalReturn >= totalAccumulatedTarget
                            ? 'bg-success/20 text-success' 
-                           : totalTargetReturn > 0 && totalReturn < totalTargetReturn
+                           : totalAccumulatedTarget > 0 && totalReturn < totalAccumulatedTarget
                            ? 'bg-destructive/20 text-destructive'
                            : 'bg-muted/20 text-muted-foreground'
                        }`}>
-                         {totalTargetReturn > 0 ? 
-                           `${((totalReturn - totalTargetReturn) * 100).toFixed(2)}pp` : 
+                         {totalAccumulatedTarget > 0 ? 
+                           `${((totalReturn - totalAccumulatedTarget) * 100).toFixed(2)}pp` : 
                            "N/A"}
                        </span>
                      </TableCell>
