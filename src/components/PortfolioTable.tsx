@@ -623,9 +623,9 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                           ? 'bg-destructive/20 text-destructive'
                           : 'bg-muted/20 text-muted-foreground'
                       }`}>
-                        {totalAccumulatedTarget > 0 ? 
-                          `${((totalReturn - totalAccumulatedTarget) * 100).toFixed(2)}pp` : 
-                          "N/A"}
+                      {totalAccumulatedTarget > 0 ? 
+                        `${(totalReturn - totalAccumulatedTarget).toFixed(2)}pp` : 
+                        "N/A"}
                       </span>
                     </TableCell>
                   </TableRow>
