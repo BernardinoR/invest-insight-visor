@@ -343,8 +343,8 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     }
     
     return { 
-      portfolioReturn: accumulated * 100, // Convert to percentage like chart
-      targetReturn: targetAccumulated * 100 // Convert to percentage like chart
+      portfolioReturn: accumulated, // Keep as decimal for formatPercentage
+      targetReturn: targetAccumulated // Keep as decimal for formatPercentage
     };
   };
 
@@ -635,7 +635,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                           ? 'bg-success/20 text-success' 
                           : 'bg-destructive/20 text-destructive'
                       }`}>
-                        {formatPercentage(totalReturn / 100)}
+                        {formatPercentage(totalReturn)}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -647,7 +647,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                           : 'bg-muted/20 text-muted-foreground'
                       }`}>
                        {totalAccumulatedTarget !== undefined ? 
-                         `${((totalReturn - totalAccumulatedTarget) / 100).toFixed(2)}pp` : 
+                         `${(totalReturn - totalAccumulatedTarget).toFixed(2)}pp` : 
                          "N/A"}
                       </span>
                     </TableCell>
