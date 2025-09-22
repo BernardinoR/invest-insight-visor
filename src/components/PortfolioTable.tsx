@@ -305,27 +305,48 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     totalTotals["Patrimonio Final"] = sortedAllData[0]["Patrimonio Final"] || 0;
   }
 
-  // Calculate total accumulated return (compound all monthly returns)
-  const totalReturn = calculateCompoundReturn(consolidatedData.map(item => item.Rendimento || 0));
-
-  // Calculate total accumulated target since inception
-  let totalAccumulatedTarget = 0;
-  if (marketData && marketData.length > 0) {
-    const sortedAllData = [...allData].sort((a, b) => {
-      const [monthA, yearA] = a.Competencia.split('/');
-      const [monthB, yearB] = b.Competencia.split('/');
-      const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-      const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
-      return dateA.getTime() - dateB.getTime();
+  // Calculate accumulated returns like the chart does
+  const calculateAccumulatedReturns = () => {
+    if (consolidatedData.length === 0) return { portfolioReturn: 0, targetReturn: 0 };
+    
+    let accumulated = 0;
+    
+    // Calculate compound accumulated returns like in PerformanceChart
+    consolidatedData.forEach((item) => {
+      const monthlyReturn = Number(item.Rendimento) || 0;
+      accumulated = (1 + accumulated) * (1 + monthlyReturn) - 1;
     });
     
-    sortedAllData.forEach(monthData => {
-      const marketPoint = marketData.find(point => point.competencia === monthData.Competencia);
-      if (marketPoint && marketPoint.clientTarget > 0) {
-        totalAccumulatedTarget = (1 + totalAccumulatedTarget) * (1 + marketPoint.clientTarget) - 1;
+    // Calculate target return using the same method as the chart
+    let targetAccumulated = 0;
+    if (marketData && marketData.length > 0) {
+      const sortedData = [...consolidatedData].sort((a, b) => {
+        const [monthA, yearA] = a.Competencia.split('/');
+        const [monthB, yearB] = b.Competencia.split('/');
+        const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+        const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+        return dateA.getTime() - dateB.getTime();
+      });
+      
+      const firstCompetencia = sortedData[0]?.Competencia;
+      const lastCompetencia = sortedData[sortedData.length - 1]?.Competencia;
+      
+      const firstMarketPoint = marketData.find(m => m.competencia === firstCompetencia);
+      const lastMarketPoint = marketData.find(m => m.competencia === lastCompetencia);
+      
+      if (firstMarketPoint && lastMarketPoint) {
+        // Use the same calculation as in PerformanceChart
+        targetAccumulated = (1 + lastMarketPoint.accumulatedClientTarget) / (1 + firstMarketPoint.accumulatedClientTarget) - 1;
       }
-    });
-  }
+    }
+    
+    return { 
+      portfolioReturn: accumulated * 100, // Convert to percentage like chart
+      targetReturn: targetAccumulated * 100 // Convert to percentage like chart
+    };
+  };
+
+  const { portfolioReturn: totalReturn, targetReturn: totalAccumulatedTarget } = calculateAccumulatedReturns();
 
   // Calculate correct totals for onYearTotalsChange
   useEffect(() => {
@@ -623,7 +644,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                           ? 'bg-destructive/20 text-destructive'
                           : 'bg-muted/20 text-muted-foreground'
                       }`}>
-                      {totalAccumulatedTarget > 0 ? 
+                      {totalAccumulatedTarget !== undefined ? 
                         `${(totalReturn - totalAccumulatedTarget).toFixed(2)}pp` : 
                         "N/A"}
                       </span>
