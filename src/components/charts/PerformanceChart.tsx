@@ -114,10 +114,27 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
     return dateA.getTime() - dateB.getTime();
   });
 
-  // Get available competencias for custom selector
+  // Get available competencias for custom selector - sorted chronologically
   const availableCompetencias = useMemo(() => {
-    return [...new Set(consolidatedData.map(item => item.Competencia))].sort();
+    return [...new Set(consolidatedData.map(item => item.Competencia))]
+      .sort((a, b) => {
+        const [monthA, yearA] = a.split('/');
+        const [monthB, yearB] = b.split('/');
+        const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+        const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+        return dateA.getTime() - dateB.getTime();
+      });
   }, [consolidatedData]);
+
+  // Format competencia display like in CompetenciaSeletor
+  const formatCompetenciaDisplay = (competencia: string) => {
+    const [month, year] = competencia.split('/');
+    const monthNames = [
+      'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+      'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
+    ];
+    return `${monthNames[parseInt(month) - 1]}/${year}`;
+  };
 
   // Filter data based on selected period
   const getFilteredData = () => {
@@ -483,9 +500,9 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                           <SelectValue placeholder="Selecione a competência inicial" />
                         </SelectTrigger>
                         <SelectContent>
-                          {availableCompetencias.map((competencia) => (
-                            <SelectItem key={competencia} value={competencia}>
-                              {competencia}
+                           {availableCompetencias.map((competencia) => (
+                             <SelectItem key={competencia} value={competencia}>
+                               {formatCompetenciaDisplay(competencia)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -498,9 +515,9 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                           <SelectValue placeholder="Selecione a competência final" />
                         </SelectTrigger>
                         <SelectContent>
-                          {availableCompetencias.map((competencia) => (
-                            <SelectItem key={competencia} value={competencia}>
-                              {competencia}
+                           {availableCompetencias.map((competencia) => (
+                             <SelectItem key={competencia} value={competencia}>
+                               {formatCompetenciaDisplay(competencia)}
                             </SelectItem>
                           ))}
                         </SelectContent>
