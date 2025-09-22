@@ -305,29 +305,31 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     totalTotals["Patrimonio Final"] = sortedAllData[0]["Patrimonio Final"] || 0;
   }
 
-  // Calculate accumulated returns like the chart does
+  // Calculate accumulated returns exactly like the chart does
   const calculateAccumulatedReturns = () => {
     if (consolidatedData.length === 0) return { portfolioReturn: 0, targetReturn: 0 };
     
+    // Sort data chronologically like the chart
+    const sortedData = [...consolidatedData].sort((a, b) => {
+      const [monthA, yearA] = a.Competencia.split('/');
+      const [monthB, yearB] = b.Competencia.split('/');
+      const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+      const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+      return dateA.getTime() - dateB.getTime();
+    });
+    
     let accumulated = 0;
     
-    // Calculate compound accumulated returns like in PerformanceChart
-    consolidatedData.forEach((item) => {
+    // Calculate compound accumulated returns exactly like PerformanceChart
+    sortedData.forEach((item) => {
       const monthlyReturn = Number(item.Rendimento) || 0;
+      // Compound interest formula: (1 + accumulated) * (1 + monthly_return) - 1
       accumulated = (1 + accumulated) * (1 + monthlyReturn) - 1;
     });
     
     // Calculate target return using the same method as the chart
     let targetAccumulated = 0;
     if (marketData && marketData.length > 0) {
-      const sortedData = [...consolidatedData].sort((a, b) => {
-        const [monthA, yearA] = a.Competencia.split('/');
-        const [monthB, yearB] = b.Competencia.split('/');
-        const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-        const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
-        return dateA.getTime() - dateB.getTime();
-      });
-      
       const firstCompetencia = sortedData[0]?.Competencia;
       const lastCompetencia = sortedData[sortedData.length - 1]?.Competencia;
       
