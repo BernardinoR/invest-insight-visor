@@ -635,7 +635,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                           ? 'bg-success/20 text-success' 
                           : 'bg-destructive/20 text-destructive'
                       }`}>
-                        {formatPercentage(totalReturn)}
+                        {formatPercentage(totalReturn / 100)}
                       </span>
                     </TableCell>
                     <TableCell>
