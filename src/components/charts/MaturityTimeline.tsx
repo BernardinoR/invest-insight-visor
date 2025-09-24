@@ -26,7 +26,7 @@ interface MaturityYearDataItem {
 export function MaturityTimeline({ selectedClient, dadosData: propDadosData }: MaturityTimelineProps) {
   const [dadosData, setDadosData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedAssetClass, setSelectedAssetClass] = useState<string>('all');
+  const [selectedAssetClass, setSelectedAssetClass] = useState<string>('Pós fixado');
 
   useEffect(() => {
     if (propDadosData) {
@@ -89,10 +89,15 @@ export function MaturityTimeline({ selectedClient, dadosData: propDadosData }: M
   // Use the most recent data within the filtered period
   const filteredData = getMostRecentData(dadosData);
 
-  // Filter by asset class if a specific one is selected
-  const assetClassFilteredData = selectedAssetClass === 'all' 
-    ? filteredData 
-    : filteredData.filter(item => item["Classe do ativo"] === selectedAssetClass);
+  // Filter by asset class - map display names to actual database values
+  const assetClassMapping = {
+    'Pós fixado': 'CDI - Títulos',
+    'Inflação': 'Inflação - Títulos', 
+    'Pré fixado': 'Pré fixado - Títulos'
+  };
+  
+  const actualAssetClass = assetClassMapping[selectedAssetClass as keyof typeof assetClassMapping];
+  const assetClassFilteredData = filteredData.filter(item => item["Classe do ativo"] === actualAssetClass);
 
   // Group investments by maturity year using filtered data
   const maturityData = assetClassFilteredData
@@ -152,8 +157,12 @@ export function MaturityTimeline({ selectedClient, dadosData: propDadosData }: M
       return parseInt(a.year) - parseInt(b.year);
     });
 
-  // Get unique asset classes for filter buttons
-  const assetClasses = [...new Set(filteredData.map(item => item["Classe do ativo"]).filter(Boolean))];
+  // Asset class options
+  const assetClassOptions = [
+    { key: 'Pós fixado', label: 'Pós fixado' },
+    { key: 'Inflação', label: 'Inflação' },
+    { key: 'Pré fixado', label: 'Pré fixado' }
+  ];
   
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -204,23 +213,15 @@ export function MaturityTimeline({ selectedClient, dadosData: propDadosData }: M
           
           {/* Asset Class Filter Buttons */}
           <div className="flex items-center gap-1">
-            <Button
-              variant={selectedAssetClass === 'all' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setSelectedAssetClass('all')}
-              className="text-xs px-3 py-1 h-8"
-            >
-              Todos
-            </Button>
-            {assetClasses.map((assetClass) => (
+            {assetClassOptions.map((option) => (
               <Button
-                key={assetClass}
-                variant={selectedAssetClass === assetClass ? "default" : "ghost"}
+                key={option.key}
+                variant={selectedAssetClass === option.key ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setSelectedAssetClass(assetClass)}
+                onClick={() => setSelectedAssetClass(option.key)}
                 className="text-xs px-3 py-1 h-8"
               >
-                {assetClass}
+                {option.label}
               </Button>
             ))}
           </div>
@@ -229,7 +230,7 @@ export function MaturityTimeline({ selectedClient, dadosData: propDadosData }: M
       <CardContent>
         {chartData.length === 0 ? (
           <div className="flex items-center justify-center h-[400px] text-muted-foreground">
-            <p>Nenhum dado de vencimento disponível {selectedAssetClass !== 'all' ? `para ${selectedAssetClass}` : `para ${selectedClient}`}</p>
+            <p>Nenhum dado de vencimento disponível para {selectedAssetClass}</p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={400}>
