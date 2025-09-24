@@ -32,7 +32,7 @@ function decodeClientName(clientName?: string): string | undefined {
 }
 
 export function PerformanceChart({ consolidadoData, clientName }: PerformanceChartProps) {
-  const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'custom'>('12months');
+  const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'all' | 'custom'>('12months');
   const [customStartCompetencia, setCustomStartCompetencia] = useState<string>('');
   const [customEndCompetencia, setCustomEndCompetencia] = useState<string>('');
   const [showCustomSelector, setShowCustomSelector] = useState(false);
@@ -160,6 +160,9 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         break;
       case '12months':
         filteredData = sortedData.slice(-12);
+        break;
+      case 'all':
+        filteredData = sortedData; // Show all available data
         break;
       case 'custom':
         if (customStartCompetencia && customEndCompetencia) {
@@ -388,6 +391,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
     { id: 'month', label: 'Mês' },
     { id: 'year', label: 'Ano' },
     { id: '12months', label: '12M' },
+    { id: 'all', label: 'Ótimo' },
     { id: 'custom', label: 'Personalizado' }
   ];
 
