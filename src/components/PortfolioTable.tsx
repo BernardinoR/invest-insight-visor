@@ -451,8 +451,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                 <TableHead className="text-muted-foreground">Competência</TableHead>
                 <TableHead className="text-muted-foreground">Patrimônio Inicial</TableHead>
                 <TableHead className="text-muted-foreground">Movimentações</TableHead>
-                <TableHead className="text-muted-foreground">IR Pago</TableHead>
-                <TableHead className="text-muted-foreground">IOF Pago</TableHead>
+                <TableHead className="text-muted-foreground">Imposto</TableHead>
                 <TableHead className="text-muted-foreground">Patrimônio Final</TableHead>
                 <TableHead className="text-muted-foreground">Rendimento</TableHead>
                 <TableHead className="text-muted-foreground">Rentabilidade</TableHead>
@@ -462,13 +461,13 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground">
                     Carregando dados...
                   </TableCell>
                 </TableRow>
               ) : yearSummaries.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground">
                     Nenhum dado encontrado
                   </TableCell>
                 </TableRow>
@@ -505,9 +504,6 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                         </TableCell>
                         <TableCell className="text-destructive font-medium">
                           {formatCurrency(yearSummary.totals.Impostos)}
-                        </TableCell>
-                        <TableCell className="text-destructive font-medium">
-                          R$ 0,00
                         </TableCell>
                         <TableCell className="font-medium text-foreground">
                           {formatCurrency(yearSummary.totals["Patrimonio Final"])}
@@ -568,9 +564,6 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                             <TableCell className="text-destructive font-medium">
                               {formatCurrency(item.Impostos)}
                             </TableCell>
-                            <TableCell className="text-destructive font-medium">
-                              R$ 0,00
-                            </TableCell>
                             <TableCell className="font-medium text-foreground">
                               {formatCurrency(item["Patrimonio Final"])}
                             </TableCell>
@@ -619,9 +612,6 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                     </TableCell>
                     <TableCell className="text-destructive font-bold">
                       {formatCurrency(totalTotals.Impostos)}
-                    </TableCell>
-                    <TableCell className="text-destructive font-bold">
-                      R$ 0,00
                     </TableCell>
                     <TableCell className="font-bold text-foreground">
                       {formatCurrency(totalTotals["Patrimonio Final"])}
