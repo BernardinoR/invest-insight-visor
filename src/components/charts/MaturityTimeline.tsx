@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,7 @@ interface MaturityYearDataItem {
 export function MaturityTimeline({ selectedClient, dadosData: propDadosData }: MaturityTimelineProps) {
   const [dadosData, setDadosData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedAssetClass, setSelectedAssetClass] = useState<string>('all');
 
   useEffect(() => {
     if (propDadosData) {
@@ -87,8 +89,13 @@ export function MaturityTimeline({ selectedClient, dadosData: propDadosData }: M
   // Use the most recent data within the filtered period
   const filteredData = getMostRecentData(dadosData);
 
+  // Filter by asset class if a specific one is selected
+  const assetClassFilteredData = selectedAssetClass === 'all' 
+    ? filteredData 
+    : filteredData.filter(item => item["Classe do ativo"] === selectedAssetClass);
+
   // Group investments by maturity year using filtered data
-  const maturityData = filteredData
+  const maturityData = assetClassFilteredData
     .filter(investment => investment.Vencimento && investment["Classe do ativo"])
     .reduce((acc, investment) => {
       const maturityDate = new Date(investment.Vencimento);
@@ -145,6 +152,9 @@ export function MaturityTimeline({ selectedClient, dadosData: propDadosData }: M
       return parseInt(a.year) - parseInt(b.year);
     });
 
+  // Get unique asset classes for filter buttons
+  const assetClasses = [...new Set(filteredData.map(item => item["Classe do ativo"]).filter(Boolean))];
+  
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -186,13 +196,40 @@ export function MaturityTimeline({ selectedClient, dadosData: propDadosData }: M
   return (
     <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
       <CardHeader>
-        <CardTitle className="text-foreground">Vencimentos por Estratégia</CardTitle>
-        <p className="text-sm text-muted-foreground">Distribuição por data de vencimento</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-foreground">Vencimentos por Estratégia</CardTitle>
+            <p className="text-sm text-muted-foreground">Distribuição por data de vencimento</p>
+          </div>
+          
+          {/* Asset Class Filter Buttons */}
+          <div className="flex items-center gap-1">
+            <Button
+              variant={selectedAssetClass === 'all' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSelectedAssetClass('all')}
+              className="text-xs px-3 py-1 h-8"
+            >
+              Todos
+            </Button>
+            {assetClasses.map((assetClass) => (
+              <Button
+                key={assetClass}
+                variant={selectedAssetClass === assetClass ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setSelectedAssetClass(assetClass)}
+                className="text-xs px-3 py-1 h-8"
+              >
+                {assetClass}
+              </Button>
+            ))}
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {chartData.length === 0 ? (
           <div className="flex items-center justify-center h-[400px] text-muted-foreground">
-            <p>Nenhum dado de vencimento disponível para {selectedClient}</p>
+            <p>Nenhum dado de vencimento disponível {selectedAssetClass !== 'all' ? `para ${selectedAssetClass}` : `para ${selectedClient}`}</p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={400}>
