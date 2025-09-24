@@ -91,9 +91,9 @@ export function MaturityTimeline({ selectedClient, dadosData: propDadosData }: M
 
   // Filter by asset class - map display names to actual database values
   const assetClassMapping = {
-    'Pós fixado': 'CDI - Títulos',
-    'Inflação': 'Inflação - Títulos', 
-    'Pré fixado': 'Pré fixado - Títulos'
+    'Pós fixado': 'CDI - Titulos',
+    'Inflação': 'Inflação - Titulos', 
+    'Pré fixado': 'Pré Fixado - Titulos'
   };
   
   const actualAssetClass = assetClassMapping[selectedAssetClass as keyof typeof assetClassMapping];
