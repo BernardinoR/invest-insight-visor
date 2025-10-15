@@ -270,21 +270,49 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             </CardHeader>
             <CardContent>
                <div className="text-2xl font-bold text-foreground">
-                 {hasData ? `${(displayRendimentoValue * 100).toFixed(2)}%` : "--%"}
+                 {(() => {
+                   if (!hasData || consolidadoData.length === 0) return "--%";
+                   
+                   // Get the most recent competencia from the original data
+                   const mostRecentEntry = consolidadoData.reduce((latest, current) => {
+                     return current.Competencia > latest.Competencia ? current : latest;
+                   });
+                   
+                   // Get all entries for the most recent competencia
+                   const mostRecentEntries = consolidadoData.filter(
+                     item => item.Competencia === mostRecentEntry.Competencia
+                   );
+                   
+                   // Calculate weighted average rendimento
+                   const totalPatrimonioWeighted = mostRecentEntries.reduce((sum, entry) => 
+                     sum + (entry["Patrimonio Final"] || 0), 0);
+                   
+                   if (totalPatrimonioWeighted === 0) return "--%";
+                   
+                   const weightedRendimento = mostRecentEntries.reduce((sum, entry) => {
+                     const patrimonio = entry["Patrimonio Final"] || 0;
+                     const rendimento = entry.Rendimento || 0;
+                     return sum + (rendimento * patrimonio);
+                   }, 0);
+                   
+                   const avgRendimento = weightedRendimento / totalPatrimonioWeighted;
+                   return `${(avgRendimento * 100).toFixed(2)}%`;
+                 })()}
                </div>
                <p className="text-xs text-success">
                  {(() => {
                    if (!hasData) return "Aguardando dados";
                    
-                   // Get IPCA for the selected month from marketData
-                   const targetCompetencia = filteredRange.fim || 
-                     (consolidadoData.length > 0 ? consolidadoData.reduce((latest, current) => {
-                       return current.Competencia > latest.Competencia ? current : latest;
-                     }).Competencia : null);
+                   // Get the most recent competencia from consolidado data
+                   const mostRecentCompetencia = consolidadoData.length > 0 
+                     ? consolidadoData.reduce((latest, current) => {
+                         return current.Competencia > latest.Competencia ? current : latest;
+                       }).Competencia 
+                     : null;
                    
-                   if (!targetCompetencia) return "vs IPCA: --";
+                   if (!mostRecentCompetencia) return "vs IPCA: --";
                    
-                   const ipcaData = marketData.find(item => item.competencia === targetCompetencia);
+                   const ipcaData = marketData.find(item => item.competencia === mostRecentCompetencia);
                    if (ipcaData && ipcaData.ipca !== 0) {
                      return `vs IPCA: ${ipcaData.ipca >= 0 ? "+" : ""}${(ipcaData.ipca * 100).toFixed(2)}%`;
                    }
