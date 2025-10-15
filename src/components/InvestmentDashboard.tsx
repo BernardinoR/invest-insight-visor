@@ -289,14 +289,23 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                  {(() => {
                    if (!hasData || consolidadoData.length === 0) return "--%";
                    
-                   // Get the most recent competencia from the original data
-                   const mostRecentEntry = consolidadoData.reduce((latest, current) => {
-                     return current.Competencia > latest.Competencia ? current : latest;
+                   // Get all competencias and sort them properly
+                   const allCompetencias = consolidadoData.map(item => item.Competencia).filter(Boolean);
+                   if (allCompetencias.length === 0) return "--%";
+                   
+                   // Sort by competencia (MM/YYYY format) to get the most recent
+                   const sortedCompetencias = allCompetencias.sort((a, b) => {
+                     const [monthA, yearA] = a.split('/').map(Number);
+                     const [monthB, yearB] = b.split('/').map(Number);
+                     if (yearA !== yearB) return yearB - yearA;
+                     return monthB - monthA;
                    });
+                   
+                   const mostRecentCompetencia = sortedCompetencias[0];
                    
                    // Get all entries for the most recent competencia
                    const mostRecentEntries = consolidadoData.filter(
-                     item => item.Competencia === mostRecentEntry.Competencia
+                     item => item.Competencia === mostRecentCompetencia
                    );
                    
                    // Calculate weighted average rendimento
