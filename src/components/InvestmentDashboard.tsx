@@ -78,15 +78,31 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     setYearTotals(totals);
   }, []);
 
-  // Calculate rendimento from the final competencia selected - weighted average across all institutions
+  // Calculate rendimento from the most recent competencia available - weighted average across all institutions
   const getRendimentoFromFinalCompetencia = () => {
-    if (!filteredRange.fim || filteredConsolidadoData.length === 0) {
-      return totalRendimento; // fallback to original
+    if (consolidadoData.length === 0) {
+      return totalRendimento;
     }
     
-    // Find all entries with the final competencia
-    const finalCompetenciaEntries = filteredConsolidadoData.filter(
-      item => item.Competencia === filteredRange.fim
+    // Find the most recent competencia from all data (not filtered)
+    const allCompetencias = consolidadoData.map(item => item.Competencia).filter(Boolean);
+    if (allCompetencias.length === 0) {
+      return totalRendimento;
+    }
+    
+    // Sort by competencia (MM/YYYY format) to get the most recent
+    const sortedCompetencias = allCompetencias.sort((a, b) => {
+      const [monthA, yearA] = a.split('/').map(Number);
+      const [monthB, yearB] = b.split('/').map(Number);
+      if (yearA !== yearB) return yearB - yearA;
+      return monthB - monthA;
+    });
+    
+    const mostRecentCompetencia = sortedCompetencias[0];
+    
+    // Find all entries with the most recent competencia
+    const finalCompetenciaEntries = consolidadoData.filter(
+      item => item.Competencia === mostRecentCompetencia
     );
     
     if (finalCompetenciaEntries.length === 0) {
