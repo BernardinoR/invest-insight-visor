@@ -324,9 +324,17 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
   const getMostRecentData = (data: typeof dadosData) => {
     if (data.length === 0) return [];
     
-    // Find the most recent competencia
+    // Convert competencia string to date for proper comparison
+    const competenciaToDate = (competencia: string) => {
+      const [month, year] = competencia.split('/');
+      return new Date(parseInt(year), parseInt(month) - 1);
+    };
+    
+    // Find the most recent competencia using date comparison
     const mostRecentCompetencia = data.reduce((latest, current) => {
-      return current.Competencia > latest.Competencia ? current : latest;
+      const latestDate = competenciaToDate(latest.Competencia);
+      const currentDate = competenciaToDate(current.Competencia);
+      return currentDate > latestDate ? current : latest;
     }).Competencia;
     
     // Return all records with the most recent competencia
