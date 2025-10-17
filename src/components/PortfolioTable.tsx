@@ -518,7 +518,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     <>
       {/* Performance Consolidada por Instituição */}
       {institutionSummary.length > 0 && (
-        <Card className="bg-gradient-card border-border/50 shadow-elegant-md mb-8">
+        <Card className="relative bg-gradient-card border-border/50 shadow-elegant-md mb-8 overflow-visible">
           <CardHeader>
             <div>
               <CardTitle className="text-foreground">Performance Consolidada</CardTitle>
@@ -533,89 +533,87 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
             </div>
           </CardHeader>
           <CardContent className="pb-4 pt-2">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-              {/* Table */}
-              <div className="flex flex-col h-full">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-border/50">
-                      <TableHead className="text-muted-foreground">Instituição</TableHead>
-                      <TableHead className="text-muted-foreground text-right">Patrimônio</TableHead>
-                      <TableHead className="text-muted-foreground text-right">% Alocação</TableHead>
+            {/* Table - takes full width on mobile, left side on desktop */}
+            <div className="lg:pr-80">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border/50">
+                    <TableHead className="text-muted-foreground">Instituição</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Patrimônio</TableHead>
+                    <TableHead className="text-muted-foreground text-right">% Alocação</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {institutionSummary.map((item, index) => (
+                    <TableRow 
+                      key={index} 
+                      className={`border-border/50 cursor-pointer transition-colors ${
+                        selectedInstitution === item.institution 
+                          ? 'bg-primary/10' 
+                          : 'hover:bg-muted/20'
+                      }`}
+                      onClick={() => onInstitutionClick?.(item.institution)}
+                    >
+                      <TableCell className="flex items-center gap-2">
+                        <div 
+                          className="w-1 h-4 rounded-sm shadow-sm" 
+                          style={{ backgroundColor: INSTITUTION_COLORS[index % INSTITUTION_COLORS.length] }}
+                        ></div>
+                        <span className="font-medium text-foreground">{item.institution}</span>
+                      </TableCell>
+                      <TableCell className="text-right text-foreground">
+                        {formatCurrency(item.patrimonio)}
+                      </TableCell>
+                      <TableCell className="text-right text-foreground font-medium">
+                        {totalInstitutionsPatrimonio > 0 
+                          ? `${((item.patrimonio / totalInstitutionsPatrimonio) * 100).toFixed(2)}%`
+                          : '0.00%'
+                        }
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {institutionSummary.map((item, index) => (
-                      <TableRow 
-                        key={index} 
-                        className={`border-border/50 cursor-pointer transition-colors ${
-                          selectedInstitution === item.institution 
-                            ? 'bg-primary/10' 
-                            : 'hover:bg-muted/20'
-                        }`}
-                        onClick={() => onInstitutionClick?.(item.institution)}
-                      >
-                        <TableCell className="flex items-center gap-2">
-                          <div 
-                            className="w-1 h-4 rounded-sm shadow-sm" 
-                            style={{ backgroundColor: INSTITUTION_COLORS[index % INSTITUTION_COLORS.length] }}
-                          ></div>
-                          <span className="font-medium text-foreground">{item.institution}</span>
-                        </TableCell>
-                        <TableCell className="text-right text-foreground">
-                          {formatCurrency(item.patrimonio)}
-                        </TableCell>
-                        <TableCell className="text-right text-foreground font-medium">
-                          {totalInstitutionsPatrimonio > 0 
-                            ? `${((item.patrimonio / totalInstitutionsPatrimonio) * 100).toFixed(2)}%`
-                            : '0.00%'
-                          }
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
 
-              {/* Pie Chart */}
-              <div className="relative flex flex-col items-center justify-center">
-                <div className="relative">
-                  <ResponsiveContainer width="100%" height={350} minWidth={320}>
-                    <PieChart width={350} height={350}>
-                      <Pie
-                        data={institutionChartData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={95}
-                        outerRadius={110}
-                        paddingAngle={2}
-                        dataKey="patrimonio"
-                        stroke="none"
-                        strokeWidth={0}
-                      >
-                        {institutionChartData.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={entry.color}
-                            style={{
-                              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
-                            }}
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<CustomTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  
-                  {/* Center Content */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-xs text-muted-foreground mb-1 font-medium">
-                        Patrimônio Total
-                      </div>
-                      <div className="text-base font-bold text-foreground">
-                        {totalInstitutionsPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </div>
+            {/* Pie Chart - centered on mobile, absolutely positioned on desktop */}
+            <div className="mt-8 lg:mt-0 lg:absolute lg:top-4 lg:right-6 lg:w-72 flex flex-col items-center justify-center">
+              <div className="relative">
+                <ResponsiveContainer width="100%" height={320} minWidth={288}>
+                  <PieChart width={320} height={320}>
+                    <Pie
+                      data={institutionChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={85}
+                      outerRadius={100}
+                      paddingAngle={2}
+                      dataKey="patrimonio"
+                      stroke="none"
+                      strokeWidth={0}
+                    >
+                      {institutionChartData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={entry.color}
+                          style={{
+                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
+                          }}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+                
+                {/* Center Content */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-xs text-muted-foreground mb-1 font-medium">
+                      Patrimônio Total
+                    </div>
+                    <div className="text-base font-bold text-foreground">
+                      {totalInstitutionsPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
                 </div>
