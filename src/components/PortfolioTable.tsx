@@ -482,12 +482,16 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   
   const totalInstitutionsPatrimonio = institutionSummary.reduce((sum, item) => sum + item.patrimonio, 0);
 
-  // Colors for pie chart
+  // Sophisticated color palette for institutions
   const INSTITUTION_COLORS = [
-    'hsl(210 16% 82%)', 'hsl(32 25% 72%)', 'hsl(45 20% 85%)', 'hsl(210 11% 71%)',
-    'hsl(210 16% 58%)', 'hsl(207 26% 50%)', 'hsl(158 64% 25%)', 'hsl(159 61% 33%)',
-    'hsl(210 29% 24%)', 'hsl(25 28% 53%)', 'hsl(40 23% 77%)', 'hsl(210 14% 53%)',
-    'hsl(35 31% 65%)', 'hsl(210 24% 40%)',
+    'hsl(220 9% 61%)',   // Gray-400 - principal
+    'hsl(30 15% 70%)',   // Bege/Dourado suave
+    'hsl(220 13% 82%)',  // Gray-300 - secundário
+    'hsl(220 14% 90%)',  // Gray-200 - terciário
+    'hsl(220 14% 96%)',  // Gray-100 - outras
+    'hsl(220 9% 46%)',   // Gray-500 - sexto
+    'hsl(30 15% 60%)',   // Bege escuro
+    'hsl(220 13% 72%)',  // Gray adicional
   ];
 
   const institutionChartData = institutionSummary.map((item, index) => ({
@@ -521,9 +525,9 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
         <Card className="relative bg-gradient-card border-border/50 shadow-elegant-md mb-8 overflow-visible">
           <CardHeader>
             <div>
-              <CardTitle className="text-foreground">Performance Consolidada</CardTitle>
+              <CardTitle className="text-foreground">Alocação em Instituições</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Alocação por instituição
+                Distribuição do patrimônio por instituição financeira
                 {selectedInstitution && (
                   <span className="ml-2 text-primary font-medium">
                     · Filtrando: {selectedInstitution}
@@ -585,19 +589,22 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                       data={institutionChartData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={75}
-                      outerRadius={95}
-                      paddingAngle={2}
+                      innerRadius={70}
+                      outerRadius={98}
+                      paddingAngle={0}
                       dataKey="patrimonio"
                       stroke="none"
                       strokeWidth={0}
+                      animationBegin={0}
+                      animationDuration={800}
                     >
                       {institutionChartData.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
                           fill={entry.color}
+                          className="transition-all duration-300 hover:opacity-80"
                           style={{
-                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
+                            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))',
                           }}
                         />
                       ))}
@@ -608,12 +615,12 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                 
                 {/* Center Content */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-sm text-muted-foreground mb-1 font-medium">
+                  <div className="text-center bg-gradient-to-b from-background/50 to-background/80 backdrop-blur-sm rounded-full px-6 py-4">
+                    <div className="text-xs text-muted-foreground mb-1.5 font-medium tracking-wide uppercase">
                       Patrimônio Total
                     </div>
-                    <div className="text-lg font-bold text-foreground">
-                      {totalInstitutionsPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    <div className="text-2xl font-bold text-foreground tracking-tight">
+                      R$ {totalInstitutionsPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
                 </div>
