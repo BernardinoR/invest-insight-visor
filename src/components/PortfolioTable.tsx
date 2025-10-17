@@ -534,7 +534,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
           </CardHeader>
           <CardContent className="pb-4 pt-2">
             {/* Table - takes full width on mobile, left side on desktop */}
-            <div className="lg:pr-80">
+            <div className="lg:pr-96">
               <Table>
                 <TableHeader>
                   <TableRow className="border-border/50">
@@ -577,16 +577,16 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
             </div>
 
             {/* Pie Chart - centered on mobile, absolutely positioned on desktop */}
-            <div className="mt-8 lg:mt-0 lg:absolute lg:top-4 lg:right-6 lg:w-72 flex flex-col items-center justify-center">
+            <div className="mt-6 lg:mt-0 lg:absolute lg:top-2 lg:right-8 lg:w-80 flex flex-col items-center justify-center">
               <div className="relative">
-                <ResponsiveContainer width="100%" height={320} minWidth={288}>
-                  <PieChart width={320} height={320}>
+                <ResponsiveContainer width="100%" height={280} minWidth={288}>
+                  <PieChart width={280} height={280}>
                     <Pie
                       data={institutionChartData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={85}
-                      outerRadius={100}
+                      innerRadius={75}
+                      outerRadius={95}
                       paddingAngle={2}
                       dataKey="patrimonio"
                       stroke="none"
@@ -609,10 +609,10 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                 {/* Center Content */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <div className="text-center">
-                    <div className="text-xs text-muted-foreground mb-1 font-medium">
+                    <div className="text-sm text-muted-foreground mb-1 font-medium">
                       Patrimônio Total
                     </div>
-                    <div className="text-base font-bold text-foreground">
+                    <div className="text-lg font-bold text-foreground">
                       {totalInstitutionsPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
