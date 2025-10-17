@@ -532,8 +532,8 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
               </p>
             </div>
           </CardHeader>
-          <CardContent className="pb-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          <CardContent className="pb-4 pt-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
               {/* Table */}
               <div className="flex flex-col h-full">
                 <Table>
@@ -580,14 +580,14 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
               {/* Pie Chart */}
               <div className="relative flex flex-col items-center justify-center">
                 <div className="relative">
-                  <ResponsiveContainer width="100%" height={400} minWidth={350}>
-                    <PieChart width={400} height={400}>
+                  <ResponsiveContainer width="100%" height={280} minWidth={300}>
+                    <PieChart width={280} height={280}>
                       <Pie
                         data={institutionChartData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={120}
-                        outerRadius={140}
+                        innerRadius={70}
+                        outerRadius={90}
                         paddingAngle={2}
                         dataKey="patrimonio"
                         stroke="none"
@@ -609,11 +609,11 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                   
                   {/* Center Content */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="bg-card/80 backdrop-blur-sm rounded-full px-4 py-3 border border-border/30 shadow-elegant-sm">
-                      <div className="text-xs text-muted-foreground mb-1 text-center font-medium">
+                    <div className="bg-card/80 backdrop-blur-sm rounded-full px-3 py-2 border border-border/30 shadow-elegant-sm">
+                      <div className="text-[10px] text-muted-foreground mb-0.5 text-center font-medium">
                         Patrimônio Total
                       </div>
-                      <div className="text-lg font-bold text-foreground text-center">
+                      <div className="text-sm font-bold text-foreground text-center">
                         {totalInstitutionsPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </div>
                     </div>
