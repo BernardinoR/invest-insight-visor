@@ -609,11 +609,11 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                   
                   {/* Center Content */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="bg-card/80 backdrop-blur-sm rounded-full px-4 py-3 border border-border/30 shadow-elegant-sm">
-                      <div className="text-xs text-muted-foreground mb-1 text-center font-medium">
+                    <div className="bg-card/80 backdrop-blur-sm rounded-full px-3 py-2 border border-border/30 shadow-elegant-sm">
+                      <div className="text-[10px] text-muted-foreground mb-0.5 text-center font-medium">
                         Patrimônio Total
                       </div>
-                      <div className="text-lg font-bold text-foreground text-center">
+                      <div className="text-sm font-bold text-foreground text-center">
                         {totalInstitutionsPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </div>
                     </div>
