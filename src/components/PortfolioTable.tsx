@@ -482,16 +482,16 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   
   const totalInstitutionsPatrimonio = institutionSummary.reduce((sum, item) => sum + item.patrimonio, 0);
 
-  // Soft pastel color palette inspired by reference image
+  // Soft pastel color palette matching reference image
   const INSTITUTION_COLORS = [
-    'hsl(210 20% 75%)',  // Cinza-azulado claro (maior fatia)
-    'hsl(40 30% 85%)',   // Bege muito claro
-    'hsl(40 25% 80%)',   // Bege claro secundário
-    'hsl(210 15% 82%)',  // Cinza claro
-    'hsl(210 18% 68%)',  // Cinza-azulado médio
-    'hsl(160 35% 45%)',  // Verde suave (pequeno destaque)
-    'hsl(40 35% 75%)',   // Bege médio
-    'hsl(210 12% 88%)',  // Cinza muito claro
+    'hsl(40 25% 82%)',   // Bege claro principal
+    'hsl(45 20% 88%)',   // Bege muito claro
+    'hsl(210 18% 78%)',  // Cinza-azulado claro
+    'hsl(210 12% 72%)',  // Cinza médio
+    'hsl(200 15% 65%)',  // Azul-cinza
+    'hsl(160 30% 38%)',  // Verde escuro
+    'hsl(35 22% 75%)',   // Bege médio
+    'hsl(210 15% 85%)',  // Cinza claro
   ];
 
   const institutionChartData = institutionSummary.map((item, index) => ({
@@ -589,9 +589,9 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                       data={institutionChartData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={70}
-                      outerRadius={98}
-                      paddingAngle={2}
+                      innerRadius={65}
+                      outerRadius={95}
+                      paddingAngle={3}
                       dataKey="patrimonio"
                       stroke="none"
                       strokeWidth={0}
@@ -613,11 +613,11 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                 {/* Center Content */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <div className="text-center">
-                    <div className="text-xs text-muted-foreground/70 mb-1.5 font-medium tracking-wide">
-                      Patrimônio Total
+                    <div className="text-sm text-muted-foreground/60 mb-2 font-normal">
+                      Patrimônio Bruto
                     </div>
-                    <div className="text-2xl font-semibold text-foreground/90 tracking-tight">
-                      R$ {totalInstitutionsPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    <div className="text-3xl font-semibold text-foreground">
+                      {totalInstitutionsPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
                 </div>
