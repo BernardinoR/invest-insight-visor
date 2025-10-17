@@ -586,8 +586,8 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                         data={institutionChartData}
                         cx="50%"
                         cy="50%"
-                innerRadius={80}
-                outerRadius={95}
+                        innerRadius={120}
+                        outerRadius={140}
                         paddingAngle={2}
                         dataKey="patrimonio"
                         stroke="none"
