@@ -25,6 +25,8 @@ interface PortfolioTableProps {
   filteredConsolidadoData?: ConsolidadoData[];
   filteredRange?: { inicio: string; fim: string };
   onYearTotalsChange?: (totals: { totalPatrimonio: number; totalRendimento: number } | null) => void;
+  selectedInstitution?: string | null;
+  onInstitutionClick?: (institution: string) => void;
 }
 
 interface ConsolidadoData {
@@ -36,6 +38,8 @@ interface ConsolidadoData {
   "Patrimonio Final": number;
   "Rendimento": number;
   "Competencia": string;
+  "Instituicao"?: string;
+  "Nome"?: string;
 }
 
 interface ConsolidadoDataWithReturns extends ConsolidadoData {
@@ -44,7 +48,7 @@ interface ConsolidadoDataWithReturns extends ConsolidadoData {
   return12Months?: number;
 }
 
-export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange, onYearTotalsChange }: PortfolioTableProps) {
+export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange, onYearTotalsChange, selectedInstitution, onInstitutionClick }: PortfolioTableProps) {
   const [consolidadoData, setConsolidadoData] = useState<ConsolidadoData[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set(['2025'])); // Start with 2025 expanded
@@ -434,14 +438,121 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     fetchConsolidadoData();
   }, [selectedClient]);
 
+  // Calculate institution summary from rawData
+  const institutionSummary = (() => {
+    if (!rawData || rawData.length === 0) return [];
+    
+    // Group by institution
+    const byInstitution = rawData.reduce((acc, item) => {
+      const institution = item.Instituicao || "Sem Instituição";
+      if (!acc[institution]) {
+        acc[institution] = [];
+      }
+      acc[institution].push(item);
+      return acc;
+    }, {} as Record<string, typeof rawData>);
+    
+    // For each institution, get most recent month's data
+    return Object.entries(byInstitution).map(([institution, data]) => {
+      // Sort by competencia to get most recent
+      const sortedData = [...data].sort((a, b) => {
+        const [monthA, yearA] = a.Competencia.split('/');
+        const [monthB, yearB] = b.Competencia.split('/');
+        const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+        const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+        return dateB.getTime() - dateA.getTime();
+      });
+      
+      const mostRecent = sortedData[0];
+      const patrimonio = mostRecent["Patrimonio Final"] || 0;
+      const rendimento = mostRecent.Rendimento || 0;
+      
+      return {
+        institution,
+        patrimonio,
+        rendimento
+      };
+    }).sort((a, b) => b.patrimonio - a.patrimonio); // Sort by patrimonio descending
+  })();
+  
+  const totalInstitutionsPatrimonio = institutionSummary.reduce((sum, item) => sum + item.patrimonio, 0);
+
   return (
-    <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
-      <CardHeader>
-        <div>
-          <CardTitle className="text-foreground">Resumo do Patrimônio</CardTitle>
-          <p className="text-sm text-muted-foreground">Evolução patrimonial consolidada com retornos acumulados</p>
-        </div>
-      </CardHeader>
+    <>
+      {/* Performance Consolidada por Instituição */}
+      {institutionSummary.length > 0 && (
+        <Card className="bg-gradient-card border-border/50 shadow-elegant-md mb-8">
+          <CardHeader>
+            <div>
+              <CardTitle className="text-foreground">Performance Consolidada</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Rentabilidade por instituição
+                {selectedInstitution && (
+                  <span className="ml-2 text-primary font-medium">
+                    · Filtrando: {selectedInstitution}
+                  </span>
+                )}
+              </p>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border/50">
+                  <TableHead className="text-muted-foreground">Instituição</TableHead>
+                  <TableHead className="text-muted-foreground text-right">Patrimônio</TableHead>
+                  <TableHead className="text-muted-foreground text-right">% Alocação</TableHead>
+                  <TableHead className="text-muted-foreground text-right">Rentabilidade</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {institutionSummary.map((item, index) => (
+                  <TableRow 
+                    key={index} 
+                    className={`border-border/50 cursor-pointer transition-colors ${
+                      selectedInstitution === item.institution 
+                        ? 'bg-primary/10' 
+                        : 'hover:bg-muted/20'
+                    }`}
+                    onClick={() => onInstitutionClick?.(item.institution)}
+                  >
+                    <TableCell className="font-medium text-foreground">
+                      {item.institution}
+                    </TableCell>
+                    <TableCell className="text-right text-foreground">
+                      {formatCurrency(item.patrimonio)}
+                    </TableCell>
+                    <TableCell className="text-right text-foreground">
+                      {totalInstitutionsPatrimonio > 0 
+                        ? `${((item.patrimonio / totalInstitutionsPatrimonio) * 100).toFixed(2)}%`
+                        : '0.00%'
+                      }
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                        item.rendimento >= 0 
+                          ? 'bg-success/20 text-success' 
+                          : 'bg-destructive/20 text-destructive'
+                      }`}>
+                        {formatPercentage(item.rendimento)}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Resumo do Patrimônio */}
+      <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
+        <CardHeader>
+          <div>
+            <CardTitle className="text-foreground">Resumo do Patrimônio</CardTitle>
+            <p className="text-sm text-muted-foreground">Evolução patrimonial consolidada com retornos acumulados</p>
+          </div>
+        </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
           <Table>
@@ -659,5 +770,6 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
         )}
       </CardContent>
     </Card>
+    </>
   );
 }

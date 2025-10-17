@@ -32,6 +32,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
   const [filteredRange, setFilteredRange] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
   const [yearTotals, setYearTotals] = useState<{ totalPatrimonio: number; totalRendimento: number } | null>(null);
+  const [selectedInstitution, setSelectedInstitution] = useState<string | null>(null);
 
   // Helper function to convert competencia string to comparable date
   const competenciaToDate = (competencia: string) => {
@@ -39,29 +40,49 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     return new Date(parseInt(year), parseInt(month) - 1);
   };
 
-  // Filter data based on selected competencia range
+  // Filter data based on selected competencia range and institution
   const getFilteredDadosData = (data: typeof dadosData) => {
-    if (!filteredRange.inicio || !filteredRange.fim) return data;
+    let filtered = data;
     
-    const startDate = competenciaToDate(filteredRange.inicio);
-    const endDate = competenciaToDate(filteredRange.fim);
+    // Apply date filter
+    if (filteredRange.inicio && filteredRange.fim) {
+      const startDate = competenciaToDate(filteredRange.inicio);
+      const endDate = competenciaToDate(filteredRange.fim);
+      
+      filtered = filtered.filter(item => {
+        const itemDate = competenciaToDate(item.Competencia);
+        return itemDate >= startDate && itemDate <= endDate;
+      });
+    }
     
-    return data.filter(item => {
-      const itemDate = competenciaToDate(item.Competencia);
-      return itemDate >= startDate && itemDate <= endDate;
-    });
+    // Apply institution filter
+    if (selectedInstitution) {
+      filtered = filtered.filter(item => item.Instituicao === selectedInstitution);
+    }
+    
+    return filtered;
   };
 
   const getFilteredConsolidadoData = (data: typeof consolidadoData) => {
-    if (!filteredRange.inicio || !filteredRange.fim) return data;
+    let filtered = data;
     
-    const startDate = competenciaToDate(filteredRange.inicio);
-    const endDate = competenciaToDate(filteredRange.fim);
+    // Apply date filter
+    if (filteredRange.inicio && filteredRange.fim) {
+      const startDate = competenciaToDate(filteredRange.inicio);
+      const endDate = competenciaToDate(filteredRange.fim);
+      
+      filtered = filtered.filter(item => {
+        const itemDate = competenciaToDate(item.Competencia);
+        return itemDate >= startDate && itemDate <= endDate;
+      });
+    }
     
-    return data.filter(item => {
-      const itemDate = competenciaToDate(item.Competencia);
-      return itemDate >= startDate && itemDate <= endDate;
-    });
+    // Apply institution filter
+    if (selectedInstitution) {
+      filtered = filtered.filter(item => item.Instituicao === selectedInstitution);
+    }
+    
+    return filtered;
   };
 
   const filteredDadosData = getFilteredDadosData(dadosData);
@@ -456,6 +477,8 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             onYearTotalsChange={handleYearTotalsChange}
             filteredConsolidadoData={filteredConsolidadoData}
             filteredRange={filteredRange}
+            selectedInstitution={selectedInstitution}
+            onInstitutionClick={(institution) => setSelectedInstitution(institution === selectedInstitution ? null : institution)}
           />
         </div>
 
