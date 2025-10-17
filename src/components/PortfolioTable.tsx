@@ -532,10 +532,10 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
               </p>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <CardContent className="pb-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
               {/* Table */}
-              <div>
+              <div className="flex flex-col h-full">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border/50">
