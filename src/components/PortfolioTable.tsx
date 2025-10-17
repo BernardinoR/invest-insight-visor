@@ -482,16 +482,16 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   
   const totalInstitutionsPatrimonio = institutionSummary.reduce((sum, item) => sum + item.patrimonio, 0);
 
-  // Soft pastel color palette matching reference image
+  // Soft harmonious color palette
   const INSTITUTION_COLORS = [
-    'hsl(40 25% 82%)',   // Bege claro principal
-    'hsl(45 20% 88%)',   // Bege muito claro
-    'hsl(210 18% 78%)',  // Cinza-azulado claro
-    'hsl(210 12% 72%)',  // Cinza médio
-    'hsl(200 15% 65%)',  // Azul-cinza
-    'hsl(160 30% 38%)',  // Verde escuro
-    'hsl(35 22% 75%)',   // Bege médio
-    'hsl(210 15% 85%)',  // Cinza claro
+    'hsl(40 22% 80%)',   // Bege claro principal
+    'hsl(45 18% 86%)',   // Bege muito claro
+    'hsl(210 16% 80%)',  // Cinza-azulado claro
+    'hsl(210 14% 75%)',  // Cinza médio
+    'hsl(200 18% 68%)',  // Azul-cinza
+    'hsl(160 28% 42%)',  // Verde médio
+    'hsl(38 20% 76%)',   // Bege médio
+    'hsl(210 18% 84%)',  // Cinza claro
   ];
 
   const institutionChartData = institutionSummary.map((item, index) => ({
@@ -538,7 +538,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
           </CardHeader>
           <CardContent className="pb-4 pt-2">
             {/* Table - takes full width on mobile, left side on desktop */}
-            <div className="lg:pr-96">
+            <div className={selectedInstitution ? "lg:pr-0" : "lg:pr-96"}>
               <Table>
                 <TableHeader>
                   <TableRow className="border-border/50">
@@ -581,7 +581,9 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
             </div>
 
             {/* Pie Chart - centered on mobile, absolutely positioned on desktop */}
-            <div className="mt-6 lg:mt-0 lg:absolute lg:top-2 lg:right-8 lg:w-80 flex flex-col items-center justify-center">
+            <div className={`mt-6 flex flex-col items-center justify-center ${
+              selectedInstitution ? "lg:mt-6" : "lg:mt-0 lg:absolute lg:top-2 lg:right-8 lg:w-80"
+            }`}>
               <div className="relative">
                 <ResponsiveContainer width="100%" height={280} minWidth={288}>
                   <PieChart width={280} height={280}>
@@ -589,8 +591,8 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                       data={institutionChartData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={65}
-                      outerRadius={95}
+                      innerRadius={75}
+                      outerRadius={92}
                       paddingAngle={3}
                       dataKey="patrimonio"
                       stroke="none"
@@ -613,10 +615,10 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                 {/* Center Content */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <div className="text-center">
-                    <div className="text-sm text-muted-foreground/60 mb-2 font-normal">
+                    <div className="text-xs text-muted-foreground/50 mb-1 font-light">
                       Patrimônio Bruto
                     </div>
-                    <div className="text-3xl font-semibold text-foreground">
+                    <div className="text-xl font-semibold text-foreground">
                       {totalInstitutionsPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
