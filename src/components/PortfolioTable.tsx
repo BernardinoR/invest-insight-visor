@@ -438,41 +438,45 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     fetchConsolidadoData();
   }, [selectedClient]);
 
-  // Calculate institution summary from rawData
+  // Calculate institution summary from rawData - only most recent competencia
   const institutionSummary = (() => {
     if (!rawData || rawData.length === 0) return [];
     
-    // Group by institution
-    const byInstitution = rawData.reduce((acc, item) => {
+    // Find the most recent competencia
+    const sortedByDate = [...rawData].sort((a, b) => {
+      const [monthA, yearA] = a.Competencia.split('/');
+      const [monthB, yearB] = b.Competencia.split('/');
+      const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+      const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+      return dateB.getTime() - dateA.getTime();
+    });
+    
+    const mostRecentCompetencia = sortedByDate[0].Competencia;
+    
+    // Filter only data from most recent competencia
+    const mostRecentData = rawData.filter(item => item.Competencia === mostRecentCompetencia);
+    
+    // Group by institution for the most recent competencia only
+    const byInstitution = mostRecentData.reduce((acc, item) => {
       const institution = item.Instituicao || "Sem Instituição";
       if (!acc[institution]) {
-        acc[institution] = [];
+        acc[institution] = {
+          patrimonio: 0,
+          rendimentoSum: 0,
+          patrimonioCount: 0
+        };
       }
-      acc[institution].push(item);
+      acc[institution].patrimonio += item["Patrimonio Final"] || 0;
+      acc[institution].rendimentoSum += (item.Rendimento || 0) * (item["Patrimonio Final"] || 0);
+      acc[institution].patrimonioCount += item["Patrimonio Final"] || 0;
       return acc;
-    }, {} as Record<string, typeof rawData>);
+    }, {} as Record<string, { patrimonio: number; rendimentoSum: number; patrimonioCount: number }>);
     
-    // For each institution, get most recent month's data
-    return Object.entries(byInstitution).map(([institution, data]) => {
-      // Sort by competencia to get most recent
-      const sortedData = [...data].sort((a, b) => {
-        const [monthA, yearA] = a.Competencia.split('/');
-        const [monthB, yearB] = b.Competencia.split('/');
-        const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-        const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
-        return dateB.getTime() - dateA.getTime();
-      });
-      
-      const mostRecent = sortedData[0];
-      const patrimonio = mostRecent["Patrimonio Final"] || 0;
-      const rendimento = mostRecent.Rendimento || 0;
-      
-      return {
-        institution,
-        patrimonio,
-        rendimento
-      };
-    }).sort((a, b) => b.patrimonio - a.patrimonio); // Sort by patrimonio descending
+    return Object.entries(byInstitution).map(([institution, data]) => ({
+      institution,
+      patrimonio: data.patrimonio,
+      rendimento: data.patrimonioCount > 0 ? data.rendimentoSum / data.patrimonioCount : 0
+    })).sort((a, b) => b.patrimonio - a.patrimonio); // Sort by patrimonio descending
   })();
   
   const totalInstitutionsPatrimonio = institutionSummary.reduce((sum, item) => sum + item.patrimonio, 0);
