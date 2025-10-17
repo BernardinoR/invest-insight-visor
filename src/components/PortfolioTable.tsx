@@ -580,14 +580,14 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
               {/* Pie Chart */}
               <div className="relative flex flex-col items-center justify-center">
                 <div className="relative">
-                  <ResponsiveContainer width="100%" height={280} minWidth={300}>
-                    <PieChart width={280} height={280}>
+                  <ResponsiveContainer width="100%" height={350} minWidth={320}>
+                    <PieChart width={350} height={350}>
                       <Pie
                         data={institutionChartData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={70}
-                        outerRadius={90}
+                        innerRadius={95}
+                        outerRadius={110}
                         paddingAngle={2}
                         dataKey="patrimonio"
                         stroke="none"
@@ -609,11 +609,11 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                   
                   {/* Center Content */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="bg-card/80 backdrop-blur-sm rounded-full px-3 py-2 border border-border/30 shadow-elegant-sm">
-                      <div className="text-[10px] text-muted-foreground mb-0.5 text-center font-medium">
+                    <div className="text-center">
+                      <div className="text-xs text-muted-foreground mb-1 font-medium">
                         Patrimônio Total
                       </div>
-                      <div className="text-sm font-bold text-foreground text-center">
+                      <div className="text-base font-bold text-foreground">
                         {totalInstitutionsPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </div>
                     </div>
