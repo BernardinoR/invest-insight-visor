@@ -480,172 +480,168 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   return (
     <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
       <CardHeader className="pb-4">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-gradient-accent flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <div>
-                <CardTitle className="text-foreground text-xl font-semibold">
-                  {viewMode === 'rentabilidade' ? 'Retorno Acumulado' : 'Seu patrimônio'}
-                </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {viewMode === 'rentabilidade' 
-                    ? 'Comparativo de performance da carteira com indicadores' 
-                    : 'Evolução do patrimônio aplicado e atual'}
-                </p>
-                {(cdiLoading || marketLoading) && <p className="text-xs text-muted-foreground">Carregando dados...</p>}
-                {(cdiError || marketError) && <p className="text-xs text-destructive">Erro ao carregar dados: {cdiError || marketError}</p>}
-              </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-gradient-accent flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-primary-foreground" />
             </div>
-            
-            {/* Period Selection and Indicators */}
-            <div className="flex items-center gap-2">
-              {/* Indicators Selector - only show in rentabilidade mode */}
-              {viewMode === 'rentabilidade' && (
-                <Popover open={showIndicators} onOpenChange={setShowIndicators}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Indicadores
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-56 bg-background border-border z-50" align="end">
-                    <div className="space-y-3 p-2">
-                      <h4 className="font-medium text-sm">Selecionar Indicadores</h4>
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <Checkbox 
-                            id="cdi" 
-                            checked={selectedIndicators.cdi}
-                            onCheckedChange={(checked) => 
-                              setSelectedIndicators(prev => ({ ...prev, cdi: checked as boolean }))
-                            }
-                          />
-                          <label htmlFor="cdi" className="text-sm">CDI</label>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <Checkbox 
-                            id="target" 
-                            checked={selectedIndicators.target}
-                            onCheckedChange={(checked) => 
-                              setSelectedIndicators(prev => ({ ...prev, target: checked as boolean }))
-                            }
-                          />
-                           <label htmlFor="target" className="text-sm">
-                             Meta {(() => {
-                               console.log('Debug clientTarget:', clientTarget, 'marketLoading:', marketLoading);
-                               if (marketLoading) return '(Carregando...)';
-                               if (clientTarget && clientTarget.meta) return `(${clientTarget.meta})`;
-                               return '(Não disponível)';
-                             })()}
-                           </label>
-                        </div>
-                        
-                        
-                        <div className="flex items-center space-x-2">
-                          <Checkbox 
-                            id="ipca" 
-                            checked={selectedIndicators.ipca}
-                            onCheckedChange={(checked) => 
-                              setSelectedIndicators(prev => ({ ...prev, ipca: checked as boolean }))
-                            }
-                          />
-                          <label htmlFor="ipca" className="text-sm">IPCA</label>
-                        </div>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              )}
+            <div className="flex flex-col gap-2">
+              <CardTitle className="text-foreground text-xl font-semibold">
+                {viewMode === 'rentabilidade' ? 'Retorno Acumulado' : 'Seu patrimônio'}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {viewMode === 'rentabilidade' 
+                  ? 'Comparativo de performance da carteira com indicadores' 
+                  : 'Evolução do patrimônio aplicado e atual'}
+              </p>
+              {(cdiLoading || marketLoading) && <p className="text-xs text-muted-foreground">Carregando dados...</p>}
+              {(cdiError || marketError) && <p className="text-xs text-destructive">Erro ao carregar dados: {cdiError || marketError}</p>}
               
-              <div className="flex items-center gap-1">
-              {periodButtons.map((button) => (
-                <Button
-                  key={button.id}
-                  variant={selectedPeriod === button.id ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => {
-                    setSelectedPeriod(button.id as any);
-                    if (button.id === 'custom') {
-                      setShowCustomSelector(true);
-                    }
-                  }}
-                  className="text-xs px-3 py-1 h-8"
-                >
-                  {button.label}
-                </Button>
-              ))}
-              
-              {selectedPeriod === 'custom' && (
-                <Popover open={showCustomSelector} onOpenChange={setShowCustomSelector}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="ml-2">
-                      <CalendarIcon className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="end">
-                    <div className="p-4 space-y-4">
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Competência Inicial</label>
-                        <Select value={customStartCompetencia} onValueChange={setCustomStartCompetencia}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a competência inicial" />
-                          </SelectTrigger>
-                          <SelectContent>
-                             {availableCompetencias.map((competencia) => (
-                               <SelectItem key={competencia} value={competencia}>
-                                 {formatCompetenciaDisplay(competencia)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Competência Final</label>
-                        <Select value={customEndCompetencia} onValueChange={setCustomEndCompetencia}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a competência final" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableCompetencias.map((competencia) => (
-                              <SelectItem key={competencia} value={competencia}>
-                                {formatCompetenciaDisplay(competencia)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              )}
-              </div>
+              {/* View Mode Toggle - inline with title */}
+              <RadioGroup 
+                value={viewMode} 
+                onValueChange={(value) => setViewMode(value as 'rentabilidade' | 'patrimonio')}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="rentabilidade" id="rentabilidade" />
+                  <Label htmlFor="rentabilidade" className="cursor-pointer text-sm font-normal">
+                    Visualizar por rentabilidade
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="patrimonio" id="patrimonio" />
+                  <Label htmlFor="patrimonio" className="cursor-pointer text-sm font-normal">
+                    Visualizar por patrimônio
+                  </Label>
+                </div>
+              </RadioGroup>
             </div>
           </div>
           
-          {/* View Mode Toggle */}
-          <div className="flex items-center gap-4 pl-14">
-            <RadioGroup 
-              value={viewMode} 
-              onValueChange={(value) => setViewMode(value as 'rentabilidade' | 'patrimonio')}
-              className="flex gap-4"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="rentabilidade" id="rentabilidade" />
-                <Label htmlFor="rentabilidade" className="cursor-pointer text-sm font-normal">
-                  Visualizar por rentabilidade
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="patrimonio" id="patrimonio" />
-                <Label htmlFor="patrimonio" className="cursor-pointer text-sm font-normal">
-                  Visualizar por patrimônio
-                </Label>
-              </div>
-            </RadioGroup>
+          {/* Period Selection and Indicators */}
+          <div className="flex items-center gap-2">
+            {/* Indicators Selector - only show in rentabilidade mode */}
+            {viewMode === 'rentabilidade' && (
+              <Popover open={showIndicators} onOpenChange={setShowIndicators}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Indicadores
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 bg-background border-border z-50" align="end">
+                  <div className="space-y-3 p-2">
+                    <h4 className="font-medium text-sm">Selecionar Indicadores</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="cdi" 
+                          checked={selectedIndicators.cdi}
+                          onCheckedChange={(checked) => 
+                            setSelectedIndicators(prev => ({ ...prev, cdi: checked as boolean }))
+                          }
+                        />
+                        <label htmlFor="cdi" className="text-sm">CDI</label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="target" 
+                          checked={selectedIndicators.target}
+                          onCheckedChange={(checked) => 
+                            setSelectedIndicators(prev => ({ ...prev, target: checked as boolean }))
+                          }
+                        />
+                         <label htmlFor="target" className="text-sm">
+                           Meta {(() => {
+                             console.log('Debug clientTarget:', clientTarget, 'marketLoading:', marketLoading);
+                             if (marketLoading) return '(Carregando...)';
+                             if (clientTarget && clientTarget.meta) return `(${clientTarget.meta})`;
+                             return '(Não disponível)';
+                           })()}
+                         </label>
+                      </div>
+                      
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="ipca" 
+                          checked={selectedIndicators.ipca}
+                          onCheckedChange={(checked) => 
+                            setSelectedIndicators(prev => ({ ...prev, ipca: checked as boolean }))
+                          }
+                        />
+                        <label htmlFor="ipca" className="text-sm">IPCA</label>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+            
+            <div className="flex items-center gap-1">
+            {periodButtons.map((button) => (
+              <Button
+                key={button.id}
+                variant={selectedPeriod === button.id ? "default" : "ghost"}
+                size="sm"
+                onClick={() => {
+                  setSelectedPeriod(button.id as any);
+                  if (button.id === 'custom') {
+                    setShowCustomSelector(true);
+                  }
+                }}
+                className="text-xs px-3 py-1 h-8"
+              >
+                {button.label}
+              </Button>
+            ))}
+            
+            {selectedPeriod === 'custom' && (
+              <Popover open={showCustomSelector} onOpenChange={setShowCustomSelector}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="ml-2">
+                    <CalendarIcon className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <div className="p-4 space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Competência Inicial</label>
+                      <Select value={customStartCompetencia} onValueChange={setCustomStartCompetencia}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a competência inicial" />
+                        </SelectTrigger>
+                        <SelectContent>
+                           {availableCompetencias.map((competencia) => (
+                             <SelectItem key={competencia} value={competencia}>
+                               {formatCompetenciaDisplay(competencia)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Competência Final</label>
+                      <Select value={customEndCompetencia} onValueChange={setCustomEndCompetencia}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a competência final" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCompetencias.map((competencia) => (
+                            <SelectItem key={competencia} value={competencia}>
+                              {formatCompetenciaDisplay(competencia)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+            </div>
           </div>
         </div>
       </CardHeader>
