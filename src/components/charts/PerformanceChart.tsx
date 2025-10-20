@@ -835,13 +835,12 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                   type="monotone" 
                   dataKey="patrimonioAplicado" 
                   stroke="hsl(var(--muted-foreground))"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
+                  strokeWidth={2.5}
                   dot={{ 
                     fill: 'hsl(var(--muted-foreground))', 
-                    strokeWidth: 1, 
+                    strokeWidth: 2, 
                     stroke: 'hsl(var(--background))',
-                    r: 3
+                    r: 4
                   }}
                   activeDot={{ 
                     r: 5, 
