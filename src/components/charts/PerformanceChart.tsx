@@ -4,6 +4,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { TrendingUp, Calendar as CalendarIcon, Settings } from "lucide-react";
 import { useState, useMemo } from "react";
@@ -37,6 +39,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   const [customEndCompetencia, setCustomEndCompetencia] = useState<string>('');
   const [showCustomSelector, setShowCustomSelector] = useState(false);
   const [showIndicators, setShowIndicators] = useState(false);
+  const [viewMode, setViewMode] = useState<'rentabilidade' | 'patrimonio'>('rentabilidade');
   const [selectedIndicators, setSelectedIndicators] = useState({
     cdi: false,
     target: true,
@@ -228,6 +231,51 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   };
 
   const chartData = calculateAccumulatedReturns(filteredData);
+
+  // Calculate patrimônio data (patrimônio aplicado e patrimônio atual)
+  const calculatePatrimonioData = (data: typeof filteredData) => {
+    if (data.length === 0) return [];
+    
+    const result = [];
+    let cumulativeMovimentacao = 0;
+    
+    // Add zero point one month before the first competencia
+    const [firstMonth, firstYear] = data[0].Competencia.split('/');
+    const firstDate = new Date(parseInt(firstYear), parseInt(firstMonth) - 1, 1);
+    const previousMonth = new Date(firstDate);
+    previousMonth.setMonth(previousMonth.getMonth() - 1);
+    
+    const initialPatrimonio = data[0]["Patrimonio Inicial"] || 0;
+    
+    // Add the zero starting point
+    result.push({
+      name: previousMonth.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+      patrimonioAplicado: initialPatrimonio,
+      patrimonioAtual: initialPatrimonio,
+      competencia: previousMonth.toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' })
+    });
+    
+    // Calculate patrimônio for each month
+    data.forEach((item, index) => {
+      const [month, year] = item.Competencia.split('/');
+      const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      
+      cumulativeMovimentacao += item["Movimentação"] || 0;
+      const patrimonioAplicado = initialPatrimonio + cumulativeMovimentacao;
+      const patrimonioAtual = item["Patrimonio Final"] || 0;
+      
+      result.push({
+        name: competenciaDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+        patrimonioAplicado,
+        patrimonioAtual,
+        competencia: item.Competencia
+      });
+    });
+    
+    return result;
+  };
+
+  const patrimonioData = calculatePatrimonioData(filteredData);
 
   // Add all indicators data to chart data
   const chartDataWithIndicators = chartData.map((point, index) => {
@@ -432,146 +480,172 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   return (
     <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-gradient-accent flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-primary-foreground" />
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-accent flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div>
+                <CardTitle className="text-foreground text-xl font-semibold">
+                  {viewMode === 'rentabilidade' ? 'Retorno Acumulado' : 'Seu patrimônio'}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {viewMode === 'rentabilidade' 
+                    ? 'Comparativo de performance da carteira com indicadores' 
+                    : 'Evolução do patrimônio aplicado e atual'}
+                </p>
+                {(cdiLoading || marketLoading) && <p className="text-xs text-muted-foreground">Carregando dados...</p>}
+                {(cdiError || marketError) && <p className="text-xs text-destructive">Erro ao carregar dados: {cdiError || marketError}</p>}
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-foreground text-xl font-semibold">Retorno Acumulado</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">Comparativo de performance da carteira com indicadores</p>
-              {(cdiLoading || marketLoading) && <p className="text-xs text-muted-foreground">Carregando dados...</p>}
-              {(cdiError || marketError) && <p className="text-xs text-destructive">Erro ao carregar dados: {cdiError || marketError}</p>}
+            
+            {/* Period Selection and Indicators */}
+            <div className="flex items-center gap-2">
+              {/* Indicators Selector - only show in rentabilidade mode */}
+              {viewMode === 'rentabilidade' && (
+                <Popover open={showIndicators} onOpenChange={setShowIndicators}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Indicadores
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 bg-background border-border z-50" align="end">
+                    <div className="space-y-3 p-2">
+                      <h4 className="font-medium text-sm">Selecionar Indicadores</h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="cdi" 
+                            checked={selectedIndicators.cdi}
+                            onCheckedChange={(checked) => 
+                              setSelectedIndicators(prev => ({ ...prev, cdi: checked as boolean }))
+                            }
+                          />
+                          <label htmlFor="cdi" className="text-sm">CDI</label>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="target" 
+                            checked={selectedIndicators.target}
+                            onCheckedChange={(checked) => 
+                              setSelectedIndicators(prev => ({ ...prev, target: checked as boolean }))
+                            }
+                          />
+                           <label htmlFor="target" className="text-sm">
+                             Meta {(() => {
+                               console.log('Debug clientTarget:', clientTarget, 'marketLoading:', marketLoading);
+                               if (marketLoading) return '(Carregando...)';
+                               if (clientTarget && clientTarget.meta) return `(${clientTarget.meta})`;
+                               return '(Não disponível)';
+                             })()}
+                           </label>
+                        </div>
+                        
+                        
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="ipca" 
+                            checked={selectedIndicators.ipca}
+                            onCheckedChange={(checked) => 
+                              setSelectedIndicators(prev => ({ ...prev, ipca: checked as boolean }))
+                            }
+                          />
+                          <label htmlFor="ipca" className="text-sm">IPCA</label>
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+              
+              <div className="flex items-center gap-1">
+              {periodButtons.map((button) => (
+                <Button
+                  key={button.id}
+                  variant={selectedPeriod === button.id ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setSelectedPeriod(button.id as any);
+                    if (button.id === 'custom') {
+                      setShowCustomSelector(true);
+                    }
+                  }}
+                  className="text-xs px-3 py-1 h-8"
+                >
+                  {button.label}
+                </Button>
+              ))}
+              
+              {selectedPeriod === 'custom' && (
+                <Popover open={showCustomSelector} onOpenChange={setShowCustomSelector}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="ml-2">
+                      <CalendarIcon className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <div className="p-4 space-y-4">
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Competência Inicial</label>
+                        <Select value={customStartCompetencia} onValueChange={setCustomStartCompetencia}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a competência inicial" />
+                          </SelectTrigger>
+                          <SelectContent>
+                             {availableCompetencias.map((competencia) => (
+                               <SelectItem key={competencia} value={competencia}>
+                                 {formatCompetenciaDisplay(competencia)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Competência Final</label>
+                        <Select value={customEndCompetencia} onValueChange={setCustomEndCompetencia}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a competência final" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableCompetencias.map((competencia) => (
+                              <SelectItem key={competencia} value={competencia}>
+                                {formatCompetenciaDisplay(competencia)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+              </div>
             </div>
           </div>
           
-          {/* Period Selection and Indicators */}
-          <div className="flex items-center gap-2">
-            {/* Indicators Selector */}
-            <Popover open={showIndicators} onOpenChange={setShowIndicators}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Indicadores
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 bg-background border-border z-50" align="end">
-                <div className="space-y-3 p-2">
-                  <h4 className="font-medium text-sm">Selecionar Indicadores</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="cdi" 
-                        checked={selectedIndicators.cdi}
-                        onCheckedChange={(checked) => 
-                          setSelectedIndicators(prev => ({ ...prev, cdi: checked as boolean }))
-                        }
-                      />
-                      <label htmlFor="cdi" className="text-sm">CDI</label>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="target" 
-                        checked={selectedIndicators.target}
-                        onCheckedChange={(checked) => 
-                          setSelectedIndicators(prev => ({ ...prev, target: checked as boolean }))
-                        }
-                      />
-                       <label htmlFor="target" className="text-sm">
-                         Meta {(() => {
-                           console.log('Debug clientTarget:', clientTarget, 'marketLoading:', marketLoading);
-                           if (marketLoading) return '(Carregando...)';
-                           if (clientTarget && clientTarget.meta) return `(${clientTarget.meta})`;
-                           return '(Não disponível)';
-                         })()}
-                       </label>
-                    </div>
-                    
-                    
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="ipca" 
-                        checked={selectedIndicators.ipca}
-                        onCheckedChange={(checked) => 
-                          setSelectedIndicators(prev => ({ ...prev, ipca: checked as boolean }))
-                        }
-                      />
-                      <label htmlFor="ipca" className="text-sm">IPCA</label>
-                    </div>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-            
-            <div className="flex items-center gap-1">
-            {periodButtons.map((button) => (
-              <Button
-                key={button.id}
-                variant={selectedPeriod === button.id ? "default" : "ghost"}
-                size="sm"
-                onClick={() => {
-                  setSelectedPeriod(button.id as any);
-                  if (button.id === 'custom') {
-                    setShowCustomSelector(true);
-                  }
-                }}
-                className="text-xs px-3 py-1 h-8"
-              >
-                {button.label}
-              </Button>
-            ))}
-            
-            {selectedPeriod === 'custom' && (
-              <Popover open={showCustomSelector} onOpenChange={setShowCustomSelector}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="ml-2">
-                    <CalendarIcon className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <div className="p-4 space-y-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Competência Inicial</label>
-                      <Select value={customStartCompetencia} onValueChange={setCustomStartCompetencia}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a competência inicial" />
-                        </SelectTrigger>
-                        <SelectContent>
-                           {availableCompetencias.map((competencia) => (
-                             <SelectItem key={competencia} value={competencia}>
-                               {formatCompetenciaDisplay(competencia)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Competência Final</label>
-                      <Select value={customEndCompetencia} onValueChange={setCustomEndCompetencia}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a competência final" />
-                        </SelectTrigger>
-                        <SelectContent>
-                           {availableCompetencias.map((competencia) => (
-                             <SelectItem key={competencia} value={competencia}>
-                               {formatCompetenciaDisplay(competencia)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button 
-                      onClick={() => setShowCustomSelector(false)}
-                      className="w-full"
-                    >
-                      Aplicar
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
-            </div>
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-4 pl-14">
+            <RadioGroup 
+              value={viewMode} 
+              onValueChange={(value) => setViewMode(value as 'rentabilidade' | 'patrimonio')}
+              className="flex gap-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="rentabilidade" id="rentabilidade" />
+                <Label htmlFor="rentabilidade" className="cursor-pointer text-sm font-normal">
+                  Visualizar por rentabilidade
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="patrimonio" id="patrimonio" />
+                <Label htmlFor="patrimonio" className="cursor-pointer text-sm font-normal">
+                  Visualizar por patrimônio
+                </Label>
+              </div>
+            </RadioGroup>
           </div>
         </div>
       </CardHeader>
@@ -579,119 +653,119 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
       <CardContent className="pt-0 pb-6">
         <div className="h-96 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart 
-              data={chartDataWithIndicators} 
-              margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
-            >
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke="hsl(var(--border))" 
-                opacity={0.3}
-                horizontal={true}
-                vertical={false}
-              />
-              <XAxis 
-                dataKey="name" 
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-                axisLine={false}
-                tickLine={false}
-                tick={{ dy: 10 }}
-                interval={0}
-              />
-              <YAxis 
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(value) => `${value.toFixed(1)}%`}
-                domain={[yAxisMin, yAxisMax]}
-                ticks={yAxisTicks}
-                width={70}
-              />
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '12px',
-                  boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
-                  fontSize: '13px',
-                  padding: '12px'
-                }}
-                 formatter={(value: any, name: string) => {
-                   if (name === 'retornoAcumulado') {
-                     return [`${value.toFixed(2)}%`, 'Portfolio'];
-                   }
-                   if (name === 'cdiRetorno') {
-                     return [`${value.toFixed(2)}%`, 'CDI'];
-                   }
-                   if (name === 'targetRetorno') {
-                     return [`${value.toFixed(2)}%`, 'Meta'];
-                   }
+            {viewMode === 'rentabilidade' ? (
+              <LineChart 
+                data={chartDataWithIndicators} 
+                margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+              >
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="hsl(var(--border))" 
+                  opacity={0.3}
+                  horizontal={true}
+                  vertical={false}
+                />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ dy: 10 }}
+                  interval={0}
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => `${value.toFixed(1)}%`}
+                  domain={[yAxisMin, yAxisMax]}
+                  ticks={yAxisTicks}
+                  width={70}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
+                    fontSize: '13px',
+                    padding: '12px'
+                  }}
+                  formatter={(value: any, name: string) => {
+                    if (name === 'retornoAcumulado') {
+                      return [`${value.toFixed(2)}%`, 'Portfolio'];
+                    }
+                    if (name === 'cdiRetorno') {
+                      return [`${value.toFixed(2)}%`, 'CDI'];
+                    }
+                    if (name === 'targetRetorno') {
+                      return [`${value.toFixed(2)}%`, 'Meta'];
+                    }
                     if (name === 'ipcaRetorno') {
                       return [`${value.toFixed(2)}%`, 'IPCA'];
                     }
-                   return [`${value.toFixed(2)}%`, name];
-                 }}
-                labelStyle={{ 
-                  color: 'hsl(var(--foreground))', 
-                  fontWeight: '600',
-                  marginBottom: '4px'
-                }}
-                cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
-              />
-              {/* Portfolio Line - Main line with emphasis */}
-              <Line 
-                type="monotone" 
-                dataKey="retornoAcumulado" 
-                stroke="hsl(var(--primary))"
-                strokeWidth={3}
-                dot={{ 
-                  fill: 'hsl(var(--primary))', 
-                  strokeWidth: 2, 
-                  stroke: 'hsl(var(--background))',
-                  r: 4
-                }}
-                activeDot={{ 
-                  r: 6, 
-                  fill: 'hsl(var(--primary))', 
-                  strokeWidth: 3, 
-                  stroke: 'hsl(var(--background))'
-                }}
-              />
-               {selectedIndicators.cdi && (
-                 <Line 
-                   type="monotone" 
-                   dataKey="cdiRetorno" 
-                   stroke="hsl(var(--muted-foreground))"
-                   strokeWidth={2}
-                   dot={{ 
-                     fill: 'hsl(var(--muted-foreground))', 
-                     strokeWidth: 1, 
-                     stroke: 'hsl(var(--background))',
-                     r: 3
-                   }}
-                   activeDot={{ 
-                     r: 5, 
-                     fill: 'hsl(var(--muted-foreground))', 
-                     strokeWidth: 2, 
-                     stroke: 'hsl(var(--background))'
-                   }}
-                 />
-               )}
-                
-                 {selectedIndicators.target && (
-                   <Line 
-                     type="monotone" 
-                     dataKey="targetRetorno" 
-                     stroke="hsl(0 84% 60%)"
-                     strokeWidth={2}
-                     connectNulls={false}
-                     dot={{ 
-                       fill: "hsl(0 84% 60%)", 
-                       strokeWidth: 1, 
-                       stroke: 'hsl(var(--background))',
-                       r: 3
+                    return [`${value.toFixed(2)}%`, name];
+                  }}
+                  labelStyle={{ 
+                    color: 'hsl(var(--foreground))', 
+                    fontWeight: '600',
+                    marginBottom: '4px'
+                  }}
+                  cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
+                />
+                {/* Portfolio Line - Main line with emphasis */}
+                <Line 
+                  type="monotone" 
+                  dataKey="retornoAcumulado" 
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={3}
+                  dot={{ 
+                    fill: 'hsl(var(--primary))', 
+                    strokeWidth: 2, 
+                    stroke: 'hsl(var(--background))',
+                    r: 4
+                  }}
+                  activeDot={{ 
+                    r: 6, 
+                    fill: 'hsl(var(--primary))', 
+                    strokeWidth: 3, 
+                    stroke: 'hsl(var(--background))'
+                  }}
+                />
+                {selectedIndicators.cdi && (
+                  <Line 
+                    type="monotone" 
+                    dataKey="cdiRetorno" 
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeWidth={2}
+                    dot={{ 
+                      fill: 'hsl(var(--muted-foreground))', 
+                      strokeWidth: 1, 
+                      stroke: 'hsl(var(--background))',
+                      r: 3
+                    }}
+                    activeDot={{ 
+                      r: 5, 
+                      fill: 'hsl(var(--muted-foreground))', 
+                      strokeWidth: 2, 
+                      stroke: 'hsl(var(--background))'
+                    }}
+                  />
+                )}
+                {selectedIndicators.target && (
+                  <Line 
+                    type="monotone" 
+                    dataKey="targetRetorno" 
+                    stroke="hsl(0 84% 60%)"
+                    strokeWidth={2}
+                    connectNulls={false}
+                    dot={{ 
+                      fill: "hsl(0 84% 60%)", 
+                      strokeWidth: 1, 
+                      stroke: 'hsl(var(--background))',
+                      r: 3
                     }}
                     activeDot={{ 
                       r: 5, 
@@ -701,30 +775,123 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                     }}
                   />
                 )}
-               
-               
-               {selectedIndicators.ipca && (
-                 <Line 
-                   type="monotone" 
-                   dataKey="ipcaRetorno" 
-                   stroke="hsl(var(--info))"
-                   strokeWidth={2}
-                   connectNulls={false}
-                   dot={{ 
-                     fill: 'hsl(var(--info))', 
-                     strokeWidth: 1, 
-                     stroke: 'hsl(var(--background))',
-                     r: 3
-                   }}
-                   activeDot={{ 
-                     r: 5, 
-                     fill: 'hsl(var(--info))', 
-                     strokeWidth: 2, 
-                     stroke: 'hsl(var(--background))'
-                   }}
-                 />
-               )}
-            </LineChart>
+                {selectedIndicators.ipca && (
+                  <Line 
+                    type="monotone" 
+                    dataKey="ipcaRetorno" 
+                    stroke="hsl(var(--info))"
+                    strokeWidth={2}
+                    connectNulls={false}
+                    dot={{ 
+                      fill: 'hsl(var(--info))', 
+                      strokeWidth: 1, 
+                      stroke: 'hsl(var(--background))',
+                      r: 3
+                    }}
+                    activeDot={{ 
+                      r: 5, 
+                      fill: 'hsl(var(--info))', 
+                      strokeWidth: 2, 
+                      stroke: 'hsl(var(--background))'
+                    }}
+                  />
+                )}
+              </LineChart>
+            ) : (
+              <LineChart 
+                data={patrimonioData} 
+                margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+              >
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="hsl(var(--border))" 
+                  opacity={0.3}
+                  horizontal={true}
+                  vertical={false}
+                />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ dy: 10 }}
+                  interval={0}
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => `R$ ${(value / 1000000).toFixed(1)}M`}
+                  width={90}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
+                    fontSize: '13px',
+                    padding: '12px'
+                  }}
+                  formatter={(value: any, name: string) => {
+                    if (name === 'patrimonioAplicado') {
+                      return [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Patrimônio Aplicado'];
+                    }
+                    if (name === 'patrimonioAtual') {
+                      return [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Patrimônio'];
+                    }
+                    return [value, name];
+                  }}
+                  labelStyle={{ 
+                    color: 'hsl(var(--foreground))', 
+                    fontWeight: '600',
+                    marginBottom: '4px'
+                  }}
+                  cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
+                />
+                {/* Patrimônio Aplicado Line */}
+                <Line 
+                  type="monotone" 
+                  dataKey="patrimonioAplicado" 
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={{ 
+                    fill: 'hsl(var(--muted-foreground))', 
+                    strokeWidth: 1, 
+                    stroke: 'hsl(var(--background))',
+                    r: 3
+                  }}
+                  activeDot={{ 
+                    r: 5, 
+                    fill: 'hsl(var(--muted-foreground))', 
+                    strokeWidth: 2, 
+                    stroke: 'hsl(var(--background))'
+                  }}
+                />
+                {/* Patrimônio Atual Line */}
+                <Line 
+                  type="monotone" 
+                  dataKey="patrimonioAtual" 
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={3}
+                  dot={{ 
+                    fill: 'hsl(var(--primary))', 
+                    strokeWidth: 2, 
+                    stroke: 'hsl(var(--background))',
+                    r: 4
+                  }}
+                  activeDot={{ 
+                    r: 6, 
+                    fill: 'hsl(var(--primary))', 
+                    strokeWidth: 3, 
+                    stroke: 'hsl(var(--background))'
+                  }}
+                />
+              </LineChart>
+            )}
           </ResponsiveContainer>
         </div>
         
