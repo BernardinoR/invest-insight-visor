@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { TrendingUp, Calendar as CalendarIcon, Settings } from "lucide-react";
+import { TrendingUp, Calendar as CalendarIcon, Settings, ArrowLeftRight, Wallet } from "lucide-react";
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -481,23 +481,25 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
     <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div 
-              className="h-10 w-10 rounded-lg bg-gradient-accent flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => setViewMode(prev => prev === 'rentabilidade' ? 'patrimonio' : 'rentabilidade')}
-            >
-              <TrendingUp className="h-5 w-5 text-primary-foreground" />
+          <div 
+            className="flex items-center gap-3 cursor-pointer group px-4 py-2 -ml-4 rounded-lg hover:bg-accent/50 transition-all"
+            onClick={() => setViewMode(prev => prev === 'rentabilidade' ? 'patrimonio' : 'rentabilidade')}
+          >
+            <div className="h-10 w-10 rounded-lg bg-gradient-accent flex items-center justify-center group-hover:scale-110 transition-transform">
+              {viewMode === 'rentabilidade' ? (
+                <TrendingUp className="h-5 w-5 text-primary-foreground" />
+              ) : (
+                <Wallet className="h-5 w-5 text-primary-foreground" />
+              )}
             </div>
-            <div className="flex flex-col">
-              <CardTitle 
-                className="text-foreground text-xl font-semibold cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => setViewMode(prev => prev === 'rentabilidade' ? 'patrimonio' : 'rentabilidade')}
-              >
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-foreground text-xl font-semibold">
                 {viewMode === 'rentabilidade' ? 'Retorno Acumulado' : 'Seu patrimônio'}
               </CardTitle>
-              {(cdiLoading || marketLoading) && <p className="text-xs text-muted-foreground mt-1">Carregando dados...</p>}
-              {(cdiError || marketError) && <p className="text-xs text-destructive mt-1">Erro ao carregar dados: {cdiError || marketError}</p>}
+              <ArrowLeftRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
             </div>
+            {(cdiLoading || marketLoading) && <p className="text-xs text-muted-foreground ml-2">Carregando...</p>}
+            {(cdiError || marketError) && <p className="text-xs text-destructive ml-2">Erro</p>}
           </div>
           
           {/* Period Selection and Indicators */}
