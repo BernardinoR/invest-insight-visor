@@ -342,10 +342,16 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     });
     
     // Calculate target return by composing monthly targets
+    // Only for periods where we have market data
     let targetAccumulated = 0;
     if (marketData && marketData.length > 0) {
-      // Compose monthly targets only for months with client data
-      sortedData.forEach(clientMonth => {
+      // Filter sortedData to only include competencias that exist in marketData
+      const dataWithMarketInfo = sortedData.filter(clientMonth => 
+        marketData.some(m => m.competencia === clientMonth.Competencia)
+      );
+      
+      // Compose monthly targets only for months with both client and market data
+      dataWithMarketInfo.forEach(clientMonth => {
         const marketPoint = marketData.find(m => m.competencia === clientMonth.Competencia);
         if (marketPoint && marketPoint.clientTarget !== 0) {
           targetAccumulated = (1 + targetAccumulated) * (1 + marketPoint.clientTarget) - 1;
