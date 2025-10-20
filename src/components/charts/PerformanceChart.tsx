@@ -740,7 +740,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                     );
                   })()}
 
-                  {cdiRelative !== null && (
+                  {cdiRelative !== null && selectedIndicators.cdi && (
                     <div className="bg-card border border-border rounded-lg p-4">
                       <div className="flex items-center justify-between">
                         <div>
@@ -761,7 +761,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                     </div>
                   )}
                   
-                  {ipcaDifference !== null && (
+                  {ipcaDifference !== null && selectedIndicators.ipca && (
                     <div className="bg-card border border-border rounded-lg p-4">
                       <div className="flex items-center justify-between">
                         <div>
