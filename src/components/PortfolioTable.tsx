@@ -576,31 +576,24 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
       {/* Performance Consolidada por Instituição */}
       {institutionSummary.length > 0 && (
         <Card className="relative bg-gradient-card border-border/50 shadow-elegant-md mb-8 overflow-visible">
-          <CardHeader>
-            <div>
-              <CardTitle className="text-foreground">Alocação em Instituições</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Distribuição do patrimônio por instituição financeira
-                {selectedInstitution && (
-                  <span className="ml-2 text-primary font-medium">
-                    · Filtrando: {selectedInstitution}
-                  </span>
-                )}
-              </p>
-            </div>
-          </CardHeader>
-          <CardContent className="pb-4 pt-2">
+          <CardContent className="pb-4 pt-6">
+            {selectedInstitution && (
+              <div className="mb-4 text-sm text-primary font-medium">
+                Filtrando: {selectedInstitution}
+              </div>
+            )}
             {/* Table - takes full width on mobile, left side on desktop */}
-            <div className={selectedInstitution ? "lg:pr-0" : "lg:pr-96"}>
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border/50">
-                    <TableHead className="text-muted-foreground">Instituição</TableHead>
-                    <TableHead className="text-muted-foreground text-right">Patrimônio</TableHead>
-                    <TableHead className="text-muted-foreground text-right">% Alocação</TableHead>
-                    <TableHead className="text-muted-foreground text-center w-16"></TableHead>
-                  </TableRow>
-                </TableHeader>
+            <div className={selectedInstitution ? "w-full" : "w-full lg:pr-96"}>
+              <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border/50">
+                      <TableHead className="text-muted-foreground">Instituição</TableHead>
+                      <TableHead className="text-muted-foreground text-right">Patrimônio</TableHead>
+                      <TableHead className="text-muted-foreground text-right hidden sm:table-cell">% Alocação</TableHead>
+                      <TableHead className="text-muted-foreground text-center w-16"></TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {institutionSummary.map((item, index) => (
                     <TableRow 
@@ -628,7 +621,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                         {formatCurrency(item.patrimonio)}
                       </TableCell>
                       <TableCell 
-                        className="text-right text-foreground font-medium cursor-pointer"
+                        className="text-right text-foreground font-medium cursor-pointer hidden sm:table-cell"
                         onClick={() => onInstitutionClick?.(item.institution)}
                       >
                         {totalInstitutionsPatrimonio > 0 
@@ -656,11 +649,12 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </div>
 
             {/* Pie Chart - centered on mobile, absolutely positioned on desktop */}
             <div className={`mt-6 flex flex-col items-center justify-center ${
-              selectedInstitution ? "lg:mt-6" : "lg:mt-0 lg:absolute lg:top-2 lg:right-8 lg:w-80"
+              selectedInstitution ? "lg:mt-6" : "lg:mt-0 lg:absolute lg:top-6 lg:right-8 lg:w-80"
             }`}>
               <div className="relative">
                 <ResponsiveContainer width="100%" height={280} minWidth={288}>
