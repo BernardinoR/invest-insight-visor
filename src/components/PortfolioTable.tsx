@@ -248,23 +248,21 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     const yearReturn = calculateCompoundReturn(yearData.map(item => item.Rendimento || 0));
 
     // Calculate accumulated target for the year by composing monthly targets
+    // Only for the months that actually have client data
     let accumulatedTarget = 0;
     if (marketData && marketData.length > 0) {
-      // Filter months that belong to this year
-      const yearStr = year;
-      const yearMonths = marketData.filter(m => {
-        const [_, yearFromCompetencia] = m.competencia.split('/');
-        return yearFromCompetencia === yearStr;
-      }).sort((a, b) => {
-        const [monthA] = a.competencia.split('/');
-        const [monthB] = b.competencia.split('/');
+      // Sort year months to get the actual competencias with client data
+      const yearMonthsSorted = [...yearData].sort((a, b) => {
+        const [monthA] = a.Competencia.split('/');
+        const [monthB] = b.Competencia.split('/');
         return parseInt(monthA) - parseInt(monthB);
       });
       
-      // Compose monthly targets
-      yearMonths.forEach(month => {
-        if (month.clientTarget !== 0) {
-          accumulatedTarget = (1 + accumulatedTarget) * (1 + month.clientTarget) - 1;
+      // Compose monthly targets only for months with client data
+      yearMonthsSorted.forEach(clientMonth => {
+        const marketPoint = marketData.find(m => m.competencia === clientMonth.Competencia);
+        if (marketPoint && marketPoint.clientTarget !== 0) {
+          accumulatedTarget = (1 + accumulatedTarget) * (1 + marketPoint.clientTarget) - 1;
         }
       });
     }
