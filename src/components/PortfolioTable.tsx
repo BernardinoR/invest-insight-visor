@@ -735,7 +735,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                               : 'bg-muted/20 text-muted-foreground'
                           }`}>
                             {yearSummary.accumulatedTarget > 0 ? 
-                              `${(yearSummary.yearReturn * 100 - yearSummary.accumulatedTarget * 100).toFixed(2)}pp` : 
+                              `${((yearSummary.yearReturn - yearSummary.accumulatedTarget) * 100).toFixed(2)}pp` : 
                               "N/A"}
                           </span>
                         </TableCell>
