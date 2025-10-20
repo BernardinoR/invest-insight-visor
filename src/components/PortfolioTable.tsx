@@ -341,19 +341,16 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
       accumulated = (1 + accumulated) * (1 + monthlyReturn) - 1;
     });
     
-    // Calculate target return using the same method as the chart
+    // Calculate target return by composing monthly targets
     let targetAccumulated = 0;
     if (marketData && marketData.length > 0) {
-      const firstCompetencia = sortedData[0]?.Competencia;
-      const lastCompetencia = sortedData[sortedData.length - 1]?.Competencia;
-      
-      const firstMarketPoint = marketData.find(m => m.competencia === firstCompetencia);
-      const lastMarketPoint = marketData.find(m => m.competencia === lastCompetencia);
-      
-      if (firstMarketPoint && lastMarketPoint) {
-        // Use the same calculation as in PerformanceChart
-        targetAccumulated = (1 + lastMarketPoint.accumulatedClientTarget) / (1 + firstMarketPoint.accumulatedClientTarget) - 1;
-      }
+      // Compose monthly targets only for months with client data
+      sortedData.forEach(clientMonth => {
+        const marketPoint = marketData.find(m => m.competencia === clientMonth.Competencia);
+        if (marketPoint && marketPoint.clientTarget !== 0) {
+          targetAccumulated = (1 + targetAccumulated) * (1 + marketPoint.clientTarget) - 1;
+        }
+      });
     }
     
     return { 
