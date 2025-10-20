@@ -204,7 +204,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
     
     // Add the zero starting point
     result.push({
-      name: previousMonth.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+      name: `${previousMonth.toLocaleDateString('pt-BR', { month: '2-digit' })}/${previousMonth.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
       retornoAcumulado: 0,
       retornoMensal: 0,
       competencia: previousMonth.toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' })
@@ -220,7 +220,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
       accumulated = (1 + accumulated) * (1 + monthlyReturn) - 1;
       
       result.push({
-        name: competenciaDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+        name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
         retornoAcumulado: accumulated * 100,
         retornoMensal: monthlyReturn * 100,
         competencia: item.Competencia
@@ -249,7 +249,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
     
     // Add the zero starting point
     result.push({
-      name: previousMonth.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+      name: `${previousMonth.toLocaleDateString('pt-BR', { month: '2-digit' })}/${previousMonth.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
       patrimonioAplicado: initialPatrimonio,
       patrimonioAtual: initialPatrimonio,
       competencia: previousMonth.toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' })
@@ -265,7 +265,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
       const patrimonioAtual = item["Patrimonio Final"] || 0;
       
       result.push({
-        name: competenciaDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+        name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
         patrimonioAplicado,
         patrimonioAtual,
         competencia: item.Competencia
