@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, Trophy } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMarketIndicators } from "@/hooks/useMarketIndicators";
 
@@ -247,26 +247,26 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     // Calculate year accumulated return (compound monthly returns)
     const yearReturn = calculateCompoundReturn(yearData.map(item => item.Rendimento || 0));
 
-    // Calculate accumulated target for the year
+    // Calculate accumulated target for the year by composing monthly targets
     let accumulatedTarget = 0;
     if (marketData && marketData.length > 0) {
-      // Sort year months to get first and last
-      const yearMonthsSorted = [...yearData].sort((a, b) => {
-        const [monthA] = a.Competencia.split('/');
-        const [monthB] = b.Competencia.split('/');
+      // Filter months that belong to this year
+      const yearStr = year;
+      const yearMonths = marketData.filter(m => {
+        const [_, yearFromCompetencia] = m.competencia.split('/');
+        return yearFromCompetencia === yearStr;
+      }).sort((a, b) => {
+        const [monthA] = a.competencia.split('/');
+        const [monthB] = b.competencia.split('/');
         return parseInt(monthA) - parseInt(monthB);
       });
       
-      const firstCompetenciaOfYear = yearMonthsSorted[0].Competencia;
-      const lastCompetenciaOfYear = yearMonthsSorted[yearMonthsSorted.length - 1].Competencia;
-      
-      const firstMarketPoint = marketData.find(m => m.competencia === firstCompetenciaOfYear);
-      const lastMarketPoint = marketData.find(m => m.competencia === lastCompetenciaOfYear);
-      
-      if (firstMarketPoint && lastMarketPoint) {
-        // Calculate relative accumulated target (same method as PerformanceChart)
-        accumulatedTarget = (1 + lastMarketPoint.accumulatedClientTarget) / (1 + firstMarketPoint.accumulatedClientTarget) - 1;
-      }
+      // Compose monthly targets
+      yearMonths.forEach(month => {
+        if (month.clientTarget !== 0) {
+          accumulatedTarget = (1 + accumulatedTarget) * (1 + month.clientTarget) - 1;
+        }
+      });
     }
 
     // Find best performing month
@@ -364,7 +364,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     };
   };
 
-  const { portfolioReturn: totalReturn, targetReturn: totalAccumulatedTarget } = calculateAccumulatedReturns();
+  const { portfolioReturn: totalReturn, targetReturn: totalAccumulatedTarget } = useMemo(() => calculateAccumulatedReturns(), [consolidatedData, marketData]);
 
   // Calculate correct totals for onYearTotalsChange
   useEffect(() => {

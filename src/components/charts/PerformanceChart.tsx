@@ -271,9 +271,35 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
           // This is the clientTarget field which contains the monthly target return
           targetRetorno = currentMarketPoint.clientTarget * 100;
         } else {
-          // Calculate accumulated target performance from first to current period
-          const targetRelativeReturn = (1 + currentMarketPoint.accumulatedClientTarget) / (1 + firstMarketPoint.accumulatedClientTarget) - 1;
-          targetRetorno = targetRelativeReturn * 100;
+          // Compose monthly targets from first to current period
+          const periodMonths = marketData
+            .filter(m => {
+              const [month, year] = m.competencia.split('/');
+              const [firstMonth, firstYear] = firstCompetencia.split('/');
+              const [currentMonth, currentYear] = currentCompetencia.split('/');
+              
+              const mDate = new Date(parseInt(year), parseInt(month) - 1);
+              const firstDate = new Date(parseInt(firstYear), parseInt(firstMonth) - 1);
+              const currentDate = new Date(parseInt(currentYear), parseInt(currentMonth) - 1);
+              
+              return mDate >= firstDate && mDate <= currentDate;
+            })
+            .sort((a, b) => {
+              const [monthA, yearA] = a.competencia.split('/');
+              const [monthB, yearB] = b.competencia.split('/');
+              const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+              const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+              return dateA.getTime() - dateB.getTime();
+            });
+          
+          let composedTarget = 0;
+          periodMonths.forEach(month => {
+            if (month.clientTarget !== 0) {
+              composedTarget = (1 + composedTarget) * (1 + month.clientTarget) - 1;
+            }
+          });
+          
+          targetRetorno = composedTarget * 100;
         }
         
         console.log('Target calculation:', {
