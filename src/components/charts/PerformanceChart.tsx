@@ -482,11 +482,17 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-gradient-accent flex items-center justify-center">
+            <div 
+              className="h-10 w-10 rounded-lg bg-gradient-accent flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => setViewMode(prev => prev === 'rentabilidade' ? 'patrimonio' : 'rentabilidade')}
+            >
               <TrendingUp className="h-5 w-5 text-primary-foreground" />
             </div>
             <div className="flex flex-col gap-2">
-              <CardTitle className="text-foreground text-xl font-semibold">
+              <CardTitle 
+                className="text-foreground text-xl font-semibold cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setViewMode(prev => prev === 'rentabilidade' ? 'patrimonio' : 'rentabilidade')}
+              >
                 {viewMode === 'rentabilidade' ? 'Retorno Acumulado' : 'Seu patrimônio'}
               </CardTitle>
               <p className="text-sm text-muted-foreground">
