@@ -250,12 +250,23 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     // Calculate accumulated target for the year
     let accumulatedTarget = 0;
     if (marketData && marketData.length > 0) {
-      yearData.forEach(monthData => {
-        const marketPoint = marketData.find(point => point.competencia === monthData.Competencia);
-        if (marketPoint && marketPoint.clientTarget > 0) {
-          accumulatedTarget = (1 + accumulatedTarget) * (1 + marketPoint.clientTarget) - 1;
-        }
+      // Sort year months to get first and last
+      const yearMonthsSorted = [...yearData].sort((a, b) => {
+        const [monthA] = a.Competencia.split('/');
+        const [monthB] = b.Competencia.split('/');
+        return parseInt(monthA) - parseInt(monthB);
       });
+      
+      const firstCompetenciaOfYear = yearMonthsSorted[0].Competencia;
+      const lastCompetenciaOfYear = yearMonthsSorted[yearMonthsSorted.length - 1].Competencia;
+      
+      const firstMarketPoint = marketData.find(m => m.competencia === firstCompetenciaOfYear);
+      const lastMarketPoint = marketData.find(m => m.competencia === lastCompetenciaOfYear);
+      
+      if (firstMarketPoint && lastMarketPoint) {
+        // Calculate relative accumulated target (same method as PerformanceChart)
+        accumulatedTarget = (1 + lastMarketPoint.accumulatedClientTarget) / (1 + firstMarketPoint.accumulatedClientTarget) - 1;
+      }
     }
 
     // Find best performing month
