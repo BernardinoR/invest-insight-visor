@@ -178,7 +178,7 @@ export function useMarketIndicators(clientName?: string) {
       let ibovespaAccumulated = 0;
       let ifixAccumulated = 0;
       let ipcaAccumulated = 0;
-      let clientTargetAccumulated = 0;
+      let clientTargetAccumulatedByYear: Record<string, number> = {};
 
       // Sort competencias chronologically
       const sortedCompetencias = Array.from(competenciaMap.keys()).sort((a, b) => {
@@ -191,6 +191,12 @@ export function useMarketIndicators(clientName?: string) {
 
       sortedCompetencias.forEach(competencia => {
         const data = competenciaMap.get(competencia)!;
+        const [month, year] = competencia.split('/');
+        
+        // Reset accumulated target at the beginning of each year
+        if (month === '01' || !clientTargetAccumulatedByYear[year]) {
+          clientTargetAccumulatedByYear[year] = 0;
+        }
         
         // Calculate average values for the month
         const avgIbovespa = data.ibovespa.length > 0 ? 
@@ -248,9 +254,9 @@ export function useMarketIndicators(clientName?: string) {
           ipcaAccumulated = (1 + ipcaAccumulated) * (1 + monthlyIpca) - 1;
         }
 
-        // Client target accumulation - always accumulate if we have a target
+        // Client target accumulation - accumulate within the year
         if (clientTargetMonthly !== 0) {
-          clientTargetAccumulated = (1 + clientTargetAccumulated) * (1 + clientTargetMonthly) - 1;
+          clientTargetAccumulatedByYear[year] = (1 + clientTargetAccumulatedByYear[year]) * (1 + clientTargetMonthly) - 1;
         }
 
         result.push({
@@ -262,7 +268,7 @@ export function useMarketIndicators(clientName?: string) {
           accumulatedIbovespa: ibovespaAccumulated,
           accumulatedIfix: ifixAccumulated,
           accumulatedIpca: ipcaAccumulated,
-          accumulatedClientTarget: clientTargetAccumulated
+          accumulatedClientTarget: clientTargetAccumulatedByYear[year]
         });
 
         console.log(`Processed ${competencia}:`, {
@@ -273,7 +279,7 @@ export function useMarketIndicators(clientName?: string) {
           ibovespaAccumulated,
           ifixAccumulated,
           ipcaAccumulated,
-          clientTargetAccumulated
+          clientTargetAccumulated: clientTargetAccumulatedByYear[year]
         });
       });
 
