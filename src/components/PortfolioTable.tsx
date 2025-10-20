@@ -656,9 +656,9 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
             <div className={`mt-6 flex flex-col items-center justify-center ${
               selectedInstitution ? "lg:mt-6" : "lg:mt-0 lg:absolute lg:top-6 lg:right-8 lg:w-80"
             }`}>
-              <div className="relative">
-                <ResponsiveContainer width="100%" height={280} minWidth={288}>
-                  <PieChart width={280} height={280}>
+              <div className="relative w-full max-w-[320px] sm:max-w-[360px] lg:max-w-[280px]">
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
                     <Pie
                       data={institutionChartData}
                       cx="50%"
