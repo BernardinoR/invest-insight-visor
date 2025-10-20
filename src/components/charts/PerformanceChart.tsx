@@ -167,7 +167,15 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
       case 'custom':
         if (customStartCompetencia && customEndCompetencia) {
           filteredData = sortedData.filter(item => {
-            return item.Competencia >= customStartCompetencia && item.Competencia <= customEndCompetencia;
+            const [itemMonth, itemYear] = item.Competencia.split('/');
+            const [startMonth, startYear] = customStartCompetencia.split('/');
+            const [endMonth, endYear] = customEndCompetencia.split('/');
+            
+            const itemDate = new Date(parseInt(itemYear), parseInt(itemMonth) - 1);
+            const startDate = new Date(parseInt(startYear), parseInt(startMonth) - 1);
+            const endDate = new Date(parseInt(endYear), parseInt(endMonth) - 1);
+            
+            return itemDate >= startDate && itemDate <= endDate;
           });
         }
         break;
