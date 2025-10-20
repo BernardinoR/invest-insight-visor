@@ -488,40 +488,15 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
             >
               <TrendingUp className="h-5 w-5 text-primary-foreground" />
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col">
               <CardTitle 
                 className="text-foreground text-xl font-semibold cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={() => setViewMode(prev => prev === 'rentabilidade' ? 'patrimonio' : 'rentabilidade')}
               >
                 {viewMode === 'rentabilidade' ? 'Retorno Acumulado' : 'Seu patrimônio'}
               </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {viewMode === 'rentabilidade' 
-                  ? 'Comparativo de performance da carteira com indicadores' 
-                  : 'Evolução do patrimônio aplicado e atual'}
-              </p>
-              {(cdiLoading || marketLoading) && <p className="text-xs text-muted-foreground">Carregando dados...</p>}
-              {(cdiError || marketError) && <p className="text-xs text-destructive">Erro ao carregar dados: {cdiError || marketError}</p>}
-              
-              {/* View Mode Toggle - inline with title */}
-              <RadioGroup 
-                value={viewMode} 
-                onValueChange={(value) => setViewMode(value as 'rentabilidade' | 'patrimonio')}
-                className="flex gap-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="rentabilidade" id="rentabilidade" />
-                  <Label htmlFor="rentabilidade" className="cursor-pointer text-sm font-normal">
-                    Visualizar por rentabilidade
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="patrimonio" id="patrimonio" />
-                  <Label htmlFor="patrimonio" className="cursor-pointer text-sm font-normal">
-                    Visualizar por patrimônio
-                  </Label>
-                </div>
-              </RadioGroup>
+              {(cdiLoading || marketLoading) && <p className="text-xs text-muted-foreground mt-1">Carregando dados...</p>}
+              {(cdiError || marketError) && <p className="text-xs text-destructive mt-1">Erro ao carregar dados: {cdiError || marketError}</p>}
             </div>
           </div>
           
