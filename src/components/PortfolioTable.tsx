@@ -342,19 +342,37 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     });
     
     // Calculate target return by composing monthly targets
-    // Only for periods where we have market data
+    // Use all market data months in the period, not just months with client data
     let targetAccumulated = 0;
-    if (marketData && marketData.length > 0) {
-      // Filter sortedData to only include competencias that exist in marketData
-      const dataWithMarketInfo = sortedData.filter(clientMonth => 
-        marketData.some(m => m.competencia === clientMonth.Competencia)
-      );
+    if (marketData && marketData.length > 0 && sortedData.length > 0) {
+      const firstCompetencia = sortedData[0].Competencia;
+      const lastCompetencia = sortedData[sortedData.length - 1].Competencia;
       
-      // Compose monthly targets only for months with both client and market data
-      dataWithMarketInfo.forEach(clientMonth => {
-        const marketPoint = marketData.find(m => m.competencia === clientMonth.Competencia);
-        if (marketPoint && marketPoint.clientTarget !== 0) {
-          targetAccumulated = (1 + targetAccumulated) * (1 + marketPoint.clientTarget) - 1;
+      // Filter marketData to the same period as client data
+      const periodMarketData = marketData
+        .filter(m => {
+          const [month, year] = m.competencia.split('/');
+          const [firstMonth, firstYear] = firstCompetencia.split('/');
+          const [lastMonth, lastYear] = lastCompetencia.split('/');
+          
+          const mDate = new Date(parseInt(year), parseInt(month) - 1);
+          const firstDate = new Date(parseInt(firstYear), parseInt(firstMonth) - 1);
+          const lastDate = new Date(parseInt(lastYear), parseInt(lastMonth) - 1);
+          
+          return mDate >= firstDate && mDate <= lastDate;
+        })
+        .sort((a, b) => {
+          const [monthA, yearA] = a.competencia.split('/');
+          const [monthB, yearB] = b.competencia.split('/');
+          const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+          const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+          return dateA.getTime() - dateB.getTime();
+        });
+      
+      // Compose monthly targets for ALL months in the period
+      periodMarketData.forEach(month => {
+        if (month.clientTarget !== 0) {
+          targetAccumulated = (1 + targetAccumulated) * (1 + month.clientTarget) - 1;
         }
       });
     }
