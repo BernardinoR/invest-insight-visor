@@ -16,7 +16,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Trophy } from "lucide-react";
+import { ChevronDown, ChevronUp, Trophy, Filter } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMarketIndicators } from "@/hooks/useMarketIndicators";
@@ -598,34 +598,59 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                     <TableHead className="text-muted-foreground">Instituição</TableHead>
                     <TableHead className="text-muted-foreground text-right">Patrimônio</TableHead>
                     <TableHead className="text-muted-foreground text-right">% Alocação</TableHead>
+                    <TableHead className="text-muted-foreground text-center w-16"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {institutionSummary.map((item, index) => (
                     <TableRow 
                       key={index} 
-                      className={`border-border/50 cursor-pointer transition-colors ${
+                      className={`border-border/50 transition-colors ${
                         selectedInstitution === item.institution 
                           ? 'bg-primary/10' 
                           : 'hover:bg-muted/20'
                       }`}
-                      onClick={() => onInstitutionClick?.(item.institution)}
                     >
-                      <TableCell className="flex items-center gap-2">
+                      <TableCell 
+                        className="flex items-center gap-2 cursor-pointer"
+                        onClick={() => onInstitutionClick?.(item.institution)}
+                      >
                         <div 
                           className="w-1 h-4 rounded-sm shadow-sm" 
                           style={{ backgroundColor: INSTITUTION_COLORS[index % INSTITUTION_COLORS.length] }}
                         ></div>
                         <span className="font-medium text-foreground">{item.institution}</span>
                       </TableCell>
-                      <TableCell className="text-right text-foreground">
+                      <TableCell 
+                        className="text-right text-foreground cursor-pointer"
+                        onClick={() => onInstitutionClick?.(item.institution)}
+                      >
                         {formatCurrency(item.patrimonio)}
                       </TableCell>
-                      <TableCell className="text-right text-foreground font-medium">
+                      <TableCell 
+                        className="text-right text-foreground font-medium cursor-pointer"
+                        onClick={() => onInstitutionClick?.(item.institution)}
+                      >
                         {totalInstitutionsPatrimonio > 0 
                           ? `${((item.patrimonio / totalInstitutionsPatrimonio) * 100).toFixed(2)}%`
                           : '0.00%'
                         }
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onInstitutionClick?.(item.institution);
+                          }}
+                          className={`p-2 rounded-lg transition-all hover:bg-accent/80 ${
+                            selectedInstitution === item.institution 
+                              ? 'bg-primary/20 text-primary' 
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                          title={selectedInstitution === item.institution ? "Remover filtro" : `Filtrar por ${item.institution}`}
+                        >
+                          <Filter className="h-4 w-4" />
+                        </button>
                       </TableCell>
                     </TableRow>
                   ))}
