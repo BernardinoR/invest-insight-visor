@@ -461,7 +461,16 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           </Card>
         </div>
 
-        {/* Portfolio Table - moved to top */}
+        {/* Client Data Display */}
+        <ClientDataDisplay 
+          consolidadoData={filteredConsolidadoData}
+          dadosData={filteredDadosData}
+          loading={loading}
+          clientName={selectedClient}
+          originalConsolidadoData={consolidadoData}
+        />
+
+        {/* Portfolio Table */}
         <div className="mb-8">
           <PortfolioTable 
             selectedClient={selectedClient}
@@ -472,15 +481,6 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             onInstitutionClick={(institution) => setSelectedInstitution(institution === selectedInstitution ? null : institution)}
           />
         </div>
-
-        {/* Client Data Display */}
-        <ClientDataDisplay 
-          consolidadoData={filteredConsolidadoData}
-          dadosData={filteredDadosData}
-          loading={loading}
-          clientName={selectedClient}
-          originalConsolidadoData={consolidadoData}
-        />
 
         {/* Strategy Breakdown */}
         {filteredDadosData.length > 0 && (
