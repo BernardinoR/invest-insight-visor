@@ -206,7 +206,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   // Calculate patrimônio growth from previous month
   const getPatrimonioGrowth = () => {
     if (!filteredRange.fim || filteredConsolidadoData.length === 0) {
-      return { growth: 0, hasData: false };
+      return { growth: 0, hasData: false, previousPatrimonio: 0 };
     }
 
     // Get all unique competencias and sort them
@@ -214,7 +214,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     const currentCompetenciaIndex = allCompetencias.indexOf(filteredRange.fim);
     
     if (currentCompetenciaIndex <= 0) {
-      return { growth: 0, hasData: false };
+      return { growth: 0, hasData: false, previousPatrimonio: 0 };
     }
 
     const previousCompetencia = allCompetencias[currentCompetenciaIndex - 1];
@@ -228,11 +228,11 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     const previousPatrimonio = previousMonthEntries.reduce((sum, entry) => sum + (entry["Patrimonio Final"] || 0), 0);
     
     if (previousPatrimonio === 0) {
-      return { growth: 0, hasData: false };
+      return { growth: 0, hasData: false, previousPatrimonio: 0 };
     }
     
     const growth = ((currentPatrimonio - previousPatrimonio) / previousPatrimonio) * 100;
-    return { growth, hasData: true };
+    return { growth, hasData: true, previousPatrimonio };
   };
 
   const patrimonioGrowth = getPatrimonioGrowth();
@@ -294,7 +294,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                </div>
                <p className={`text-xs ${patrimonioGrowth.hasData && patrimonioGrowth.growth >= 0 ? "text-success" : patrimonioGrowth.hasData ? "text-destructive" : "text-muted-foreground"}`}>
                  {patrimonioGrowth.hasData 
-                   ? `${patrimonioGrowth.growth >= 0 ? "+" : ""}${patrimonioGrowth.growth.toFixed(2)}% vs mês anterior`
+                   ? `${patrimonioGrowth.growth >= 0 ? "+" : ""}${patrimonioGrowth.growth.toFixed(2)}% vs R$ ${patrimonioGrowth.previousPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
                    : hasData ? "Sem mês anterior para comparar" : "Aguardando dados"
                  }
                </p>
