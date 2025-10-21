@@ -227,11 +227,21 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     const previousMonthEntries = consolidadoData.filter(item => item.Competencia === previousCompetencia);
     const previousPatrimonio = previousMonthEntries.reduce((sum, entry) => sum + (entry["Patrimonio Final"] || 0), 0);
     
+    console.log('Patrimônio Growth Calculation:', {
+      currentCompetencia: filteredRange.fim,
+      previousCompetencia,
+      currentPatrimonio,
+      previousPatrimonio,
+      currentMonthEntriesCount: currentMonthEntries.length,
+      previousMonthEntriesCount: previousMonthEntries.length
+    });
+    
     if (previousPatrimonio === 0) {
       return { growth: 0, hasData: false, previousPatrimonio: 0 };
     }
     
     const growth = ((currentPatrimonio - previousPatrimonio) / previousPatrimonio) * 100;
+    console.log('Final growth calculation:', { growth, currentPatrimonio, previousPatrimonio });
     return { growth, hasData: true, previousPatrimonio };
   };
 
