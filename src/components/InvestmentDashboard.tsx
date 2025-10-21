@@ -33,6 +33,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const [filteredRange, setFilteredRange] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
   const [yearTotals, setYearTotals] = useState<{ totalPatrimonio: number; totalRendimento: number } | null>(null);
   const [selectedInstitution, setSelectedInstitution] = useState<string | null>(null);
+  const [institutionCardData, setInstitutionCardData] = useState<any>(null);
 
   // Helper function to convert competencia string to comparable date
   const competenciaToDate = (competencia: string) => {
@@ -468,6 +469,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           loading={loading}
           clientName={selectedClient}
           originalConsolidadoData={consolidadoData}
+          institutionCardData={institutionCardData}
+          selectedInstitution={selectedInstitution}
+          onInstitutionClick={(institution) => setSelectedInstitution(institution === selectedInstitution ? null : institution)}
           portfolioTableComponent={
             <PortfolioTable 
               selectedClient={selectedClient}
@@ -476,6 +480,8 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
               filteredRange={filteredRange}
               selectedInstitution={selectedInstitution}
               onInstitutionClick={(institution) => setSelectedInstitution(institution === selectedInstitution ? null : institution)}
+              showInstitutionCard={false}
+              onInstitutionCardRender={setInstitutionCardData}
             />
           }
         />

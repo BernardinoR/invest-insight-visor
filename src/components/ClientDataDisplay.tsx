@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Database, TrendingUp, Calendar, Target } from "lucide-react";
 import { PerformanceChart } from "./charts/PerformanceChart";
+import { InstitutionAllocationCard } from "./InstitutionAllocationCard";
 
 interface ConsolidadoPerformance {
   id: number;
@@ -40,9 +41,21 @@ interface ClientDataDisplayProps {
   clientName: string;
   originalConsolidadoData?: ConsolidadoPerformance[]; // Original unfiltered data for latest month display
   portfolioTableComponent?: React.ReactNode; // Portfolio Table to be inserted
+  institutionCardData?: {
+    institutionData: Array<{
+      institution: string;
+      patrimonio: number;
+      rendimento: number;
+      percentage: number;
+      color: string;
+    }>;
+    totalPatrimonio: number;
+  };
+  selectedInstitution?: string | null;
+  onInstitutionClick?: (institution: string) => void;
 }
 
-export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientName, originalConsolidadoData, portfolioTableComponent }: ClientDataDisplayProps) {
+export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientName, originalConsolidadoData, portfolioTableComponent, institutionCardData, selectedInstitution, onInstitutionClick }: ClientDataDisplayProps) {
   if (!clientName) {
     return null;
   }
@@ -166,7 +179,15 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
         </div>
       )}
 
-      {/* PLACEHOLDER: Alocação por Instituição card will be inserted here */}
+      {/* Alocação por Instituição */}
+      {institutionCardData && (
+        <InstitutionAllocationCard
+          institutionData={institutionCardData.institutionData}
+          totalPatrimonio={institutionCardData.totalPatrimonio}
+          selectedInstitution={selectedInstitution}
+          onInstitutionClick={onInstitutionClick}
+        />
+      )}
 
       {consolidadoData.length === 0 && dadosData.length === 0 && (
         <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
