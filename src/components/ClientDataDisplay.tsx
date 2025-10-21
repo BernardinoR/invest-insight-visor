@@ -158,6 +158,8 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
         </Card>
       )}
 
+      {/* PLACEHOLDER: Alocação por Instituição card will be inserted here */}
+
       {consolidadoData.length === 0 && dadosData.length === 0 && (
         <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
           <CardHeader>
