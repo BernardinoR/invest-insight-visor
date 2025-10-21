@@ -205,12 +205,12 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
   // Calculate patrimônio growth from previous month
   const getPatrimonioGrowth = () => {
-    if (!filteredRange.fim || filteredConsolidadoData.length === 0) {
+    if (!filteredRange.fim || consolidadoData.length === 0) {
       return { growth: 0, hasData: false, previousPatrimonio: 0 };
     }
 
-    // Get all unique competencias and sort them
-    const allCompetencias = [...new Set(filteredConsolidadoData.map(item => item.Competencia))].sort();
+    // Get all unique competencias from unfiltered data and sort them
+    const allCompetencias = [...new Set(consolidadoData.map(item => item.Competencia))].sort();
     const currentCompetenciaIndex = allCompetencias.indexOf(filteredRange.fim);
     
     if (currentCompetenciaIndex <= 0) {
@@ -219,12 +219,12 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
     const previousCompetencia = allCompetencias[currentCompetenciaIndex - 1];
     
-    // Calculate current month patrimônio
-    const currentMonthEntries = filteredConsolidadoData.filter(item => item.Competencia === filteredRange.fim);
+    // Calculate current month patrimônio from unfiltered data
+    const currentMonthEntries = consolidadoData.filter(item => item.Competencia === filteredRange.fim);
     const currentPatrimonio = currentMonthEntries.reduce((sum, entry) => sum + (entry["Patrimonio Final"] || 0), 0);
     
-    // Calculate previous month patrimônio
-    const previousMonthEntries = filteredConsolidadoData.filter(item => item.Competencia === previousCompetencia);
+    // Calculate previous month patrimônio from unfiltered data
+    const previousMonthEntries = consolidadoData.filter(item => item.Competencia === previousCompetencia);
     const previousPatrimonio = previousMonthEntries.reduce((sum, entry) => sum + (entry["Patrimonio Final"] || 0), 0);
     
     if (previousPatrimonio === 0) {
