@@ -461,26 +461,24 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           </Card>
         </div>
 
-        {/* Client Data Display */}
+        {/* Client Data Display - includes Performance chart, Consolidado Performance, Portfolio Table placeholder, and Institution Allocation placeholder */}
         <ClientDataDisplay 
           consolidadoData={filteredConsolidadoData}
           dadosData={filteredDadosData}
           loading={loading}
           clientName={selectedClient}
           originalConsolidadoData={consolidadoData}
+          portfolioTableComponent={
+            <PortfolioTable 
+              selectedClient={selectedClient}
+              onYearTotalsChange={handleYearTotalsChange}
+              filteredConsolidadoData={filteredConsolidadoData}
+              filteredRange={filteredRange}
+              selectedInstitution={selectedInstitution}
+              onInstitutionClick={(institution) => setSelectedInstitution(institution === selectedInstitution ? null : institution)}
+            />
+          }
         />
-
-        {/* Portfolio Table */}
-        <div className="mb-8">
-          <PortfolioTable 
-            selectedClient={selectedClient}
-            onYearTotalsChange={handleYearTotalsChange}
-            filteredConsolidadoData={filteredConsolidadoData}
-            filteredRange={filteredRange}
-            selectedInstitution={selectedInstitution}
-            onInstitutionClick={(institution) => setSelectedInstitution(institution === selectedInstitution ? null : institution)}
-          />
-        </div>
 
         {/* Strategy Breakdown */}
         {filteredDadosData.length > 0 && (

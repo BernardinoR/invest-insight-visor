@@ -39,9 +39,10 @@ interface ClientDataDisplayProps {
   loading: boolean;
   clientName: string;
   originalConsolidadoData?: ConsolidadoPerformance[]; // Original unfiltered data for latest month display
+  portfolioTableComponent?: React.ReactNode; // Portfolio Table to be inserted
 }
 
-export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientName, originalConsolidadoData }: ClientDataDisplayProps) {
+export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientName, originalConsolidadoData, portfolioTableComponent }: ClientDataDisplayProps) {
   if (!clientName) {
     return null;
   }
@@ -156,6 +157,13 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
             </Table>
           </CardContent>
         </Card>
+      )}
+
+      {/* Portfolio Table - Resumo do Patrimônio */}
+      {portfolioTableComponent && (
+        <div className="mb-6">
+          {portfolioTableComponent}
+        </div>
       )}
 
       {/* PLACEHOLDER: Alocação por Instituição card will be inserted here */}
