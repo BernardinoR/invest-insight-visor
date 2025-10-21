@@ -94,6 +94,11 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
 
   return (
     <div className="space-y-6 mb-8">
+      {/* Performance Chart - positioned FIRST */}
+      {filteredConsolidadoData.length > 0 && (
+        <PerformanceChart consolidadoData={consolidadoData} clientName={clientName} />
+      )}
+
       {/* Consolidado Performance */}
       {filteredConsolidadoData.length > 0 && (
         <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
@@ -151,11 +156,6 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
             </Table>
           </CardContent>
         </Card>
-      )}
-
-      {/* Performance Chart - positioned after Consolidado Performance */}
-      {filteredConsolidadoData.length > 0 && (
-        <PerformanceChart consolidadoData={consolidadoData} clientName={clientName} />
       )}
 
       {consolidadoData.length === 0 && dadosData.length === 0 && (
