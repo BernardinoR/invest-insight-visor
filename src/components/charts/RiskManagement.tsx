@@ -623,7 +623,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Pie Chart */}
-            <div className="flex flex-col items-center justify-center">
+            <div className="relative flex flex-col items-center justify-center">
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Pie
@@ -651,7 +651,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
-              <div className="absolute top-1/2 left-1/4 transform -translate-x-1/2 -translate-y-1/2 text-center lg:block hidden">
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
                 <p className="text-4xl font-bold text-foreground">{riskMetrics.hitRate.hitRatePercent}%</p>
                 <p className="text-sm text-muted-foreground">Hit Rate</p>
               </div>
