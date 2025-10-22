@@ -36,7 +36,7 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
     };
   });
 
-  // Calculate presence of each strategy per competencia
+  // Calculate number of strategies per competencia and track which ones
   const strategiesData = allCompetencias.map(competencia => {
     const competenciaData = dadosData.filter(item => item.Competencia === competencia);
     const strategiesInMonth = new Set(
@@ -45,14 +45,11 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
         .filter(Boolean)
     );
 
-    const dataPoint: any = { competencia };
-    
-    // Add a value of 1 for strategies present, 0 for absent
-    allStrategies.forEach(strategy => {
-      dataPoint[strategy] = strategiesInMonth.has(strategy) ? 1 : 0;
-    });
-
-    return dataPoint;
+    return {
+      competencia,
+      numeroEstrategias: strategiesInMonth.size,
+      estrategias: Array.from(strategiesInMonth).join(', ')
+    };
   });
 
 
@@ -60,10 +57,7 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
   const currentAssets = assetsData[assetsData.length - 1]?.ativos || 0;
   
   // Count current active strategies
-  const currentStrategiesData = strategiesData[strategiesData.length - 1];
-  const currentStrategiesCount = currentStrategiesData 
-    ? Object.keys(currentStrategiesData).filter(key => key !== 'competencia' && currentStrategiesData[key] === 1).length 
-    : 0;
+  const currentStrategiesCount = strategiesData[strategiesData.length - 1]?.numeroEstrategias || 0;
 
   // Generate colors for strategies
   const strategyColors = [
@@ -170,25 +164,22 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                 </CardContent>
               </Card>
 
-              {/* Strategies Timeline Chart */}
+              {/* Strategies Chart */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base md:text-lg">Linha do Tempo de Estratégias</CardTitle>
+                  <CardTitle className="text-base md:text-lg">Evolução de Estratégias</CardTitle>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Presença de cada estratégia ao longo do tempo
+                    Número de classes de ativos ao longo do tempo
                   </p>
                 </CardHeader>
                 <CardContent className="px-2 md:px-6">
                   <ChartContainer
-                    config={Object.fromEntries(
-                      allStrategies.map((strategy, index) => [
-                        strategy,
-                        {
-                          label: strategy,
-                          color: strategyColors[index % strategyColors.length],
-                        },
-                      ])
-                    )}
+                    config={{
+                      numeroEstrategias: {
+                        label: "Estratégias",
+                        color: "hsl(var(--chart-2))",
+                      },
+                    }}
                     className="h-[300px] md:h-[400px] w-full"
                   >
                     <ResponsiveContainer width="100%" height="100%">
@@ -206,64 +197,48 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                           className="text-[10px] md:text-xs"
                           tick={{ fill: 'hsl(var(--muted-foreground))' }}
                           width={35}
-                          ticks={[0, 1]}
-                          domain={[0, 1]}
-                          tickFormatter={(value) => value === 1 ? 'Ativa' : ''}
                         />
                         <ChartTooltip 
                           content={({ active, payload }) => {
                             if (!active || !payload || payload.length === 0) return null;
                             
-                            const activeStrategies = payload.filter(p => p.value === 1);
-                            
                             return (
-                              <div className="rounded-lg border bg-background p-2 shadow-sm">
-                                <div className="font-medium text-xs mb-1">
+                              <div className="rounded-lg border bg-background p-3 shadow-sm max-w-xs">
+                                <div className="font-medium text-xs mb-2">
                                   {payload[0]?.payload?.competencia}
                                 </div>
                                 <div className="space-y-1">
-                                  {activeStrategies.map((entry, index) => (
-                                    <div key={index} className="flex items-center gap-2 text-xs">
-                                      <div 
-                                        className="w-2 h-2 rounded-full" 
-                                        style={{ backgroundColor: entry.color }}
-                                      />
-                                      <span>{entry.name}</span>
+                                  <div className="flex items-center gap-2 text-xs">
+                                    <div 
+                                      className="w-2 h-2 rounded-full" 
+                                      style={{ backgroundColor: 'hsl(var(--chart-2))' }}
+                                    />
+                                    <span className="font-semibold">
+                                      {payload[0]?.payload?.numeroEstrategias} estratégia(s)
+                                    </span>
+                                  </div>
+                                  {payload[0]?.payload?.estrategias && (
+                                    <div className="text-[10px] text-muted-foreground mt-2 pl-4">
+                                      {payload[0].payload.estrategias}
                                     </div>
-                                  ))}
+                                  )}
                                 </div>
                               </div>
                             );
                           }}
                         />
-                        {allStrategies.map((strategy, index) => (
-                          <Line
-                            key={strategy}
-                            type="stepAfter"
-                            dataKey={strategy}
-                            name={strategy}
-                            stroke={strategyColors[index % strategyColors.length]}
-                            strokeWidth={2}
-                            dot={false}
-                            connectNulls
-                          />
-                        ))}
+                        <Line 
+                          type="monotone"
+                          dataKey="numeroEstrategias" 
+                          name="Estratégias"
+                          stroke="hsl(var(--chart-2))" 
+                          strokeWidth={3}
+                          dot={{ fill: 'hsl(var(--chart-2))', r: 5 }}
+                          activeDot={{ r: 7 }}
+                        />
                       </LineChart>
                     </ResponsiveContainer>
                   </ChartContainer>
-                  
-                  {/* Legend */}
-                  <div className="mt-4 flex flex-wrap gap-3 justify-center">
-                    {allStrategies.map((strategy, index) => (
-                      <div key={strategy} className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: strategyColors[index % strategyColors.length] }}
-                        />
-                        <span className="text-xs">{strategy}</span>
-                      </div>
-                    ))}
-                  </div>
                 </CardContent>
               </Card>
             </div>
