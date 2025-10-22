@@ -187,41 +187,42 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
 
     const returns = filteredConsolidatedData.map(item => item.Rendimento * 100);
     
-    // Calcular retorno médio usando capitalização composta (média geométrica)
+    // Média ARITMÉTICA (para cálculos estatísticos de volatilidade)
+    const avgReturnArithmetic = returns.reduce((a, b) => a + b, 0) / returns.length;
+    
+    // Média GEOMÉTRICA (para retorno composto real)
     const compoundedReturn = returns.reduce((product, r) => {
       return product * (1 + r / 100); // Converter % para decimal
     }, 1);
+    const avgReturnGeometric = (Math.pow(compoundedReturn, 1 / returns.length) - 1) * 100;
     
-    // Extrair a raiz n-ésima e converter de volta para %
-    const avgReturn = (Math.pow(compoundedReturn, 1 / returns.length) - 1) * 100;
-    
-    // Volatilidade (desvio padrão)
-    const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length;
+    // Volatilidade (desvio padrão) - calculada com base na média ARITMÉTICA
+    const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturnArithmetic, 2), 0) / returns.length;
     const volatility = Math.sqrt(variance);
     
-    // Sharpe Ratio (assumindo taxa livre de risco de 0.5% ao mês - CDI aproximado)
+    // Sharpe Ratio - usando média GEOMÉTRICA (performance real) e volatilidade (risco estatístico)
     const riskFreeRate = 0.5;
-    const sharpe = volatility !== 0 ? (avgReturn - riskFreeRate) / volatility : 0;
+    const sharpe = volatility !== 0 ? (avgReturnGeometric - riskFreeRate) / volatility : 0;
     
-    // Sortino Ratio (usando apenas volatilidade negativa)
+    // Sortino Ratio - usando média GEOMÉTRICA (performance real)
     const negativeReturns = returns.filter(r => r < clientTarget * 100);
     const downwardVariance = negativeReturns.length > 0
       ? negativeReturns.reduce((sum, r) => sum + Math.pow(r - clientTarget * 100, 2), 0) / negativeReturns.length
       : 0;
     const downwardVolatility = Math.sqrt(downwardVariance);
-    const sortino = downwardVolatility !== 0 ? (avgReturn - clientTarget * 100) / downwardVolatility : 0;
+    const sortino = downwardVolatility !== 0 ? (avgReturnGeometric - clientTarget * 100) / downwardVolatility : 0;
     
-    // Volatilidade Assimétrica (Upside vs Downside)
-    const positiveReturns = returns.filter(r => r > avgReturn);
-    const negativeReturnsFromAvg = returns.filter(r => r < avgReturn);
+    // Volatilidade Assimétrica (Upside vs Downside) - usando média ARITMÉTICA
+    const positiveReturns = returns.filter(r => r > avgReturnArithmetic);
+    const negativeReturnsFromAvg = returns.filter(r => r < avgReturnArithmetic);
     
     const upsideVariance = positiveReturns.length > 0
-      ? positiveReturns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / positiveReturns.length
+      ? positiveReturns.reduce((sum, r) => sum + Math.pow(r - avgReturnArithmetic, 2), 0) / positiveReturns.length
       : 0;
     const upsideVolatility = Math.sqrt(upsideVariance);
     
     const downsideVariance = negativeReturnsFromAvg.length > 0
-      ? negativeReturnsFromAvg.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / negativeReturnsFromAvg.length
+      ? negativeReturnsFromAvg.reduce((sum, r) => sum + Math.pow(r - avgReturnArithmetic, 2), 0) / negativeReturnsFromAvg.length
       : 0;
     const downsideVolatility = Math.sqrt(downsideVariance);
     
@@ -309,7 +310,8 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
       sortino,
       volatility,
       maxDrawdown,
-      avgReturn,
+      avgReturn: avgReturnGeometric, // Exibir média geométrica nos cards
+      avgReturnArithmetic, // Disponível para análises estatísticas
       downwardVolatility,
       upsideVolatility,
       downsideVolatility,
