@@ -906,13 +906,15 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     plus1sd: 0,
                     minus1sd: 0,
                     plus2sd: 0,
-                    minus2sd: 0
+                    minus2sd: 0,
+                    assimetriaVariacao: 0
                   };
                   
                   let accumulatedReturn = 0;
                   let accumulatedUpsideVol = 0;
                   let accumulatedDownsideVol = 0;
                   const monthReturns: number[] = [];
+                  let previousAssimetria = 0; // Para calcular variação
                   
                   const dataPoints = filteredConsolidatedData.map((item, index) => {
                     const monthReturn = item.Rendimento * 100;
@@ -957,6 +959,11 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     const avgReturnArithmetic = monthReturns.reduce((a, b) => a + b, 0) / monthReturns.length;
                     const avgAccumulated = avgReturnArithmetic * (index + 1);
                     
+                    // 4. ÍNDICE DE ASSIMETRIA E SUA VARIAÇÃO
+                    const assimetria = ((sigma_baixa - sigma_alta) / sigma_alta) * 100; // % de assimetria
+                    const assimetriaVariacao = index === 0 ? 0 : assimetria - previousAssimetria; // Variação período a período
+                    previousAssimetria = assimetria;
+                    
                     const [month, year] = item.Competencia.split('/');
                     const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
                     
@@ -972,7 +979,8 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                       // Métricas adicionais para análise
                       sigma_alta,
                       sigma_baixa,
-                      assimetria: ((sigma_baixa - sigma_alta) / sigma_alta) * 100 // % de assimetria
+                      assimetria,
+                      assimetriaVariacao // Ganho/Diminuição de assimetria
                     };
                   });
                   
@@ -1004,6 +1012,18 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                   tickFormatter={(value) => `${value.toFixed(1)}%`}
                   width={70}
                 />
+                {/* YAxis secundário para as barras de assimetria */}
+                <YAxis 
+                  yAxisId="bars"
+                  orientation="right"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => `${value.toFixed(1)}%`}
+                  width={70}
+                  domain={['auto', 'auto']}
+                />
                 <Tooltip 
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
@@ -1023,10 +1043,11 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                       'minus2sd': '-2σ Baixa (Downside)',
                       'sigma_alta': 'σ Alta (últimos 3 períodos)',
                       'sigma_baixa': 'σ Baixa (últimos 3 períodos)',
-                      'assimetria': 'Índice de Assimetria'
+                      'assimetria': 'Índice de Assimetria',
+                      'assimetriaVariacao': 'Variação de Assimetria'
                     };
                     
-                    if (name === 'assimetria') {
+                    if (name === 'assimetria' || name === 'assimetriaVariacao') {
                       return [`${Number(value).toFixed(1)}%`, labels[name]];
                     }
                     return [`${Number(value).toFixed(2)}%`, labels[name] || name];
@@ -1113,6 +1134,31 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     name="Retorno Acumulado"
                   />
                 )}
+                
+                {/* Barras de Variação de Assimetria */}
+                <Bar 
+                  dataKey="assimetriaVariacao" 
+                  fill="hsl(var(--success))"
+                  yAxisId="bars"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={20}
+                >
+                  {(() => {
+                    const data = filteredConsolidatedData;
+                    return data.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={index === 0 || (data[index] as any).assimetriaVariacao === undefined
+                          ? 'transparent'
+                          : (data[index] as any).assimetriaVariacao >= 0 
+                            ? 'hsl(var(--success))' 
+                            : 'hsl(var(--destructive))'
+                        }
+                        fillOpacity={0.7}
+                      />
+                    ));
+                  })()}
+                </Bar>
               </LineChart>
             </ResponsiveContainer>
           </div>
