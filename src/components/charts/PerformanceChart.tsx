@@ -6,8 +6,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { TrendingUp, Calendar as CalendarIcon, Settings, ArrowLeftRight, Wallet } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell } from 'recharts';
+import { TrendingUp, Calendar as CalendarIcon, Settings, ArrowLeftRight, Wallet, BarChart3 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -39,7 +39,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   const [customEndCompetencia, setCustomEndCompetencia] = useState<string>('');
   const [showCustomSelector, setShowCustomSelector] = useState(false);
   const [showIndicators, setShowIndicators] = useState(false);
-  const [viewMode, setViewMode] = useState<'rentabilidade' | 'patrimonio'>('rentabilidade');
+  const [viewMode, setViewMode] = useState<'rentabilidade' | 'patrimonio' | 'crescimento'>('rentabilidade');
   const [selectedIndicators, setSelectedIndicators] = useState({
     cdi: false,
     target: true,
@@ -277,6 +277,42 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
 
   const patrimonioData = calculatePatrimonioData(filteredData);
 
+  // Calculate monthly growth percentage
+  const calculateGrowthData = (data: typeof filteredData) => {
+    if (data.length === 0) return [];
+    
+    const result = [];
+    
+    data.forEach((item, index) => {
+      const [month, year] = item.Competencia.split('/');
+      const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      
+      // Calculate growth percentage: (Patrimônio Final - Patrimônio Inicial - Movimentação) / (Patrimônio Inicial)
+      const patrimonioInicial = item["Patrimonio Inicial"] || 0;
+      const patrimonioFinal = item["Patrimonio Final"] || 0;
+      const movimentacao = item["Movimentação"] || 0;
+      
+      // Growth = (Final - Initial - Deposits) / Initial
+      const growth = patrimonioInicial > 0 
+        ? ((patrimonioFinal - patrimonioInicial - movimentacao) / patrimonioInicial) * 100
+        : 0;
+      
+      result.push({
+        name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
+        growth,
+        rendimento: (item.Rendimento || 0) * 100,
+        competencia: item.Competencia,
+        patrimonioInicial,
+        patrimonioFinal,
+        movimentacao
+      });
+    });
+    
+    return result;
+  };
+
+  const growthData = calculateGrowthData(filteredData);
+
   // Add all indicators data to chart data
   const chartDataWithIndicators = chartData.map((point, index) => {
     if (index === 0) {
@@ -483,18 +519,24 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         <div className="flex items-center justify-between">
           <div 
             className="flex items-center gap-3 cursor-pointer group px-4 py-2 -ml-4 rounded-lg hover:bg-accent/50 transition-all"
-            onClick={() => setViewMode(prev => prev === 'rentabilidade' ? 'patrimonio' : 'rentabilidade')}
+            onClick={() => {
+              if (viewMode === 'rentabilidade') setViewMode('patrimonio');
+              else if (viewMode === 'patrimonio') setViewMode('crescimento');
+              else setViewMode('rentabilidade');
+            }}
           >
             <div className="h-10 w-10 rounded-lg bg-gradient-accent flex items-center justify-center group-hover:scale-110 transition-transform">
               {viewMode === 'rentabilidade' ? (
                 <TrendingUp className="h-5 w-5 text-primary-foreground" />
-              ) : (
+              ) : viewMode === 'patrimonio' ? (
                 <Wallet className="h-5 w-5 text-primary-foreground" />
+              ) : (
+                <BarChart3 className="h-5 w-5 text-primary-foreground" />
               )}
             </div>
             <div className="flex items-center gap-2">
               <CardTitle className="text-foreground text-xl font-semibold">
-                {viewMode === 'rentabilidade' ? 'Retorno Acumulado' : 'Seu patrimônio'}
+                {viewMode === 'rentabilidade' ? 'Retorno Acumulado' : viewMode === 'patrimonio' ? 'Seu patrimônio' : 'Crescimento'}
               </CardTitle>
               <ArrowLeftRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
             </div>
@@ -632,8 +674,91 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
       <CardContent className="pt-0 pb-6">
         <div className="h-96 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            {viewMode === 'rentabilidade' ? (
-              <LineChart 
+            {viewMode === 'crescimento' ? (
+              <BarChart 
+                data={growthData} 
+                margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+              >
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="hsl(var(--border))" 
+                  opacity={0.3}
+                  horizontal={true}
+                  vertical={false}
+                />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ dy: 10 }}
+                  interval={0}
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => `${value.toFixed(1)}%`}
+                  width={70}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
+                    fontSize: '13px',
+                    padding: '12px'
+                  }}
+                  formatter={(value: any, name: string, props: any) => {
+                    if (name === 'growth') {
+                      const { payload } = props;
+                      return [
+                        <div key="growth" className="space-y-1">
+                          <div className="font-semibold">{`${value.toFixed(2)}%`}</div>
+                          <div className="text-xs text-muted-foreground">
+                            Inicial: R$ {payload.patrimonioInicial.toLocaleString('pt-BR')}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Final: R$ {payload.patrimonioFinal.toLocaleString('pt-BR')}
+                          </div>
+                          {payload.movimentacao !== 0 && (
+                            <div className="text-xs text-muted-foreground">
+                              Movimentação: R$ {payload.movimentacao.toLocaleString('pt-BR')}
+                            </div>
+                          )}
+                        </div>,
+                        'Crescimento'
+                      ];
+                    }
+                    return [`${value.toFixed(2)}%`, name];
+                  }}
+                  labelStyle={{ 
+                    color: 'hsl(var(--foreground))', 
+                    fontWeight: '600',
+                    marginBottom: '8px'
+                  }}
+                  cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
+                />
+                <Bar 
+                  dataKey="growth" 
+                  radius={[8, 8, 0, 0]}
+                >
+                  {growthData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.growth >= 0 
+                        ? 'hsl(var(--success))' 
+                        : 'hsl(var(--destructive))'
+                      }
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            ) : viewMode === 'rentabilidade' ? (
+              <LineChart
                 data={chartDataWithIndicators} 
                 margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
               >
