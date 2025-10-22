@@ -306,25 +306,19 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
         {/* Portfolio Overview */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-3xl font-bold text-foreground mb-2">
-                {viewMode === 'performance' ? 'Portfolio Performance' : 'Gestão de Riscos'}
-              </h2>
-              <p className="text-muted-foreground">
-                {selectedClient || "Selecione um cliente para visualizar os dados"}
-                {selectedClient && hasData && " - Dados carregados"}
-                {selectedClient && !hasData && loading && " - Carregando..."}
-              </p>
-            </div>
-            <Button 
-              onClick={() => setViewMode(viewMode === 'performance' ? 'risk' : 'performance')}
-              variant="outline"
-              className="bg-card/50 border-primary/20 hover:bg-primary/10"
-            >
-              {viewMode === 'performance' ? 'Ver Gestão de Riscos' : 'Ver Performance'}
-            </Button>
+          <div 
+            onClick={() => setViewMode(viewMode === 'performance' ? 'risk' : 'performance')}
+            className="cursor-pointer hover:opacity-80 transition-opacity inline-block"
+          >
+            <h2 className="text-3xl font-bold text-foreground mb-2">
+              {viewMode === 'performance' ? 'Portfolio Performance' : 'Gestão de Riscos'}
+            </h2>
           </div>
+          <p className="text-muted-foreground">
+            {selectedClient || "Selecione um cliente para visualizar os dados"}
+            {selectedClient && hasData && " - Dados carregados"}
+            {selectedClient && !hasData && loading && " - Carregando..."}
+          </p>
         </div>
 
         {/* Competencia Seletor */}
