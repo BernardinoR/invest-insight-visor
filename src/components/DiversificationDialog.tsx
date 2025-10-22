@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 interface DiversificationDialogProps {
@@ -288,7 +288,7 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                     className="h-[300px] md:h-[400px] w-full"
                   >
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={strategiesData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                      <AreaChart data={strategiesData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                         <XAxis 
                           dataKey="competencia" 
@@ -340,15 +340,18 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                           }}
                         />
                         {sortedStrategies.map((strategy) => (
-                          <Bar
+                          <Area
                             key={strategy}
+                            type="monotone"
                             dataKey={strategy}
                             stackId="1"
+                            stroke={getStrategyColor(strategy)}
                             fill={getStrategyColor(strategy)}
+                            fillOpacity={0.6}
                             name={strategy}
                           />
                         ))}
-                      </BarChart>
+                      </AreaChart>
                     </ResponsiveContainer>
                   </ChartContainer>
                   
