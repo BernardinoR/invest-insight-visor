@@ -204,6 +204,22 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
     const downwardVolatility = Math.sqrt(downwardVariance);
     const sortino = downwardVolatility !== 0 ? (avgReturn - clientTarget * 100) / downwardVolatility : 0;
     
+    // Volatilidade Assimétrica (Upside vs Downside)
+    const positiveReturns = returns.filter(r => r > avgReturn);
+    const negativeReturnsFromAvg = returns.filter(r => r < avgReturn);
+    
+    const upsideVariance = positiveReturns.length > 0
+      ? positiveReturns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / positiveReturns.length
+      : 0;
+    const upsideVolatility = Math.sqrt(upsideVariance);
+    
+    const downsideVariance = negativeReturnsFromAvg.length > 0
+      ? negativeReturnsFromAvg.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / negativeReturnsFromAvg.length
+      : 0;
+    const downsideVolatility = Math.sqrt(downsideVariance);
+    
+    const volatilityRatio = downsideVolatility !== 0 ? upsideVolatility / downsideVolatility : 0;
+    
     // Drawdown máximo
     let maxDrawdown = 0;
     let peak = filteredConsolidatedData[0]["Patrimonio Final"];
@@ -288,6 +304,9 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
       maxDrawdown,
       avgReturn,
       downwardVolatility,
+      upsideVolatility,
+      downsideVolatility,
+      volatilityRatio,
       monthsAboveTarget,
       monthsBelowTarget,
       bestMonth: {
@@ -1069,14 +1088,34 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
           </div>
           
           {/* Cards de métricas integrados */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-              <p className="text-xs text-muted-foreground mb-1">Volatilidade (Desvio Padrão)</p>
+              <p className="text-xs text-muted-foreground mb-1">Volatilidade Total</p>
               <div className="flex items-baseline gap-2">
                 <p className="text-2xl font-bold text-foreground">{riskMetrics.volatility.toFixed(2)}%</p>
                 <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 text-xs">
                   Mensal
                 </Badge>
+              </div>
+            </div>
+            
+            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+              <p className="text-xs text-muted-foreground mb-1">Volatilidade Positiva (Upside)</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {riskMetrics.upsideVolatility.toFixed(2)}%
+                </p>
+                <TrendingUpIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+            
+            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+              <p className="text-xs text-muted-foreground mb-1">Volatilidade Negativa (Downside)</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-destructive">
+                  {riskMetrics.downsideVolatility.toFixed(2)}%
+                </p>
+                <TrendingDown className="h-4 w-4 text-destructive" />
               </div>
             </div>
             
@@ -1094,6 +1133,71 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                 >
                   {riskMetrics.avgReturn >= 1 ? '↑' : '↓'}
                 </Badge>
+              </div>
+            </div>
+          </div>
+          
+          {/* Volatilidade Assimétrica - Análise */}
+          <div className="mt-6 p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-border">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Activity className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold mb-2 text-foreground">Análise de Volatilidade Assimétrica</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground">Razão Upside/Downside</p>
+                      <p className="text-xl font-bold text-foreground">{riskMetrics.volatilityRatio.toFixed(2)}x</p>
+                    </div>
+                    <Badge 
+                      variant={riskMetrics.volatilityRatio > 1 ? "default" : "secondary"}
+                      className={riskMetrics.volatilityRatio > 1 
+                        ? "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30" 
+                        : ""}
+                    >
+                      {riskMetrics.volatilityRatio > 1 ? 'Positivo' : 'Cauteloso'}
+                    </Badge>
+                  </div>
+                  
+                  <div className="p-3 rounded-lg bg-card/50 border border-border/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                      <span className="text-xs font-medium">Quando ganha</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-destructive"></div>
+                      <span className="text-xs font-medium">Quando perde</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
+                  <p className="text-sm text-foreground">
+                    {riskMetrics.volatilityRatio > 1.2 ? (
+                      <>
+                        Sua volatilidade positiva é <strong>{riskMetrics.upsideVolatility.toFixed(2)}%</strong> e 
+                        negativa é <strong>{riskMetrics.downsideVolatility.toFixed(2)}%</strong>. 
+                        <span className="text-green-600 dark:text-green-400 font-medium"> Isso significa que quando ganha, 
+                        ganha forte, mas quando perde, perde controlado.</span> Um perfil ideal para crescimento com risco gerenciado.
+                      </>
+                    ) : riskMetrics.volatilityRatio > 0.8 ? (
+                      <>
+                        Sua volatilidade positiva é <strong>{riskMetrics.upsideVolatility.toFixed(2)}%</strong> e 
+                        negativa é <strong>{riskMetrics.downsideVolatility.toFixed(2)}%</strong>. 
+                        Sua carteira apresenta um perfil <strong>equilibrado</strong>, com ganhos e perdas em magnitudes similares.
+                      </>
+                    ) : (
+                      <>
+                        Sua volatilidade positiva é <strong>{riskMetrics.upsideVolatility.toFixed(2)}%</strong> e 
+                        negativa é <strong>{riskMetrics.downsideVolatility.toFixed(2)}%</strong>. 
+                        <span className="text-amber-600 dark:text-amber-400 font-medium"> Quando ganha, ganha moderado, 
+                        mas quando perde, a queda é mais acentuada.</span> Considere estratégias de proteção de capital.
+                      </>
+                    )}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
