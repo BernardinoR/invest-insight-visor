@@ -935,11 +935,6 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                   
                   let accumulated = 0;
                   const monthReturns: number[] = [];
-                  let positiveReturnsSum = 0;
-                  let positiveReturnsCount = 0;
-                  let negativeReturnsSum = 0;
-                  let negativeReturnsCount = 0;
-                  let asymmetricAvgAccumulated = 0;
                   
                   const dataPoints = filteredConsolidatedData.map((item, index) => {
                     const monthReturn = item.Rendimento * 100;
@@ -948,44 +943,38 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                     
                     monthReturns.push(monthReturn);
                     
-                    // Calcular média aritmética dos retornos acumulados
+                    // Calcular média aritmética dos retornos
                     const avgReturnArithmetic = monthReturns.reduce((a, b) => a + b, 0) / monthReturns.length;
                     
-                    // Separar retornos positivos e negativos baseado na média aritmética
-                    monthReturns.forEach(r => {
-                      if (r > avgReturnArithmetic) {
-                        positiveReturnsSum += r;
-                        positiveReturnsCount++;
-                      } else {
-                        negativeReturnsSum += r;
-                        negativeReturnsCount++;
-                      }
-                    });
+                    // Separar retornos positivos (acima da média) e negativos (abaixo da média)
+                    const positiveReturns = monthReturns.filter(r => r > avgReturnArithmetic);
+                    const negativeReturns = monthReturns.filter(r => r <= avgReturnArithmetic);
                     
-                    // Calcular média assimétrica ponderada (upside tem peso diferente de downside)
-                    const positiveAvg = positiveReturnsCount > 0 ? positiveReturnsSum / positiveReturnsCount : 0;
-                    const negativeAvg = negativeReturnsCount > 0 ? negativeReturnsSum / negativeReturnsCount : 0;
+                    // Calcular volatilidade UPSIDE (retornos acima da média)
+                    const upsideVariance = positiveReturns.length > 0
+                      ? positiveReturns.reduce((sum, r) => sum + Math.pow(r - avgReturnArithmetic, 2), 0) / positiveReturns.length
+                      : 0;
+                    const upsideVolatility = Math.sqrt(upsideVariance);
                     
-                    // Peso proporcional ao número de ocorrências
-                    const totalCount = positiveReturnsCount + negativeReturnsCount;
-                    const positiveWeight = positiveReturnsCount / totalCount;
-                    const negativeWeight = negativeReturnsCount / totalCount;
+                    // Calcular volatilidade DOWNSIDE (retornos abaixo da média)
+                    const downsideVariance = negativeReturns.length > 0
+                      ? negativeReturns.reduce((sum, r) => sum + Math.pow(r - avgReturnArithmetic, 2), 0) / negativeReturns.length
+                      : 0;
+                    const downsideVolatility = Math.sqrt(downsideVariance);
                     
-                    const asymmetricAvg = (positiveAvg * positiveWeight) + (negativeAvg * negativeWeight);
-                    
-                    // Acumular a média assimétrica
-                    asymmetricAvgAccumulated = (1 + asymmetricAvgAccumulated / 100) * (1 + asymmetricAvg / 100) - 1;
-                    asymmetricAvgAccumulated = asymmetricAvgAccumulated * 100;
-                    
-                    // Reset para próximo cálculo
-                    positiveReturnsSum = 0;
-                    positiveReturnsCount = 0;
-                    negativeReturnsSum = 0;
-                    negativeReturnsCount = 0;
-                    
-                    // Bandas de desvio padrão crescentes com sqrt(tempo)
+                    // Bandas assimétricas crescentes com sqrt(tempo)
                     const periods = index + 1;
-                    const volatilityBand = riskMetrics.volatility * Math.sqrt(periods);
+                    const upsideBand = upsideVolatility * Math.sqrt(periods);
+                    const downsideBand = downsideVolatility * Math.sqrt(periods);
+                    
+                    // Acumular a média
+                    let avgAccumulated = 0;
+                    for (let i = 0; i <= index; i++) {
+                      const ret = filteredConsolidatedData[i].Rendimento * 100;
+                      avgAccumulated = (1 + avgAccumulated / 100) * (1 + ret / 100) - 1;
+                      avgAccumulated = avgAccumulated * 100;
+                    }
+                    const avgValue = avgAccumulated / (index + 1);
                     
                     const [month, year] = item.Competencia.split('/');
                     const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
@@ -993,11 +982,11 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                     return {
                       name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
                       retornoAcumulado: accumulated,
-                      mediaAcumulada: asymmetricAvgAccumulated,
-                      plus1sd: asymmetricAvgAccumulated + volatilityBand,
-                      minus1sd: asymmetricAvgAccumulated - volatilityBand,
-                      plus2sd: asymmetricAvgAccumulated + (2 * volatilityBand),
-                      minus2sd: asymmetricAvgAccumulated - (2 * volatilityBand)
+                      mediaAcumulada: avgValue,
+                      plus1sd: avgValue + upsideBand,
+                      minus1sd: avgValue - downsideBand,
+                      plus2sd: avgValue + (2 * upsideBand),
+                      minus2sd: avgValue - (2 * downsideBand)
                     };
                   });
                   
