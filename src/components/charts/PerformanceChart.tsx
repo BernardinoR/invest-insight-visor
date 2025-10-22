@@ -679,67 +679,102 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
             {viewMode === 'crescimento' ? (
               <BarChart 
                 data={growthData} 
-                margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
-                barGap={8}
+                margin={{ top: 30, right: 40, left: 20, bottom: 30 }}
+                barGap={12}
               >
                 <defs>
+                  {/* Sophisticated gradient for patrimônio base - subtle golden tones */}
                   <linearGradient id="barBase" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.45} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
+                    <stop offset="0%" stopColor="hsl(45 70% 75%)" stopOpacity={0.5} />
+                    <stop offset="50%" stopColor="hsl(45 80% 70%)" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="hsl(45 60% 65%)" stopOpacity={0.3} />
                   </linearGradient>
+                  
+                  {/* Premium green gradient for positive growth */}
                   <linearGradient id="barPositive" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(142 50% 50%)" stopOpacity={0.85} />
-                    <stop offset="100%" stopColor="hsl(142 45% 42%)" stopOpacity={0.75} />
+                    <stop offset="0%" stopColor="hsl(160 40% 55%)" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="hsl(160 45% 45%)" stopOpacity={0.8} />
                   </linearGradient>
+                  
+                  {/* Muted red for negative growth */}
                   <linearGradient id="barNegative" x1="0" y1="1" x2="0" y2="0">
-                    <stop offset="0%" stopColor="hsl(0 84% 60%)" stopOpacity={1} />
-                    <stop offset="100%" stopColor="hsl(0 72% 50%)" stopOpacity={0.85} />
+                    <stop offset="0%" stopColor="hsl(0 65% 58%)" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="hsl(0 60% 52%)" stopOpacity={0.8} />
                   </linearGradient>
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
+                  
+                  {/* Subtle glow effect for elegance */}
+                  <filter id="softGlow">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur"/>
+                    <feComposite in="SourceGraphic" in2="blur" operator="over"/>
                   </filter>
+                  
+                  {/* Accent line gradient */}
+                  <linearGradient id="accentLine" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="hsl(45 95% 55%)" stopOpacity={0.3} />
+                    <stop offset="50%" stopColor="hsl(45 95% 55%)" stopOpacity={0.8} />
+                    <stop offset="100%" stopColor="hsl(45 95% 55%)" stopOpacity={0.3} />
+                  </linearGradient>
                 </defs>
+                
+                {/* Sophisticated grid with subtle styling */}
                 <CartesianGrid 
-                  strokeDasharray="3 3" 
+                  strokeDasharray="1 3" 
                   stroke="hsl(var(--border))" 
-                  opacity={0.2}
+                  strokeOpacity={0.15}
                   horizontal={true}
                   vertical={false}
                 />
+                
+                {/* Refined X-axis */}
                 <XAxis 
                   dataKey="name" 
                   stroke="hsl(var(--muted-foreground))"
-                  fontSize={11}
-                  axisLine={false}
+                  strokeOpacity={0.5}
+                  fontSize={10}
+                  fontWeight={500}
+                  axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1, strokeOpacity: 0.3 }}
                   tickLine={false}
-                  tick={{ dy: 10 }}
+                  tick={{ dy: 12 }}
                   interval={0}
                 />
+                
+                {/* Premium Y-axis with formatted values */}
                 <YAxis 
                   stroke="hsl(var(--muted-foreground))"
-                  fontSize={11}
+                  strokeOpacity={0.5}
+                  fontSize={10}
+                  fontWeight={500}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(value) => {
-                    if (value >= 1000000) return `R$ ${(value / 1000000).toFixed(1)}M`;
-                    if (value >= 1000) return `R$ ${(value / 1000).toFixed(0)}k`;
-                    return `R$ ${value}`;
+                    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+                    if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+                    return value.toString();
                   }}
-                  width={70}
-                  domain={[0, (dataMax: number) => dataMax * 1.08]}
+                  width={65}
+                  domain={[0, (dataMax: number) => dataMax * 1.12]}
+                  label={{ 
+                    value: 'Patrimônio (R$)', 
+                    angle: -90, 
+                    position: 'insideLeft',
+                    style: { 
+                      fontSize: 11, 
+                      fontWeight: 600,
+                      fill: 'hsl(var(--muted-foreground))',
+                      opacity: 0.6
+                    }
+                  }}
                 />
+                
+                {/* Premium tooltip with sophisticated design */}
                 <Tooltip 
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '12px',
-                    boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
-                    fontSize: '13px',
-                    padding: '14px'
+                    border: 'none',
+                    borderRadius: '16px',
+                    boxShadow: '0 20px 60px -15px hsl(var(--foreground) / 0.15), 0 0 1px hsl(var(--border))',
+                    padding: 0,
+                    overflow: 'hidden'
                   }}
                   content={(props) => {
                     const { active, payload } = props;
@@ -751,118 +786,227 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                     return (
                       <div style={{
                         backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '12px',
-                        boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
-                        fontSize: '13px',
-                        padding: '14px',
-                        minWidth: '260px'
+                        borderRadius: '16px',
+                        overflow: 'hidden',
+                        minWidth: '280px',
+                        boxShadow: '0 20px 60px -15px hsl(var(--foreground) / 0.15)'
                       }}>
-                        <div style={{ 
-                          color: 'hsl(var(--foreground))', 
-                          fontWeight: '600',
-                          marginBottom: '12px',
-                          fontSize: '14px',
-                          borderBottom: '1px solid hsl(var(--border))',
-                          paddingBottom: '8px'
+                        {/* Header with gradient accent */}
+                        <div style={{
+                          background: 'linear-gradient(135deg, hsl(45 95% 55% / 0.15), hsl(45 80% 65% / 0.1))',
+                          padding: '16px 18px',
+                          borderBottom: '1px solid hsl(var(--border) / 0.5)'
                         }}>
-                          {data.name}
-                        </div>
-                        <div style={{ 
-                          marginBottom: '10px', 
-                          padding: '8px',
-                          borderRadius: '8px',
-                          backgroundColor: 'hsl(var(--muted) / 0.3)'
-                        }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))' }}>Patrimônio Inicial</span>
-                            <strong style={{ fontSize: '12px' }}>R$ {data.patrimonioBase.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
-                          </div>
-                        </div>
-                        <div style={{ 
-                          marginBottom: '10px',
-                          padding: '10px',
-                          borderRadius: '8px',
-                          backgroundColor: isPositive ? 'hsl(142 71% 45% / 0.1)' : 'hsl(0 84% 60% / 0.1)',
-                          border: `1px solid ${isPositive ? 'hsl(142 71% 45% / 0.3)' : 'hsl(0 84% 60% / 0.3)'}`
-                        }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                            <span style={{ fontSize: '12px', fontWeight: '600', color: isPositive ? 'hsl(142 71% 35%)' : 'hsl(0 72% 45%)' }}>
-                              Crescimento Total
-                            </span>
-                            <strong style={{ 
-                              fontSize: '14px',
-                              color: isPositive ? 'hsl(142 71% 35%)' : 'hsl(0 72% 45%)'
-                            }}>
-                              {isPositive ? '+' : ''}R$ {data.totalGrowth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </strong>
-                          </div>
                           <div style={{ 
-                            fontSize: '13px', 
-                            color: isPositive ? 'hsl(142 71% 35%)' : 'hsl(0 72% 45%)',
+                            color: 'hsl(var(--foreground))', 
                             fontWeight: '700',
-                            textAlign: 'right'
+                            fontSize: '15px',
+                            letterSpacing: '-0.01em'
                           }}>
-                            {isPositive ? '+' : ''}{data.growthPercentage.toFixed(2)}%
+                            {data.name}
+                          </div>
+                          <div style={{
+                            fontSize: '11px',
+                            color: 'hsl(var(--muted-foreground))',
+                            marginTop: '4px',
+                            fontWeight: '500'
+                          }}>
+                            Análise mensal de patrimônio
                           </div>
                         </div>
-                        <div style={{ 
-                          fontSize: '11px', 
-                          color: 'hsl(var(--muted-foreground))', 
-                          paddingTop: '10px', 
-                          borderTop: '1px solid hsl(var(--border))',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '6px'
-                        }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span>Movimentação:</span>
-                            <span style={{ fontWeight: '600', color: data.movimentacao >= 0 ? 'hsl(var(--foreground))' : 'hsl(var(--destructive))' }}>
-                              {data.movimentacao > 0 ? '+' : ''}R$ {data.movimentacao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span>Ganho Financeiro:</span>
-                            <span style={{ fontWeight: '600', color: data.ganhoFinanceiro >= 0 ? 'hsl(142 71% 35%)' : 'hsl(0 72% 45%)' }}>
-                              {data.ganhoFinanceiro > 0 ? '+' : ''}R$ {data.ganhoFinanceiro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </span>
-                          </div>
+                        
+                        {/* Content area */}
+                        <div style={{ padding: '18px' }}>
+                          {/* Patrimônio inicial card */}
                           <div style={{ 
-                            marginTop: '6px', 
-                            paddingTop: '8px', 
-                            borderTop: '1px solid hsl(var(--border))',
-                            display: 'flex',
-                            justifyContent: 'space-between'
+                            marginBottom: '12px',
+                            padding: '12px',
+                            borderRadius: '10px',
+                            background: 'linear-gradient(135deg, hsl(var(--muted) / 0.3), hsl(var(--muted) / 0.1))',
+                            border: '1px solid hsl(var(--border) / 0.3)'
                           }}>
-                            <strong style={{ color: 'hsl(var(--foreground))' }}>Patrimônio Final:</strong>
-                            <strong style={{ color: 'hsl(var(--primary))' }}>R$ {data.patrimonioFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                            <div style={{ 
+                              fontSize: '10px', 
+                              color: 'hsl(var(--muted-foreground))',
+                              fontWeight: '600',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                              marginBottom: '6px'
+                            }}>
+                              Patrimônio Inicial
+                            </div>
+                            <div style={{ 
+                              fontSize: '16px',
+                              fontWeight: '700',
+                              color: 'hsl(var(--foreground))',
+                              fontVariantNumeric: 'tabular-nums'
+                            }}>
+                              R$ {data.patrimonioBase.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </div>
+                          </div>
+                          
+                          {/* Crescimento card with conditional styling */}
+                          <div style={{ 
+                            marginBottom: '14px',
+                            padding: '14px',
+                            borderRadius: '12px',
+                            background: isPositive 
+                              ? 'linear-gradient(135deg, hsl(160 40% 55% / 0.12), hsl(160 45% 45% / 0.08))'
+                              : 'linear-gradient(135deg, hsl(0 65% 58% / 0.12), hsl(0 60% 52% / 0.08))',
+                            border: `1.5px solid ${isPositive ? 'hsl(160 40% 55% / 0.25)' : 'hsl(0 65% 58% / 0.25)'}`
+                          }}>
+                            <div style={{ 
+                              fontSize: '10px',
+                              fontWeight: '600',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                              marginBottom: '8px',
+                              color: isPositive ? 'hsl(160 40% 35%)' : 'hsl(0 65% 38%)'
+                            }}>
+                              Crescimento do Período
+                            </div>
+                            <div style={{ 
+                              display: 'flex',
+                              alignItems: 'baseline',
+                              gap: '8px',
+                              marginBottom: '6px'
+                            }}>
+                              <div style={{ 
+                                fontSize: '20px',
+                                fontWeight: '800',
+                                color: isPositive ? 'hsl(160 40% 35%)' : 'hsl(0 65% 38%)',
+                                fontVariantNumeric: 'tabular-nums'
+                              }}>
+                                {isPositive ? '+' : ''}R$ {Math.abs(data.totalGrowth).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </div>
+                            </div>
+                            <div style={{
+                              display: 'inline-block',
+                              padding: '4px 10px',
+                              borderRadius: '6px',
+                              backgroundColor: isPositive ? 'hsl(160 40% 35% / 0.15)' : 'hsl(0 65% 38% / 0.15)',
+                              fontSize: '13px',
+                              fontWeight: '700',
+                              color: isPositive ? 'hsl(160 40% 30%)' : 'hsl(0 65% 35%)'
+                            }}>
+                              {isPositive ? '↑' : '↓'} {Math.abs(data.growthPercentage).toFixed(2)}%
+                            </div>
+                          </div>
+                          
+                          {/* Breakdown section */}
+                          <div style={{
+                            paddingTop: '12px',
+                            borderTop: '1px solid hsl(var(--border) / 0.4)'
+                          }}>
+                            <div style={{ 
+                              fontSize: '10px',
+                              color: 'hsl(var(--muted-foreground))',
+                              fontWeight: '600',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                              marginBottom: '10px'
+                            }}>
+                              Detalhamento
+                            </div>
+                            <div style={{ 
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '8px',
+                              fontSize: '12px'
+                            }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ color: 'hsl(var(--muted-foreground))', fontWeight: '500' }}>
+                                  Movimentações
+                                </span>
+                                <span style={{ 
+                                  fontWeight: '700',
+                                  fontVariantNumeric: 'tabular-nums',
+                                  color: data.movimentacao >= 0 ? 'hsl(var(--foreground))' : 'hsl(var(--destructive))'
+                                }}>
+                                  {data.movimentacao > 0 ? '+' : ''}R$ {data.movimentacao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ color: 'hsl(var(--muted-foreground))', fontWeight: '500' }}>
+                                  Rendimento
+                                </span>
+                                <span style={{ 
+                                  fontWeight: '700',
+                                  fontVariantNumeric: 'tabular-nums',
+                                  color: data.ganhoFinanceiro >= 0 ? 'hsl(160 40% 35%)' : 'hsl(0 65% 38%)'
+                                }}>
+                                  {data.ganhoFinanceiro > 0 ? '+' : ''}R$ {data.ganhoFinanceiro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Final patrimônio */}
+                          <div style={{
+                            marginTop: '14px',
+                            paddingTop: '14px',
+                            borderTop: '2px solid hsl(var(--border) / 0.5)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <span style={{ 
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                              color: 'hsl(var(--foreground))'
+                            }}>
+                              Patrimônio Final
+                            </span>
+                            <span style={{ 
+                              fontSize: '17px',
+                              fontWeight: '800',
+                              color: 'hsl(45 95% 45%)',
+                              fontVariantNumeric: 'tabular-nums'
+                            }}>
+                              R$ {data.patrimonioFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
                           </div>
                         </div>
                       </div>
                     );
                   }}
-                  cursor={{ fill: 'hsl(var(--primary) / 0.05)', radius: 4 }}
+                  cursor={{ 
+                    stroke: 'hsl(45 95% 55%)', 
+                    strokeWidth: 2,
+                    strokeOpacity: 0.3,
+                    strokeDasharray: '4 4'
+                  }}
                 />
+                
+                {/* Base bar - patrimônio inicial */}
                 <Bar 
                   dataKey="patrimonioBase" 
                   stackId="a"
                   fill="url(#barBase)"
-                  radius={[0, 0, 6, 6]}
-                  maxBarSize={60}
+                  radius={[0, 0, 8, 8]}
+                  maxBarSize={50}
                 />
+                
+                {/* Growth bar - positive */}
                 <Bar 
                   dataKey="growth" 
                   stackId="a"
                   fill="url(#barPositive)"
-                  radius={[6, 6, 0, 0]}
-                  maxBarSize={60}
+                  radius={[8, 8, 0, 0]}
+                  maxBarSize={50}
+                  filter="url(#softGlow)"
                 />
+                
+                {/* Growth bar - negative */}
                 <Bar 
                   dataKey="negativeGrowth" 
                   stackId="a"
                   fill="url(#barNegative)"
-                  radius={[0, 0, 6, 6]}
-                  maxBarSize={60}
+                  radius={[0, 0, 8, 8]}
+                  maxBarSize={50}
+                  filter="url(#softGlow)"
                 />
               </BarChart>
             ) : viewMode === 'rentabilidade' ? (
