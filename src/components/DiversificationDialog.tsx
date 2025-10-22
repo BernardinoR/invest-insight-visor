@@ -65,13 +65,18 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
     ? Object.keys(currentStrategiesData).filter(key => key !== 'competencia' && currentStrategiesData[key] === 1).length 
     : 0;
 
-  // Generate colors for strategies
+  // Generate more distinct and vibrant colors for strategies
   const strategyColors = [
-    "hsl(var(--chart-1))",
-    "hsl(var(--chart-2))",
-    "hsl(var(--chart-3))",
-    "hsl(var(--chart-4))",
-    "hsl(var(--chart-5))",
+    "#3b82f6", // Blue
+    "#10b981", // Green
+    "#f59e0b", // Amber
+    "#ef4444", // Red
+    "#8b5cf6", // Purple
+    "#ec4899", // Pink
+    "#06b6d4", // Cyan
+    "#f97316", // Orange
+    "#84cc16", // Lime
+    "#6366f1", // Indigo
   ];
 
   return (
@@ -192,7 +197,15 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                     className="h-[300px] md:h-[400px] w-full"
                   >
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={strategiesData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                      <AreaChart data={strategiesData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
+                        <defs>
+                          {allStrategies.map((strategy, index) => (
+                            <linearGradient key={`gradient-${strategy}`} id={`gradient-${strategy}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor={strategyColors[index % strategyColors.length]} stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor={strategyColors[index % strategyColors.length]} stopOpacity={0.3}/>
+                            </linearGradient>
+                          ))}
+                        </defs>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                         <XAxis 
                           dataKey="competencia" 
@@ -233,7 +246,7 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                                     <div key={index} className="flex items-center gap-2 text-xs">
                                       <div 
                                         className="w-3 h-3 rounded-sm flex-shrink-0" 
-                                        style={{ backgroundColor: entry.color }}
+                                        style={{ backgroundColor: entry.stroke }}
                                       />
                                       <span className="font-medium">{entry.name}</span>
                                     </div>
@@ -250,8 +263,8 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                             dataKey={strategy}
                             stackId="1"
                             stroke={strategyColors[index % strategyColors.length]}
-                            fill={strategyColors[index % strategyColors.length]}
-                            fillOpacity={0.6}
+                            fill={`url(#gradient-${strategy})`}
+                            strokeWidth={2}
                             name={strategy}
                           />
                         ))}
@@ -259,8 +272,11 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                     </ResponsiveContainer>
                   </ChartContainer>
                   
-                  {/* Enhanced Legend with insights */}
+                  {/* Enhanced Legend with color-coded badges */}
                   <div className="mt-6 space-y-4">
+                    <div className="text-xs font-semibold text-muted-foreground mb-3 text-center">
+                      Legenda de Estratégias
+                    </div>
                     <div className="flex flex-wrap gap-2 justify-center">
                       {allStrategies.map((strategy, index) => {
                         // Calculate duration for each strategy
@@ -274,23 +290,36 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                         return (
                           <div 
                             key={strategy} 
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all ${
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all shadow-sm ${
                               isActive 
-                                ? 'bg-primary/10 border-primary/30' 
-                                : 'bg-muted/50 border-muted'
+                                ? 'border-opacity-100 shadow-md' 
+                                : 'opacity-60 border-opacity-30'
                             }`}
+                            style={{ 
+                              borderColor: strategyColors[index % strategyColors.length],
+                              backgroundColor: isActive 
+                                ? `${strategyColors[index % strategyColors.length]}15` 
+                                : 'transparent'
+                            }}
                           >
                             <div 
-                              className="w-3 h-3 rounded-sm flex-shrink-0" 
+                              className="w-4 h-4 rounded flex-shrink-0 shadow-sm" 
                               style={{ backgroundColor: strategyColors[index % strategyColors.length] }}
                             />
-                            <span className="text-xs font-medium">{strategy}</span>
-                            <span className="text-[10px] text-muted-foreground">
-                              ({duration} {duration === 1 ? 'mês' : 'meses'})
+                            <span className="text-xs font-semibold" style={{ 
+                              color: strategyColors[index % strategyColors.length] 
+                            }}>
+                              {strategy}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-medium">
+                              {duration} {duration === 1 ? 'mês' : 'meses'}
                             </span>
                             {isActive && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground font-medium">
-                                Ativa
+                              <span 
+                                className="text-[10px] px-2 py-0.5 rounded-full font-bold text-white shadow-sm"
+                                style={{ backgroundColor: strategyColors[index % strategyColors.length] }}
+                              >
+                                ATIVA
                               </span>
                             )}
                           </div>
