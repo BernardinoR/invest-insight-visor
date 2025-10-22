@@ -936,7 +936,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                   let accumulated = 0;
                   let emaValue = 0;
                   let emaAccumulated = 0;
-                  const emaPeriod = 12; // Período para EMA (12 meses)
+                  const emaPeriod = 6; // Período para EMA (6 meses = semestre)
                   const emaMultiplier = 2 / (emaPeriod + 1);
                   
                   const dataPoints = filteredConsolidatedData.map((item, index) => {
