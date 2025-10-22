@@ -322,12 +322,10 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
         </div>
 
         {/* Competencia Seletor */}
-        {viewMode === 'performance' && (
-          <CompetenciaSeletor 
-            selectedClient={selectedClient}
-            onFilterChange={handleFilterChange}
-          />
-        )}
+        <CompetenciaSeletor 
+          selectedClient={selectedClient}
+          onFilterChange={handleFilterChange}
+        />
         
         {viewMode === 'performance' && (
         <>
