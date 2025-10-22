@@ -214,8 +214,13 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       ? consolidadoData.filter(item => item.Instituicao === selectedInstitution)
       : consolidadoData;
 
-    // Get all unique competencias and sort them
-    const allCompetencias = [...new Set(dataToUse.map(item => item.Competencia))].sort();
+    // Get all unique competencias and sort them CORRECTLY by date
+    const allCompetencias = [...new Set(dataToUse.map(item => item.Competencia))].sort((a, b) => {
+      const [monthA, yearA] = a.split('/').map(Number);
+      const [monthB, yearB] = b.split('/').map(Number);
+      if (yearA !== yearB) return yearA - yearB;
+      return monthA - monthB;
+    });
     
     // Determine which competencia to use (filtered or latest available)
     const targetCompetencia = filteredRange.fim || allCompetencias[allCompetencias.length - 1];
