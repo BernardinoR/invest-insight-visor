@@ -934,28 +934,25 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                   };
                   
                   let accumulated = 0;
-                  let emaValue = 0;
-                  let emaAccumulated = 0;
-                  const emaPeriod = 6; // Período para EMA (6 meses = semestre)
-                  const emaMultiplier = 2 / (emaPeriod + 1);
+                  let smaAccumulated = 0;
+                  const smaPeriod = 6; // Período para média simples (6 meses)
+                  const monthReturns: number[] = [];
                   
                   const dataPoints = filteredConsolidatedData.map((item, index) => {
                     const monthReturn = item.Rendimento * 100;
                     accumulated = (1 + accumulated / 100) * (1 + monthReturn / 100) - 1;
                     accumulated = accumulated * 100;
                     
-                    // Cálculo da EMA (Exponential Moving Average)
-                    if (index === 0) {
-                      // Primeiro valor: usar o próprio retorno
-                      emaValue = monthReturn;
-                    } else {
-                      // EMA = (Valor × Multiplicador) + (EMA anterior × (1 - Multiplicador))
-                      emaValue = (monthReturn * emaMultiplier) + (emaValue * (1 - emaMultiplier));
-                    }
+                    monthReturns.push(monthReturn);
                     
-                    // Acumular a EMA
-                    emaAccumulated = (1 + emaAccumulated / 100) * (1 + emaValue / 100) - 1;
-                    emaAccumulated = emaAccumulated * 100;
+                    // Cálculo da média simples dos últimos N períodos
+                    const windowStart = Math.max(0, monthReturns.length - smaPeriod);
+                    const windowReturns = monthReturns.slice(windowStart);
+                    const smaValue = windowReturns.reduce((sum, val) => sum + val, 0) / windowReturns.length;
+                    
+                    // Acumular a média simples
+                    smaAccumulated = (1 + smaAccumulated / 100) * (1 + smaValue / 100) - 1;
+                    smaAccumulated = smaAccumulated * 100;
                     
                     // Bandas de desvio padrão crescentes com sqrt(tempo)
                     const periods = index + 1;
@@ -967,11 +964,11 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                     return {
                       name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
                       retornoAcumulado: accumulated,
-                      mediaAcumulada: emaAccumulated,
-                      plus1sd: emaAccumulated + volatilityBand,
-                      minus1sd: emaAccumulated - volatilityBand,
-                      plus2sd: emaAccumulated + (2 * volatilityBand),
-                      minus2sd: emaAccumulated - (2 * volatilityBand)
+                      mediaAcumulada: smaAccumulated,
+                      plus1sd: smaAccumulated + volatilityBand,
+                      minus1sd: smaAccumulated - volatilityBand,
+                      plus2sd: smaAccumulated + (2 * volatilityBand),
+                      minus2sd: smaAccumulated - (2 * volatilityBand)
                     };
                   });
                   
