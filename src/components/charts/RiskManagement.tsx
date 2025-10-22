@@ -763,7 +763,6 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 </div>
               </div>
             </div>
-          </div>
         </CardContent>
       </Card>
 
