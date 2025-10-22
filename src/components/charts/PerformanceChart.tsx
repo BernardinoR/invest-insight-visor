@@ -1107,96 +1107,135 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         </div>
         
         {/* Performance Metrics */}
-        {chartDataWithIndicators.length > 1 && (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            {(() => {
-              const lastDataPoint = chartDataWithIndicators[chartDataWithIndicators.length - 1];
-              const portfolioReturn = lastDataPoint.retornoAcumulado;
-              const cdiReturn = lastDataPoint.cdiRetorno;
-              const ipcaReturn = lastDataPoint.ipcaRetorno;
-              
-              // Relação Portfolio vs CDI
-              const cdiRelative = cdiReturn && cdiReturn !== 0 ? 
-                ((portfolioReturn / cdiReturn) * 100) : null;
-              
-              // Diferença vs IPCA em pontos percentuais
-              const ipcaDifference = ipcaReturn !== null ? 
-                (portfolioReturn - ipcaReturn) : null;
-              
-              return (
-                <>
-                  {clientTarget && (() => {
-                    // Calculate difference from target
-                    const targetReturn = lastDataPoint?.targetRetorno || 0;
-                    const targetDifference = portfolioReturn - targetReturn;
-                    
-                    return (
+        {viewMode === 'patrimonio' ? (
+          // Modo "Seu patrimônio" - apenas "Efeito bola de neve"
+          patrimonioData.length > 1 && (() => {
+            const lastDataPoint = patrimonioData[patrimonioData.length - 1];
+            const patrimonioAtual = lastDataPoint.patrimonioAtual;
+            const patrimonioAplicado = lastDataPoint.patrimonioAplicado;
+            
+            // Efeito bola de neve = Patrimônio Atual / Patrimônio Aplicado
+            const snowballEffect = patrimonioAplicado > 0 ? 
+              (patrimonioAtual / patrimonioAplicado) : 1;
+            
+            const percentageGain = (snowballEffect - 1) * 100;
+            
+            return (
+              <div className="mt-6 grid grid-cols-1 gap-4">
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Efeito bola de neve</p>
+                      <p className="text-2xl font-semibold text-foreground">
+                        {snowballEffect.toFixed(2)}x
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {percentageGain >= 0 ? '+' : ''}{percentageGain.toFixed(2)}% sobre o patrimônio aplicado
+                      </p>
+                    </div>
+                    <div className={`text-sm px-2 py-1 rounded ${
+                      percentageGain >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                    }`}>
+                      {percentageGain >= 0 ? '↑' : '↓'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()
+        ) : (
+          // Modos "Retorno Acumulado" e "Crescimento" - todos os bullets
+          chartDataWithIndicators.length > 1 && (
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              {(() => {
+                const lastDataPoint = chartDataWithIndicators[chartDataWithIndicators.length - 1];
+                const portfolioReturn = lastDataPoint.retornoAcumulado;
+                const cdiReturn = lastDataPoint.cdiRetorno;
+                const ipcaReturn = lastDataPoint.ipcaRetorno;
+                
+                // Relação Portfolio vs CDI
+                const cdiRelative = cdiReturn && cdiReturn !== 0 ? 
+                  ((portfolioReturn / cdiReturn) * 100) : null;
+                
+                // Diferença vs IPCA em pontos percentuais
+                const ipcaDifference = ipcaReturn !== null ? 
+                  (portfolioReturn - ipcaReturn) : null;
+                
+                return (
+                  <>
+                    {clientTarget && (() => {
+                      // Calculate difference from target
+                      const targetReturn = lastDataPoint?.targetRetorno || 0;
+                      const targetDifference = portfolioReturn - targetReturn;
+                      
+                      return (
+                        <div className="bg-card border border-border rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-muted-foreground">vs Meta</p>
+                              <p className="text-2xl font-semibold text-foreground">
+                                {targetDifference >= 0 ? '+' : ''}{targetDifference.toFixed(2)}pp
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {targetDifference >= 0 ? 'acima' : 'abaixo'} da meta ({clientTarget.meta})
+                              </p>
+                            </div>
+                            <div className={`text-sm px-2 py-1 rounded ${
+                              targetDifference >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                            }`}>
+                              {targetDifference >= 0 ? '↑' : '↓'}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {cdiRelative !== null && selectedIndicators.cdi && (
                       <div className="bg-card border border-border rounded-lg p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-muted-foreground">vs Meta</p>
+                            <p className="text-sm text-muted-foreground">vs CDI</p>
                             <p className="text-2xl font-semibold text-foreground">
-                              {targetDifference >= 0 ? '+' : ''}{targetDifference.toFixed(2)}pp
+                              {cdiRelative.toFixed(1)}%
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {targetDifference >= 0 ? 'acima' : 'abaixo'} da meta ({clientTarget.meta})
+                              do retorno do CDI
                             </p>
                           </div>
                           <div className={`text-sm px-2 py-1 rounded ${
-                            targetDifference >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                            cdiRelative >= 100 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
                           }`}>
-                            {targetDifference >= 0 ? '↑' : '↓'}
+                            {cdiRelative >= 100 ? '↑' : '↓'} {Math.abs(cdiRelative - 100).toFixed(1)}pp
                           </div>
                         </div>
                       </div>
-                    );
-                  })()}
-
-                  {cdiRelative !== null && selectedIndicators.cdi && (
-                    <div className="bg-card border border-border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">vs CDI</p>
-                          <p className="text-2xl font-semibold text-foreground">
-                            {cdiRelative.toFixed(1)}%
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            do retorno do CDI
-                          </p>
-                        </div>
-                        <div className={`text-sm px-2 py-1 rounded ${
-                          cdiRelative >= 100 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
-                        }`}>
-                          {cdiRelative >= 100 ? '↑' : '↓'} {Math.abs(cdiRelative - 100).toFixed(1)}pp
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {ipcaDifference !== null && selectedIndicators.ipca && (
-                    <div className="bg-card border border-border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">vs IPCA</p>
-                          <p className="text-2xl font-semibold text-foreground">
-                            {ipcaDifference >= 0 ? '+' : ''}{ipcaDifference.toFixed(2)}pp
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {ipcaDifference >= 0 ? 'acima' : 'abaixo'} da inflação
-                          </p>
-                        </div>
-                        <div className={`text-sm px-2 py-1 rounded ${
-                          ipcaDifference >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
-                        }`}>
-                          {ipcaDifference >= 0 ? '↑' : '↓'}
+                    )}
+                    
+                    {ipcaDifference !== null && selectedIndicators.ipca && (
+                      <div className="bg-card border border-border rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground">vs IPCA</p>
+                            <p className="text-2xl font-semibold text-foreground">
+                              {ipcaDifference >= 0 ? '+' : ''}{ipcaDifference.toFixed(2)}pp
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {ipcaDifference >= 0 ? 'acima' : 'abaixo'} da inflação
+                            </p>
+                          </div>
+                          <div className={`text-sm px-2 py-1 rounded ${
+                            ipcaDifference >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                          }`}>
+                            {ipcaDifference >= 0 ? '↑' : '↓'}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </>
-              );
-            })()}
-          </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          )
         )}
       </CardContent>
     </Card>
