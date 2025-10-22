@@ -325,7 +325,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                </div>
                <p className={`text-xs ${patrimonioGrowth.hasData && patrimonioGrowth.growth >= 0 ? "text-success" : patrimonioGrowth.hasData ? "text-destructive" : "text-muted-foreground"}`}>
                  {patrimonioGrowth.hasData 
-                   ? `${patrimonioGrowth.growth >= 0 ? "+" : ""}${patrimonioGrowth.growth.toFixed(2)}% vs R$ ${patrimonioGrowth.previousPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                   ? `${patrimonioGrowth.growth >= 0 ? "+" : ""}${patrimonioGrowth.growth.toFixed(2)}% em relação ao mês anterior`
                    : hasData ? "Sem mês anterior para comparar" : "Aguardando dados"
                  }
                </p>
