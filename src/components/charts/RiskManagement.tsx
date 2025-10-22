@@ -1,9 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, LineChart, Line } from 'recharts';
 import { useMemo, useState } from "react";
-import { TrendingDown, TrendingUp, Activity, AlertTriangle, Target, Calendar } from "lucide-react";
+import { TrendingDown, TrendingUp, Activity, AlertTriangle, Target, Calendar, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface RiskManagementProps {
   consolidadoData: Array<{
@@ -21,6 +24,17 @@ interface RiskManagementProps {
 
 export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskManagementProps) {
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'all' | 'custom'>('12months');
+  const [customStartCompetencia, setCustomStartCompetencia] = useState<string>('');
+  const [customEndCompetencia, setCustomEndCompetencia] = useState<string>('');
+  const [showCustomSelector, setShowCustomSelector] = useState(false);
+  const [showIndicators, setShowIndicators] = useState(false);
+  const [selectedIndicators, setSelectedIndicators] = useState({
+    portfolio: true,
+    media: true,
+    sd1: true,
+    sd2: true
+  });
 
   // Consolidar dados por competência
   const consolidateByCompetencia = (data: typeof consolidadoData) => {
@@ -76,9 +90,79 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
 
   const consolidatedData = useMemo(() => consolidateByCompetencia(consolidadoData), [consolidadoData]);
 
-  // Calcular métricas de risco
+  // Get available competencias for custom selector - sorted chronologically
+  const availableCompetencias = useMemo(() => {
+    return [...new Set(consolidatedData.map(item => item.Competencia))]
+      .sort((a, b) => {
+        const [monthA, yearA] = a.split('/');
+        const [monthB, yearB] = b.split('/');
+        const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+        const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+        return dateA.getTime() - dateB.getTime();
+      });
+  }, [consolidatedData]);
+
+  // Format competencia display
+  const formatCompetenciaDisplay = (competencia: string) => {
+    const [month, year] = competencia.split('/');
+    const monthNames = [
+      'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+      'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
+    ];
+    return `${monthNames[parseInt(month) - 1]}/${year}`;
+  };
+
+  // Filter data based on selected period
+  const getFilteredData = () => {
+    if (consolidatedData.length === 0) return [];
+    
+    let filteredData = consolidatedData;
+
+    switch (selectedPeriod) {
+      case 'month':
+        filteredData = consolidatedData.slice(-1);
+        break;
+      case 'year':
+        if (consolidatedData.length > 0) {
+          const mostRecentCompetencia = consolidatedData[consolidatedData.length - 1].Competencia;
+          const mostRecentYear = mostRecentCompetencia.split('/')[1];
+          filteredData = consolidatedData.filter(item => {
+            const itemYear = item.Competencia.split('/')[1];
+            return itemYear === mostRecentYear;
+          });
+        }
+        break;
+      case '12months':
+        filteredData = consolidatedData.slice(-12);
+        break;
+      case 'all':
+        filteredData = consolidatedData;
+        break;
+      case 'custom':
+        if (customStartCompetencia && customEndCompetencia) {
+          filteredData = consolidatedData.filter(item => {
+            const [itemMonth, itemYear] = item.Competencia.split('/');
+            const [startMonth, startYear] = customStartCompetencia.split('/');
+            const [endMonth, endYear] = customEndCompetencia.split('/');
+            
+            const itemDate = new Date(parseInt(itemYear), parseInt(itemMonth) - 1);
+            const startDate = new Date(parseInt(startYear), parseInt(startMonth) - 1);
+            const endDate = new Date(parseInt(endYear), parseInt(endMonth) - 1);
+            
+            return itemDate >= startDate && itemDate <= endDate;
+          });
+        }
+        break;
+    }
+
+    return filteredData;
+  };
+
+  const filteredConsolidatedData = getFilteredData();
+
+  // Calcular métricas de risco usando dados filtrados
   const riskMetrics = useMemo(() => {
-    if (consolidatedData.length === 0) {
+    if (filteredConsolidatedData.length === 0) {
       return {
         sharpe: 0,
         sortino: 0,
@@ -93,7 +177,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
       };
     }
 
-    const returns = consolidatedData.map(item => item.Rendimento * 100);
+    const returns = filteredConsolidatedData.map(item => item.Rendimento * 100);
     const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
     
     // Volatilidade (desvio padrão)
@@ -114,8 +198,8 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
     
     // Drawdown máximo
     let maxDrawdown = 0;
-    let peak = consolidatedData[0]["Patrimonio Final"];
-    consolidatedData.forEach(item => {
+    let peak = filteredConsolidatedData[0]["Patrimonio Final"];
+    filteredConsolidatedData.forEach(item => {
       const current = item["Patrimonio Final"];
       if (current > peak) peak = current;
       const drawdown = ((peak - current) / peak) * 100;
@@ -143,47 +227,55 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
       monthsBelowTarget,
       bestMonth: {
         return: maxReturn,
-        competencia: consolidatedData[bestMonthIndex]?.Competencia || ''
+        competencia: filteredConsolidatedData[bestMonthIndex]?.Competencia || ''
       },
       worstMonth: {
         return: minReturn,
-        competencia: consolidatedData[worstMonthIndex]?.Competencia || ''
+        competencia: filteredConsolidatedData[worstMonthIndex]?.Competencia || ''
       }
     };
-  }, [consolidatedData, clientTarget]);
+  }, [filteredConsolidatedData, clientTarget]);
 
   // Dados para o gráfico de Risco x Retorno
   const riskReturnData = useMemo(() => {
-    return consolidatedData.map(item => ({
+    return filteredConsolidatedData.map(item => ({
       name: item.Competencia,
       retorno: item.Rendimento * 100,
       risco: Math.abs(item.Rendimento * 100 - riskMetrics.avgReturn)
     }));
-  }, [consolidatedData, riskMetrics.avgReturn]);
+  }, [filteredConsolidatedData, riskMetrics.avgReturn]);
 
   // Dados para correlação interativa (simulação de correlação entre meses)
   const correlationData = useMemo(() => {
-    if (consolidatedData.length < 2) return [];
+    if (filteredConsolidatedData.length < 2) return [];
     
-    return consolidatedData.slice(0, -1).map((item, index) => {
-      const nextItem = consolidatedData[index + 1];
+    return filteredConsolidatedData.slice(0, -1).map((item, index) => {
+      const nextItem = filteredConsolidatedData[index + 1];
       return {
         current: item.Rendimento * 100,
         next: nextItem.Rendimento * 100,
         competencia: item.Competencia
       };
     });
-  }, [consolidatedData]);
+  }, [filteredConsolidatedData]);
 
   // Dados para meses acima/abaixo da meta
   const targetComparisonData = useMemo(() => {
-    return consolidatedData.map(item => ({
+    return filteredConsolidatedData.map(item => ({
       competencia: item.Competencia,
       retorno: item.Rendimento * 100,
       meta: clientTarget * 100,
       acimaMeta: item.Rendimento * 100 >= clientTarget * 100
     }));
-  }, [consolidatedData, clientTarget]);
+  }, [filteredConsolidatedData, clientTarget]);
+
+  const periodButtons = [
+    { id: 'month', label: 'Mês' },
+    { id: 'year', label: 'Ano' },
+    { id: '12months', label: '12M' },
+    { id: 'all', label: 'Ótimo' },
+    { id: 'custom', label: 'Personalizado' }
+  ];
 
   return (
     <div className="space-y-6">
@@ -310,13 +402,141 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
       {/* Gráfico de Volatilidade */}
       <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
         <CardHeader className="pb-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-gradient-accent flex items-center justify-center">
-              <Activity className="h-5 w-5 text-primary-foreground" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-accent flex items-center justify-center">
+                <Activity className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <CardTitle className="text-foreground text-xl font-semibold">
+                Volatilidade da Carteira
+              </CardTitle>
             </div>
-            <CardTitle className="text-foreground text-xl font-semibold">
-              Volatilidade da Carteira
-            </CardTitle>
+            
+            {/* Period Selection and Indicators */}
+            <div className="flex items-center gap-2">
+              {/* Indicators Selector */}
+              <Popover open={showIndicators} onOpenChange={setShowIndicators}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Indicadores
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 bg-background border-border z-50" align="end">
+                  <div className="space-y-3 p-2">
+                    <h4 className="font-medium text-sm">Selecionar Curvas</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="portfolio" 
+                          checked={selectedIndicators.portfolio}
+                          onCheckedChange={(checked) => 
+                            setSelectedIndicators(prev => ({ ...prev, portfolio: checked as boolean }))
+                          }
+                        />
+                        <label htmlFor="portfolio" className="text-sm">Retorno Acumulado</label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="media" 
+                          checked={selectedIndicators.media}
+                          onCheckedChange={(checked) => 
+                            setSelectedIndicators(prev => ({ ...prev, media: checked as boolean }))
+                          }
+                        />
+                        <label htmlFor="media" className="text-sm">Média Acumulada</label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="sd1" 
+                          checked={selectedIndicators.sd1}
+                          onCheckedChange={(checked) => 
+                            setSelectedIndicators(prev => ({ ...prev, sd1: checked as boolean }))
+                          }
+                        />
+                        <label htmlFor="sd1" className="text-sm">±1 Desvio Padrão</label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="sd2" 
+                          checked={selectedIndicators.sd2}
+                          onCheckedChange={(checked) => 
+                            setSelectedIndicators(prev => ({ ...prev, sd2: checked as boolean }))
+                          }
+                        />
+                        <label htmlFor="sd2" className="text-sm">±2 Desvios Padrão</label>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
+              <div className="flex items-center gap-1">
+                {periodButtons.map((button) => (
+                  <Button
+                    key={button.id}
+                    variant={selectedPeriod === button.id ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => {
+                      setSelectedPeriod(button.id as any);
+                      if (button.id === 'custom') {
+                        setShowCustomSelector(true);
+                      }
+                    }}
+                    className="text-xs px-3 py-1 h-8"
+                  >
+                    {button.label}
+                  </Button>
+                ))}
+                
+                {selectedPeriod === 'custom' && (
+                  <Popover open={showCustomSelector} onOpenChange={setShowCustomSelector}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="ml-2">
+                        <Calendar className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-background border-border z-50" align="end">
+                      <div className="p-4 space-y-4">
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">Competência Inicial</label>
+                          <Select value={customStartCompetencia} onValueChange={setCustomStartCompetencia}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione a competência inicial" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-background border-border z-50">
+                              {availableCompetencias.map((competencia) => (
+                                <SelectItem key={competencia} value={competencia}>
+                                  {formatCompetenciaDisplay(competencia)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">Competência Final</label>
+                          <Select value={customEndCompetencia} onValueChange={setCustomEndCompetencia}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione a competência final" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-background border-border z-50">
+                              {availableCompetencias.map((competencia) => (
+                                <SelectItem key={competencia} value={competencia}>
+                                  {formatCompetenciaDisplay(competencia)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </div>
+            </div>
           </div>
         </CardHeader>
         
@@ -326,7 +546,9 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
               <LineChart 
                 data={(() => {
                   // Add zero starting point
-                  const [firstMonth, firstYear] = consolidatedData[0].Competencia.split('/');
+                  if (filteredConsolidatedData.length === 0) return [];
+                  
+                  const [firstMonth, firstYear] = filteredConsolidatedData[0].Competencia.split('/');
                   const firstDate = new Date(parseInt(firstYear), parseInt(firstMonth) - 1, 1);
                   const previousMonth = new Date(firstDate);
                   previousMonth.setMonth(previousMonth.getMonth() - 1);
@@ -344,7 +566,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                   let accumulated = 0;
                   let avgAccumulated = 0;
                   
-                  const dataPoints = consolidatedData.map((item, index) => {
+                  const dataPoints = filteredConsolidatedData.map((item, index) => {
                     const monthReturn = item.Rendimento * 100;
                     accumulated = (1 + accumulated / 100) * (1 + monthReturn / 100) - 1;
                     accumulated = accumulated * 100;
@@ -427,82 +649,94 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                 />
                 
                 {/* Linhas de desvio padrão */}
-                <Line 
-                  type="monotone" 
-                  dataKey="plus2sd" 
-                  stroke="hsl(var(--destructive))" 
-                  strokeWidth={2}
-                  strokeDasharray="8 4"
-                  dot={false}
-                  name="+2 Desvios Padrão"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="plus1sd" 
-                  stroke="hsl(var(--warning))" 
-                  strokeWidth={2}
-                  strokeDasharray="5 3"
-                  dot={false}
-                  name="+1 Desvio Padrão"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="mediaAcumulada" 
-                  stroke="hsl(var(--muted-foreground))" 
-                  strokeWidth={2}
-                  dot={{ 
-                    fill: 'hsl(var(--muted-foreground))', 
-                    strokeWidth: 1, 
-                    stroke: 'hsl(var(--background))',
-                    r: 3
-                  }}
-                  activeDot={{ 
-                    r: 5, 
-                    fill: 'hsl(var(--muted-foreground))', 
-                    strokeWidth: 2, 
-                    stroke: 'hsl(var(--background))'
-                  }}
-                  name="Média Acumulada"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="minus1sd" 
-                  stroke="hsl(var(--warning))" 
-                  strokeWidth={2}
-                  strokeDasharray="5 3"
-                  dot={false}
-                  name="-1 Desvio Padrão"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="minus2sd" 
-                  stroke="hsl(var(--destructive))" 
-                  strokeWidth={2}
-                  strokeDasharray="8 4"
-                  dot={false}
-                  name="-2 Desvios Padrão"
-                />
+                {selectedIndicators.sd2 && (
+                  <>
+                    <Line 
+                      type="monotone" 
+                      dataKey="plus2sd" 
+                      stroke="hsl(var(--destructive))" 
+                      strokeWidth={2}
+                      strokeDasharray="8 4"
+                      dot={false}
+                      name="+2 Desvios Padrão"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="minus2sd" 
+                      stroke="hsl(var(--destructive))" 
+                      strokeWidth={2}
+                      strokeDasharray="8 4"
+                      dot={false}
+                      name="-2 Desvios Padrão"
+                    />
+                  </>
+                )}
+                {selectedIndicators.sd1 && (
+                  <>
+                    <Line 
+                      type="monotone" 
+                      dataKey="plus1sd" 
+                      stroke="hsl(var(--warning))" 
+                      strokeWidth={2}
+                      strokeDasharray="5 3"
+                      dot={false}
+                      name="+1 Desvio Padrão"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="minus1sd" 
+                      stroke="hsl(var(--warning))" 
+                      strokeWidth={2}
+                      strokeDasharray="5 3"
+                      dot={false}
+                      name="-1 Desvio Padrão"
+                    />
+                  </>
+                )}
+                {selectedIndicators.media && (
+                  <Line 
+                    type="monotone" 
+                    dataKey="mediaAcumulada" 
+                    stroke="hsl(var(--muted-foreground))" 
+                    strokeWidth={2}
+                    dot={{ 
+                      fill: 'hsl(var(--muted-foreground))', 
+                      strokeWidth: 1, 
+                      stroke: 'hsl(var(--background))',
+                      r: 3
+                    }}
+                    activeDot={{ 
+                      r: 5, 
+                      fill: 'hsl(var(--muted-foreground))', 
+                      strokeWidth: 2, 
+                      stroke: 'hsl(var(--background))'
+                    }}
+                    name="Média Acumulada"
+                  />
+                )}
                 
                 {/* Linha de retorno acumulado da carteira - linha principal com ênfase */}
-                <Line 
-                  type="monotone" 
-                  dataKey="retornoAcumulado" 
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={3}
-                  dot={{ 
-                    fill: 'hsl(var(--primary))', 
-                    strokeWidth: 2, 
-                    stroke: 'hsl(var(--background))',
-                    r: 4
-                  }}
-                  activeDot={{ 
-                    r: 6, 
-                    fill: 'hsl(var(--primary))', 
-                    strokeWidth: 3, 
-                    stroke: 'hsl(var(--background))'
-                  }}
-                  name="Retorno Acumulado"
-                />
+                {selectedIndicators.portfolio && (
+                  <Line 
+                    type="monotone" 
+                    dataKey="retornoAcumulado" 
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={3}
+                    dot={{ 
+                      fill: 'hsl(var(--primary))', 
+                      strokeWidth: 2, 
+                      stroke: 'hsl(var(--background))',
+                      r: 4
+                    }}
+                    activeDot={{ 
+                      r: 6, 
+                      fill: 'hsl(var(--primary))', 
+                      strokeWidth: 3, 
+                      stroke: 'hsl(var(--background))'
+                    }}
+                    name="Retorno Acumulado"
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
           </div>
