@@ -325,8 +325,11 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                 const previousMonth = new Date(firstDate);
                 previousMonth.setMonth(previousMonth.getMonth() - 1);
                 
+                const prevMonthNum = String(previousMonth.getMonth() + 1).padStart(2, '0');
+                const prevYear = previousMonth.getFullYear().toString().slice(-2);
+                
                 const startPoint = {
-                  competencia: `${String(previousMonth.getMonth() + 1).padStart(2, '0')}/${previousMonth.getFullYear()}`,
+                  competencia: `${prevMonthNum}/${prevYear}`,
                   retornoAcumulado: 0,
                   mediaAcumulada: 0,
                   plus1sd: 0,
@@ -350,8 +353,11 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                   const periods = index + 1;
                   const volatilityBand = riskMetrics.volatility * Math.sqrt(periods);
                   
+                  const [month, year] = item.Competencia.split('/');
+                  const shortYear = year.slice(-2);
+                  
                   return {
-                    competencia: item.Competencia,
+                    competencia: `${month}/${shortYear}`,
                     retornoAcumulado: accumulated,
                     mediaAcumulada: avgAccumulated,
                     plus1sd: avgAccumulated + volatilityBand,
@@ -363,29 +369,44 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                 
                 return [startPoint, ...dataPoints];
               })()}
-              margin={{ top: 20, right: 30, bottom: 60, left: 20 }}
+              margin={{ top: 20, right: 30, bottom: 20, left: 60 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
               <XAxis 
                 dataKey="competencia" 
                 stroke="hsl(var(--muted-foreground))"
-                angle={-45}
-                textAnchor="end"
-                height={80}
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                tickLine={false}
+                axisLine={{ stroke: 'hsl(var(--border))' }}
               />
               <YAxis 
                 stroke="hsl(var(--muted-foreground))" 
-                unit="%"
-                label={{ value: 'Retorno Acumulado (%)', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
+                tickFormatter={(value) => `${value.toFixed(1)}%`}
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                tickLine={false}
+                axisLine={{ stroke: 'hsl(var(--border))' }}
+                domain={['auto', 'auto']}
               />
               <Tooltip 
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '8px',
-                  color: 'hsl(var(--foreground))'
+                  color: 'hsl(var(--foreground))',
+                  padding: '8px 12px'
                 }}
-                formatter={(value: any) => [`${Number(value).toFixed(2)}%`]}
+                formatter={(value: any, name: string) => {
+                  const labels: Record<string, string> = {
+                    'retornoAcumulado': 'Retorno Acumulado',
+                    'mediaAcumulada': 'Média Acumulada',
+                    'plus1sd': '+1 Desvio Padrão',
+                    'minus1sd': '-1 Desvio Padrão',
+                    'plus2sd': '+2 Desvios Padrão',
+                    'minus2sd': '-2 Desvios Padrão'
+                  };
+                  return [`${Number(value).toFixed(2)}%`, labels[name] || name];
+                }}
+                labelStyle={{ color: 'hsl(var(--muted-foreground))', fontSize: 12 }}
               />
               
               {/* Linhas de desvio padrão */}
@@ -393,103 +414,98 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                 type="monotone" 
                 dataKey="plus2sd" 
                 stroke="hsl(var(--destructive))" 
-                strokeWidth={1.5}
+                strokeWidth={2}
                 strokeDasharray="8 4"
                 dot={false}
-                name="+2σ"
+                name="+2 Desvios Padrão"
               />
               <Line 
                 type="monotone" 
                 dataKey="plus1sd" 
                 stroke="hsl(var(--warning))" 
-                strokeWidth={1.5}
+                strokeWidth={2}
                 strokeDasharray="5 3"
                 dot={false}
-                name="+1σ"
+                name="+1 Desvio Padrão"
               />
               <Line 
                 type="monotone" 
                 dataKey="mediaAcumulada" 
-                stroke="hsl(var(--primary))" 
-                strokeWidth={2}
-                strokeDasharray="3 3"
-                dot={false}
+                stroke="hsl(var(--chart-3))" 
+                strokeWidth={2.5}
+                dot={{ fill: 'hsl(var(--chart-3))', r: 3 }}
                 name="Média Acumulada"
               />
               <Line 
                 type="monotone" 
                 dataKey="minus1sd" 
                 stroke="hsl(var(--warning))" 
-                strokeWidth={1.5}
+                strokeWidth={2}
                 strokeDasharray="5 3"
                 dot={false}
-                name="-1σ"
+                name="-1 Desvio Padrão"
               />
               <Line 
                 type="monotone" 
                 dataKey="minus2sd" 
                 stroke="hsl(var(--destructive))" 
-                strokeWidth={1.5}
+                strokeWidth={2}
                 strokeDasharray="8 4"
                 dot={false}
-                name="-2σ"
+                name="-2 Desvios Padrão"
               />
               
               {/* Linha de retorno acumulado da carteira */}
               <Line 
                 type="monotone" 
                 dataKey="retornoAcumulado" 
-                stroke="hsl(var(--accent))" 
-                strokeWidth={2.5}
-                dot={{ fill: 'hsl(var(--accent))', r: 4 }}
+                stroke="hsl(var(--chart-1))" 
+                strokeWidth={3}
+                dot={{ fill: 'hsl(var(--chart-1))', r: 4 }}
                 name="Retorno Acumulado"
               />
             </LineChart>
           </ResponsiveContainer>
-          
-          {/* Legenda */}
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-accent"></div>
-              <span className="text-muted-foreground">Retorno Acumulado</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-primary border-dashed"></div>
-              <span className="text-muted-foreground">Média Acumulada</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-warning border-dashed"></div>
-              <span className="text-muted-foreground">±1 Desvio Padrão</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-destructive border-dashed"></div>
-              <span className="text-muted-foreground">±2 Desvios Padrão</span>
-            </div>
-          </div>
         </CardContent>
       </Card>
       
-      {/* Card de Volatilidade abaixo do gráfico */}
-      <Card className="bg-gradient-card border-border/50">
-        <CardHeader>
-          <CardTitle className="text-foreground flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
-            Métricas de Volatilidade
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Volatilidade (Desvio Padrão)</p>
-              <p className="text-3xl font-bold text-foreground">{riskMetrics.volatility.toFixed(2)}%</p>
+      {/* Card de Métricas de Volatilidade */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="bg-gradient-card border-border/50">
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Volatilidade (Desvio Padrão)</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-4xl font-bold text-foreground">{riskMetrics.volatility.toFixed(2)}%</p>
+                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
+                  Mensal
+                </Badge>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Retorno Médio</p>
-              <p className="text-3xl font-bold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-card border-border/50">
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Retorno Médio</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-4xl font-bold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
+                <Badge 
+                  variant="outline" 
+                  className={
+                    riskMetrics.avgReturn >= 1 
+                      ? "bg-success/10 text-success border-success/20" 
+                      : "bg-muted/10 text-muted-foreground border-muted/20"
+                  }
+                >
+                  {riskMetrics.avgReturn >= 1 ? '↑' : '↓'}
+                </Badge>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Gráfico de Risco x Retorno */}
       <Card className="bg-gradient-card border-border/50">
