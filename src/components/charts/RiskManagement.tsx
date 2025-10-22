@@ -261,9 +261,25 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
       if (drawdown > maxDrawdown) maxDrawdown = drawdown;
     });
     
-    // Meses acima e abaixo da meta
-    const monthsAboveTarget = returns.filter(r => r >= clientTarget * 100).length;
-    const monthsBelowTarget = returns.filter(r => r < clientTarget * 100).length;
+    // Meses acima e abaixo da meta (usando meta mensal correta)
+    let monthsAboveTarget = 0;
+    let monthsBelowTarget = 0;
+
+    returns.forEach((returnValue, index) => {
+      const competencia = filteredConsolidatedData[index]?.Competencia;
+      
+      // Buscar a meta mensal correta para esta competência nos marketData
+      const marketDataForCompetencia = marketData?.find(m => m.competencia === competencia);
+      const monthlyTarget = marketDataForCompetencia?.clientTarget || 0;
+      const targetPercent = monthlyTarget * 100; // Converter para %
+      
+      // Comparar retorno mensal com meta mensal
+      if (returnValue >= targetPercent) {
+        monthsAboveTarget++;
+      } else {
+        monthsBelowTarget++;
+      }
+    });
     
     // Melhor e pior mês
     const maxReturn = Math.max(...returns);
