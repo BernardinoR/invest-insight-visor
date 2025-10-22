@@ -277,7 +277,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
 
   const patrimonioData = calculatePatrimonioData(filteredData);
 
-  // Calculate growth data showing patrimônio volume
+  // Calculate growth data showing patrimônio volume with total growth (movimentação + ganho financeiro)
   const calculateGrowthData = (data: typeof filteredData) => {
     if (data.length === 0) return [];
     
@@ -290,24 +290,22 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
       const patrimonioInicial = item["Patrimonio Inicial"] || 0;
       const patrimonioFinal = item["Patrimonio Final"] || 0;
       const movimentacao = item["Movimentação"] || 0;
-      
-      // Net patrimônio (without deposits/withdrawals)
-      const patrimonioBase = patrimonioInicial;
       const ganhoFinanceiro = item["Ganho Financeiro"] || 0;
       
-      // Growth is the financial gain (positive or negative)
-      const growth = ganhoFinanceiro;
-      const growthPercentage = patrimonioInicial > 0 ? (ganhoFinanceiro / patrimonioInicial) * 100 : 0;
+      // Total growth = movimentação + ganho financeiro = patrimônio final - patrimônio inicial
+      const totalGrowth = patrimonioFinal - patrimonioInicial;
+      const growthPercentage = patrimonioInicial > 0 ? (totalGrowth / patrimonioInicial) * 100 : 0;
       
       result.push({
         name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
-        patrimonioBase,
-        growth: growth >= 0 ? growth : 0, // Positive growth for stacking
-        negativeGrowth: growth < 0 ? growth : 0, // Negative growth
-        totalGrowth: growth, // Actual growth value
+        patrimonioBase: patrimonioInicial,
+        growth: totalGrowth >= 0 ? totalGrowth : 0, // Positive growth for stacking
+        negativeGrowth: totalGrowth < 0 ? totalGrowth : 0, // Negative growth
+        totalGrowth,
         growthPercentage,
         patrimonioFinal,
         movimentacao,
+        ganhoFinanceiro,
         competencia: item.Competencia
       });
     });
@@ -759,7 +757,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                         </div>
                         <div style={{ marginBottom: '6px' }}>
                           <span style={{ color: isPositive ? 'hsl(142 76% 45%)' : 'hsl(0 84% 60%)' }}>●</span>
-                          <span style={{ marginLeft: '8px' }}>Ganho Financeiro: <strong style={{ color: isPositive ? 'hsl(142 76% 45%)' : 'hsl(0 84% 60%)' }}>
+                          <span style={{ marginLeft: '8px' }}>Crescimento Total: <strong style={{ color: isPositive ? 'hsl(142 76% 45%)' : 'hsl(0 84% 60%)' }}>
                             {isPositive ? '+' : ''}R$ {data.totalGrowth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </strong></span>
                         </div>
@@ -769,12 +767,9 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                           </span>
                         </div>
                         <div style={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid hsl(var(--border))' }}>
-                          <div><strong>Patrimônio Final: R$ {data.patrimonioFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></div>
-                          {data.movimentacao !== 0 && (
-                            <div style={{ marginTop: '4px' }}>
-                              Movimentação: {data.movimentacao > 0 ? '+' : ''}R$ {data.movimentacao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </div>
-                          )}
+                          <div>Movimentação: {data.movimentacao > 0 ? '+' : ''}R$ {data.movimentacao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                          <div>Ganho Financeiro: {data.ganhoFinanceiro > 0 ? '+' : ''}R$ {data.ganhoFinanceiro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                          <div style={{ marginTop: '4px' }}><strong>Patrimônio Final: R$ {data.patrimonioFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></div>
                         </div>
                       </div>
                     );
