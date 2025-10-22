@@ -316,24 +316,29 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Volatilidade (Desvio Padrão)</p>
-                <p className="text-3xl font-bold text-foreground">{riskMetrics.volatility.toFixed(2)}%</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Retorno Médio</p>
-                <p className="text-2xl font-semibold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
-              </div>
-            </div>
-          </div>
           <ResponsiveContainer width="100%" height={400}>
             <LineChart 
               data={(() => {
+                // Add zero starting point
+                const [firstMonth, firstYear] = consolidatedData[0].Competencia.split('/');
+                const firstDate = new Date(parseInt(firstYear), parseInt(firstMonth) - 1, 1);
+                const previousMonth = new Date(firstDate);
+                previousMonth.setMonth(previousMonth.getMonth() - 1);
+                
+                const startPoint = {
+                  competencia: `${String(previousMonth.getMonth() + 1).padStart(2, '0')}/${previousMonth.getFullYear()}`,
+                  retornoAcumulado: 0,
+                  mediaAcumulada: 0,
+                  plus1sd: 0,
+                  minus1sd: 0,
+                  plus2sd: 0,
+                  minus2sd: 0
+                };
+                
                 let accumulated = 0;
                 let avgAccumulated = 0;
-                return consolidatedData.map((item, index) => {
+                
+                const dataPoints = consolidatedData.map((item, index) => {
                   const monthReturn = item.Rendimento * 100;
                   accumulated = (1 + accumulated / 100) * (1 + monthReturn / 100) - 1;
                   accumulated = accumulated * 100;
@@ -355,6 +360,8 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                     minus2sd: avgAccumulated - (2 * volatilityBand)
                   };
                 });
+                
+                return [startPoint, ...dataPoints];
               })()}
               margin={{ top: 20, right: 30, bottom: 60, left: 20 }}
             >
@@ -457,6 +464,28 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
             <div className="flex items-center gap-2">
               <div className="w-4 h-0.5 bg-destructive border-dashed"></div>
               <span className="text-muted-foreground">±2 Desvios Padrão</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Card de Volatilidade abaixo do gráfico */}
+      <Card className="bg-gradient-card border-border/50">
+        <CardHeader>
+          <CardTitle className="text-foreground flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            Métricas de Volatilidade
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Volatilidade (Desvio Padrão)</p>
+              <p className="text-3xl font-bold text-foreground">{riskMetrics.volatility.toFixed(2)}%</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Retorno Médio</p>
+              <p className="text-3xl font-bold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
             </div>
           </div>
         </CardContent>
