@@ -727,27 +727,27 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
           </div>
           
           {/* Cards de métricas integrados */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
-              <p className="text-sm text-muted-foreground mb-2">Volatilidade (Desvio Padrão)</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+              <p className="text-xs text-muted-foreground mb-1">Volatilidade (Desvio Padrão)</p>
               <div className="flex items-baseline gap-2">
-                <p className="text-4xl font-bold text-foreground">{riskMetrics.volatility.toFixed(2)}%</p>
-                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
+                <p className="text-2xl font-bold text-foreground">{riskMetrics.volatility.toFixed(2)}%</p>
+                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 text-xs">
                   Mensal
                 </Badge>
               </div>
             </div>
             
-            <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
-              <p className="text-sm text-muted-foreground mb-2">Retorno Médio</p>
+            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+              <p className="text-xs text-muted-foreground mb-1">Retorno Médio</p>
               <div className="flex items-baseline gap-2">
-                <p className="text-4xl font-bold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
+                <p className="text-2xl font-bold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
                 <Badge 
                   variant="outline" 
                   className={
                     riskMetrics.avgReturn >= 1 
-                      ? "bg-success/10 text-success border-success/20" 
-                      : "bg-muted/10 text-muted-foreground border-muted/20"
+                      ? "bg-success/10 text-success border-success/20 text-xs" 
+                      : "bg-muted/10 text-muted-foreground border-muted/20 text-xs"
                   }
                 >
                   {riskMetrics.avgReturn >= 1 ? '↑' : '↓'}
