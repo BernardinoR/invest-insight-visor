@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area } from "recharts";
@@ -10,6 +11,19 @@ interface DiversificationDialogProps {
 }
 
 export function DiversificationDialog({ open, onOpenChange, dadosData }: DiversificationDialogProps) {
+  const [selectedStrategies, setSelectedStrategies] = useState<Set<string>>(new Set());
+  
+  const toggleStrategy = (strategy: string) => {
+    setSelectedStrategies(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(strategy)) {
+        newSet.delete(strategy);
+      } else {
+        newSet.add(strategy);
+      }
+      return newSet;
+    });
+  };
   // Function to group strategy names (same as StrategyBreakdown)
   const groupStrategy = (strategy: string): string => {
     const strategyLower = strategy.toLowerCase();
@@ -169,6 +183,11 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
     const index = strategyOrder.indexOf(strategy);
     return index !== -1 ? COLORS[index] : COLORS[COLORS.length - 1];
   };
+
+  // Filter strategies for display
+  const displayedStrategies = selectedStrategies.size === 0 
+    ? sortedStrategies 
+    : sortedStrategies.filter(s => selectedStrategies.has(s));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -339,7 +358,7 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                             );
                           }}
                         />
-                        {sortedStrategies.map((strategy) => (
+                        {displayedStrategies.map((strategy) => (
                           <Area
                             key={strategy}
                             type="monotone"
@@ -355,8 +374,11 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                     </ResponsiveContainer>
                   </ChartContainer>
                   
-                  {/* Enhanced Legend with insights */}
+                  {/* Interactive Legend with selection */}
                   <div className="mt-6 space-y-4">
+                    <p className="text-xs text-center text-muted-foreground">
+                      Clique nas estratégias para filtrar a visualização
+                    </p>
                     <div className="flex flex-wrap gap-2 justify-center">
                       {sortedStrategies.map((strategy) => {
                         // Calculate duration for each strategy
@@ -366,14 +388,19 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                           ? lastAppearance - firstAppearance + 1 
                           : 0;
                         const isActive = strategiesData[strategiesData.length - 1][strategy] === 1;
+                        const isSelected = selectedStrategies.has(strategy);
+                        const isShown = selectedStrategies.size === 0 || isSelected;
                         
                         return (
-                          <div 
-                            key={strategy} 
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all ${
-                              isActive 
-                                ? 'bg-primary/10 border-primary/30' 
-                                : 'bg-muted/50 border-muted'
+                          <button
+                            key={strategy}
+                            onClick={() => toggleStrategy(strategy)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all cursor-pointer hover:scale-105 ${
+                              isShown
+                                ? isActive 
+                                  ? 'bg-primary/10 border-primary/30' 
+                                  : 'bg-muted/50 border-muted'
+                                : 'opacity-30 bg-muted/20 border-muted/20'
                             }`}
                           >
                             <div 
@@ -389,7 +416,7 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                                 Ativa
                               </span>
                             )}
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
