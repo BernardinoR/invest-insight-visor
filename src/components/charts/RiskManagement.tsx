@@ -576,38 +576,106 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
       {/* Hit Rate Analysis */}
       <Card className="bg-gradient-card border-border/50">
         <CardHeader>
-          <CardTitle className="text-foreground flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            Hit Rate Analysis
-          </CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">Performance vs Meta</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-foreground flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Hit Rate Analysis
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Performance vs Meta</p>
+            </div>
+            
+            {/* Period Selection */}
+            <div className="flex items-center gap-1">
+              {periodButtons.map((button) => (
+                <Button
+                  key={button.id}
+                  variant={selectedPeriod === button.id ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setSelectedPeriod(button.id as any);
+                    if (button.id === 'custom') {
+                      setShowCustomSelector(true);
+                    }
+                  }}
+                  className="text-xs px-3 py-1 h-8"
+                >
+                  {button.label}
+                </Button>
+              ))}
+              
+              {selectedPeriod === 'custom' && (
+                <Popover open={showCustomSelector} onOpenChange={setShowCustomSelector}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="ml-2">
+                      <Calendar className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-background border-border z-50" align="end">
+                    <div className="p-4 space-y-4">
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Competência Inicial</label>
+                        <Select value={customStartCompetencia} onValueChange={setCustomStartCompetencia}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a competência inicial" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border-border z-50">
+                            {availableCompetencias.map((competencia) => (
+                              <SelectItem key={competencia} value={competencia}>
+                                {formatCompetenciaDisplay(competencia)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Competência Final</label>
+                        <Select value={customEndCompetencia} onValueChange={setCustomEndCompetencia}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a competência final" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border-border z-50">
+                            {availableCompetencias.map((competencia) => (
+                              <SelectItem key={competencia} value={competencia}>
+                                {formatCompetenciaDisplay(competencia)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          {/* Centered Donut Chart */}
-          <div className="flex flex-col items-center justify-center max-w-2xl mx-auto py-8">
-            <div className="relative w-full max-w-md">
-              <ResponsiveContainer width="100%" height={380}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Donut Chart - Similar to reference image */}
+            <div className="relative flex flex-col items-center justify-center">
+              <ResponsiveContainer width="100%" height={320}>
                 <PieChart>
                   <Pie
                     data={[
                       { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: 'hsl(142, 71%, 45%)' },
-                      { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 25%, 60%)' },
-                      { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 25%, 70%)' },
-                      { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 82%)' }
+                      { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 20%, 65%)' },
+                      { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 20%, 75%)' },
+                      { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 85%)' }
                     ]}
                     cx="50%"
                     cy="50%"
-                    innerRadius={95}
-                    outerRadius={150}
-                    paddingAngle={3}
+                    innerRadius={85}
+                    outerRadius={130}
+                    paddingAngle={4}
                     dataKey="value"
                     strokeWidth={0}
                   >
                     {[
                       { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: 'hsl(142, 71%, 45%)' },
-                      { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 25%, 60%)' },
-                      { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 25%, 70%)' },
-                      { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 82%)' }
+                      { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 20%, 65%)' },
+                      { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 20%, 75%)' },
+                      { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 85%)' }
                     ].map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
@@ -616,174 +684,95 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               </ResponsiveContainer>
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
                 <p className="text-sm text-muted-foreground mb-2 font-medium">Hit Rate</p>
-                <p className="text-6xl font-bold text-foreground">{riskMetrics.hitRate.hitRatePercent}%</p>
-              </div>
-            </div>
-            
-            {/* Legend - Responsive grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-8 w-full max-w-lg">
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-1" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }} />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Rocket className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-base font-semibold text-foreground">Home Run</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {riskMetrics.hitRate.homeRun} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100) : 0}%)
-                  </p>
-                </div>
+                <p className="text-5xl font-bold text-foreground">{riskMetrics.hitRate.hitRatePercent}%</p>
               </div>
               
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-1" style={{ backgroundColor: 'hsl(215, 25%, 60%)' }} />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Check className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-base font-semibold text-foreground">Acerto</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {riskMetrics.hitRate.acerto} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100) : 0}%)
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-1" style={{ backgroundColor: 'hsl(40, 25%, 70%)' }} />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <TrendingUpIcon className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-base font-semibold text-foreground">Quase lá</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {riskMetrics.hitRate.quaseLa} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100) : 0}%)
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded mt-1" style={{ backgroundColor: 'hsl(220, 15%, 82%)' }} />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <X className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-base font-semibold text-foreground">Miss</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {riskMetrics.hitRate.miss} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100) : 0}%)
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Period Selection - Moved outside Hit Rate card */}
-      <Card className="bg-gradient-card border-border/50">
-        <CardHeader>
-          <CardTitle className="text-sm font-medium text-muted-foreground">Período de Análise</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap items-center gap-2">
-            {periodButtons.map((button) => (
-              <Button
-                key={button.id}
-                variant={selectedPeriod === button.id ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setSelectedPeriod(button.id as any);
-                  if (button.id === 'custom') {
-                    setShowCustomSelector(true);
-                  }
-                }}
-                className="text-xs"
-              >
-                {button.label}
-              </Button>
-            ))}
-            
-            {selectedPeriod === 'custom' && (
-              <Popover open={showCustomSelector} onOpenChange={setShowCustomSelector}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Personalizar
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-background border-border z-50" align="start">
-                  <div className="p-4 space-y-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Competência Inicial</label>
-                      <Select value={customStartCompetencia} onValueChange={setCustomStartCompetencia}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a competência inicial" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background border-border z-50">
-                          {availableCompetencias.map((competencia) => (
-                            <SelectItem key={competencia} value={competencia}>
-                              {formatCompetenciaDisplay(competencia)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+              {/* Legend - Grid layout below chart */}
+              <div className="grid grid-cols-2 gap-4 mt-6 w-full px-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }} />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Rocket className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">Home Run</span>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Competência Final</label>
-                      <Select value={customEndCompetencia} onValueChange={setCustomEndCompetencia}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a competência final" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background border-border z-50">
-                          {availableCompetencias.map((competencia) => (
-                            <SelectItem key={competencia} value={competencia}>
-                              {formatCompetenciaDisplay(competencia)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {riskMetrics.hitRate.homeRun} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100) : 0}%)
+                    </p>
                   </div>
-                </PopoverContent>
-              </Popover>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Métricas de Performance */}
-      <Card className="bg-gradient-card border-border/50">
-        <CardHeader>
-          <CardTitle className="text-sm font-medium text-muted-foreground">Métricas de Performance</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-success/10 border border-success/20 rounded-lg p-4">
-              <p className="text-xs text-muted-foreground mb-1">Melhor mês</p>
-              <p className="text-xl font-bold text-success">+{riskMetrics.bestMonth.return.toFixed(2)}%</p>
-              <p className="text-xs text-muted-foreground mt-1">{riskMetrics.bestMonth.competencia}</p>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(215, 20%, 65%)' }} />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Check className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">Acerto</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {riskMetrics.hitRate.acerto} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100) : 0}%)
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(40, 20%, 75%)' }} />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <TrendingUpIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">Quase lá</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {riskMetrics.hitRate.quaseLa} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100) : 0}%)
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(220, 15%, 85%)' }} />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <X className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">Miss</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {riskMetrics.hitRate.miss} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100) : 0}%)
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
             
-            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-              <p className="text-xs text-muted-foreground mb-1">Pior mês</p>
-              <p className="text-xl font-bold text-destructive">{riskMetrics.worstMonth.return.toFixed(2)}%</p>
-              <p className="text-xs text-muted-foreground mt-1">{riskMetrics.worstMonth.competencia}</p>
-            </div>
-            
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-              <p className="text-xs text-muted-foreground mb-1">Retorno médio</p>
-              <p className="text-xl font-bold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
-              <p className="text-xs text-muted-foreground mt-1">por mês</p>
-            </div>
-            
-            <div className="bg-chart-5/10 border border-chart-5/20 rounded-lg p-4">
-              <p className="text-xs text-muted-foreground mb-1">Consistência</p>
-              <p className="text-xl font-bold text-foreground">{riskMetrics.hitRate.positivePercent}%</p>
-              <p className="text-xs text-muted-foreground mt-1">meses positivos</p>
+            {/* Metrics */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-success/10 border border-success/20 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground mb-1">Melhor mês</p>
+                <p className="text-lg font-bold text-success">+{riskMetrics.bestMonth.return.toFixed(2)}%</p>
+                <p className="text-xs text-muted-foreground mt-1">{riskMetrics.bestMonth.competencia}</p>
+              </div>
+              
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground mb-1">Pior mês</p>
+                <p className="text-lg font-bold text-destructive">{riskMetrics.worstMonth.return.toFixed(2)}%</p>
+                <p className="text-xs text-muted-foreground mt-1">{riskMetrics.worstMonth.competencia}</p>
+              </div>
+              
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground mb-1">Retorno médio</p>
+                <p className="text-lg font-bold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
+                <p className="text-xs text-muted-foreground mt-1">por mês</p>
+              </div>
+              
+              <div className="bg-chart-5/10 border border-chart-5/20 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground mb-1">Consistência</p>
+                <p className="text-lg font-bold text-foreground">{riskMetrics.hitRate.positivePercent}%</p>
+                <p className="text-xs text-muted-foreground mt-1">meses positivos</p>
+              </div>
             </div>
           </div>
           
           {/* Performance vs Meta Summary */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-6 border-t border-border/50">
+          <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-border/50">
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground">Meses acima da meta</p>
               <div className="flex items-baseline gap-2">
