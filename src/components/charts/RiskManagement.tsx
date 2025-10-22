@@ -654,18 +654,16 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                     <Line 
                       type="monotone" 
                       dataKey="plus2sd" 
-                      stroke="hsl(var(--destructive))" 
-                      strokeWidth={2}
-                      strokeDasharray="8 4"
+                      stroke="hsl(var(--muted-foreground) / 0.3)" 
+                      strokeWidth={1.5}
                       dot={false}
                       name="+2 Desvios Padrão"
                     />
                     <Line 
                       type="monotone" 
                       dataKey="minus2sd" 
-                      stroke="hsl(var(--destructive))" 
-                      strokeWidth={2}
-                      strokeDasharray="8 4"
+                      stroke="hsl(var(--muted-foreground) / 0.3)" 
+                      strokeWidth={1.5}
                       dot={false}
                       name="-2 Desvios Padrão"
                     />
@@ -676,18 +674,16 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                     <Line 
                       type="monotone" 
                       dataKey="plus1sd" 
-                      stroke="hsl(var(--warning))" 
-                      strokeWidth={2}
-                      strokeDasharray="5 3"
+                      stroke="hsl(var(--muted-foreground) / 0.5)" 
+                      strokeWidth={1.5}
                       dot={false}
                       name="+1 Desvio Padrão"
                     />
                     <Line 
                       type="monotone" 
                       dataKey="minus1sd" 
-                      stroke="hsl(var(--warning))" 
-                      strokeWidth={2}
-                      strokeDasharray="5 3"
+                      stroke="hsl(var(--muted-foreground) / 0.5)" 
+                      strokeWidth={1.5}
                       dot={false}
                       name="-1 Desvio Padrão"
                     />
