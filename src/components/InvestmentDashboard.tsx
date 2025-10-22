@@ -1109,6 +1109,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             <RiskManagement 
               consolidadoData={filteredConsolidadoData}
               clientTarget={(clientTarget?.targetValue || 0) / 100}
+              marketData={marketData}
             />
           </div>
         )}

@@ -8,6 +8,18 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+interface MarketIndicatorData {
+  competencia: string;
+  ibovespa: number;
+  ifix: number;
+  ipca: number;
+  clientTarget: number;
+  accumulatedIbovespa: number;
+  accumulatedIfix: number;
+  accumulatedIpca: number;
+  accumulatedClientTarget: number;
+}
+
 interface RiskManagementProps {
   consolidadoData: Array<{
     Data: string;
@@ -20,9 +32,10 @@ interface RiskManagementProps {
     Competencia: string;
   }>;
   clientTarget?: number;
+  marketData?: MarketIndicatorData[];
 }
 
-export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskManagementProps) {
+export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData = [] }: RiskManagementProps) {
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'all' | 'custom'>('12months');
   const [customStartCompetencia, setCustomStartCompetencia] = useState<string>('');
@@ -258,34 +271,27 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
     const bestMonthIndex = returns.indexOf(maxReturn);
     const worstMonthIndex = returns.indexOf(minReturn);
     
-    // Hit Rate Analysis
-    // clientTarget vem em decimal (ex: 0.008686 = 0.8686%)
-    // returns está em % (ex: 2.21 = 2.21%)
-    // Então multiplicamos clientTarget por 100 para igualar escala
-    const targetPercent = clientTarget * 100; // Ex: 0.008686 * 100 = 0.8686%
-    const homeRunThreshold = targetPercent + volatility; // 1 desvio padrão acima da meta
-    
+    // Hit Rate Analysis - usando a meta MENSAL correta de cada competência
     let homeRun = 0;
     let acerto = 0;
     let quaseLa = 0;
     let miss = 0;
     
-    console.log('🎯 === HIT RATE ANÁLISE DETALHADA ===');
+    console.log('🎯 === HIT RATE ANÁLISE DETALHADA (META MENSAL) ===');
     console.log('📊 Total de períodos únicos consolidados:', returns.length);
-    console.log('🎯 Meta do cliente:', clientTarget, '→', targetPercent.toFixed(4) + '%');
-    console.log('📈 Volatilidade (σ):', volatility.toFixed(4) + '%');
-    console.log('🚀 Threshold Home Run (Meta + 1σ):', homeRunThreshold.toFixed(4) + '%');
+    console.log('📈 Volatilidade mensal (σ):', volatility.toFixed(4) + '%');
     console.log('');
-    console.log('Categorias:');
-    console.log('  🚀 Home Run: >= ' + homeRunThreshold.toFixed(2) + '%');
-    console.log('  ✅ Acerto: >= ' + targetPercent.toFixed(2) + '% e < ' + homeRunThreshold.toFixed(2) + '%');
-    console.log('  ⚠️  Quase Lá: > 0% e < ' + targetPercent.toFixed(2) + '%');
-    console.log('  ❌ Miss: <= 0%');
-    console.log('');
-    console.log('📅 Análise mês a mês:');
+    console.log('📅 Análise mês a mês (usando meta mensal de cada competência):');
     
     returns.forEach((returnValue, index) => {
       const competencia = filteredConsolidatedData[index]?.Competencia;
+      
+      // Buscar a meta mensal correta para esta competência nos marketData
+      const marketDataForCompetencia = marketData.find(m => m.competencia === competencia);
+      const monthlyTarget = marketDataForCompetencia?.clientTarget || 0;
+      const targetPercent = monthlyTarget * 100; // Converter para %
+      const homeRunThreshold = targetPercent + volatility; // Meta mensal + 1σ
+      
       let category = '';
       let emoji = '';
       
@@ -307,7 +313,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
         emoji = '❌';
       }
       
-      console.log(`  ${emoji} ${competencia}: ${returnValue.toFixed(2)}% → ${category}`);
+      console.log(`  ${emoji} ${competencia}: Retorno ${returnValue.toFixed(2)}% | Meta ${targetPercent.toFixed(2)}% | Threshold ${homeRunThreshold.toFixed(2)}% → ${category}`);
     });
     
     console.log('');
