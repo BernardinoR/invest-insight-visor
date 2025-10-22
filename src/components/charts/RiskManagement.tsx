@@ -652,29 +652,30 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Pie Chart */}
+            {/* Donut Chart - Similar to reference image */}
             <div className="relative flex flex-col items-center justify-center">
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={320}>
                 <PieChart>
                   <Pie
                     data={[
-                      { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: '#3b82f6' },
-                      { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: '#10b981' },
-                      { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: '#f59e0b' },
-                      { name: 'Miss', value: riskMetrics.hitRate.miss, color: '#ef4444' }
+                      { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: 'hsl(142, 71%, 45%)' },
+                      { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 20%, 65%)' },
+                      { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 20%, 75%)' },
+                      { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 85%)' }
                     ]}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
+                    innerRadius={85}
+                    outerRadius={130}
+                    paddingAngle={4}
                     dataKey="value"
+                    strokeWidth={0}
                   >
                     {[
-                      { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: '#3b82f6' },
-                      { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: '#10b981' },
-                      { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: '#f59e0b' },
-                      { name: 'Miss', value: riskMetrics.hitRate.miss, color: '#ef4444' }
+                      { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: 'hsl(142, 71%, 45%)' },
+                      { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 20%, 65%)' },
+                      { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 20%, 75%)' },
+                      { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 85%)' }
                     ].map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
@@ -682,60 +683,60 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-                <p className="text-4xl font-bold text-foreground">{riskMetrics.hitRate.hitRatePercent}%</p>
-                <p className="text-sm text-muted-foreground">Hit Rate</p>
+                <p className="text-sm text-muted-foreground mb-2 font-medium">Hit Rate</p>
+                <p className="text-5xl font-bold text-foreground">{riskMetrics.hitRate.hitRatePercent}%</p>
               </div>
               
-              {/* Legend */}
-              <div className="grid grid-cols-2 gap-3 mt-4 w-full">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3b82f6' }} />
+              {/* Legend - Grid layout below chart */}
+              <div className="grid grid-cols-2 gap-4 mt-6 w-full px-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }} />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <Rocket className="h-3 w-3" />
-                      <span className="text-sm font-medium">Home Run</span>
+                      <Rocket className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">Home Run</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {riskMetrics.hitRate.homeRun} ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100) : 0}%)
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {riskMetrics.hitRate.homeRun} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100) : 0}%)
                     </p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#10b981' }} />
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(215, 20%, 65%)' }} />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <Check className="h-3 w-3" />
-                      <span className="text-sm font-medium">Acerto</span>
+                      <Check className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">Acerto</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {riskMetrics.hitRate.acerto} ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100) : 0}%)
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {riskMetrics.hitRate.acerto} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100) : 0}%)
                     </p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#f59e0b' }} />
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(40, 20%, 75%)' }} />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <TrendingUpIcon className="h-3 w-3" />
-                      <span className="text-sm font-medium">Quase lá</span>
+                      <TrendingUpIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">Quase lá</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {riskMetrics.hitRate.quaseLa} ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100) : 0}%)
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {riskMetrics.hitRate.quaseLa} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100) : 0}%)
                     </p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#ef4444' }} />
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(220, 15%, 85%)' }} />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <X className="h-3 w-3" />
-                      <span className="text-sm font-medium">Miss</span>
+                      <X className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">Miss</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {riskMetrics.hitRate.miss} ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100) : 0}%)
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {riskMetrics.hitRate.miss} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100) : 0}%)
                     </p>
                   </div>
                 </div>
