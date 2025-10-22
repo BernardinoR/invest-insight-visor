@@ -54,7 +54,15 @@ export function MaturityDialog({ open, onOpenChange, dadosData }: MaturityDialog
   const chartData = (Object.values(yearlyGroups) as Array<{ year: string; total: number; count: number }>)
     .sort((a, b) => parseInt(a.year) - parseInt(b.year));
 
-  const total = chartData.reduce((sum, item) => sum + item.total, 0);
+  // Calculate total for next 12 months only
+  const twelveMonthsFromNow = new Date();
+  twelveMonthsFromNow.setMonth(twelveMonthsFromNow.getMonth() + 12);
+  
+  const next12MonthsData = maturityData.filter(item => 
+    item.vencimentoDate <= twelveMonthsFromNow
+  );
+  
+  const total = next12MonthsData.reduce((sum, item) => sum + (item.Posicao || 0), 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -72,7 +80,7 @@ export function MaturityDialog({ open, onOpenChange, dadosData }: MaturityDialog
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
-                  Total a Vencer
+                  Total a Vencer (12 meses)
                 </CardTitle>
               </CardHeader>
               <CardContent>
