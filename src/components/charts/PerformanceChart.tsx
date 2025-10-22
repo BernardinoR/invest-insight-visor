@@ -679,21 +679,24 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
             {viewMode === 'crescimento' ? (
               <BarChart 
                 data={growthData} 
-                margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+                margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
               >
                 <defs>
                   <linearGradient id="barGradientBase" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.6} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.15} />
                   </linearGradient>
                   <linearGradient id="barGradientPositive" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(142 76% 45%)" stopOpacity={0.95} />
-                    <stop offset="100%" stopColor="hsl(142 76% 40%)" stopOpacity={0.8} />
+                    <stop offset="5%" stopColor="hsl(142 71% 45%)" stopOpacity={1} />
+                    <stop offset="95%" stopColor="hsl(142 76% 36%)" stopOpacity={0.9} />
                   </linearGradient>
-                  <linearGradient id="barGradientNegative" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(0 84% 60%)" stopOpacity={0.95} />
-                    <stop offset="100%" stopColor="hsl(0 84% 55%)" stopOpacity={0.8} />
+                  <linearGradient id="barGradientNegative" x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="5%" stopColor="hsl(0 84% 60%)" stopOpacity={1} />
+                    <stop offset="95%" stopColor="hsl(0 72% 51%)" stopOpacity={0.9} />
                   </linearGradient>
+                  <filter id="barShadow">
+                    <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.2"/>
+                  </filter>
                 </defs>
                 <CartesianGrid 
                   strokeDasharray="3 3" 
@@ -705,19 +708,25 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                 <XAxis 
                   dataKey="name" 
                   stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
+                  fontSize={11}
                   axisLine={false}
                   tickLine={false}
                   tick={{ dy: 10 }}
                   interval={0}
+                  angle={0}
                 />
                 <YAxis 
                   stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
+                  fontSize={11}
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
-                  width={80}
+                  tickFormatter={(value) => {
+                    if (value >= 1000000) return `R$ ${(value / 1000000).toFixed(1)}M`;
+                    if (value >= 1000) return `R$ ${(value / 1000).toFixed(0)}k`;
+                    return `R$ ${value}`;
+                  }}
+                  width={70}
+                  domain={[0, (dataMax: number) => dataMax * 1.1]}
                 />
                 <Tooltip 
                   contentStyle={{
@@ -742,57 +751,101 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                         borderRadius: '12px',
                         boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
                         fontSize: '13px',
-                        padding: '12px'
+                        padding: '12px',
+                        minWidth: '250px'
                       }}>
                         <div style={{ 
                           color: 'hsl(var(--foreground))', 
                           fontWeight: '600',
-                          marginBottom: '8px'
+                          marginBottom: '10px',
+                          fontSize: '14px'
                         }}>
                           {data.name}
                         </div>
-                        <div style={{ marginBottom: '6px' }}>
-                          <span style={{ color: 'hsl(var(--primary))' }}>●</span>
-                          <span style={{ marginLeft: '8px' }}>Patrimônio Base: <strong>R$ {data.patrimonioBase.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></span>
+                        <div style={{ marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ color: 'hsl(var(--primary))', fontSize: '16px' }}>●</span>
+                          <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: '12px' }}>Patrimônio Inicial:</span>
+                          <strong style={{ marginLeft: 'auto' }}>R$ {data.patrimonioBase.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
                         </div>
-                        <div style={{ marginBottom: '6px' }}>
-                          <span style={{ color: isPositive ? 'hsl(142 76% 45%)' : 'hsl(0 84% 60%)' }}>●</span>
-                          <span style={{ marginLeft: '8px' }}>Crescimento Total: <strong style={{ color: isPositive ? 'hsl(142 76% 45%)' : 'hsl(0 84% 60%)' }}>
+                        <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ color: isPositive ? 'hsl(142 71% 45%)' : 'hsl(0 84% 60%)', fontSize: '16px' }}>●</span>
+                          <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: '12px' }}>Crescimento:</span>
+                          <strong style={{ 
+                            marginLeft: 'auto',
+                            color: isPositive ? 'hsl(142 71% 45%)' : 'hsl(0 84% 60%)'
+                          }}>
                             {isPositive ? '+' : ''}R$ {data.totalGrowth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </strong></span>
+                          </strong>
                         </div>
-                        <div style={{ marginBottom: '6px' }}>
-                          <span style={{ marginLeft: '20px', fontSize: '11px', color: 'hsl(var(--muted-foreground))' }}>
-                            ({isPositive ? '+' : ''}{data.growthPercentage.toFixed(2)}%)
-                          </span>
+                        <div style={{ 
+                          marginBottom: '10px', 
+                          paddingLeft: '24px',
+                          fontSize: '11px', 
+                          color: isPositive ? 'hsl(142 71% 45%)' : 'hsl(0 84% 60%)',
+                          fontWeight: '600'
+                        }}>
+                          {isPositive ? '+' : ''}{data.growthPercentage.toFixed(2)}%
                         </div>
-                        <div style={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid hsl(var(--border))' }}>
-                          <div>Movimentação: {data.movimentacao > 0 ? '+' : ''}R$ {data.movimentacao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                          <div>Ganho Financeiro: {data.ganhoFinanceiro > 0 ? '+' : ''}R$ {data.ganhoFinanceiro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                          <div style={{ marginTop: '4px' }}><strong>Patrimônio Final: R$ {data.patrimonioFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></div>
+                        <div style={{ 
+                          fontSize: '11px', 
+                          color: 'hsl(var(--muted-foreground))', 
+                          marginTop: '10px', 
+                          paddingTop: '10px', 
+                          borderTop: '1px solid hsl(var(--border))',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Movimentação:</span>
+                            <span style={{ color: data.movimentacao >= 0 ? 'hsl(var(--foreground))' : 'hsl(var(--destructive))' }}>
+                              {data.movimentacao > 0 ? '+' : ''}R$ {data.movimentacao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Ganho Financeiro:</span>
+                            <span style={{ color: data.ganhoFinanceiro >= 0 ? 'hsl(142 71% 45%)' : 'hsl(0 84% 60%)' }}>
+                              {data.ganhoFinanceiro > 0 ? '+' : ''}R$ {data.ganhoFinanceiro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <div style={{ 
+                            marginTop: '6px', 
+                            paddingTop: '6px', 
+                            borderTop: '1px solid hsl(var(--border))',
+                            display: 'flex',
+                            justifyContent: 'space-between'
+                          }}>
+                            <strong>Patrimônio Final:</strong>
+                            <strong>R$ {data.patrimonioFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                          </div>
                         </div>
                       </div>
                     );
                   }}
-                  cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
+                  cursor={{ fill: 'hsl(var(--primary) / 0.08)', radius: 8 }}
                 />
                 <Bar 
                   dataKey="patrimonioBase" 
                   stackId="patrimonio"
                   fill="url(#barGradientBase)"
-                  radius={[0, 0, 4, 4]}
+                  radius={[0, 0, 6, 6]}
+                  maxBarSize={80}
                 />
                 <Bar 
                   dataKey="growth" 
                   stackId="patrimonio"
                   fill="url(#barGradientPositive)"
-                  radius={[8, 8, 0, 0]}
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={80}
+                  filter="url(#barShadow)"
                 />
                 <Bar 
                   dataKey="negativeGrowth" 
                   stackId="patrimonio"
                   fill="url(#barGradientNegative)"
-                  radius={[0, 0, 0, 0]}
+                  radius={[0, 0, 6, 6]}
+                  maxBarSize={80}
+                  filter="url(#barShadow)"
                 />
               </BarChart>
             ) : viewMode === 'rentabilidade' ? (
