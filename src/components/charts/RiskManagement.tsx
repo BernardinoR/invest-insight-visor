@@ -307,6 +307,144 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
         </Card>
       </div>
 
+      {/* Gráfico de Volatilidade */}
+      <Card className="bg-gradient-card border-border/50">
+        <CardHeader>
+          <CardTitle className="text-foreground flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Volatilidade da Carteira
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Volatilidade (Desvio Padrão)</p>
+                <p className="text-3xl font-bold text-foreground">{riskMetrics.volatility.toFixed(2)}%</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Retorno Médio</p>
+                <p className="text-2xl font-semibold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
+              </div>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={400}>
+            <LineChart 
+              data={consolidatedData.map(item => ({
+                competencia: item.Competencia,
+                retorno: item.Rendimento * 100,
+                media: riskMetrics.avgReturn,
+                plus1sd: riskMetrics.avgReturn + riskMetrics.volatility,
+                minus1sd: riskMetrics.avgReturn - riskMetrics.volatility,
+                plus2sd: riskMetrics.avgReturn + (2 * riskMetrics.volatility),
+                minus2sd: riskMetrics.avgReturn - (2 * riskMetrics.volatility)
+              }))}
+              margin={{ top: 20, right: 30, bottom: 60, left: 20 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis 
+                dataKey="competencia" 
+                stroke="hsl(var(--muted-foreground))"
+                angle={-45}
+                textAnchor="end"
+                height={80}
+              />
+              <YAxis 
+                stroke="hsl(var(--muted-foreground))" 
+                unit="%"
+                label={{ value: 'Retorno (%)', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
+              />
+              <Tooltip 
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  color: 'hsl(var(--foreground))'
+                }}
+                formatter={(value: any) => [`${Number(value).toFixed(2)}%`]}
+              />
+              
+              {/* Linhas de desvio padrão */}
+              <Line 
+                type="monotone" 
+                dataKey="plus2sd" 
+                stroke="hsl(var(--destructive))" 
+                strokeWidth={1.5}
+                strokeDasharray="8 4"
+                dot={false}
+                name="+2σ"
+              />
+              <Line 
+                type="monotone" 
+                dataKey="plus1sd" 
+                stroke="hsl(var(--warning))" 
+                strokeWidth={1.5}
+                strokeDasharray="5 3"
+                dot={false}
+                name="+1σ"
+              />
+              <Line 
+                type="monotone" 
+                dataKey="media" 
+                stroke="hsl(var(--primary))" 
+                strokeWidth={2}
+                strokeDasharray="3 3"
+                dot={false}
+                name="Média"
+              />
+              <Line 
+                type="monotone" 
+                dataKey="minus1sd" 
+                stroke="hsl(var(--warning))" 
+                strokeWidth={1.5}
+                strokeDasharray="5 3"
+                dot={false}
+                name="-1σ"
+              />
+              <Line 
+                type="monotone" 
+                dataKey="minus2sd" 
+                stroke="hsl(var(--destructive))" 
+                strokeWidth={1.5}
+                strokeDasharray="8 4"
+                dot={false}
+                name="-2σ"
+              />
+              
+              {/* Linha de retorno da carteira */}
+              <Line 
+                type="monotone" 
+                dataKey="retorno" 
+                stroke="hsl(var(--accent))" 
+                strokeWidth={2.5}
+                dot={{ fill: 'hsl(var(--accent))', r: 4 }}
+                name="Retorno da Carteira"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+          
+          {/* Legenda */}
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-0.5 bg-accent"></div>
+              <span className="text-muted-foreground">Retorno da Carteira</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-0.5 bg-primary border-dashed"></div>
+              <span className="text-muted-foreground">Média</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-0.5 bg-warning border-dashed"></div>
+              <span className="text-muted-foreground">±1 Desvio Padrão</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-0.5 bg-destructive border-dashed"></div>
+              <span className="text-muted-foreground">±2 Desvios Padrão</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Gráfico de Risco x Retorno */}
       <Card className="bg-gradient-card border-border/50">
         <CardHeader>
