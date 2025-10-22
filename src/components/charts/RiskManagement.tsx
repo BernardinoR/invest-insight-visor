@@ -308,164 +308,204 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
       </div>
 
       {/* Gráfico de Volatilidade */}
-      <Card className="bg-gradient-card border-border/50">
-        <CardHeader>
-          <CardTitle className="text-foreground flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Volatilidade da Carteira
-          </CardTitle>
+      <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-gradient-accent flex items-center justify-center">
+              <Activity className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <CardTitle className="text-foreground text-xl font-semibold">
+              Volatilidade da Carteira
+            </CardTitle>
+          </div>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart 
-              data={(() => {
-                // Add zero starting point
-                const [firstMonth, firstYear] = consolidatedData[0].Competencia.split('/');
-                const firstDate = new Date(parseInt(firstYear), parseInt(firstMonth) - 1, 1);
-                const previousMonth = new Date(firstDate);
-                previousMonth.setMonth(previousMonth.getMonth() - 1);
-                
-                const prevMonthNum = String(previousMonth.getMonth() + 1).padStart(2, '0');
-                const prevYear = previousMonth.getFullYear().toString().slice(-2);
-                
-                const startPoint = {
-                  competencia: `${prevMonthNum}/${prevYear}`,
-                  retornoAcumulado: 0,
-                  mediaAcumulada: 0,
-                  plus1sd: 0,
-                  minus1sd: 0,
-                  plus2sd: 0,
-                  minus2sd: 0
-                };
-                
-                let accumulated = 0;
-                let avgAccumulated = 0;
-                
-                const dataPoints = consolidatedData.map((item, index) => {
-                  const monthReturn = item.Rendimento * 100;
-                  accumulated = (1 + accumulated / 100) * (1 + monthReturn / 100) - 1;
-                  accumulated = accumulated * 100;
+        
+        <CardContent className="pt-0 pb-6">
+          <div className="h-96 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart 
+                data={(() => {
+                  // Add zero starting point
+                  const [firstMonth, firstYear] = consolidatedData[0].Competencia.split('/');
+                  const firstDate = new Date(parseInt(firstYear), parseInt(firstMonth) - 1, 1);
+                  const previousMonth = new Date(firstDate);
+                  previousMonth.setMonth(previousMonth.getMonth() - 1);
                   
-                  avgAccumulated = (1 + avgAccumulated / 100) * (1 + riskMetrics.avgReturn / 100) - 1;
-                  avgAccumulated = avgAccumulated * 100;
-                  
-                  // Bandas de desvio padrão crescentes com sqrt(tempo)
-                  const periods = index + 1;
-                  const volatilityBand = riskMetrics.volatility * Math.sqrt(periods);
-                  
-                  const [month, year] = item.Competencia.split('/');
-                  const shortYear = year.slice(-2);
-                  
-                  return {
-                    competencia: `${month}/${shortYear}`,
-                    retornoAcumulado: accumulated,
-                    mediaAcumulada: avgAccumulated,
-                    plus1sd: avgAccumulated + volatilityBand,
-                    minus1sd: avgAccumulated - volatilityBand,
-                    plus2sd: avgAccumulated + (2 * volatilityBand),
-                    minus2sd: avgAccumulated - (2 * volatilityBand)
+                  const startPoint = {
+                    name: `${previousMonth.toLocaleDateString('pt-BR', { month: '2-digit' })}/${previousMonth.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
+                    retornoAcumulado: 0,
+                    mediaAcumulada: 0,
+                    plus1sd: 0,
+                    minus1sd: 0,
+                    plus2sd: 0,
+                    minus2sd: 0
                   };
-                });
+                  
+                  let accumulated = 0;
+                  let avgAccumulated = 0;
+                  
+                  const dataPoints = consolidatedData.map((item, index) => {
+                    const monthReturn = item.Rendimento * 100;
+                    accumulated = (1 + accumulated / 100) * (1 + monthReturn / 100) - 1;
+                    accumulated = accumulated * 100;
+                    
+                    avgAccumulated = (1 + avgAccumulated / 100) * (1 + riskMetrics.avgReturn / 100) - 1;
+                    avgAccumulated = avgAccumulated * 100;
+                    
+                    // Bandas de desvio padrão crescentes com sqrt(tempo)
+                    const periods = index + 1;
+                    const volatilityBand = riskMetrics.volatility * Math.sqrt(periods);
+                    
+                    const [month, year] = item.Competencia.split('/');
+                    const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+                    
+                    return {
+                      name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
+                      retornoAcumulado: accumulated,
+                      mediaAcumulada: avgAccumulated,
+                      plus1sd: avgAccumulated + volatilityBand,
+                      minus1sd: avgAccumulated - volatilityBand,
+                      plus2sd: avgAccumulated + (2 * volatilityBand),
+                      minus2sd: avgAccumulated - (2 * volatilityBand)
+                    };
+                  });
+                  
+                  return [startPoint, ...dataPoints];
+                })()}
+                margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+              >
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="hsl(var(--border))" 
+                  opacity={0.3}
+                  horizontal={true}
+                  vertical={false}
+                />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ dy: 10 }}
+                  interval={0}
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => `${value.toFixed(1)}%`}
+                  width={70}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
+                    fontSize: '13px',
+                    padding: '12px'
+                  }}
+                  formatter={(value: any, name: string) => {
+                    const labels: Record<string, string> = {
+                      'retornoAcumulado': 'Retorno Acumulado',
+                      'mediaAcumulada': 'Média Acumulada',
+                      'plus1sd': '+1 Desvio Padrão',
+                      'minus1sd': '-1 Desvio Padrão',
+                      'plus2sd': '+2 Desvios Padrão',
+                      'minus2sd': '-2 Desvios Padrão'
+                    };
+                    return [`${Number(value).toFixed(2)}%`, labels[name] || name];
+                  }}
+                  labelStyle={{ 
+                    color: 'hsl(var(--foreground))', 
+                    fontWeight: '600',
+                    marginBottom: '4px'
+                  }}
+                  cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
+                />
                 
-                return [startPoint, ...dataPoints];
-              })()}
-              margin={{ top: 20, right: 30, bottom: 20, left: 60 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-              <XAxis 
-                dataKey="competencia" 
-                stroke="hsl(var(--muted-foreground))"
-                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                tickLine={false}
-                axisLine={{ stroke: 'hsl(var(--border))' }}
-              />
-              <YAxis 
-                stroke="hsl(var(--muted-foreground))" 
-                tickFormatter={(value) => `${value.toFixed(1)}%`}
-                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                tickLine={false}
-                axisLine={{ stroke: 'hsl(var(--border))' }}
-                domain={['auto', 'auto']}
-              />
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  color: 'hsl(var(--foreground))',
-                  padding: '8px 12px'
-                }}
-                formatter={(value: any, name: string) => {
-                  const labels: Record<string, string> = {
-                    'retornoAcumulado': 'Retorno Acumulado',
-                    'mediaAcumulada': 'Média Acumulada',
-                    'plus1sd': '+1 Desvio Padrão',
-                    'minus1sd': '-1 Desvio Padrão',
-                    'plus2sd': '+2 Desvios Padrão',
-                    'minus2sd': '-2 Desvios Padrão'
-                  };
-                  return [`${Number(value).toFixed(2)}%`, labels[name] || name];
-                }}
-                labelStyle={{ color: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-              />
-              
-              {/* Linhas de desvio padrão */}
-              <Line 
-                type="monotone" 
-                dataKey="plus2sd" 
-                stroke="hsl(var(--destructive))" 
-                strokeWidth={2}
-                strokeDasharray="8 4"
-                dot={false}
-                name="+2 Desvios Padrão"
-              />
-              <Line 
-                type="monotone" 
-                dataKey="plus1sd" 
-                stroke="hsl(var(--warning))" 
-                strokeWidth={2}
-                strokeDasharray="5 3"
-                dot={false}
-                name="+1 Desvio Padrão"
-              />
-              <Line 
-                type="monotone" 
-                dataKey="mediaAcumulada" 
-                stroke="hsl(var(--chart-3))" 
-                strokeWidth={2.5}
-                dot={{ fill: 'hsl(var(--chart-3))', r: 3 }}
-                name="Média Acumulada"
-              />
-              <Line 
-                type="monotone" 
-                dataKey="minus1sd" 
-                stroke="hsl(var(--warning))" 
-                strokeWidth={2}
-                strokeDasharray="5 3"
-                dot={false}
-                name="-1 Desvio Padrão"
-              />
-              <Line 
-                type="monotone" 
-                dataKey="minus2sd" 
-                stroke="hsl(var(--destructive))" 
-                strokeWidth={2}
-                strokeDasharray="8 4"
-                dot={false}
-                name="-2 Desvios Padrão"
-              />
-              
-              {/* Linha de retorno acumulado da carteira */}
-              <Line 
-                type="monotone" 
-                dataKey="retornoAcumulado" 
-                stroke="hsl(var(--chart-1))" 
-                strokeWidth={3}
-                dot={{ fill: 'hsl(var(--chart-1))', r: 4 }}
-                name="Retorno Acumulado"
-              />
-            </LineChart>
-          </ResponsiveContainer>
+                {/* Linhas de desvio padrão */}
+                <Line 
+                  type="monotone" 
+                  dataKey="plus2sd" 
+                  stroke="hsl(var(--destructive))" 
+                  strokeWidth={2}
+                  strokeDasharray="8 4"
+                  dot={false}
+                  name="+2 Desvios Padrão"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="plus1sd" 
+                  stroke="hsl(var(--warning))" 
+                  strokeWidth={2}
+                  strokeDasharray="5 3"
+                  dot={false}
+                  name="+1 Desvio Padrão"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="mediaAcumulada" 
+                  stroke="hsl(var(--muted-foreground))" 
+                  strokeWidth={2}
+                  dot={{ 
+                    fill: 'hsl(var(--muted-foreground))', 
+                    strokeWidth: 1, 
+                    stroke: 'hsl(var(--background))',
+                    r: 3
+                  }}
+                  activeDot={{ 
+                    r: 5, 
+                    fill: 'hsl(var(--muted-foreground))', 
+                    strokeWidth: 2, 
+                    stroke: 'hsl(var(--background))'
+                  }}
+                  name="Média Acumulada"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="minus1sd" 
+                  stroke="hsl(var(--warning))" 
+                  strokeWidth={2}
+                  strokeDasharray="5 3"
+                  dot={false}
+                  name="-1 Desvio Padrão"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="minus2sd" 
+                  stroke="hsl(var(--destructive))" 
+                  strokeWidth={2}
+                  strokeDasharray="8 4"
+                  dot={false}
+                  name="-2 Desvios Padrão"
+                />
+                
+                {/* Linha de retorno acumulado da carteira - linha principal com ênfase */}
+                <Line 
+                  type="monotone" 
+                  dataKey="retornoAcumulado" 
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={3}
+                  dot={{ 
+                    fill: 'hsl(var(--primary))', 
+                    strokeWidth: 2, 
+                    stroke: 'hsl(var(--background))',
+                    r: 4
+                  }}
+                  activeDot={{ 
+                    r: 6, 
+                    fill: 'hsl(var(--primary))', 
+                    strokeWidth: 3, 
+                    stroke: 'hsl(var(--background))'
+                  }}
+                  name="Retorno Acumulado"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </CardContent>
       </Card>
       
