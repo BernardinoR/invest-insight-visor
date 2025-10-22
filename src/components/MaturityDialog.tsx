@@ -1,6 +1,6 @@
 import { Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -102,19 +102,6 @@ export function MaturityDialog({ open, onOpenChange, dadosData, clientName }: Ma
                     <YAxis 
                       tick={{ fill: 'hsl(var(--muted-foreground))' }}
                       tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
-                    />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                        padding: '12px'
-                      }}
-                      formatter={(value: number, name: string) => [
-                        `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-                        'Valor Total'
-                      ]}
-                      labelFormatter={(label) => `Vencimento: ${label}`}
                     />
                     <Bar 
                       dataKey="total" 
