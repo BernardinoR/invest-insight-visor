@@ -342,6 +342,114 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
     }));
   }, [filteredConsolidatedData, clientTarget]);
 
+  // Cálculo de Drawdown com Pain Index
+  const drawdownAnalysis = useMemo(() => {
+    if (filteredConsolidatedData.length === 0) return { drawdowns: [], maxPainIndex: 0, chartData: [] };
+    
+    let peak = filteredConsolidatedData[0]["Patrimonio Final"];
+    let peakIndex = 0;
+    const drawdowns: Array<{
+      startCompetencia: string;
+      endCompetencia: string;
+      recoveryCompetencia: string | null;
+      depth: number;
+      durationMonths: number;
+      recoveryMonths: number | null;
+      painIndex: number;
+    }> = [];
+    
+    const chartData: Array<{
+      competencia: string;
+      patrimonio: number;
+      peak: number;
+      drawdown: number;
+      drawdownPercent: number;
+    }> = [];
+    
+    let currentDrawdownStart: number | null = null;
+    let currentDrawdownDepth = 0;
+    let currentDrawdownEnd: number | null = null;
+    
+    filteredConsolidatedData.forEach((item, index) => {
+      const current = item["Patrimonio Final"];
+      
+      // Atualizar pico
+      if (current >= peak) {
+        // Se estava em drawdown e recuperou
+        if (currentDrawdownStart !== null && currentDrawdownEnd !== null) {
+          const startCompetencia = filteredConsolidatedData[currentDrawdownStart].Competencia;
+          const endCompetencia = filteredConsolidatedData[currentDrawdownEnd].Competencia;
+          const durationMonths = currentDrawdownEnd - currentDrawdownStart + 1;
+          const recoveryMonths = index - currentDrawdownEnd;
+          const painIndex = (currentDrawdownDepth * (durationMonths + recoveryMonths)) / 100;
+          
+          drawdowns.push({
+            startCompetencia,
+            endCompetencia,
+            recoveryCompetencia: item.Competencia,
+            depth: currentDrawdownDepth,
+            durationMonths,
+            recoveryMonths,
+            painIndex
+          });
+          
+          currentDrawdownStart = null;
+          currentDrawdownEnd = null;
+          currentDrawdownDepth = 0;
+        }
+        
+        peak = current;
+        peakIndex = index;
+      } else {
+        // Em drawdown
+        if (currentDrawdownStart === null) {
+          currentDrawdownStart = peakIndex;
+        }
+        
+        const drawdownPercent = ((peak - current) / peak) * 100;
+        if (drawdownPercent > currentDrawdownDepth) {
+          currentDrawdownDepth = drawdownPercent;
+          currentDrawdownEnd = index;
+        }
+      }
+      
+      // Adicionar dados para o gráfico
+      const drawdownPercent = peak > 0 ? ((peak - current) / peak) * 100 : 0;
+      chartData.push({
+        competencia: item.Competencia,
+        patrimonio: current,
+        peak: peak,
+        drawdown: peak - current,
+        drawdownPercent: -drawdownPercent // Negativo para mostrar queda
+      });
+    });
+    
+    // Se ainda está em drawdown
+    if (currentDrawdownStart !== null && currentDrawdownEnd !== null) {
+      const startCompetencia = filteredConsolidatedData[currentDrawdownStart].Competencia;
+      const endCompetencia = filteredConsolidatedData[currentDrawdownEnd].Competencia;
+      const durationMonths = currentDrawdownEnd - currentDrawdownStart + 1;
+      const recoveryMonths = filteredConsolidatedData.length - 1 - currentDrawdownEnd;
+      const painIndex = (currentDrawdownDepth * (durationMonths + recoveryMonths)) / 100;
+      
+      drawdowns.push({
+        startCompetencia,
+        endCompetencia,
+        recoveryCompetencia: null, // Ainda não recuperou
+        depth: currentDrawdownDepth,
+        durationMonths,
+        recoveryMonths: null,
+        painIndex
+      });
+    }
+    
+    const maxPainIndex = drawdowns.length > 0 
+      ? Math.max(...drawdowns.map(d => d.painIndex))
+      : 0;
+    
+    return { drawdowns, maxPainIndex, chartData };
+  }, [filteredConsolidatedData]);
+
   const periodButtons = [
     { id: 'month', label: 'Mês' },
     { id: 'year', label: 'Ano' },
@@ -1079,6 +1187,249 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
               />
             </BarChart>
           </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Drawdown Analysis Chart */}
+      <Card className="bg-gradient-card border-border/50">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-foreground flex items-center gap-2">
+                <TrendingDown className="h-5 w-5" />
+                Análise de Drawdown
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Quedas máximas e tempo de recuperação</p>
+            </div>
+            
+            {/* Period Selection */}
+            <div className="flex items-center gap-1">
+              {periodButtons.map((button) => (
+                <Button
+                  key={button.id}
+                  variant={selectedPeriod === button.id ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setSelectedPeriod(button.id as any);
+                    if (button.id === 'custom') {
+                      setShowCustomSelector(true);
+                    }
+                  }}
+                  className="text-xs px-3 py-1 h-8"
+                >
+                  {button.label}
+                </Button>
+              ))}
+              
+              {selectedPeriod === 'custom' && (
+                <Popover open={showCustomSelector} onOpenChange={setShowCustomSelector}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="ml-2">
+                      <Calendar className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-background border-border z-50" align="end">
+                    <div className="p-4 space-y-4">
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Competência Inicial</label>
+                        <Select value={customStartCompetencia} onValueChange={setCustomStartCompetencia}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a competência inicial" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border-border z-50">
+                            {availableCompetencias.map((competencia) => (
+                              <SelectItem key={competencia} value={competencia}>
+                                {formatCompetenciaDisplay(competencia)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Competência Final</label>
+                        <Select value={customEndCompetencia} onValueChange={setCustomEndCompetencia}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a competência final" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border-border z-50">
+                            {availableCompetencias.map((competencia) => (
+                              <SelectItem key={competencia} value={competencia}>
+                                {formatCompetenciaDisplay(competencia)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Drawdown Chart */}
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={drawdownAnalysis.chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <XAxis 
+                    dataKey="competencia" 
+                    stroke="hsl(var(--muted-foreground))"
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    tick={{ fontSize: 12 }}
+                    label={{ 
+                      value: 'Drawdown (%)', 
+                      angle: -90, 
+                      position: 'insideLeft',
+                      fill: 'hsl(var(--muted-foreground))'
+                    }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      color: 'hsl(var(--foreground))'
+                    }}
+                    formatter={(value: any, name: string) => {
+                      if (name === 'drawdownPercent') return [`${Number(value).toFixed(2)}%`, 'Drawdown'];
+                      if (name === 'patrimonio') return [
+                        new Intl.NumberFormat('pt-BR', { 
+                          style: 'currency', 
+                          currency: 'BRL' 
+                        }).format(value),
+                        'Patrimônio'
+                      ];
+                      if (name === 'peak') return [
+                        new Intl.NumberFormat('pt-BR', { 
+                          style: 'currency', 
+                          currency: 'BRL' 
+                        }).format(value),
+                        'Pico'
+                      ];
+                      return [value, name];
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="drawdownPercent" 
+                    stroke="hsl(var(--destructive))" 
+                    strokeWidth={2}
+                    dot={{ fill: 'hsl(var(--destructive))', r: 3 }}
+                    name="Drawdown"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="peak" 
+                    stroke="hsl(var(--chart-2))" 
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    name="Pico"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Drawdown Events Table */}
+            {drawdownAnalysis.drawdowns.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold mb-3 text-foreground">Eventos de Drawdown</h4>
+                <div className="space-y-3">
+                  {drawdownAnalysis.drawdowns
+                    .sort((a, b) => b.painIndex - a.painIndex)
+                    .slice(0, 5)
+                    .map((dd, index) => (
+                    <div 
+                      key={index}
+                      className="p-4 rounded-lg border border-border bg-card/50"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="destructive" className="text-xs">
+                            {dd.depth.toFixed(2)}% Queda
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            Pain Index: {dd.painIndex.toFixed(2)}
+                          </Badge>
+                        </div>
+                        {dd.recoveryCompetencia ? (
+                          <Badge variant="default" className="text-xs bg-green-500/20 text-green-600 dark:text-green-400">
+                            Recuperado
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
+                            Em andamento
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                        <div>
+                          <p className="text-muted-foreground text-xs">Início</p>
+                          <p className="font-medium">{formatCompetenciaDisplay(dd.startCompetencia)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">Fundo</p>
+                          <p className="font-medium">{formatCompetenciaDisplay(dd.endCompetencia)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">Duração</p>
+                          <p className="font-medium">{dd.durationMonths} {dd.durationMonths === 1 ? 'mês' : 'meses'}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">Recuperação</p>
+                          <p className="font-medium">
+                            {dd.recoveryMonths !== null 
+                              ? `${dd.recoveryMonths} ${dd.recoveryMonths === 1 ? 'mês' : 'meses'}`
+                              : 'Aguardando'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {dd.recoveryCompetencia && (
+                        <div className="mt-2 pt-2 border-t border-border">
+                          <p className="text-xs text-muted-foreground">
+                            Recuperado em: <span className="font-medium text-foreground">{formatCompetenciaDisplay(dd.recoveryCompetencia)}</span>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                
+                {drawdownAnalysis.drawdowns.length > 5 && (
+                  <p className="text-xs text-muted-foreground mt-3 text-center">
+                    Mostrando os 5 drawdowns com maior Pain Index de {drawdownAnalysis.drawdowns.length} total
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Pain Index Explanation */}
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold mb-1">Pain Index</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Métrica que combina a profundidade da queda com o tempo total (duração + recuperação). 
+                    Fórmula: (Profundidade % × Meses Totais) / 100
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Quanto maior o Pain Index, mais severo foi o drawdown. Um drawdown de -15% que recupera em 3 meses 
+                    tem Pain Index menor que um de -10% que leva 18 meses para recuperar.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
