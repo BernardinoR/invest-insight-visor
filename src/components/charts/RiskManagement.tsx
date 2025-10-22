@@ -38,6 +38,8 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
 
   // Consolidar dados por competência
   const consolidateByCompetencia = (data: typeof consolidadoData) => {
+    console.log('🔍 CONSOLIDAÇÃO - Dados brutos recebidos:', data.length);
+    
     const competenciaMap = new Map();
     
     data.forEach(item => {
@@ -69,7 +71,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
       consolidated.patrimonioForWeightedAvg += patrimonio;
     });
     
-    return Array.from(competenciaMap.values()).map(item => ({
+    const result = Array.from(competenciaMap.values()).map(item => ({
       Data: item.Data,
       Competencia: item.Competencia,
       "Patrimonio Final": item["Patrimonio Final"],
@@ -86,6 +88,14 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
       if (yearA !== yearB) return yearA - yearB;
       return monthA - monthB;
     });
+    
+    console.log('✅ CONSOLIDAÇÃO - Competências únicas:', result.length);
+    console.log('📊 CONSOLIDAÇÃO - Primeiros 3 meses:', result.slice(0, 3).map(r => ({
+      competencia: r.Competencia,
+      rendimento: (r.Rendimento * 100).toFixed(2) + '%'
+    })));
+    
+    return result;
   };
 
   const consolidatedData = useMemo(() => consolidateByCompetencia(consolidadoData), [consolidadoData]);
@@ -260,41 +270,55 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
     let quaseLa = 0;
     let miss = 0;
     
-    console.log('=== HIT RATE DEBUG ===', {
-      clientTarget,
-      targetPercent,
-      volatility,
-      homeRunThreshold,
-      sampleReturn: returns[0],
-      sampleCompetencia: filteredConsolidatedData[0]?.Competencia,
-      totalMonths: returns.length
-    });
+    console.log('🎯 === HIT RATE ANÁLISE DETALHADA ===');
+    console.log('📊 Total de períodos únicos consolidados:', returns.length);
+    console.log('🎯 Meta do cliente:', clientTarget, '→', targetPercent.toFixed(4) + '%');
+    console.log('📈 Volatilidade (σ):', volatility.toFixed(4) + '%');
+    console.log('🚀 Threshold Home Run (Meta + 1σ):', homeRunThreshold.toFixed(4) + '%');
+    console.log('');
+    console.log('Categorias:');
+    console.log('  🚀 Home Run: >= ' + homeRunThreshold.toFixed(2) + '%');
+    console.log('  ✅ Acerto: >= ' + targetPercent.toFixed(2) + '% e < ' + homeRunThreshold.toFixed(2) + '%');
+    console.log('  ⚠️  Quase Lá: > 0% e < ' + targetPercent.toFixed(2) + '%');
+    console.log('  ❌ Miss: <= 0%');
+    console.log('');
+    console.log('📅 Análise mês a mês:');
     
     returns.forEach((returnValue, index) => {
       const competencia = filteredConsolidatedData[index]?.Competencia;
+      let category = '';
+      let emoji = '';
       
       if (returnValue >= homeRunThreshold) {
-        console.log(`${competencia}: HOME RUN - Return: ${returnValue.toFixed(2)}% >= ${homeRunThreshold.toFixed(2)}%`);
         homeRun++;
+        category = 'HOME RUN';
+        emoji = '🚀';
       } else if (returnValue >= targetPercent) {
-        console.log(`${competencia}: ACERTO - Return: ${returnValue.toFixed(2)}% >= ${targetPercent.toFixed(2)}%`);
         acerto++;
+        category = 'ACERTO';
+        emoji = '✅';
       } else if (returnValue > 0) {
-        console.log(`${competencia}: QUASE LÁ - Return: ${returnValue.toFixed(2)}% > 0 but < ${targetPercent.toFixed(2)}%`);
         quaseLa++;
+        category = 'QUASE LÁ';
+        emoji = '⚠️';
       } else {
-        console.log(`${competencia}: MISS - Return: ${returnValue.toFixed(2)}% <= 0`);
         miss++;
+        category = 'MISS';
+        emoji = '❌';
       }
+      
+      console.log(`  ${emoji} ${competencia}: ${returnValue.toFixed(2)}% → ${category}`);
     });
     
-    console.log('=== HIT RATE SUMMARY ===', {
-      homeRun,
-      acerto,
-      quaseLa,
-      miss,
-      total: homeRun + acerto + quaseLa + miss
-    });
+    console.log('');
+    console.log('📊 === RESULTADO FINAL ===');
+    console.log('  🚀 Home Run:', homeRun, 'meses');
+    console.log('  ✅ Acerto:', acerto, 'meses');
+    console.log('  ⚠️  Quase Lá:', quaseLa, 'meses');
+    console.log('  ❌ Miss:', miss, 'meses');
+    console.log('  📈 Total:', homeRun + acerto + quaseLa + miss, 'meses');
+    console.log('  🎯 Hit Rate (Home Run + Acerto):', homeRun + acerto, '/', returns.length, '=', Math.round(((homeRun + acerto) / returns.length) * 100) + '%');
+    console.log('=================================');
     
     const hitRatePercent = returns.length > 0 
       ? Math.round(((homeRun + acerto) / returns.length) * 100)
