@@ -23,6 +23,7 @@ import { Building2, ChevronRight } from "lucide-react";
 import { useCallback } from "react";
 import { MaturityDialog } from "@/components/MaturityDialog";
 import { DiversificationDialog } from "@/components/DiversificationDialog";
+import { RiskManagement } from "@/components/charts/RiskManagement";
 
 interface InvestmentDashboardProps {
   selectedClient: string;
@@ -30,7 +31,7 @@ interface InvestmentDashboardProps {
 
 export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps) {
   const { consolidadoData, dadosData, loading, totalPatrimonio, totalRendimento, hasData } = useClientData(selectedClient);
-  const { marketData } = useMarketIndicators(selectedClient);
+  const { marketData, clientTarget } = useMarketIndicators(selectedClient);
   const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
   const [filteredRange, setFilteredRange] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
   const [yearTotals, setYearTotals] = useState<{ totalPatrimonio: number; totalRendimento: number } | null>(null);
@@ -38,6 +39,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const [institutionCardData, setInstitutionCardData] = useState<any>(null);
   const [maturityDialogOpen, setMaturityDialogOpen] = useState(false);
   const [diversificationDialogOpen, setDiversificationDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'performance' | 'risk'>('performance');
 
   // Helper function to convert competencia string to comparable date
   const competenciaToDate = (competencia: string) => {
@@ -304,19 +306,37 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
         {/* Portfolio Overview */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-foreground mb-2">Portfolio Performance</h2>
-          <p className="text-muted-foreground">
-            {selectedClient || "Selecione um cliente para visualizar os dados"}
-            {selectedClient && hasData && " - Dados carregados"}
-            {selectedClient && !hasData && loading && " - Carregando..."}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-bold text-foreground mb-2">
+                {viewMode === 'performance' ? 'Portfolio Performance' : 'Gestão de Riscos'}
+              </h2>
+              <p className="text-muted-foreground">
+                {selectedClient || "Selecione um cliente para visualizar os dados"}
+                {selectedClient && hasData && " - Dados carregados"}
+                {selectedClient && !hasData && loading && " - Carregando..."}
+              </p>
+            </div>
+            <Button 
+              onClick={() => setViewMode(viewMode === 'performance' ? 'risk' : 'performance')}
+              variant="outline"
+              className="bg-card/50 border-primary/20 hover:bg-primary/10"
+            >
+              {viewMode === 'performance' ? 'Ver Gestão de Riscos' : 'Ver Performance'}
+            </Button>
+          </div>
         </div>
 
         {/* Competencia Seletor */}
-        <CompetenciaSeletor 
-          selectedClient={selectedClient}
-          onFilterChange={handleFilterChange}
-        />
+        {viewMode === 'performance' && (
+          <CompetenciaSeletor 
+            selectedClient={selectedClient}
+            onFilterChange={handleFilterChange}
+          />
+        )}
+        
+        {viewMode === 'performance' && (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -552,43 +572,45 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             />
           }
         />
-
-        {/* Strategy Breakdown */}
-        {filteredDadosData.length > 0 && (
-          <div className="mb-8">
-            <StrategyBreakdown dadosData={filteredDadosData} />
-          </div>
+        </>
         )}
 
-        {/* Investment Details Table */}
-        <div className="mb-8">
-          <InvestmentDetailsTable 
-            dadosData={filteredDadosData} 
-            selectedClient={selectedClient} 
-            filteredRange={filteredRange}
-          />
-        </div>
+        {viewMode === 'performance' && (
+          <>
+            {/* Strategy Breakdown */}
+            {filteredDadosData.length > 0 && (
+              <div className="mb-8">
+                <StrategyBreakdown dadosData={filteredDadosData} />
+              </div>
+            )}
 
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 gap-6 mb-8">
-          <MaturityTimeline selectedClient={selectedClient} dadosData={filteredDadosData} />
-        </div>
+            {/* Investment Details Table */}
+            <div className="mb-8">
+              <InvestmentDetailsTable 
+                dadosData={filteredDadosData} 
+                selectedClient={selectedClient} 
+                filteredRange={filteredRange}
+              />
+            </div>
 
-        {/* Issuer Exposure Chart - Full Width */}
-        <div className="mb-8">
-          <IssuerExposure clientName={selectedClient} dadosData={filteredDadosData} />
-        </div>
+            {/* Charts Grid */}
+            <div className="grid grid-cols-1 gap-6 mb-8">
+              <MaturityTimeline selectedClient={selectedClient} dadosData={filteredDadosData} />
+            </div>
 
-        {/* Strategy Scatter Chart */}
-        <div className="mb-8">
-          <StrategyScatterChart />
-        </div>
+            {/* Issuer Exposure Chart - Full Width */}
+            <div className="mb-8">
+              <IssuerExposure clientName={selectedClient} dadosData={filteredDadosData} />
+            </div>
 
+            {/* Strategy Scatter Chart */}
+            <div className="mb-8">
+              <StrategyScatterChart />
+            </div>
 
-
-        {/* Investment Details Table - moved to end */}
-        {filteredDadosData.length > 0 && (
-          <div className="mb-8 mt-8">
+            {/* Investment Details Table - moved to end */}
+            {filteredDadosData.length > 0 && (
+              <div className="mb-8 mt-8">
             <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -1073,22 +1095,34 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                      )}
                                    </div>
                                    );
-                                 })}
-                              </div>
-                            </CollapsibleContent>
-                          </div>
-                        </Collapsible>
-                      );
-                    });
-                  })()}
-                </div>
-              </CardContent>
-            </Card>
+                  })}
+               </div>
+             </CollapsibleContent>
+           </div>
+         </Collapsible>
+       );
+     });
+   })()}
+ </div>
+               </CardContent>
+             </Card>
+           </div>
+            )}
+          </>
+        )}
+        
+        {/* Risk Management View */}
+        {viewMode === 'risk' && (
+          <div className="space-y-6">
+            <RiskManagement 
+              consolidadoData={filteredConsolidadoData}
+              clientTarget={(clientTarget?.targetValue || 0) / 100}
+            />
           </div>
         )}
       </main>
 
-      <MaturityDialog 
+      <MaturityDialog
         open={maturityDialogOpen}
         onOpenChange={setMaturityDialogOpen}
         dadosData={dadosData}
