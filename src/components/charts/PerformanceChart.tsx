@@ -1143,8 +1143,44 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
               </div>
             );
           })()
+        ) : viewMode === 'crescimento' ? (
+          // Modo "Crescimento" - crescimento médio
+          growthData.length > 0 && (() => {
+            // Calcular crescimento médio
+            const totalGrowth = growthData.reduce((sum, item) => sum + item.totalGrowth, 0);
+            const averageGrowth = totalGrowth / growthData.length;
+            
+            // Calcular crescimento total do período
+            const firstPatrimonio = growthData[0]?.patrimonioBase || 0;
+            const lastPatrimonio = growthData[growthData.length - 1]?.patrimonioFinal || 0;
+            const periodGrowth = lastPatrimonio - firstPatrimonio;
+            const periodGrowthPercentage = firstPatrimonio > 0 ? (periodGrowth / firstPatrimonio) * 100 : 0;
+            
+            return (
+              <div className="mt-6 grid grid-cols-1 gap-4">
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Crescimento médio</p>
+                      <p className="text-2xl font-semibold text-foreground">
+                        R$ {averageGrowth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        por período ({periodGrowthPercentage >= 0 ? '+' : ''}{periodGrowthPercentage.toFixed(2)}% no total)
+                      </p>
+                    </div>
+                    <div className={`text-sm px-2 py-1 rounded ${
+                      averageGrowth >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                    }`}>
+                      {averageGrowth >= 0 ? '↑' : '↓'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()
         ) : (
-          // Modos "Retorno Acumulado" e "Crescimento" - todos os bullets
+          // Modos "Retorno Acumulado" - todos os bullets
           chartDataWithIndicators.length > 1 && (
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
               {(() => {
