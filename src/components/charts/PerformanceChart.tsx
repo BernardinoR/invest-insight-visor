@@ -277,34 +277,39 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
 
   const patrimonioData = calculatePatrimonioData(filteredData);
 
-  // Calculate monthly growth percentage
+  // Calculate accumulated growth percentage with stacked monthly growth
   const calculateGrowthData = (data: typeof filteredData) => {
     if (data.length === 0) return [];
     
     const result = [];
+    let accumulatedGrowth = 0;
     
     data.forEach((item, index) => {
       const [month, year] = item.Competencia.split('/');
       const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
       
-      // Calculate growth percentage: (Patrimônio Final - Patrimônio Inicial - Movimentação) / (Patrimônio Inicial)
-      const patrimonioInicial = item["Patrimonio Inicial"] || 0;
-      const patrimonioFinal = item["Patrimonio Final"] || 0;
-      const movimentacao = item["Movimentação"] || 0;
+      // Monthly growth percentage from rendimento
+      const monthlyGrowth = (item.Rendimento || 0) * 100;
       
-      // Growth = (Final - Initial - Deposits) / Initial
-      const growth = patrimonioInicial > 0 
-        ? ((patrimonioFinal - patrimonioInicial - movimentacao) / patrimonioInicial) * 100
-        : 0;
+      // Calculate accumulated growth using compound interest
+      if (index === 0) {
+        accumulatedGrowth = monthlyGrowth;
+      } else {
+        accumulatedGrowth = ((1 + accumulatedGrowth / 100) * (1 + monthlyGrowth / 100) - 1) * 100;
+      }
+      
+      // Previous accumulated (for stacked effect)
+      const previousAccumulated = index === 0 ? 0 : result[index - 1].accumulatedGrowth;
       
       result.push({
         name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
-        growth,
-        rendimento: (item.Rendimento || 0) * 100,
+        monthlyGrowth,
+        accumulatedGrowth,
+        previousAccumulated,
         competencia: item.Competencia,
-        patrimonioInicial,
-        patrimonioFinal,
-        movimentacao
+        patrimonioInicial: item["Patrimonio Inicial"] || 0,
+        patrimonioFinal: item["Patrimonio Final"] || 0,
+        movimentacao: item["Movimentação"] || 0
       });
     });
     
@@ -679,6 +684,16 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                 data={growthData} 
                 margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
               >
+                <defs>
+                  <linearGradient id="barGradientBase" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                  </linearGradient>
+                  <linearGradient id="barGradientHighlight" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity={1} />
+                    <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity={0.7} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid 
                   strokeDasharray="3 3" 
                   stroke="hsl(var(--border))" 
@@ -712,50 +727,56 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                     fontSize: '13px',
                     padding: '12px'
                   }}
-                  formatter={(value: any, name: string, props: any) => {
-                    if (name === 'growth') {
-                      const { payload } = props;
-                      return [
-                        <div key="growth" className="space-y-1">
-                          <div className="font-semibold">{`${value.toFixed(2)}%`}</div>
-                          <div className="text-xs text-muted-foreground">
-                            Inicial: R$ {payload.patrimonioInicial.toLocaleString('pt-BR')}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            Final: R$ {payload.patrimonioFinal.toLocaleString('pt-BR')}
-                          </div>
-                          {payload.movimentacao !== 0 && (
-                            <div className="text-xs text-muted-foreground">
-                              Movimentação: R$ {payload.movimentacao.toLocaleString('pt-BR')}
-                            </div>
-                          )}
-                        </div>,
-                        'Crescimento'
-                      ];
-                    }
-                    return [`${value.toFixed(2)}%`, name];
-                  }}
-                  labelStyle={{ 
-                    color: 'hsl(var(--foreground))', 
-                    fontWeight: '600',
-                    marginBottom: '8px'
+                  content={(props) => {
+                    const { active, payload } = props;
+                    if (!active || !payload || !payload.length) return null;
+                    
+                    const data = payload[0].payload;
+                    
+                    return (
+                      <div style={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
+                        fontSize: '13px',
+                        padding: '12px'
+                      }}>
+                        <div style={{ 
+                          color: 'hsl(var(--foreground))', 
+                          fontWeight: '600',
+                          marginBottom: '8px'
+                        }}>
+                          {data.name}
+                        </div>
+                        <div style={{ marginBottom: '6px' }}>
+                          <span style={{ color: 'hsl(var(--accent))' }}>●</span>
+                          <span style={{ marginLeft: '8px' }}>Crescimento Mensal: <strong>{data.monthlyGrowth.toFixed(2)}%</strong></span>
+                        </div>
+                        <div style={{ marginBottom: '6px' }}>
+                          <span style={{ color: 'hsl(var(--primary))' }}>●</span>
+                          <span style={{ marginLeft: '8px' }}>Acumulado Total: <strong>{data.accumulatedGrowth.toFixed(2)}%</strong></span>
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid hsl(var(--border))' }}>
+                          <div>Patrimônio: R$ {data.patrimonioFinal.toLocaleString('pt-BR')}</div>
+                        </div>
+                      </div>
+                    );
                   }}
                   cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
                 />
                 <Bar 
-                  dataKey="growth" 
+                  dataKey="previousAccumulated" 
+                  stackId="growth"
+                  fill="url(#barGradientBase)"
+                  radius={[0, 0, 0, 0]}
+                />
+                <Bar 
+                  dataKey="monthlyGrowth" 
+                  stackId="growth"
+                  fill="url(#barGradientHighlight)"
                   radius={[8, 8, 0, 0]}
-                >
-                  {growthData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.growth >= 0 
-                        ? 'hsl(var(--success))' 
-                        : 'hsl(var(--destructive))'
-                      }
-                    />
-                  ))}
-                </Bar>
+                />
               </BarChart>
             ) : viewMode === 'rentabilidade' ? (
               <LineChart
