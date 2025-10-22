@@ -693,20 +693,9 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                   <Line 
                     type="monotone" 
                     dataKey="mediaAcumulada" 
-                    stroke="hsl(var(--muted-foreground) / 0.6)" 
-                    strokeWidth={2}
-                    dot={{ 
-                      fill: 'hsl(var(--muted-foreground) / 0.6)', 
-                      strokeWidth: 1, 
-                      stroke: 'hsl(var(--background))',
-                      r: 3
-                    }}
-                    activeDot={{ 
-                      r: 5, 
-                      fill: 'hsl(var(--muted-foreground) / 0.6)', 
-                      strokeWidth: 2, 
-                      stroke: 'hsl(var(--background))'
-                    }}
+                    stroke="hsl(var(--muted-foreground) / 0.4)" 
+                    strokeWidth={1.5}
+                    dot={false}
                     name="Média Acumulada"
                   />
                 )}
