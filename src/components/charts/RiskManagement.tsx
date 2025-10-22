@@ -934,9 +934,12 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                   };
                   
                   let accumulated = 0;
-                  let smaAccumulated = 0;
-                  const smaPeriod = 6; // Período para média simples (6 meses)
                   const monthReturns: number[] = [];
+                  let positiveReturnsSum = 0;
+                  let positiveReturnsCount = 0;
+                  let negativeReturnsSum = 0;
+                  let negativeReturnsCount = 0;
+                  let asymmetricAvgAccumulated = 0;
                   
                   const dataPoints = filteredConsolidatedData.map((item, index) => {
                     const monthReturn = item.Rendimento * 100;
@@ -945,14 +948,40 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                     
                     monthReturns.push(monthReturn);
                     
-                    // Cálculo da média simples dos últimos N períodos
-                    const windowStart = Math.max(0, monthReturns.length - smaPeriod);
-                    const windowReturns = monthReturns.slice(windowStart);
-                    const smaValue = windowReturns.reduce((sum, val) => sum + val, 0) / windowReturns.length;
+                    // Calcular média aritmética dos retornos acumulados
+                    const avgReturnArithmetic = monthReturns.reduce((a, b) => a + b, 0) / monthReturns.length;
                     
-                    // Acumular a média simples
-                    smaAccumulated = (1 + smaAccumulated / 100) * (1 + smaValue / 100) - 1;
-                    smaAccumulated = smaAccumulated * 100;
+                    // Separar retornos positivos e negativos baseado na média aritmética
+                    monthReturns.forEach(r => {
+                      if (r > avgReturnArithmetic) {
+                        positiveReturnsSum += r;
+                        positiveReturnsCount++;
+                      } else {
+                        negativeReturnsSum += r;
+                        negativeReturnsCount++;
+                      }
+                    });
+                    
+                    // Calcular média assimétrica ponderada (upside tem peso diferente de downside)
+                    const positiveAvg = positiveReturnsCount > 0 ? positiveReturnsSum / positiveReturnsCount : 0;
+                    const negativeAvg = negativeReturnsCount > 0 ? negativeReturnsSum / negativeReturnsCount : 0;
+                    
+                    // Peso proporcional ao número de ocorrências
+                    const totalCount = positiveReturnsCount + negativeReturnsCount;
+                    const positiveWeight = positiveReturnsCount / totalCount;
+                    const negativeWeight = negativeReturnsCount / totalCount;
+                    
+                    const asymmetricAvg = (positiveAvg * positiveWeight) + (negativeAvg * negativeWeight);
+                    
+                    // Acumular a média assimétrica
+                    asymmetricAvgAccumulated = (1 + asymmetricAvgAccumulated / 100) * (1 + asymmetricAvg / 100) - 1;
+                    asymmetricAvgAccumulated = asymmetricAvgAccumulated * 100;
+                    
+                    // Reset para próximo cálculo
+                    positiveReturnsSum = 0;
+                    positiveReturnsCount = 0;
+                    negativeReturnsSum = 0;
+                    negativeReturnsCount = 0;
                     
                     // Bandas de desvio padrão crescentes com sqrt(tempo)
                     const periods = index + 1;
@@ -964,11 +993,11 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                     return {
                       name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
                       retornoAcumulado: accumulated,
-                      mediaAcumulada: smaAccumulated,
-                      plus1sd: smaAccumulated + volatilityBand,
-                      minus1sd: smaAccumulated - volatilityBand,
-                      plus2sd: smaAccumulated + (2 * volatilityBand),
-                      minus2sd: smaAccumulated - (2 * volatilityBand)
+                      mediaAcumulada: asymmetricAvgAccumulated,
+                      plus1sd: asymmetricAvgAccumulated + volatilityBand,
+                      minus1sd: asymmetricAvgAccumulated - volatilityBand,
+                      plus2sd: asymmetricAvgAccumulated + (2 * volatilityBand),
+                      minus2sd: asymmetricAvgAccumulated - (2 * volatilityBand)
                     };
                   });
                   
