@@ -518,61 +518,6 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
 
   return (
     <div className="space-y-6">
-      {/* Métricas Principais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gradient-card border-border/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Sharpe Ratio</CardTitle>
-            <TrendingUp className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{riskMetrics.sharpe.toFixed(3)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {riskMetrics.sharpe >= 1 ? 'Excelente' : riskMetrics.sharpe >= 0.5 ? 'Bom' : 'Moderado'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-card border-border/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Sortino Ratio</CardTitle>
-            <Activity className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{riskMetrics.sortino.toFixed(3)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {riskMetrics.sortino >= 1 ? 'Excelente' : riskMetrics.sortino >= 0.5 ? 'Bom' : 'Moderado'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-card border-border/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Volatilidade</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-warning" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{riskMetrics.volatility.toFixed(2)}%</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Desvio padrão mensal
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-card border-border/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Queda Máxima</CardTitle>
-            <TrendingDown className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">-{riskMetrics.maxDrawdown.toFixed(2)}%</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Drawdown máximo
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Hit Rate Analysis */}
       <Card className="bg-gradient-card border-border/50">
         <CardHeader>
