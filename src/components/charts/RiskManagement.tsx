@@ -383,11 +383,79 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
       {/* Hit Rate Analysis */}
       <Card className="bg-gradient-card border-border/50">
         <CardHeader>
-          <CardTitle className="text-foreground flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            Hit Rate Analysis
-          </CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">Performance vs Meta</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-foreground flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Hit Rate Analysis
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Performance vs Meta</p>
+            </div>
+            
+            {/* Period Selection */}
+            <div className="flex items-center gap-1">
+              {periodButtons.map((button) => (
+                <Button
+                  key={button.id}
+                  variant={selectedPeriod === button.id ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setSelectedPeriod(button.id as any);
+                    if (button.id === 'custom') {
+                      setShowCustomSelector(true);
+                    }
+                  }}
+                  className="text-xs px-3 py-1 h-8"
+                >
+                  {button.label}
+                </Button>
+              ))}
+              
+              {selectedPeriod === 'custom' && (
+                <Popover open={showCustomSelector} onOpenChange={setShowCustomSelector}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="ml-2">
+                      <Calendar className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-background border-border z-50" align="end">
+                    <div className="p-4 space-y-4">
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Competência Inicial</label>
+                        <Select value={customStartCompetencia} onValueChange={setCustomStartCompetencia}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a competência inicial" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border-border z-50">
+                            {availableCompetencias.map((competencia) => (
+                              <SelectItem key={competencia} value={competencia}>
+                                {formatCompetenciaDisplay(competencia)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Competência Final</label>
+                        <Select value={customEndCompetencia} onValueChange={setCustomEndCompetencia}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a competência final" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border-border z-50">
+                            {availableCompetencias.map((competencia) => (
+                              <SelectItem key={competencia} value={competencia}>
+                                {formatCompetenciaDisplay(competencia)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
