@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Building2, ChevronRight } from "lucide-react";
 import { useCallback } from "react";
+import { MaturityDialog } from "./MaturityDialog";
 
 interface InvestmentDashboardProps {
   selectedClient: string;
@@ -34,6 +35,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const [yearTotals, setYearTotals] = useState<{ totalPatrimonio: number; totalRendimento: number } | null>(null);
   const [selectedInstitution, setSelectedInstitution] = useState<string | null>(null);
   const [institutionCardData, setInstitutionCardData] = useState<any>(null);
+  const [maturityDialogOpen, setMaturityDialogOpen] = useState(false);
 
   // Helper function to convert competencia string to comparable date
   const competenciaToDate = (competencia: string) => {
@@ -449,10 +451,16 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
+          <Card 
+            className="bg-gradient-card border-border/50 shadow-elegant-md cursor-pointer hover:shadow-elegant-lg transition-all duration-300 hover:border-primary/50 group"
+            onClick={() => setMaturityDialogOpen(true)}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Próximo Vencimento</CardTitle>
-              <Calendar className="h-4 w-4 text-primary" />
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                <ChevronRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground">
@@ -510,6 +518,14 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             </CardContent>
           </Card>
         </div>
+
+        {/* Maturity Dialog */}
+        <MaturityDialog
+          open={maturityDialogOpen}
+          onOpenChange={setMaturityDialogOpen}
+          dadosData={dadosData}
+          clientName={selectedClient}
+        />
 
         {/* Client Data Display - includes Performance chart, Consolidado Performance, Portfolio Table placeholder, and Institution Allocation placeholder */}
         <ClientDataDisplay 
