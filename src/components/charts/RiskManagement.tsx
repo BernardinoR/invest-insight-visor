@@ -612,91 +612,95 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Donut Chart - Similar to reference image */}
-            <div className="relative flex flex-col items-center justify-center">
-              <ResponsiveContainer width="100%" height={320}>
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: 'hsl(142, 71%, 45%)' },
-                      { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 20%, 65%)' },
-                      { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 20%, 75%)' },
-                      { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 85%)' }
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={85}
-                    outerRadius={130}
-                    paddingAngle={4}
-                    dataKey="value"
-                    strokeWidth={0}
-                  >
-                    {[
-                      { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: 'hsl(142, 71%, 45%)' },
-                      { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 20%, 65%)' },
-                      { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 20%, 75%)' },
-                      { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 85%)' }
-                    ].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-                <p className="text-sm text-muted-foreground mb-2 font-medium">Hit Rate</p>
-                <p className="text-5xl font-bold text-foreground">{riskMetrics.hitRate.hitRatePercent}%</p>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-8">
+            {/* Left Side - Donut Chart */}
+            <div className="flex flex-col items-center justify-center">
+              <div className="relative w-full max-w-[380px]">
+                <ResponsiveContainer width="100%" height={340}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: 'hsl(142, 71%, 45%)' },
+                        { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 20%, 65%)' },
+                        { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 20%, 75%)' },
+                        { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 85%)' }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={90}
+                      outerRadius={140}
+                      paddingAngle={2}
+                      dataKey="value"
+                      strokeWidth={0}
+                    >
+                      {[
+                        { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: 'hsl(142, 71%, 45%)' },
+                        { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 20%, 65%)' },
+                        { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 20%, 75%)' },
+                        { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 85%)' }
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                
+                {/* Center Text */}
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+                  <p className="text-sm text-muted-foreground mb-1 font-medium">Hit Rate</p>
+                  <p className="text-6xl font-bold text-foreground">{riskMetrics.hitRate.hitRatePercent}%</p>
+                </div>
               </div>
               
               {/* Legend - Grid layout below chart */}
-              <div className="grid grid-cols-2 gap-4 mt-6 w-full px-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }} />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <Rocket className="h-3.5 w-3.5 text-muted-foreground" />
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3 mt-6 w-full max-w-[380px]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <Rocket className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                       <span className="text-sm font-medium text-foreground">Home Run</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs text-muted-foreground">
                       {riskMetrics.hitRate.homeRun} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100) : 0}%)
                     </p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(215, 20%, 65%)' }} />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <Check className="h-3.5 w-3.5 text-muted-foreground" />
+                <div className="flex items-center gap-2.5">
+                  <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: 'hsl(215, 20%, 65%)' }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <Check className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                       <span className="text-sm font-medium text-foreground">Acerto</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs text-muted-foreground">
                       {riskMetrics.hitRate.acerto} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100) : 0}%)
                     </p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(40, 20%, 75%)' }} />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <TrendingUpIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                <div className="flex items-center gap-2.5">
+                  <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: 'hsl(40, 20%, 75%)' }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <TrendingUpIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                       <span className="text-sm font-medium text-foreground">Quase lá</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs text-muted-foreground">
                       {riskMetrics.hitRate.quaseLa} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100) : 0}%)
                     </p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(220, 15%, 85%)' }} />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <X className="h-3.5 w-3.5 text-muted-foreground" />
+                <div className="flex items-center gap-2.5">
+                  <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: 'hsl(220, 15%, 85%)' }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <X className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                       <span className="text-sm font-medium text-foreground">Miss</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs text-muted-foreground">
                       {riskMetrics.hitRate.miss} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100) : 0}%)
                     </p>
                   </div>
@@ -704,57 +708,63 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               </div>
             </div>
             
-            {/* Metrics */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-success/10 border border-success/20 rounded-lg p-3">
-                <p className="text-xs text-muted-foreground mb-1">Melhor mês</p>
-                <p className="text-lg font-bold text-success">+{riskMetrics.bestMonth.return.toFixed(2)}%</p>
-                <p className="text-xs text-muted-foreground mt-1">{riskMetrics.bestMonth.competencia}</p>
+            {/* Right Side - Metrics Grid */}
+            <div className="flex flex-col gap-4">
+              {/* Top Row - Best/Worst Month */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-success/5 border border-success/10 rounded-xl p-5 hover:bg-success/10 transition-colors">
+                  <p className="text-sm text-muted-foreground mb-2 font-medium">Melhor mês</p>
+                  <p className="text-3xl font-bold text-success mb-1">+{riskMetrics.bestMonth.return.toFixed(2)}%</p>
+                  <p className="text-xs text-muted-foreground">{riskMetrics.bestMonth.competencia}</p>
+                </div>
+                
+                <div className="bg-destructive/5 border border-destructive/10 rounded-xl p-5 hover:bg-destructive/10 transition-colors">
+                  <p className="text-sm text-muted-foreground mb-2 font-medium">Pior mês</p>
+                  <p className="text-3xl font-bold text-destructive mb-1">{riskMetrics.worstMonth.return.toFixed(2)}%</p>
+                  <p className="text-xs text-muted-foreground">{riskMetrics.worstMonth.competencia}</p>
+                </div>
               </div>
               
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-                <p className="text-xs text-muted-foreground mb-1">Pior mês</p>
-                <p className="text-lg font-bold text-destructive">{riskMetrics.worstMonth.return.toFixed(2)}%</p>
-                <p className="text-xs text-muted-foreground mt-1">{riskMetrics.worstMonth.competencia}</p>
+              {/* Middle Row - Avg Return/Consistency */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-accent/30 border border-accent/40 rounded-xl p-5 hover:bg-accent/40 transition-colors">
+                  <p className="text-sm text-muted-foreground mb-2 font-medium">Retorno médio</p>
+                  <p className="text-3xl font-bold text-foreground mb-1">{riskMetrics.avgReturn.toFixed(2)}%</p>
+                  <p className="text-xs text-muted-foreground">por mês</p>
+                </div>
+                
+                <div className="bg-primary/5 border border-primary/10 rounded-xl p-5 hover:bg-primary/10 transition-colors">
+                  <p className="text-sm text-muted-foreground mb-2 font-medium">Consistência</p>
+                  <p className="text-3xl font-bold text-foreground mb-1">{riskMetrics.hitRate.positivePercent}%</p>
+                  <p className="text-xs text-muted-foreground">meses positivos</p>
+                </div>
               </div>
               
-              <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
-                <p className="text-xs text-muted-foreground mb-1">Retorno médio</p>
-                <p className="text-lg font-bold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
-                <p className="text-xs text-muted-foreground mt-1">por mês</p>
-              </div>
-              
-              <div className="bg-chart-5/10 border border-chart-5/20 rounded-lg p-3">
-                <p className="text-xs text-muted-foreground mb-1">Consistência</p>
-                <p className="text-lg font-bold text-foreground">{riskMetrics.hitRate.positivePercent}%</p>
-                <p className="text-xs text-muted-foreground mt-1">meses positivos</p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Performance vs Meta Summary */}
-          <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-border/50">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Meses acima da meta</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-success">{riskMetrics.monthsAboveTarget}</p>
-                <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                  {filteredConsolidatedData.length > 0 
-                    ? Math.round((riskMetrics.monthsAboveTarget / filteredConsolidatedData.length) * 100)
-                    : 0}%
-                </Badge>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Meses abaixo da meta</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-destructive">{riskMetrics.monthsBelowTarget}</p>
-                <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
-                  {filteredConsolidatedData.length > 0 
-                    ? Math.round((riskMetrics.monthsBelowTarget / filteredConsolidatedData.length) * 100)
-                    : 0}%
-                </Badge>
+              {/* Bottom Row - Above/Below Target */}
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="bg-gradient-to-br from-success/5 to-success/10 border border-success/20 rounded-xl p-5 hover:from-success/10 hover:to-success/15 transition-all">
+                  <p className="text-sm text-muted-foreground mb-3 font-medium">Meses acima da meta</p>
+                  <div className="flex items-baseline gap-3">
+                    <p className="text-4xl font-bold text-success">{riskMetrics.monthsAboveTarget}</p>
+                    <Badge variant="outline" className="bg-success/10 text-success border-success/30 px-2.5 py-0.5">
+                      {filteredConsolidatedData.length > 0 
+                        ? Math.round((riskMetrics.monthsAboveTarget / filteredConsolidatedData.length) * 100)
+                        : 0}%
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-destructive/5 to-destructive/10 border border-destructive/20 rounded-xl p-5 hover:from-destructive/10 hover:to-destructive/15 transition-all">
+                  <p className="text-sm text-muted-foreground mb-3 font-medium">Meses abaixo da meta</p>
+                  <div className="flex items-baseline gap-3">
+                    <p className="text-4xl font-bold text-destructive">{riskMetrics.monthsBelowTarget}</p>
+                    <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 px-2.5 py-0.5">
+                      {filteredConsolidatedData.length > 0 
+                        ? Math.round((riskMetrics.monthsBelowTarget / filteredConsolidatedData.length) * 100)
+                        : 0}%
+                    </Badge>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
