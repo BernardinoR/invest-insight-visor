@@ -923,30 +923,38 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     
                     monthReturns.push(monthReturn);
                     
-                    // Calcular média aritmética dos retornos até o momento
+                    // === VOLATILIDADE ASSIMÉTRICA COM JANELA MÓVEL DE 3 PERÍODOS ===
+                    
+                    // Pegar últimos 3 períodos (ou menos se não houver 3)
+                    const windowSize = 3;
+                    const startIdx = Math.max(0, index - windowSize + 1);
+                    const recentReturns = monthReturns.slice(startIdx, index + 1);
+                    
+                    // 1. SEPARAÇÃO DOS RETORNOS (positivos vs negativos)
+                    const positiveReturns = recentReturns.filter(r => r > 0);
+                    const negativeReturns = recentReturns.filter(r => r < 0);
+                    
+                    // 2. CÁLCULO DE VOLATILIDADE DIFERENCIADA
+                    // σ_alta = √(Σ(r_positivos²) / n_positivos)
+                    let sigma_alta = 2; // Padrão caso não haja retornos positivos
+                    if (positiveReturns.length > 0) {
+                      const sumSquaresPositive = positiveReturns.reduce((sum, r) => sum + Math.pow(r, 2), 0);
+                      sigma_alta = Math.sqrt(sumSquaresPositive / positiveReturns.length);
+                    }
+                    
+                    // σ_baixa = √(Σ(r_negativos²) / n_negativos) × 1.5 (fator de assimetria)
+                    let sigma_baixa = 2.5; // Padrão caso não haja retornos negativos
+                    if (negativeReturns.length > 0) {
+                      const sumSquaresNegative = negativeReturns.reduce((sum, r) => sum + Math.pow(r, 2), 0);
+                      sigma_baixa = Math.sqrt(sumSquaresNegative / negativeReturns.length) * 1.5;
+                    }
+                    
+                    // 3. CONSTRUÇÃO DAS BANDAS ASSIMÉTRICAS
+                    // Banda Superior = Retorno_Acumulado + (σ_alta × n_desvios)
+                    // Banda Inferior = Retorno_Acumulado - (σ_baixa × n_desvios)
+                    
+                    // Média acumulada para referência
                     const avgReturnArithmetic = monthReturns.reduce((a, b) => a + b, 0) / monthReturns.length;
-                    
-                    // Separar retornos positivos (acima da média) e negativos (abaixo da média)
-                    const positiveReturns = monthReturns.filter(r => r > avgReturnArithmetic);
-                    const negativeReturns = monthReturns.filter(r => r <= avgReturnArithmetic);
-                    
-                    // Calcular volatilidade UPSIDE acumulada
-                    const upsideVariance = positiveReturns.length > 0
-                      ? positiveReturns.reduce((sum, r) => sum + Math.pow(r - avgReturnArithmetic, 2), 0) / positiveReturns.length
-                      : 0;
-                    const currentUpsideVol = Math.sqrt(upsideVariance);
-                    
-                    // Calcular volatilidade DOWNSIDE acumulada
-                    const downsideVariance = negativeReturns.length > 0
-                      ? negativeReturns.reduce((sum, r) => sum + Math.pow(r - avgReturnArithmetic, 2), 0) / negativeReturns.length
-                      : 0;
-                    const currentDownsideVol = Math.sqrt(downsideVariance);
-                    
-                    // Acumular volatilidades ao longo do tempo
-                    accumulatedUpsideVol = currentUpsideVol * Math.sqrt(index + 1);
-                    accumulatedDownsideVol = currentDownsideVol * Math.sqrt(index + 1);
-                    
-                    // Média acumulada (soma simples dos retornos médios)
                     const avgAccumulated = avgReturnArithmetic * (index + 1);
                     
                     const [month, year] = item.Competencia.split('/');
@@ -956,10 +964,15 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                       name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
                       retornoAcumulado: accumulatedReturn,
                       mediaAcumulada: avgAccumulated,
-                      plus1sd: avgAccumulated + accumulatedUpsideVol,
-                      minus1sd: avgAccumulated - accumulatedDownsideVol,
-                      plus2sd: avgAccumulated + (2 * accumulatedUpsideVol),
-                      minus2sd: avgAccumulated - (2 * accumulatedDownsideVol)
+                      // Bandas assimétricas - Superior usa σ_alta, Inferior usa σ_baixa
+                      plus1sd: accumulatedReturn + sigma_alta,
+                      minus1sd: accumulatedReturn - sigma_baixa,
+                      plus2sd: accumulatedReturn + (2 * sigma_alta),
+                      minus2sd: accumulatedReturn - (2 * sigma_baixa),
+                      // Métricas adicionais para análise
+                      sigma_alta,
+                      sigma_baixa,
+                      assimetria: ((sigma_baixa - sigma_alta) / sigma_alta) * 100 // % de assimetria
                     };
                   });
                   
@@ -1004,11 +1017,18 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     const labels: Record<string, string> = {
                       'retornoAcumulado': 'Retorno Acumulado',
                       'mediaAcumulada': 'Média Acumulada',
-                      'plus1sd': '+1 Desvio Padrão',
-                      'minus1sd': '-1 Desvio Padrão',
-                      'plus2sd': '+2 Desvios Padrão',
-                      'minus2sd': '-2 Desvios Padrão'
+                      'plus1sd': '+1σ Alta (Upside)',
+                      'minus1sd': '-1σ Baixa (Downside)',
+                      'plus2sd': '+2σ Alta (Upside)',
+                      'minus2sd': '-2σ Baixa (Downside)',
+                      'sigma_alta': 'σ Alta (últimos 3 períodos)',
+                      'sigma_baixa': 'σ Baixa (últimos 3 períodos)',
+                      'assimetria': 'Índice de Assimetria'
                     };
+                    
+                    if (name === 'assimetria') {
+                      return [`${Number(value).toFixed(1)}%`, labels[name]];
+                    }
                     return [`${Number(value).toFixed(2)}%`, labels[name] || name];
                   }}
                   labelStyle={{ 
