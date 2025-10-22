@@ -612,8 +612,9 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
           </div>
         </CardHeader>
         <CardContent className="p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-8">
-            {/* Left Side - Donut Chart with Legend on Right */}
+          {/* Top Section - Donut Chart with Legend */}
+          <div className="flex items-center justify-center gap-12 mb-8">
+            {/* Donut Chart and Legend */}
             <div className="flex items-center gap-8">
               {/* Donut Chart */}
               <div className="relative flex-shrink-0">
@@ -710,9 +711,10 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 </div>
               </div>
             </div>
-            
-            {/* Right Side - Secondary Metrics */}
-            <div className="grid grid-cols-2 gap-3">
+          </div>
+          
+          {/* Bottom Section - Secondary Metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               <div className="bg-success/5 border border-success/10 rounded-lg p-3.5 hover:bg-success/8 transition-colors">
                 <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Melhor mês</p>
                 <p className="text-xl font-bold text-success mb-0.5">+{riskMetrics.bestMonth.return.toFixed(2)}%</p>
