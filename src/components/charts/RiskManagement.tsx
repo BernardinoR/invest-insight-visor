@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, LineChart, Line } from 'recharts';
 import { useMemo, useState } from "react";
-import { TrendingDown, TrendingUp, Activity, AlertTriangle, Target, Calendar, Settings, Rocket, Check, TrendingUp as TrendingUpIcon, X } from "lucide-react";
+import { TrendingDown, TrendingUp, Activity, AlertTriangle, Target, Calendar, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -173,15 +173,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
         monthsAboveTarget: 0,
         monthsBelowTarget: 0,
         bestMonth: { return: 0, competencia: '' },
-        worstMonth: { return: 0, competencia: '' },
-        hitRate: {
-          homeRun: 0,
-          acerto: 0,
-          quaseLa: 0,
-          miss: 0,
-          hitRatePercent: 0,
-          positivePercent: 0
-        }
+        worstMonth: { return: 0, competencia: '' }
       };
     }
 
@@ -224,31 +216,6 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
     const bestMonthIndex = returns.indexOf(maxReturn);
     const worstMonthIndex = returns.indexOf(minReturn);
     
-    // Hit Rate Analysis
-    const targetPercent = clientTarget * 100;
-    let homeRun = 0;
-    let acerto = 0;
-    let quaseLa = 0;
-    let miss = 0;
-    
-    returns.forEach(returnValue => {
-      const threshold = targetPercent + volatility; // 1 desvio padrão acima da meta
-      
-      if (returnValue >= threshold) {
-        homeRun++;
-      } else if (returnValue >= targetPercent) {
-        acerto++;
-      } else if (returnValue > 0) {
-        quaseLa++;
-      } else {
-        miss++;
-      }
-    });
-    
-    const totalMonths = returns.length;
-    const hitRatePercent = totalMonths > 0 ? ((homeRun + acerto) / totalMonths) * 100 : 0;
-    const positivePercent = totalMonths > 0 ? ((homeRun + acerto + quaseLa) / totalMonths) * 100 : 0;
-    
     return {
       sharpe,
       sortino,
@@ -265,14 +232,6 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
       worstMonth: {
         return: minReturn,
         competencia: filteredConsolidatedData[worstMonthIndex]?.Competencia || ''
-      },
-      hitRate: {
-        homeRun,
-        acerto,
-        quaseLa,
-        miss,
-        hitRatePercent,
-        positivePercent
       }
     };
   }, [filteredConsolidatedData, clientTarget]);
@@ -767,105 +726,32 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
             </ResponsiveContainer>
           </div>
           
-          {/* Hit Rate Analysis */}
-          <div className="mt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Pie Chart */}
-              <div className="flex flex-col items-center justify-center">
-                <div className="relative">
-                  <ResponsiveContainer width={280} height={280}>
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'Home Run', value: riskMetrics.hitRate.homeRun, fill: 'hsl(var(--success))' },
-                          { name: 'Acerto', value: riskMetrics.hitRate.acerto, fill: 'hsl(var(--primary))' },
-                          { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, fill: 'hsl(var(--warning))' },
-                          { name: 'Miss', value: riskMetrics.hitRate.miss, fill: 'hsl(var(--destructive))' }
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={80}
-                        outerRadius={120}
-                        paddingAngle={2}
-                        dataKey="value"
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <p className="text-4xl font-bold text-foreground">{riskMetrics.hitRate.hitRatePercent.toFixed(0)}%</p>
-                    <p className="text-sm text-muted-foreground">Hit Rate</p>
-                  </div>
-                </div>
-                
-                {/* Legend */}
-                <div className="grid grid-cols-2 gap-3 mt-6">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-success"></div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Home Run</p>
-                      <p className="text-sm font-semibold text-foreground">
-                        {riskMetrics.hitRate.homeRun} ({filteredConsolidatedData.length > 0 ? ((riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100).toFixed(0) : 0}%)
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-primary"></div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Acerto</p>
-                      <p className="text-sm font-semibold text-foreground">
-                        {riskMetrics.hitRate.acerto} ({filteredConsolidatedData.length > 0 ? ((riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100).toFixed(0) : 0}%)
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-warning"></div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Quase lá</p>
-                      <p className="text-sm font-semibold text-foreground">
-                        {riskMetrics.hitRate.quaseLa} ({filteredConsolidatedData.length > 0 ? ((riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100).toFixed(0) : 0}%)
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-destructive"></div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Miss</p>
-                      <p className="text-sm font-semibold text-foreground">
-                        {riskMetrics.hitRate.miss} ({filteredConsolidatedData.length > 0 ? ((riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100).toFixed(0) : 0}%)
-                      </p>
-                    </div>
-                  </div>
-                </div>
+          {/* Cards de métricas integrados */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+              <p className="text-xs text-muted-foreground mb-1">Volatilidade (Desvio Padrão)</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-foreground">{riskMetrics.volatility.toFixed(2)}%</p>
+                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 text-xs">
+                  Mensal
+                </Badge>
               </div>
-              
-              {/* Metrics Cards */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-success/10 border border-success/20 rounded-lg p-3">
-                  <p className="text-xs text-muted-foreground mb-1">Melhor mês</p>
-                  <p className="text-2xl font-bold text-success">+{riskMetrics.bestMonth.return.toFixed(2)}%</p>
-                  <p className="text-xs text-muted-foreground mt-1">{formatCompetenciaDisplay(riskMetrics.bestMonth.competencia)}</p>
-                </div>
-                
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-                  <p className="text-xs text-muted-foreground mb-1">Pior mês</p>
-                  <p className="text-2xl font-bold text-destructive">{riskMetrics.worstMonth.return.toFixed(2)}%</p>
-                  <p className="text-xs text-muted-foreground mt-1">{formatCompetenciaDisplay(riskMetrics.worstMonth.competencia)}</p>
-                </div>
-                
-                <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
-                  <p className="text-xs text-muted-foreground mb-1">Retorno médio</p>
-                  <p className="text-2xl font-bold text-primary">{riskMetrics.avgReturn.toFixed(2)}%</p>
-                  <p className="text-xs text-muted-foreground mt-1">por mês</p>
-                </div>
-                
-                <div className="bg-muted/30 border border-border/50 rounded-lg p-3">
-                  <p className="text-xs text-muted-foreground mb-1">Consistência</p>
-                  <p className="text-2xl font-bold text-foreground">{riskMetrics.hitRate.positivePercent.toFixed(0)}%</p>
-                  <p className="text-xs text-muted-foreground mt-1">meses positivos</p>
-                </div>
+            </div>
+            
+            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+              <p className="text-xs text-muted-foreground mb-1">Retorno Médio</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
+                <Badge 
+                  variant="outline" 
+                  className={
+                    riskMetrics.avgReturn >= 1 
+                      ? "bg-success/10 text-success border-success/20 text-xs" 
+                      : "bg-muted/10 text-muted-foreground border-muted/20 text-xs"
+                  }
+                >
+                  {riskMetrics.avgReturn >= 1 ? '↑' : '↓'}
+                </Badge>
               </div>
             </div>
           </div>
