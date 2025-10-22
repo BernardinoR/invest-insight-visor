@@ -943,38 +943,32 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                     
                     monthReturns.push(monthReturn);
                     
-                    // Calcular média aritmética dos retornos
+                    // Calcular média aritmética dos retornos até o momento
                     const avgReturnArithmetic = monthReturns.reduce((a, b) => a + b, 0) / monthReturns.length;
                     
                     // Separar retornos positivos (acima da média) e negativos (abaixo da média)
                     const positiveReturns = monthReturns.filter(r => r > avgReturnArithmetic);
                     const negativeReturns = monthReturns.filter(r => r <= avgReturnArithmetic);
                     
-                    // Calcular volatilidade UPSIDE (retornos acima da média)
+                    // Calcular volatilidade UPSIDE (retornos acima da média) - ACUMULATIVA
                     const upsideVariance = positiveReturns.length > 0
                       ? positiveReturns.reduce((sum, r) => sum + Math.pow(r - avgReturnArithmetic, 2), 0) / positiveReturns.length
                       : 0;
                     const upsideVolatility = Math.sqrt(upsideVariance);
                     
-                    // Calcular volatilidade DOWNSIDE (retornos abaixo da média)
+                    // Calcular volatilidade DOWNSIDE (retornos abaixo da média) - ACUMULATIVA
                     const downsideVariance = negativeReturns.length > 0
                       ? negativeReturns.reduce((sum, r) => sum + Math.pow(r - avgReturnArithmetic, 2), 0) / negativeReturns.length
                       : 0;
                     const downsideVolatility = Math.sqrt(downsideVariance);
                     
-                    // Bandas assimétricas crescentes com sqrt(tempo)
+                    // Bandas assimétricas ACUMULATIVAS crescentes com sqrt(tempo)
                     const periods = index + 1;
-                    const upsideBand = upsideVolatility * Math.sqrt(periods);
-                    const downsideBand = downsideVolatility * Math.sqrt(periods);
+                    const upsideBandAccumulated = upsideVolatility * Math.sqrt(periods);
+                    const downsideBandAccumulated = downsideVolatility * Math.sqrt(periods);
                     
-                    // Acumular a média
-                    let avgAccumulated = 0;
-                    for (let i = 0; i <= index; i++) {
-                      const ret = filteredConsolidatedData[i].Rendimento * 100;
-                      avgAccumulated = (1 + avgAccumulated / 100) * (1 + ret / 100) - 1;
-                      avgAccumulated = avgAccumulated * 100;
-                    }
-                    const avgValue = avgAccumulated / (index + 1);
+                    // Média acumulativa (usar a média aritmética acumulada)
+                    const avgAccumulated = avgReturnArithmetic * periods;
                     
                     const [month, year] = item.Competencia.split('/');
                     const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
@@ -982,11 +976,11 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                     return {
                       name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
                       retornoAcumulado: accumulated,
-                      mediaAcumulada: avgValue,
-                      plus1sd: avgValue + upsideBand,
-                      minus1sd: avgValue - downsideBand,
-                      plus2sd: avgValue + (2 * upsideBand),
-                      minus2sd: avgValue - (2 * downsideBand)
+                      mediaAcumulada: avgAccumulated,
+                      plus1sd: avgAccumulated + upsideBandAccumulated,
+                      minus1sd: avgAccumulated - downsideBandAccumulated,
+                      plus2sd: avgAccumulated + (2 * upsideBandAccumulated),
+                      minus2sd: avgAccumulated - (2 * downsideBandAccumulated)
                     };
                   });
                   
