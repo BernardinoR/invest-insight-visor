@@ -10,6 +10,56 @@ interface DiversificationDialogProps {
 }
 
 export function DiversificationDialog({ open, onOpenChange, dadosData }: DiversificationDialogProps) {
+  // Function to group strategy names (same as StrategyBreakdown)
+  const groupStrategy = (strategy: string): string => {
+    const strategyLower = strategy.toLowerCase();
+    
+    if (strategyLower.includes('cdi - liquidez')) {
+      return 'Pós Fixado - Liquidez';
+    }
+    if (strategyLower.includes('cdi - fundos') || strategyLower.includes('cdi - titulos')) {
+      return 'Pós Fixado';
+    }
+    if (strategyLower.includes('inflação - titulos') || strategyLower.includes('inflação - fundos')) {
+      return 'Inflação';
+    }
+    if (strategyLower.includes('pré fixado - titulos') || strategyLower.includes('pré fixado - títulos') || strategyLower.includes('pré fixado - titulo') || strategyLower.includes('pré fixado - fundos')) {
+      return 'Pré Fixado';
+    }
+    if (strategyLower.includes('multimercado')) {
+      return 'Multimercado';
+    }
+    if (strategyLower.includes('imobiliário - ativos') || strategyLower.includes('imobiliário - fundos')) {
+      return 'Imobiliário';
+    }
+    if (strategyLower.includes('ações - ativos') || strategyLower.includes('ações - fundos') || strategyLower.includes('ações - etfs')) {
+      return 'Ações';
+    }
+    if (strategyLower.includes('ações - long bias')) {
+      return 'Ações - Long Bias';
+    }
+    if (strategyLower.includes('private equity') || strategyLower.includes('venture capital') || strategyLower.includes('special sits')) {
+      return 'Private Equity';
+    }
+    if (strategyLower.includes('exterior - ações')) {
+      return 'Exterior - Ações';
+    }
+    if (strategyLower.includes('exterior - renda fixa')) {
+      return 'Exterior - Renda Fixa';
+    }
+    if (strategyLower.includes('coe')) {
+      return 'COE';
+    }
+    if (strategyLower.includes('ouro')) {
+      return 'Ouro';
+    }
+    if (strategyLower.includes('criptoativos')) {
+      return 'Criptoativos';
+    }
+    
+    return strategy;
+  };
+
   // Get all unique competencias and sort them
   const allCompetencias = [...new Set(dadosData.map(item => item.Competencia))].sort((a, b) => {
     const [monthA, yearA] = a.split('/').map(Number);
@@ -18,12 +68,43 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
     return monthA - monthB;
   });
 
-  // Get all unique strategies across all time
+  // Get all unique strategies across all time (using grouped strategies)
   const allStrategies = [...new Set(
     dadosData
-      .map(item => item["Classe do ativo"])
+      .map(item => groupStrategy(item["Classe do ativo"] || ""))
       .filter(Boolean)
   )].sort();
+
+  // Define the order for strategies (same as StrategyBreakdown)
+  const strategyOrder = [
+    'Pós Fixado - Liquidez',
+    'Pós Fixado',
+    'Inflação',
+    'Pré Fixado',
+    'Multimercado',
+    'Imobiliário',
+    'Ações',
+    'Ações - Long Bias',
+    'Private Equity',
+    'Exterior - Renda Fixa',
+    'Exterior - Ações',
+    'COE',
+    'Ouro',
+    'Criptoativos'
+  ];
+
+  // Sort strategies by the defined order
+  const sortedStrategies = allStrategies.sort((a, b) => {
+    const indexA = strategyOrder.indexOf(a);
+    const indexB = strategyOrder.indexOf(b);
+    
+    if (indexA !== -1 && indexB !== -1) {
+      return indexA - indexB;
+    }
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return 0;
+  });
 
   // Calculate number of assets per competencia
   const assetsData = allCompetencias.map(competencia => {
@@ -41,14 +122,14 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
     const competenciaData = dadosData.filter(item => item.Competencia === competencia);
     const strategiesInMonth = new Set(
       competenciaData
-        .map(item => item["Classe do ativo"])
+        .map(item => groupStrategy(item["Classe do ativo"] || ""))
         .filter(Boolean)
     );
 
     const dataPoint: any = { competencia };
     
     // For each strategy, add 1 if present, 0 if absent (for stacked area)
-    allStrategies.forEach(strategy => {
+    sortedStrategies.forEach(strategy => {
       dataPoint[strategy] = strategiesInMonth.has(strategy) ? 1 : 0;
     });
 
@@ -65,14 +146,29 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
     ? Object.keys(currentStrategiesData).filter(key => key !== 'competencia' && currentStrategiesData[key] === 1).length 
     : 0;
 
-  // Generate colors for strategies
-  const strategyColors = [
-    "hsl(var(--chart-1))",
-    "hsl(var(--chart-2))",
-    "hsl(var(--chart-3))",
-    "hsl(var(--chart-4))",
-    "hsl(var(--chart-5))",
+  // Generate colors for strategies (same as StrategyBreakdown)
+  const COLORS = [
+    'hsl(210 16% 82%)', // Light blue-gray
+    'hsl(32 25% 72%)',  // Light beige
+    'hsl(45 20% 85%)',  // Very light beige
+    'hsl(210 11% 71%)', // Medium gray
+    'hsl(210 16% 58%)', // Darker gray
+    'hsl(207 26% 50%)', // Blue-gray
+    'hsl(158 64% 25%)', // Dark forest green
+    'hsl(159 61% 33%)', // Medium forest green
+    'hsl(210 29% 24%)', // Dark blue-gray
+    'hsl(25 28% 53%)',  // Medium brown
+    'hsl(40 23% 77%)',  // Light tan
+    'hsl(210 14% 53%)', // Medium blue-gray
+    'hsl(35 31% 65%)',  // Warm beige
+    'hsl(210 24% 40%)', // Darker blue-gray
   ];
+
+  // Assign colors based on strategy order
+  const getStrategyColor = (strategy: string) => {
+    const index = strategyOrder.indexOf(strategy);
+    return index !== -1 ? COLORS[index] : COLORS[COLORS.length - 1];
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -181,11 +277,11 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                 <CardContent className="px-2 md:px-6">
                   <ChartContainer
                     config={Object.fromEntries(
-                      allStrategies.map((strategy, index) => [
+                      sortedStrategies.map((strategy) => [
                         strategy,
                         {
                           label: strategy,
-                          color: strategyColors[index % strategyColors.length],
+                          color: getStrategyColor(strategy),
                         },
                       ])
                     )}
@@ -243,14 +339,14 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                             );
                           }}
                         />
-                        {allStrategies.map((strategy, index) => (
+                        {sortedStrategies.map((strategy) => (
                           <Area
                             key={strategy}
                             type="monotone"
                             dataKey={strategy}
                             stackId="1"
-                            stroke={strategyColors[index % strategyColors.length]}
-                            fill={strategyColors[index % strategyColors.length]}
+                            stroke={getStrategyColor(strategy)}
+                            fill={getStrategyColor(strategy)}
                             fillOpacity={0.6}
                             name={strategy}
                           />
@@ -262,7 +358,7 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                   {/* Enhanced Legend with insights */}
                   <div className="mt-6 space-y-4">
                     <div className="flex flex-wrap gap-2 justify-center">
-                      {allStrategies.map((strategy, index) => {
+                      {sortedStrategies.map((strategy) => {
                         // Calculate duration for each strategy
                         const firstAppearance = strategiesData.findIndex(d => d[strategy] === 1);
                         const lastAppearance = strategiesData.map((d, i) => d[strategy] === 1 ? i : -1).filter(i => i !== -1).pop();
@@ -282,7 +378,7 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                           >
                             <div 
                               className="w-3 h-3 rounded-sm flex-shrink-0" 
-                              style={{ backgroundColor: strategyColors[index % strategyColors.length] }}
+                              style={{ backgroundColor: getStrategyColor(strategy) }}
                             />
                             <span className="text-xs font-medium">{strategy}</span>
                             <span className="text-[10px] text-muted-foreground">
