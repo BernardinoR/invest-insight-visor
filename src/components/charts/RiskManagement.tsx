@@ -506,15 +506,11 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
               </LineChart>
             </ResponsiveContainer>
           </div>
-        </CardContent>
-      </Card>
-      
-      {/* Card de Métricas de Volatilidade */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="bg-gradient-card border-border/50">
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Volatilidade (Desvio Padrão)</p>
+          
+          {/* Cards de métricas integrados */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+            <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+              <p className="text-sm text-muted-foreground mb-2">Volatilidade (Desvio Padrão)</p>
               <div className="flex items-baseline gap-2">
                 <p className="text-4xl font-bold text-foreground">{riskMetrics.volatility.toFixed(2)}%</p>
                 <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
@@ -522,13 +518,9 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                 </Badge>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-gradient-card border-border/50">
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Retorno Médio</p>
+            
+            <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+              <p className="text-sm text-muted-foreground mb-2">Retorno Médio</p>
               <div className="flex items-baseline gap-2">
                 <p className="text-4xl font-bold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
                 <Badge 
@@ -543,9 +535,9 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                 </Badge>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Gráfico de Risco x Retorno */}
       <Card className="bg-gradient-card border-border/50">
