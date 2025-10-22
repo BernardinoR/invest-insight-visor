@@ -381,12 +381,15 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                   {(() => {
                     if (!hasData) return "Aguardando dados";
                     
-                    // Get the most recent competencia from consolidado data
-                    const mostRecentCompetencia = consolidadoData.length > 0 
-                      ? consolidadoData.reduce((latest, current) => {
-                          return current.Competencia > latest.Competencia ? current : latest;
-                        }).Competencia 
-                      : null;
+                    // Get all unique competencias and sort them CORRECTLY by date
+                    const allCompetencias = [...new Set(consolidadoData.map(item => item.Competencia))].sort((a, b) => {
+                      const [monthA, yearA] = a.split('/').map(Number);
+                      const [monthB, yearB] = b.split('/').map(Number);
+                      if (yearA !== yearB) return yearB - yearA; // Reverse for most recent first
+                      return monthB - monthA; // Reverse for most recent first
+                    });
+                    
+                    const mostRecentCompetencia = allCompetencias[0];
                     
                     if (!mostRecentCompetencia) return "vs Meta: --";
                     
