@@ -22,6 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Building2, ChevronRight } from "lucide-react";
 import { useCallback } from "react";
 import { MaturityDialog } from "@/components/MaturityDialog";
+import { DiversificationDialog } from "@/components/DiversificationDialog";
 
 interface InvestmentDashboardProps {
   selectedClient: string;
@@ -36,6 +37,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const [selectedInstitution, setSelectedInstitution] = useState<string | null>(null);
   const [institutionCardData, setInstitutionCardData] = useState<any>(null);
   const [maturityDialogOpen, setMaturityDialogOpen] = useState(false);
+  const [diversificationDialogOpen, setDiversificationDialogOpen] = useState(false);
 
   // Helper function to convert competencia string to comparable date
   const competenciaToDate = (competencia: string) => {
@@ -421,10 +423,17 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
+          <Card 
+            className="bg-gradient-card border-border/50 shadow-elegant-md cursor-pointer hover:shadow-elegant-lg transition-all duration-300 group relative overflow-hidden"
+            onClick={() => setDiversificationDialogOpen(true)}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Diversificação</CardTitle>
-              <Building2 className="h-4 w-4 text-primary" />
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-primary" />
+                <ChevronRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </div>
             </CardHeader>
             <CardContent>
                <div className="text-2xl font-bold text-foreground">
@@ -1082,6 +1091,12 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       <MaturityDialog 
         open={maturityDialogOpen}
         onOpenChange={setMaturityDialogOpen}
+        dadosData={dadosData}
+      />
+
+      <DiversificationDialog 
+        open={diversificationDialogOpen}
+        onOpenChange={setDiversificationDialogOpen}
         dadosData={dadosData}
       />
     </div>
