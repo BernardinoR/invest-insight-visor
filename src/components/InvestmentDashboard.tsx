@@ -377,27 +377,42 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                    return `${(avgRendimento * 100).toFixed(2)}%`;
                  })()}
                </div>
-               <p className="text-xs text-success">
-                 {(() => {
-                   if (!hasData) return "Aguardando dados";
-                   
-                   // Get the most recent competencia from consolidado data
-                   const mostRecentCompetencia = consolidadoData.length > 0 
-                     ? consolidadoData.reduce((latest, current) => {
-                         return current.Competencia > latest.Competencia ? current : latest;
-                       }).Competencia 
-                     : null;
-                   
-                   if (!mostRecentCompetencia) return "vs IPCA: --";
-                   
-                   const ipcaData = marketData.find(item => item.competencia === mostRecentCompetencia);
-                   if (ipcaData && ipcaData.ipca !== 0) {
-                     return `vs IPCA: ${ipcaData.ipca >= 0 ? "+" : ""}${(ipcaData.ipca * 100).toFixed(2)}%`;
-                   }
-                   
-                   return "vs IPCA: --";
-                 })()}
-               </p>
+                <p className="text-xs text-success">
+                  {(() => {
+                    if (!hasData) return "Aguardando dados";
+                    
+                    // Get the most recent competencia from consolidado data
+                    const mostRecentCompetencia = consolidadoData.length > 0 
+                      ? consolidadoData.reduce((latest, current) => {
+                          return current.Competencia > latest.Competencia ? current : latest;
+                        }).Competencia 
+                      : null;
+                    
+                    if (!mostRecentCompetencia) return "vs Meta: --";
+                    
+                    // Get the client target for this month
+                    const targetData = marketData.find(item => item.competencia === mostRecentCompetencia);
+                    
+                    if (targetData && targetData.clientTarget !== 0) {
+                      // Calculate actual monthly return
+                      const mostRecentEntries = consolidadoData.filter(item => item.Competencia === mostRecentCompetencia);
+                      const totalPatrimonioWeighted = mostRecentEntries.reduce((sum, entry) => sum + (entry["Patrimonio Final"] || 0), 0);
+                      const weightedRendimento = mostRecentEntries.reduce((sum, entry) => {
+                        const patrimonio = entry["Patrimonio Final"] || 0;
+                        const rendimento = entry.Rendimento || 0;
+                        return sum + (rendimento * patrimonio);
+                      }, 0);
+                      const avgRendimento = weightedRendimento / totalPatrimonioWeighted;
+                      
+                      // Calculate difference from target
+                      const diff = (avgRendimento - targetData.clientTarget) * 100;
+                      
+                      return `Meta: ${(targetData.clientTarget * 100).toFixed(2)}% (${diff >= 0 ? "+" : ""}${diff.toFixed(2)}pp)`;
+                    }
+                    
+                    return "vs Meta: --";
+                  })()}
+                </p>
             </CardContent>
           </Card>
 
