@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 interface DiversificationDialogProps {
@@ -254,7 +254,7 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                     className="h-[250px] md:h-[300px] w-full"
                   >
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={assetsData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                      <BarChart data={assetsData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                         <XAxis 
                           dataKey="competencia" 
@@ -270,16 +270,13 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
                           width={35}
                         />
                         <ChartTooltip content={<ChartTooltipContent />} />
-                        <Line 
-                          type="monotone"
+                        <Bar 
                           dataKey="ativos" 
                           name="Ativos"
-                          stroke="hsl(var(--primary))" 
-                          strokeWidth={3}
-                          dot={{ fill: 'hsl(var(--primary))', r: 5 }}
-                          activeDot={{ r: 7 }}
+                          fill="hsl(var(--primary))"
+                          radius={[4, 4, 0, 0]}
                         />
-                      </LineChart>
+                      </BarChart>
                     </ResponsiveContainer>
                   </ChartContainer>
                 </CardContent>
