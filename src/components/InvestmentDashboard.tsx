@@ -383,9 +383,12 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                     
                     // Get the most recent competencia from consolidado data
                     const mostRecentCompetencia = consolidadoData.length > 0 
-                      ? consolidadoData.reduce((latest, current) => {
-                          return current.Competencia > latest.Competencia ? current : latest;
-                        }).Competencia 
+                      ? [...new Set(consolidadoData.map(item => item.Competencia))].sort((a, b) => {
+                          const [monthA, yearA] = a.split('/').map(Number);
+                          const [monthB, yearB] = b.split('/').map(Number);
+                          if (yearA !== yearB) return yearB - yearA;
+                          return monthB - monthA;
+                        })[0]
                       : null;
                     
                     if (!mostRecentCompetencia) return "vs Meta: --";
