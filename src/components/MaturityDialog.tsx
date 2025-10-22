@@ -1,6 +1,7 @@
 import { Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -89,7 +90,14 @@ export function MaturityDialog({ open, onOpenChange, dadosData, clientName }: Ma
           {chartData.length > 0 ? (
             <>
               <div className="h-[400px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
+                <ChartContainer
+                  config={{
+                    total: {
+                      label: "Vencimento",
+                      color: "hsl(var(--primary))",
+                    },
+                  }}
+                >
                   <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                     <XAxis 
@@ -103,6 +111,7 @@ export function MaturityDialog({ open, onOpenChange, dadosData, clientName }: Ma
                       tick={{ fill: 'hsl(var(--muted-foreground))' }}
                       tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
                     />
+                    <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar 
                       dataKey="total" 
                       radius={[8, 8, 0, 0]}
@@ -112,7 +121,7 @@ export function MaturityDialog({ open, onOpenChange, dadosData, clientName }: Ma
                       ))}
                     </Bar>
                   </BarChart>
-                </ResponsiveContainer>
+                </ChartContainer>
               </div>
 
               <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
