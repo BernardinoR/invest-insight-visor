@@ -330,15 +330,32 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
           </div>
           <ResponsiveContainer width="100%" height={400}>
             <LineChart 
-              data={consolidatedData.map(item => ({
-                competencia: item.Competencia,
-                retorno: item.Rendimento * 100,
-                media: riskMetrics.avgReturn,
-                plus1sd: riskMetrics.avgReturn + riskMetrics.volatility,
-                minus1sd: riskMetrics.avgReturn - riskMetrics.volatility,
-                plus2sd: riskMetrics.avgReturn + (2 * riskMetrics.volatility),
-                minus2sd: riskMetrics.avgReturn - (2 * riskMetrics.volatility)
-              }))}
+              data={(() => {
+                let accumulated = 0;
+                let avgAccumulated = 0;
+                return consolidatedData.map((item, index) => {
+                  const monthReturn = item.Rendimento * 100;
+                  accumulated = (1 + accumulated / 100) * (1 + monthReturn / 100) - 1;
+                  accumulated = accumulated * 100;
+                  
+                  avgAccumulated = (1 + avgAccumulated / 100) * (1 + riskMetrics.avgReturn / 100) - 1;
+                  avgAccumulated = avgAccumulated * 100;
+                  
+                  // Bandas de desvio padrão crescentes com sqrt(tempo)
+                  const periods = index + 1;
+                  const volatilityBand = riskMetrics.volatility * Math.sqrt(periods);
+                  
+                  return {
+                    competencia: item.Competencia,
+                    retornoAcumulado: accumulated,
+                    mediaAcumulada: avgAccumulated,
+                    plus1sd: avgAccumulated + volatilityBand,
+                    minus1sd: avgAccumulated - volatilityBand,
+                    plus2sd: avgAccumulated + (2 * volatilityBand),
+                    minus2sd: avgAccumulated - (2 * volatilityBand)
+                  };
+                });
+              })()}
               margin={{ top: 20, right: 30, bottom: 60, left: 20 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -352,7 +369,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
               <YAxis 
                 stroke="hsl(var(--muted-foreground))" 
                 unit="%"
-                label={{ value: 'Retorno (%)', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
+                label={{ value: 'Retorno Acumulado (%)', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
               />
               <Tooltip 
                 contentStyle={{
@@ -385,12 +402,12 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
               />
               <Line 
                 type="monotone" 
-                dataKey="media" 
+                dataKey="mediaAcumulada" 
                 stroke="hsl(var(--primary))" 
                 strokeWidth={2}
                 strokeDasharray="3 3"
                 dot={false}
-                name="Média"
+                name="Média Acumulada"
               />
               <Line 
                 type="monotone" 
@@ -411,14 +428,14 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                 name="-2σ"
               />
               
-              {/* Linha de retorno da carteira */}
+              {/* Linha de retorno acumulado da carteira */}
               <Line 
                 type="monotone" 
-                dataKey="retorno" 
+                dataKey="retornoAcumulado" 
                 stroke="hsl(var(--accent))" 
                 strokeWidth={2.5}
                 dot={{ fill: 'hsl(var(--accent))', r: 4 }}
-                name="Retorno da Carteira"
+                name="Retorno Acumulado"
               />
             </LineChart>
           </ResponsiveContainer>
@@ -427,11 +444,11 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
           <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
             <div className="flex items-center gap-2">
               <div className="w-4 h-0.5 bg-accent"></div>
-              <span className="text-muted-foreground">Retorno da Carteira</span>
+              <span className="text-muted-foreground">Retorno Acumulado</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-0.5 bg-primary border-dashed"></div>
-              <span className="text-muted-foreground">Média</span>
+              <span className="text-muted-foreground">Média Acumulada</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-0.5 bg-warning border-dashed"></div>
