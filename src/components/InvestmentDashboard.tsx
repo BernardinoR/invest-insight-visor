@@ -209,8 +209,13 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       return { growth: 0, hasData: false, previousPatrimonio: 0 };
     }
 
-    // Get all unique competencias from unfiltered data and sort them
-    const allCompetencias = [...new Set(consolidadoData.map(item => item.Competencia))].sort();
+    // Apply institution filter if one is selected (to match displayPatrimonio calculation)
+    const dataToUse = selectedInstitution 
+      ? consolidadoData.filter(item => item.Instituicao === selectedInstitution)
+      : consolidadoData;
+
+    // Get all unique competencias and sort them
+    const allCompetencias = [...new Set(dataToUse.map(item => item.Competencia))].sort();
     
     // Determine which competencia to use (filtered or latest available)
     const targetCompetencia = filteredRange.fim || allCompetencias[allCompetencias.length - 1];
@@ -223,14 +228,14 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     const previousCompetencia = allCompetencias[currentCompetenciaIndex - 1];
     
     // Calculate current month patrimônio - sum ALL entries for this competencia
-    const currentMonthEntries = consolidadoData.filter(item => item.Competencia === targetCompetencia);
+    const currentMonthEntries = dataToUse.filter(item => item.Competencia === targetCompetencia);
     const currentPatrimonio = currentMonthEntries.reduce((sum, entry) => {
       const valor = Number(entry["Patrimonio Final"]) || 0;
       return sum + valor;
     }, 0);
     
     // Calculate previous month patrimônio - sum ALL entries for this competencia
-    const previousMonthEntries = consolidadoData.filter(item => item.Competencia === previousCompetencia);
+    const previousMonthEntries = dataToUse.filter(item => item.Competencia === previousCompetencia);
     const previousPatrimonio = previousMonthEntries.reduce((sum, entry) => {
       const valor = Number(entry["Patrimonio Final"]) || 0;
       return sum + valor;
@@ -243,6 +248,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       previousPatrimonio,
       currentMonthEntriesCount: currentMonthEntries.length,
       previousMonthEntriesCount: previousMonthEntries.length,
+      selectedInstitution,
       allCompetencias
     });
     
