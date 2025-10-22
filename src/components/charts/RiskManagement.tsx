@@ -186,7 +186,14 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
     }
 
     const returns = filteredConsolidatedData.map(item => item.Rendimento * 100);
-    const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+    
+    // Calcular retorno médio usando capitalização composta (média geométrica)
+    const compoundedReturn = returns.reduce((product, r) => {
+      return product * (1 + r / 100); // Converter % para decimal
+    }, 1);
+    
+    // Extrair a raiz n-ésima e converter de volta para %
+    const avgReturn = (Math.pow(compoundedReturn, 1 / returns.length) - 1) * 100;
     
     // Volatilidade (desvio padrão)
     const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length;
