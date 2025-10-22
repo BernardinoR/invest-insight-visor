@@ -684,12 +684,12 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
               >
                 <defs>
                   <linearGradient id="barBase" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.15} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.45} />
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
                   </linearGradient>
                   <linearGradient id="barPositive" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(142 71% 45%)" stopOpacity={1} />
-                    <stop offset="100%" stopColor="hsl(142 76% 35%)" stopOpacity={0.85} />
+                    <stop offset="0%" stopColor="hsl(142 50% 50%)" stopOpacity={0.85} />
+                    <stop offset="100%" stopColor="hsl(142 45% 42%)" stopOpacity={0.75} />
                   </linearGradient>
                   <linearGradient id="barNegative" x1="0" y1="1" x2="0" y2="0">
                     <stop offset="0%" stopColor="hsl(0 84% 60%)" stopOpacity={1} />
