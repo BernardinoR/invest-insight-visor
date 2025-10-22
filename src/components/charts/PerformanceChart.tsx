@@ -677,23 +677,31 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         <div className="h-96 w-full">
           <ResponsiveContainer width="100%" height="100%">
             {viewMode === 'crescimento' ? (
-              <AreaChart 
+              <BarChart 
                 data={growthData} 
                 margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                barGap={8}
               >
                 <defs>
-                  <linearGradient id="colorPatrimonioBase" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.5} />
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
+                  <linearGradient id="barBase" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.15} />
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
                   </linearGradient>
-                  <linearGradient id="colorGrowthPositive" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(142 71% 45%)" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="hsl(142 71% 45%)" stopOpacity={0.3} />
+                  <linearGradient id="barPositive" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(142 71% 45%)" stopOpacity={1} />
+                    <stop offset="100%" stopColor="hsl(142 76% 35%)" stopOpacity={0.85} />
                   </linearGradient>
-                  <linearGradient id="colorGrowthNegative" x1="0" y1="1" x2="0" y2="0">
-                    <stop offset="5%" stopColor="hsl(0 84% 60%)" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="hsl(0 84% 60%)" stopOpacity={0.3} />
+                  <linearGradient id="barNegative" x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="0%" stopColor="hsl(0 84% 60%)" stopOpacity={1} />
+                    <stop offset="100%" stopColor="hsl(0 72% 50%)" stopOpacity={0.85} />
                   </linearGradient>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
                 </defs>
                 <CartesianGrid 
                   strokeDasharray="3 3" 
@@ -710,7 +718,6 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                   tickLine={false}
                   tick={{ dy: 10 }}
                   interval={0}
-                  angle={0}
                 />
                 <YAxis 
                   stroke="hsl(var(--muted-foreground))"
@@ -723,7 +730,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                     return `R$ ${value}`;
                   }}
                   width={70}
-                  domain={[0, (dataMax: number) => dataMax * 1.05]}
+                  domain={[0, (dataMax: number) => dataMax * 1.08]}
                 />
                 <Tooltip 
                   contentStyle={{
@@ -732,7 +739,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                     borderRadius: '12px',
                     boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
                     fontSize: '13px',
-                    padding: '12px'
+                    padding: '14px'
                   }}
                   content={(props) => {
                     const { active, payload } = props;
@@ -748,104 +755,116 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                         borderRadius: '12px',
                         boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
                         fontSize: '13px',
-                        padding: '12px',
-                        minWidth: '250px'
+                        padding: '14px',
+                        minWidth: '260px'
                       }}>
                         <div style={{ 
                           color: 'hsl(var(--foreground))', 
                           fontWeight: '600',
-                          marginBottom: '10px',
-                          fontSize: '14px'
+                          marginBottom: '12px',
+                          fontSize: '14px',
+                          borderBottom: '1px solid hsl(var(--border))',
+                          paddingBottom: '8px'
                         }}>
                           {data.name}
                         </div>
-                        <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ color: 'hsl(var(--primary))', fontSize: '16px' }}>●</span>
-                          <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: '12px' }}>Patrimônio Inicial:</span>
-                          <strong style={{ marginLeft: 'auto' }}>R$ {data.patrimonioBase.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
-                        </div>
-                        <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ color: isPositive ? 'hsl(142 71% 45%)' : 'hsl(0 84% 60%)', fontSize: '16px' }}>●</span>
-                          <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: '12px' }}>Crescimento:</span>
-                          <strong style={{ 
-                            marginLeft: 'auto',
-                            color: isPositive ? 'hsl(142 71% 45%)' : 'hsl(0 84% 60%)'
-                          }}>
-                            {isPositive ? '+' : ''}R$ {data.totalGrowth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </strong>
-                        </div>
                         <div style={{ 
                           marginBottom: '10px', 
-                          paddingLeft: '24px',
-                          fontSize: '11px', 
-                          color: isPositive ? 'hsl(142 71% 45%)' : 'hsl(0 84% 60%)',
-                          fontWeight: '600'
+                          padding: '8px',
+                          borderRadius: '8px',
+                          backgroundColor: 'hsl(var(--muted) / 0.3)'
                         }}>
-                          {isPositive ? '+' : ''}{data.growthPercentage.toFixed(2)}%
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <span style={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))' }}>Patrimônio Inicial</span>
+                            <strong style={{ fontSize: '12px' }}>R$ {data.patrimonioBase.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                          </div>
+                        </div>
+                        <div style={{ 
+                          marginBottom: '10px',
+                          padding: '10px',
+                          borderRadius: '8px',
+                          backgroundColor: isPositive ? 'hsl(142 71% 45% / 0.1)' : 'hsl(0 84% 60% / 0.1)',
+                          border: `1px solid ${isPositive ? 'hsl(142 71% 45% / 0.3)' : 'hsl(0 84% 60% / 0.3)'}`
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: '600', color: isPositive ? 'hsl(142 71% 35%)' : 'hsl(0 72% 45%)' }}>
+                              Crescimento Total
+                            </span>
+                            <strong style={{ 
+                              fontSize: '14px',
+                              color: isPositive ? 'hsl(142 71% 35%)' : 'hsl(0 72% 45%)'
+                            }}>
+                              {isPositive ? '+' : ''}R$ {data.totalGrowth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </strong>
+                          </div>
+                          <div style={{ 
+                            fontSize: '13px', 
+                            color: isPositive ? 'hsl(142 71% 35%)' : 'hsl(0 72% 45%)',
+                            fontWeight: '700',
+                            textAlign: 'right'
+                          }}>
+                            {isPositive ? '+' : ''}{data.growthPercentage.toFixed(2)}%
+                          </div>
                         </div>
                         <div style={{ 
                           fontSize: '11px', 
                           color: 'hsl(var(--muted-foreground))', 
-                          marginTop: '10px', 
                           paddingTop: '10px', 
                           borderTop: '1px solid hsl(var(--border))',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '4px'
+                          gap: '6px'
                         }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <span>Movimentação:</span>
-                            <span style={{ color: data.movimentacao >= 0 ? 'hsl(var(--foreground))' : 'hsl(var(--destructive))' }}>
+                            <span style={{ fontWeight: '600', color: data.movimentacao >= 0 ? 'hsl(var(--foreground))' : 'hsl(var(--destructive))' }}>
                               {data.movimentacao > 0 ? '+' : ''}R$ {data.movimentacao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <span>Ganho Financeiro:</span>
-                            <span style={{ color: data.ganhoFinanceiro >= 0 ? 'hsl(142 71% 45%)' : 'hsl(0 84% 60%)' }}>
+                            <span style={{ fontWeight: '600', color: data.ganhoFinanceiro >= 0 ? 'hsl(142 71% 35%)' : 'hsl(0 72% 45%)' }}>
                               {data.ganhoFinanceiro > 0 ? '+' : ''}R$ {data.ganhoFinanceiro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </span>
                           </div>
                           <div style={{ 
                             marginTop: '6px', 
-                            paddingTop: '6px', 
+                            paddingTop: '8px', 
                             borderTop: '1px solid hsl(var(--border))',
                             display: 'flex',
                             justifyContent: 'space-between'
                           }}>
-                            <strong>Patrimônio Final:</strong>
-                            <strong>R$ {data.patrimonioFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                            <strong style={{ color: 'hsl(var(--foreground))' }}>Patrimônio Final:</strong>
+                            <strong style={{ color: 'hsl(var(--primary))' }}>R$ {data.patrimonioFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
                           </div>
                         </div>
                       </div>
                     );
                   }}
-                  cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '5 5' }}
+                  cursor={{ fill: 'hsl(var(--primary) / 0.05)', radius: 4 }}
                 />
-                <Area 
-                  type="monotone"
+                <Bar 
                   dataKey="patrimonioBase" 
-                  stackId="1"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  fill="url(#colorPatrimonioBase)"
+                  stackId="a"
+                  fill="url(#barBase)"
+                  radius={[0, 0, 6, 6]}
+                  maxBarSize={60}
                 />
-                <Area 
-                  type="monotone"
+                <Bar 
                   dataKey="growth" 
-                  stackId="1"
-                  stroke="hsl(142 71% 45%)"
-                  strokeWidth={2}
-                  fill="url(#colorGrowthPositive)"
+                  stackId="a"
+                  fill="url(#barPositive)"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={60}
                 />
-                <Area 
-                  type="monotone"
+                <Bar 
                   dataKey="negativeGrowth" 
-                  stackId="1"
-                  stroke="hsl(0 84% 60%)"
-                  strokeWidth={2}
-                  fill="url(#colorGrowthNegative)"
+                  stackId="a"
+                  fill="url(#barNegative)"
+                  radius={[0, 0, 6, 6]}
+                  maxBarSize={60}
                 />
-              </AreaChart>
+              </BarChart>
             ) : viewMode === 'rentabilidade' ? (
               <LineChart
                 data={chartDataWithIndicators} 
