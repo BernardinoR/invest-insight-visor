@@ -677,31 +677,28 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         <div className="h-96 w-full">
           <ResponsiveContainer width="100%" height="100%">
             {viewMode === 'crescimento' ? (
-              <BarChart 
+              <AreaChart 
                 data={growthData} 
                 margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
               >
                 <defs>
-                  <linearGradient id="barGradientBase" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.15} />
+                  <linearGradient id="colorPatrimonioBase" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.5} />
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
                   </linearGradient>
-                  <linearGradient id="barGradientPositive" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(142 71% 45%)" stopOpacity={1} />
-                    <stop offset="95%" stopColor="hsl(142 76% 36%)" stopOpacity={0.9} />
+                  <linearGradient id="colorGrowthPositive" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(142 71% 45%)" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="hsl(142 71% 45%)" stopOpacity={0.3} />
                   </linearGradient>
-                  <linearGradient id="barGradientNegative" x1="0" y1="1" x2="0" y2="0">
-                    <stop offset="5%" stopColor="hsl(0 84% 60%)" stopOpacity={1} />
-                    <stop offset="95%" stopColor="hsl(0 72% 51%)" stopOpacity={0.9} />
+                  <linearGradient id="colorGrowthNegative" x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="5%" stopColor="hsl(0 84% 60%)" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="hsl(0 84% 60%)" stopOpacity={0.3} />
                   </linearGradient>
-                  <filter id="barShadow">
-                    <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.2"/>
-                  </filter>
                 </defs>
                 <CartesianGrid 
                   strokeDasharray="3 3" 
                   stroke="hsl(var(--border))" 
-                  opacity={0.3}
+                  opacity={0.2}
                   horizontal={true}
                   vertical={false}
                 />
@@ -726,7 +723,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                     return `R$ ${value}`;
                   }}
                   width={70}
-                  domain={[0, (dataMax: number) => dataMax * 1.1]}
+                  domain={[0, (dataMax: number) => dataMax * 1.05]}
                 />
                 <Tooltip 
                   contentStyle={{
@@ -762,7 +759,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                         }}>
                           {data.name}
                         </div>
-                        <div style={{ marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ color: 'hsl(var(--primary))', fontSize: '16px' }}>●</span>
                           <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: '12px' }}>Patrimônio Inicial:</span>
                           <strong style={{ marginLeft: 'auto' }}>R$ {data.patrimonioBase.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
@@ -822,32 +819,33 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                       </div>
                     );
                   }}
-                  cursor={{ fill: 'hsl(var(--primary) / 0.08)', radius: 8 }}
+                  cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '5 5' }}
                 />
-                <Bar 
+                <Area 
+                  type="monotone"
                   dataKey="patrimonioBase" 
-                  stackId="patrimonio"
-                  fill="url(#barGradientBase)"
-                  radius={[0, 0, 6, 6]}
-                  maxBarSize={80}
+                  stackId="1"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  fill="url(#colorPatrimonioBase)"
                 />
-                <Bar 
+                <Area 
+                  type="monotone"
                   dataKey="growth" 
-                  stackId="patrimonio"
-                  fill="url(#barGradientPositive)"
-                  radius={[6, 6, 0, 0]}
-                  maxBarSize={80}
-                  filter="url(#barShadow)"
+                  stackId="1"
+                  stroke="hsl(142 71% 45%)"
+                  strokeWidth={2}
+                  fill="url(#colorGrowthPositive)"
                 />
-                <Bar 
+                <Area 
+                  type="monotone"
                   dataKey="negativeGrowth" 
-                  stackId="patrimonio"
-                  fill="url(#barGradientNegative)"
-                  radius={[0, 0, 6, 6]}
-                  maxBarSize={80}
-                  filter="url(#barShadow)"
+                  stackId="1"
+                  stroke="hsl(0 84% 60%)"
+                  strokeWidth={2}
+                  fill="url(#colorGrowthNegative)"
                 />
-              </BarChart>
+              </AreaChart>
             ) : viewMode === 'rentabilidade' ? (
               <LineChart
                 data={chartDataWithIndicators} 
