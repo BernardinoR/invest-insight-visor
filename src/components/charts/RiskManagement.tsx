@@ -934,15 +934,28 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                   };
                   
                   let accumulated = 0;
-                  let avgAccumulated = 0;
+                  let emaValue = 0;
+                  let emaAccumulated = 0;
+                  const emaPeriod = 12; // Período para EMA (12 meses)
+                  const emaMultiplier = 2 / (emaPeriod + 1);
                   
                   const dataPoints = filteredConsolidatedData.map((item, index) => {
                     const monthReturn = item.Rendimento * 100;
                     accumulated = (1 + accumulated / 100) * (1 + monthReturn / 100) - 1;
                     accumulated = accumulated * 100;
                     
-                    avgAccumulated = (1 + avgAccumulated / 100) * (1 + riskMetrics.avgReturn / 100) - 1;
-                    avgAccumulated = avgAccumulated * 100;
+                    // Cálculo da EMA (Exponential Moving Average)
+                    if (index === 0) {
+                      // Primeiro valor: usar o próprio retorno
+                      emaValue = monthReturn;
+                    } else {
+                      // EMA = (Valor × Multiplicador) + (EMA anterior × (1 - Multiplicador))
+                      emaValue = (monthReturn * emaMultiplier) + (emaValue * (1 - emaMultiplier));
+                    }
+                    
+                    // Acumular a EMA
+                    emaAccumulated = (1 + emaAccumulated / 100) * (1 + emaValue / 100) - 1;
+                    emaAccumulated = emaAccumulated * 100;
                     
                     // Bandas de desvio padrão crescentes com sqrt(tempo)
                     const periods = index + 1;
@@ -954,11 +967,11 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
                     return {
                       name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
                       retornoAcumulado: accumulated,
-                      mediaAcumulada: avgAccumulated,
-                      plus1sd: avgAccumulated + volatilityBand,
-                      minus1sd: avgAccumulated - volatilityBand,
-                      plus2sd: avgAccumulated + (2 * volatilityBand),
-                      minus2sd: avgAccumulated - (2 * volatilityBand)
+                      mediaAcumulada: emaAccumulated,
+                      plus1sd: emaAccumulated + volatilityBand,
+                      minus1sd: emaAccumulated - volatilityBand,
+                      plus2sd: emaAccumulated + (2 * volatilityBand),
+                      minus2sd: emaAccumulated - (2 * volatilityBand)
                     };
                   });
                   
