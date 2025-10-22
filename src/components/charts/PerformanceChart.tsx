@@ -277,39 +277,38 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
 
   const patrimonioData = calculatePatrimonioData(filteredData);
 
-  // Calculate accumulated growth percentage with stacked monthly growth
+  // Calculate growth data showing patrimônio volume
   const calculateGrowthData = (data: typeof filteredData) => {
     if (data.length === 0) return [];
     
     const result = [];
-    let accumulatedGrowth = 0;
     
     data.forEach((item, index) => {
       const [month, year] = item.Competencia.split('/');
       const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
       
-      // Monthly growth percentage from rendimento
-      const monthlyGrowth = (item.Rendimento || 0) * 100;
+      const patrimonioInicial = item["Patrimonio Inicial"] || 0;
+      const patrimonioFinal = item["Patrimonio Final"] || 0;
+      const movimentacao = item["Movimentação"] || 0;
       
-      // Calculate accumulated growth using compound interest
-      if (index === 0) {
-        accumulatedGrowth = monthlyGrowth;
-      } else {
-        accumulatedGrowth = ((1 + accumulatedGrowth / 100) * (1 + monthlyGrowth / 100) - 1) * 100;
-      }
+      // Net patrimônio (without deposits/withdrawals)
+      const patrimonioBase = patrimonioInicial;
+      const ganhoFinanceiro = item["Ganho Financeiro"] || 0;
       
-      // Previous accumulated (for stacked effect)
-      const previousAccumulated = index === 0 ? 0 : result[index - 1].accumulatedGrowth;
+      // Growth is the financial gain (positive or negative)
+      const growth = ganhoFinanceiro;
+      const growthPercentage = patrimonioInicial > 0 ? (ganhoFinanceiro / patrimonioInicial) * 100 : 0;
       
       result.push({
         name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
-        monthlyGrowth,
-        accumulatedGrowth,
-        previousAccumulated,
-        competencia: item.Competencia,
-        patrimonioInicial: item["Patrimonio Inicial"] || 0,
-        patrimonioFinal: item["Patrimonio Final"] || 0,
-        movimentacao: item["Movimentação"] || 0
+        patrimonioBase,
+        growth: growth >= 0 ? growth : 0, // Positive growth for stacking
+        negativeGrowth: growth < 0 ? growth : 0, // Negative growth
+        totalGrowth: growth, // Actual growth value
+        growthPercentage,
+        patrimonioFinal,
+        movimentacao,
+        competencia: item.Competencia
       });
     });
     
@@ -686,12 +685,16 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
               >
                 <defs>
                   <linearGradient id="barGradientBase" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.6} />
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
                   </linearGradient>
-                  <linearGradient id="barGradientHighlight" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity={1} />
-                    <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity={0.7} />
+                  <linearGradient id="barGradientPositive" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(142 76% 45%)" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="hsl(142 76% 40%)" stopOpacity={0.8} />
+                  </linearGradient>
+                  <linearGradient id="barGradientNegative" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(0 84% 60%)" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="hsl(0 84% 55%)" stopOpacity={0.8} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid 
@@ -715,8 +718,8 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                   fontSize={12}
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={(value) => `${value.toFixed(1)}%`}
-                  width={70}
+                  tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
+                  width={80}
                 />
                 <Tooltip 
                   contentStyle={{
@@ -732,6 +735,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                     if (!active || !payload || !payload.length) return null;
                     
                     const data = payload[0].payload;
+                    const isPositive = data.totalGrowth >= 0;
                     
                     return (
                       <div style={{
@@ -750,15 +754,27 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                           {data.name}
                         </div>
                         <div style={{ marginBottom: '6px' }}>
-                          <span style={{ color: 'hsl(var(--accent))' }}>●</span>
-                          <span style={{ marginLeft: '8px' }}>Crescimento Mensal: <strong>{data.monthlyGrowth.toFixed(2)}%</strong></span>
+                          <span style={{ color: 'hsl(var(--primary))' }}>●</span>
+                          <span style={{ marginLeft: '8px' }}>Patrimônio Base: <strong>R$ {data.patrimonioBase.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></span>
                         </div>
                         <div style={{ marginBottom: '6px' }}>
-                          <span style={{ color: 'hsl(var(--primary))' }}>●</span>
-                          <span style={{ marginLeft: '8px' }}>Acumulado Total: <strong>{data.accumulatedGrowth.toFixed(2)}%</strong></span>
+                          <span style={{ color: isPositive ? 'hsl(142 76% 45%)' : 'hsl(0 84% 60%)' }}>●</span>
+                          <span style={{ marginLeft: '8px' }}>Ganho Financeiro: <strong style={{ color: isPositive ? 'hsl(142 76% 45%)' : 'hsl(0 84% 60%)' }}>
+                            {isPositive ? '+' : ''}R$ {data.totalGrowth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </strong></span>
+                        </div>
+                        <div style={{ marginBottom: '6px' }}>
+                          <span style={{ marginLeft: '20px', fontSize: '11px', color: 'hsl(var(--muted-foreground))' }}>
+                            ({isPositive ? '+' : ''}{data.growthPercentage.toFixed(2)}%)
+                          </span>
                         </div>
                         <div style={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid hsl(var(--border))' }}>
-                          <div>Patrimônio: R$ {data.patrimonioFinal.toLocaleString('pt-BR')}</div>
+                          <div><strong>Patrimônio Final: R$ {data.patrimonioFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></div>
+                          {data.movimentacao !== 0 && (
+                            <div style={{ marginTop: '4px' }}>
+                              Movimentação: {data.movimentacao > 0 ? '+' : ''}R$ {data.movimentacao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -766,16 +782,22 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                   cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
                 />
                 <Bar 
-                  dataKey="previousAccumulated" 
-                  stackId="growth"
+                  dataKey="patrimonioBase" 
+                  stackId="patrimonio"
                   fill="url(#barGradientBase)"
-                  radius={[0, 0, 0, 0]}
+                  radius={[0, 0, 4, 4]}
                 />
                 <Bar 
-                  dataKey="monthlyGrowth" 
-                  stackId="growth"
-                  fill="url(#barGradientHighlight)"
+                  dataKey="growth" 
+                  stackId="patrimonio"
+                  fill="url(#barGradientPositive)"
                   radius={[8, 8, 0, 0]}
+                />
+                <Bar 
+                  dataKey="negativeGrowth" 
+                  stackId="patrimonio"
+                  fill="url(#barGradientNegative)"
+                  radius={[0, 0, 0, 0]}
                 />
               </BarChart>
             ) : viewMode === 'rentabilidade' ? (
