@@ -225,7 +225,10 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
     const worstMonthIndex = returns.indexOf(minReturn);
     
     // Hit Rate Analysis
-    const targetPercent = clientTarget * 100;
+    // clientTarget vem em decimal (ex: 0.008686 = 0.8686%)
+    // returns está em % (ex: 2.21 = 2.21%)
+    // Então multiplicamos clientTarget por 100 para igualar escala
+    const targetPercent = clientTarget * 100; // Ex: 0.008686 * 100 = 0.8686%
     const homeRunThreshold = targetPercent + volatility; // 1 desvio padrão acima da meta
     
     let homeRun = 0;
@@ -233,16 +236,40 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7 }: RiskMana
     let quaseLa = 0;
     let miss = 0;
     
-    returns.forEach(returnValue => {
+    console.log('=== HIT RATE DEBUG ===', {
+      clientTarget,
+      targetPercent,
+      volatility,
+      homeRunThreshold,
+      sampleReturn: returns[0],
+      sampleCompetencia: filteredConsolidatedData[0]?.Competencia,
+      totalMonths: returns.length
+    });
+    
+    returns.forEach((returnValue, index) => {
+      const competencia = filteredConsolidatedData[index]?.Competencia;
+      
       if (returnValue >= homeRunThreshold) {
+        console.log(`${competencia}: HOME RUN - Return: ${returnValue.toFixed(2)}% >= ${homeRunThreshold.toFixed(2)}%`);
         homeRun++;
       } else if (returnValue >= targetPercent) {
+        console.log(`${competencia}: ACERTO - Return: ${returnValue.toFixed(2)}% >= ${targetPercent.toFixed(2)}%`);
         acerto++;
       } else if (returnValue > 0) {
+        console.log(`${competencia}: QUASE LÁ - Return: ${returnValue.toFixed(2)}% > 0 but < ${targetPercent.toFixed(2)}%`);
         quaseLa++;
       } else {
+        console.log(`${competencia}: MISS - Return: ${returnValue.toFixed(2)}% <= 0`);
         miss++;
       }
+    });
+    
+    console.log('=== HIT RATE SUMMARY ===', {
+      homeRun,
+      acerto,
+      quaseLa,
+      miss,
+      total: homeRun + acerto + quaseLa + miss
     });
     
     const hitRatePercent = returns.length > 0 
