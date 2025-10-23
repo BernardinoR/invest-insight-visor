@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie, Area, ComposedChart } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie, Area, AreaChart, ComposedChart } from 'recharts';
 import { useMemo, useState } from "react";
 import { TrendingDown, TrendingUp, Activity, AlertTriangle, Target, Calendar, Settings, Rocket, Check, X, TrendingUp as TrendingUpIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -1545,7 +1545,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
             {/* Drawdown Chart */}
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={drawdownAnalysis.chartData}>
+                <AreaChart data={drawdownAnalysis.chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                   <XAxis 
                     dataKey="competencia" 
@@ -1582,15 +1582,16 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                       return [value, name];
                     }}
                   />
-                  <Line 
+                  <Area 
                     type="monotone" 
                     dataKey="drawdownPercent" 
                     stroke="hsl(var(--destructive))" 
+                    fill="hsl(var(--destructive))"
+                    fillOpacity={0.3}
                     strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--destructive))', r: 3 }}
                     name="Drawdown"
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
 
