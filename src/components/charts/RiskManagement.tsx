@@ -1546,6 +1546,13 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={drawdownAnalysis.chartData}>
+                  <defs>
+                    <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.8} />
+                      <stop offset="50%" stopColor="hsl(var(--destructive))" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.1} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                   <XAxis 
                     dataKey="competencia" 
@@ -1586,9 +1593,8 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     type="monotone" 
                     dataKey="drawdownPercent" 
                     stroke="hsl(var(--destructive))" 
-                    fill="hsl(var(--destructive))"
-                    fillOpacity={0.3}
-                    strokeWidth={2}
+                    fill="url(#drawdownGradient)"
+                    strokeWidth={2.5}
                     name="Drawdown"
                   />
                 </AreaChart>
