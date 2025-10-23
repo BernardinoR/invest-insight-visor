@@ -1778,17 +1778,69 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
         </CardHeader>
         <CardContent>
           {(() => {
-            // Agrupar dados por estratégia
+            // Função para agrupar estratégias
+            const groupStrategy = (strategy: string): string => {
+              const strategyLower = strategy.toLowerCase();
+              
+              if (strategyLower.includes('cdi - liquidez')) {
+                return 'Pós Fixado - Liquidez';
+              }
+              if (strategyLower.includes('cdi - fundos') || strategyLower.includes('cdi - titulos')) {
+                return 'Pós Fixado';
+              }
+              if (strategyLower.includes('inflação - titulos') || strategyLower.includes('inflação - fundos')) {
+                return 'Inflação';
+              }
+              if (strategyLower.includes('pré fixado - titulos') || strategyLower.includes('pré fixado - títulos') || strategyLower.includes('pré fixado - titulo') || strategyLower.includes('pré fixado - fundos')) {
+                return 'Pré Fixado';
+              }
+              if (strategyLower.includes('multimercado')) {
+                return 'Multimercado';
+              }
+              if (strategyLower.includes('imobiliário - ativos') || strategyLower.includes('imobiliário - fundos')) {
+                return 'Imobiliário';
+              }
+              if (strategyLower.includes('ações - ativos') || strategyLower.includes('ações - fundos') || strategyLower.includes('ações - etfs')) {
+                return 'Ações';
+              }
+              if (strategyLower.includes('ações - long bias')) {
+                return 'Ações - Long Bias';
+              }
+              if (strategyLower.includes('private equity') || strategyLower.includes('venture capital') || strategyLower.includes('special sits')) {
+                return 'Private Equity';
+              }
+              if (strategyLower.includes('exterior - ações')) {
+                return 'Exterior - Ações';
+              }
+              if (strategyLower.includes('exterior - renda fixa')) {
+                return 'Exterior - Renda Fixa';
+              }
+              if (strategyLower.includes('coe')) {
+                return 'COE';
+              }
+              if (strategyLower.includes('ouro')) {
+                return 'Ouro';
+              }
+              if (strategyLower.includes('criptoativos')) {
+                return 'Criptoativos';
+              }
+              
+              return strategy;
+            };
+
+            // Agrupar dados por estratégia agrupada
             const strategyData = dadosData.reduce((acc, item) => {
-              const strategy = item["Classe do ativo"] || "Outros";
-              if (!acc[strategy]) {
-                acc[strategy] = {
+              const originalStrategy = item["Classe do ativo"] || "Outros";
+              const groupedStrategy = groupStrategy(originalStrategy);
+              
+              if (!acc[groupedStrategy]) {
+                acc[groupedStrategy] = {
                   posicao: 0,
                   rendimentos: []
                 };
               }
-              acc[strategy].posicao += item.Posicao;
-              acc[strategy].rendimentos.push(item.Rendimento * 100);
+              acc[groupedStrategy].posicao += item.Posicao;
+              acc[groupedStrategy].rendimentos.push(item.Rendimento * 100);
               return acc;
             }, {} as Record<string, { posicao: number; rendimentos: number[] }>);
 
