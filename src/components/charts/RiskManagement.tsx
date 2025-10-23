@@ -442,11 +442,24 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
     }));
   }, [filteredConsolidatedData, clientTarget]);
 
-  // Cálculo de Drawdown com Pain Index
+  // Cálculo de Drawdown com Pain Index baseado em retornos percentuais
   const drawdownAnalysis = useMemo(() => {
     if (filteredConsolidatedData.length === 0) return { drawdowns: [], maxPainIndex: 0, chartData: [] };
     
-    let peak = filteredConsolidatedData[0]["Patrimonio Final"];
+    // Calcular retorno acumulado (base 100)
+    let cumulativeReturn = 100;
+    const returnData = filteredConsolidatedData.map(item => {
+      cumulativeReturn *= (1 + item.Rendimento);
+      return {
+        competencia: item.Competencia,
+        patrimonio: item["Patrimonio Final"],
+        rendimento: item.Rendimento,
+        cumulativeReturn: cumulativeReturn
+      };
+    });
+    
+    // Detectar drawdowns baseado em retorno acumulado
+    let peak = returnData[0].cumulativeReturn;
     let peakIndex = 0;
     const drawdowns: Array<{
       startCompetencia: string;
@@ -458,47 +471,37 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
       painIndex: number;
     }> = [];
     
-    const chartData: Array<{
-      competencia: string;
-      patrimonio: number;
-      rendimento: number;
-      drawdownPercent: number;
-    }> = [];
-    
     let currentDrawdownStart: number | null = null;
     let currentDrawdownDepth = 0;
     let currentDrawdownEnd: number | null = null;
+    const MIN_DRAWDOWN_DEPTH = 0.5; // Filtrar drawdowns menores que 0.5%
     
-    filteredConsolidatedData.forEach((item, index) => {
-      const current = item["Patrimonio Final"];
+    returnData.forEach((item, index) => {
+      const current = item.cumulativeReturn;
       
-      // Atualizar pico
       if (current >= peak) {
-        // Se estava em drawdown e recuperou
-        if (currentDrawdownStart !== null && currentDrawdownEnd !== null) {
-          const startCompetencia = filteredConsolidatedData[currentDrawdownStart].Competencia;
-          const endCompetencia = filteredConsolidatedData[currentDrawdownEnd].Competencia;
-          const durationMonths = currentDrawdownEnd - currentDrawdownStart + 1;
+        // Novo pico ou recuperação
+        if (currentDrawdownStart !== null && currentDrawdownEnd !== null && currentDrawdownDepth >= MIN_DRAWDOWN_DEPTH) {
+          const durationMonths = currentDrawdownEnd - currentDrawdownStart;
           const recoveryMonths = index - currentDrawdownEnd;
-          const painIndex = (currentDrawdownDepth * (durationMonths + recoveryMonths)) / 100;
+          const painIndex = (currentDrawdownDepth * durationMonths) / 100;
           
           drawdowns.push({
-            startCompetencia,
-            endCompetencia,
-            recoveryCompetencia: item.Competencia,
+            startCompetencia: returnData[currentDrawdownStart].competencia,
+            endCompetencia: returnData[currentDrawdownEnd].competencia,
+            recoveryCompetencia: returnData[index].competencia,
             depth: currentDrawdownDepth,
-            durationMonths,
-            recoveryMonths,
-            painIndex
+            durationMonths: durationMonths,
+            recoveryMonths: recoveryMonths,
+            painIndex: painIndex
           });
-          
-          currentDrawdownStart = null;
-          currentDrawdownEnd = null;
-          currentDrawdownDepth = 0;
         }
         
         peak = current;
         peakIndex = index;
+        currentDrawdownStart = null;
+        currentDrawdownDepth = 0;
+        currentDrawdownEnd = null;
       } else {
         // Em drawdown
         if (currentDrawdownStart === null) {
@@ -511,38 +514,41 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
           currentDrawdownEnd = index;
         }
       }
-      
-      // Adicionar dados para o gráfico
-      // Calcular drawdown baseado no rendimento mensal
-      const monthlyReturn = item.Rendimento * 100; // Converter para percentual
-      const drawdownPercent = monthlyReturn < 0 ? Math.abs(monthlyReturn) : 0;
-      
-      chartData.push({
-        competencia: item.Competencia,
-        patrimonio: current,
-        rendimento: monthlyReturn,
-        drawdownPercent: drawdownPercent // Positivo quando há queda
-      });
     });
     
-    // Se ainda está em drawdown
-    if (currentDrawdownStart !== null && currentDrawdownEnd !== null) {
-      const startCompetencia = filteredConsolidatedData[currentDrawdownStart].Competencia;
-      const endCompetencia = filteredConsolidatedData[currentDrawdownEnd].Competencia;
-      const durationMonths = currentDrawdownEnd - currentDrawdownStart + 1;
-      const recoveryMonths = filteredConsolidatedData.length - 1 - currentDrawdownEnd;
-      const painIndex = (currentDrawdownDepth * (durationMonths + recoveryMonths)) / 100;
+    // Drawdown em andamento
+    if (currentDrawdownStart !== null && currentDrawdownEnd !== null && currentDrawdownDepth >= MIN_DRAWDOWN_DEPTH) {
+      const durationMonths = currentDrawdownEnd - currentDrawdownStart;
+      const painIndex = (currentDrawdownDepth * durationMonths) / 100;
       
       drawdowns.push({
-        startCompetencia,
-        endCompetencia,
-        recoveryCompetencia: null, // Ainda não recuperou
+        startCompetencia: returnData[currentDrawdownStart].competencia,
+        endCompetencia: returnData[currentDrawdownEnd].competencia,
+        recoveryCompetencia: null,
         depth: currentDrawdownDepth,
-        durationMonths,
+        durationMonths: durationMonths,
         recoveryMonths: null,
-        painIndex
+        painIndex: painIndex
       });
     }
+    
+    // Calcular drawdown para o gráfico baseado em retorno acumulado
+    let chartPeak = returnData[0].cumulativeReturn;
+    const chartData = returnData.map(item => {
+      if (item.cumulativeReturn > chartPeak) {
+        chartPeak = item.cumulativeReturn;
+      }
+      const drawdownPercent = item.cumulativeReturn < chartPeak 
+        ? ((chartPeak - item.cumulativeReturn) / chartPeak) * 100 
+        : 0;
+      
+      return {
+        competencia: item.competencia,
+        patrimonio: item.patrimonio,
+        rendimento: item.rendimento * 100,
+        drawdownPercent: drawdownPercent
+      };
+    });
     
     const maxPainIndex = drawdowns.length > 0 
       ? Math.max(...drawdowns.map(d => d.painIndex))
