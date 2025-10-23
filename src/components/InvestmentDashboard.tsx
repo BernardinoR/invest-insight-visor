@@ -558,21 +558,22 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             />
           }
         />
-            {/* Strategy Breakdown */}
-            {filteredDadosData.length > 0 && (
-              <div className="mb-8">
-                <StrategyBreakdown dadosData={filteredDadosData} />
-              </div>
-            )}
 
-            {/* Investment Details Table */}
-            <div className="mb-8">
-              <InvestmentDetailsTable 
-                dadosData={filteredDadosData} 
-                selectedClient={selectedClient} 
-                filteredRange={filteredRange}
-              />
-            </div>
+        {/* Strategy Breakdown */}
+        {filteredDadosData.length > 0 && (
+          <div className="mb-8">
+            <StrategyBreakdown dadosData={filteredDadosData} />
+          </div>
+        )}
+
+        {/* Investment Details Table */}
+        <div className="mb-8">
+          <InvestmentDetailsTable 
+            dadosData={filteredDadosData} 
+            selectedClient={selectedClient} 
+            filteredRange={filteredRange}
+          />
+        </div>
 
             {/* Charts Grid */}
             <div className="grid grid-cols-1 gap-6 mb-8">
@@ -1084,24 +1085,24 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
        );
      });
    })()}
- </div>
-               </CardContent>
-             </Card>
-           </div>
-            )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </main>
 
-      <MaturityDialog
-        open={maturityDialogOpen}
-        onOpenChange={setMaturityDialogOpen}
-        dadosData={dadosData}
-      />
+        <MaturityDialog
+          open={maturityDialogOpen}
+          onOpenChange={setMaturityDialogOpen}
+          dadosData={dadosData}
+        />
 
-      <DiversificationDialog 
-        open={diversificationDialogOpen}
-        onOpenChange={setDiversificationDialogOpen}
-        dadosData={dadosData}
-      />
-    </div>
-  );
-}
+        <DiversificationDialog 
+          open={diversificationDialogOpen}
+          onOpenChange={setDiversificationDialogOpen}
+          dadosData={dadosData}
+        />
+      </div>
+    );
+  }
