@@ -205,6 +205,10 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
           miss: 0,
           hitRatePercent: 0,
           positivePercent: 0
+        },
+        targetMetrics: {
+          avgTarget: 0,
+          targetVolatility: 0
         }
       };
     }
@@ -352,6 +356,23 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
       ? Math.round((positiveMonths / returns.length) * 100)
       : 0;
     
+    // Calcular métricas da meta
+    const allTargets: number[] = [];
+    filteredConsolidatedData.forEach((item) => {
+      const mData = marketData.find(m => m.competencia === item.Competencia);
+      const target = mData?.clientTarget || clientTarget;
+      allTargets.push(target * 100); // Em %
+    });
+    
+    const avgTarget = allTargets.length > 0
+      ? allTargets.reduce((sum, t) => sum + t, 0) / allTargets.length
+      : 0;
+    
+    const targetVariance = allTargets.length > 0
+      ? allTargets.reduce((sum, t) => sum + Math.pow(t - avgTarget, 2), 0) / allTargets.length
+      : 0;
+    const targetVolatility = Math.sqrt(targetVariance);
+    
     return {
       sharpe,
       sortino,
@@ -380,9 +401,13 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
         miss,
         hitRatePercent,
         positivePercent
+      },
+      targetMetrics: {
+        avgTarget,
+        targetVolatility
       }
     };
-  }, [filteredConsolidatedData, clientTarget]);
+  }, [filteredConsolidatedData, clientTarget, marketData]);
 
   // Dados para o gráfico de Risco x Retorno
   const riskReturnData = useMemo(() => {
@@ -715,7 +740,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
           </div>
           
           {/* Bottom Section - Secondary Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
               <div className="bg-success/5 border border-success/10 rounded-lg p-3.5 hover:bg-success/8 transition-colors">
                 <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Melhor mês</p>
                 <p className="text-xl font-bold text-success mb-0.5">+{riskMetrics.bestMonth.return.toFixed(2)}%</p>
@@ -738,6 +763,18 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Consistência</p>
                 <p className="text-xl font-bold text-foreground mb-0.5">{riskMetrics.hitRate.positivePercent}%</p>
                 <p className="text-xs text-muted-foreground">meses positivos</p>
+              </div>
+              
+              <div className="bg-gradient-to-br from-primary/5 to-primary/8 border border-primary/15 rounded-lg p-3.5 hover:from-primary/8 hover:to-primary/12 transition-all">
+                <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Retorno médio da meta</p>
+                <p className="text-xl font-bold text-foreground mb-0.5">{riskMetrics.targetMetrics.avgTarget.toFixed(2)}%</p>
+                <p className="text-xs text-muted-foreground">meta mensal</p>
+              </div>
+              
+              <div className="bg-gradient-to-br from-primary/5 to-primary/8 border border-primary/15 rounded-lg p-3.5 hover:from-primary/8 hover:to-primary/12 transition-all">
+                <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Volatilidade da meta</p>
+                <p className="text-xl font-bold text-foreground mb-0.5">{riskMetrics.targetMetrics.targetVolatility.toFixed(2)}%</p>
+                <p className="text-xs text-muted-foreground">desvio padrão</p>
               </div>
               
               <div className="bg-gradient-to-br from-success/5 to-success/8 border border-success/15 rounded-lg p-3.5 hover:from-success/8 hover:to-success/12 transition-all">
