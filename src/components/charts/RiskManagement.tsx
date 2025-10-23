@@ -1555,7 +1555,8 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     stroke="hsl(var(--muted-foreground))"
                     tick={{ fontSize: 12 }}
                     reversed={true}
-                    domain={[0, 'dataMax']}
+                    domain={['dataMin', 0]}
+                    tickFormatter={(value) => `${Math.abs(value).toFixed(1)}%`}
                     label={{ 
                       value: 'Drawdown (%)', 
                       angle: -90, 
@@ -1571,21 +1572,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                       color: 'hsl(var(--foreground))'
                     }}
                     formatter={(value: any, name: string) => {
-                      if (name === 'drawdownPercent') return [`${Number(value).toFixed(2)}%`, 'Drawdown'];
-                      if (name === 'patrimonio') return [
-                        new Intl.NumberFormat('pt-BR', { 
-                          style: 'currency', 
-                          currency: 'BRL' 
-                        }).format(value),
-                        'Patrimônio'
-                      ];
-                      if (name === 'peak') return [
-                        new Intl.NumberFormat('pt-BR', { 
-                          style: 'currency', 
-                          currency: 'BRL' 
-                        }).format(value),
-                        'Pico'
-                      ];
+                      if (name === 'drawdownPercent') return [`${Math.abs(Number(value)).toFixed(2)}%`, 'Drawdown'];
                       return [value, name];
                     }}
                   />
@@ -1596,15 +1583,6 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     strokeWidth={2}
                     dot={{ fill: 'hsl(var(--destructive))', r: 3 }}
                     name="Drawdown"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="peak" 
-                    stroke="hsl(var(--chart-2))" 
-                    strokeWidth={1}
-                    strokeDasharray="5 5"
-                    dot={false}
-                    name="Pico"
                   />
                 </LineChart>
               </ResponsiveContainer>
