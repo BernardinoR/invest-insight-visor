@@ -1607,8 +1607,14 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 <h4 className="text-sm font-semibold mb-3 text-foreground">Eventos de Drawdown</h4>
                 <div className="space-y-3">
                   {drawdownAnalysis.drawdowns
-                    .sort((a, b) => b.painIndex - a.painIndex)
-                    .slice(0, 5)
+                    .sort((a, b) => {
+                      // Sort by start date, most recent first
+                      const [monthA, yearA] = a.startCompetencia.split('/').map(Number);
+                      const [monthB, yearB] = b.startCompetencia.split('/').map(Number);
+                      const dateA = new Date(2000 + yearA, monthA - 1);
+                      const dateB = new Date(2000 + yearB, monthB - 1);
+                      return dateB.getTime() - dateA.getTime();
+                    })
                     .map((dd, index) => (
                     <div 
                       key={index}
@@ -1669,9 +1675,9 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                   ))}
                 </div>
                 
-                {drawdownAnalysis.drawdowns.length > 5 && (
+                {drawdownAnalysis.drawdowns.length > 0 && (
                   <p className="text-xs text-muted-foreground mt-3 text-center">
-                    Mostrando os 5 drawdowns com maior Pain Index de {drawdownAnalysis.drawdowns.length} total
+                    Mostrando {drawdownAnalysis.drawdowns.length} {drawdownAnalysis.drawdowns.length === 1 ? 'evento' : 'eventos'} de drawdown
                   </p>
                 )}
               </div>
