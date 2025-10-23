@@ -1828,63 +1828,76 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               return strategy;
             };
 
-            // Agrupar dados por estratégia agrupada
+            // Agrupar dados por estratégia agrupada com dados de cada mês
             const strategyData = dadosData.reduce((acc, item) => {
               const originalStrategy = item["Classe do ativo"] || "Outros";
               const groupedStrategy = groupStrategy(originalStrategy);
               
               if (!acc[groupedStrategy]) {
                 acc[groupedStrategy] = {
-                  posicao: 0,
-                  rendimentos: []
+                  meses: []
                 };
               }
-              acc[groupedStrategy].posicao += item.Posicao;
-              acc[groupedStrategy].rendimentos.push(item.Rendimento * 100);
+              
+              acc[groupedStrategy].meses.push({
+                competencia: item.Competencia,
+                posicao: item.Posicao,
+                rendimento: item.Rendimento
+              });
+              
               return acc;
-            }, {} as Record<string, { posicao: number; rendimentos: number[] }>);
+            }, {} as Record<string, { meses: Array<{competencia: string, posicao: number, rendimento: number}> }>);
 
-            const totalPatrimonio = Object.values(strategyData).reduce((sum, s) => sum + s.posicao, 0);
-
-            // Calcular métricas por estratégia
-            const strategyMetrics = Object.entries(strategyData).map(([name, data]) => {
-              const alocacao = totalPatrimonio > 0 ? (data.posicao / totalPatrimonio) * 100 : 0;
-              const retornoMedio = data.rendimentos.length > 0 
-                ? data.rendimentos.reduce((a, b) => a + b, 0) / data.rendimentos.length 
-                : 0;
+            // Para cada estratégia, calcular posição atual e contribuição total
+            const strategyProcessed = Object.entries(strategyData).map(([name, data]) => {
+              // Ordenar meses por competência
+              data.meses.sort((a, b) => a.competencia.localeCompare(b.competencia));
               
-              // Calcular volatilidade (desvio padrão)
-              const variance = data.rendimentos.length > 0
-                ? data.rendimentos.reduce((sum, r) => sum + Math.pow(r - retornoMedio, 2), 0) / data.rendimentos.length
-                : 0;
-              const volatilidade = Math.sqrt(variance);
+              // Posição mais recente (último mês)
+              const posicaoAtual = data.meses[data.meses.length - 1].posicao;
               
-              // Risk budget = volatilidade × alocação
-              const riskBudget = (volatilidade / 100) * alocacao;
-              
-              // Eficiência = retorno / risco
-              const eficiencia = volatilidade > 0 ? retornoMedio / volatilidade : 0;
+              // Soma de todas as contribuições em valor absoluto
+              const contribuicaoTotal = data.meses.reduce((sum, m) => sum + (m.posicao * m.rendimento), 0);
               
               return {
                 name,
-                alocacao,
-                retornoMedio,
-                volatilidade,
-                riskBudget,
-                eficiencia
+                posicaoAtual,
+                contribuicaoTotal
               };
             });
 
-            // Ordenar por risk budget (maior primeiro)
-            strategyMetrics.sort((a, b) => b.riskBudget - a.riskBudget);
+            // Pegar patrimônio inicial da carteira (primeira competência de consolidadoData)
+            const patrimonioInicial = consolidadoData.length > 0 
+              ? consolidadoData[0]["Patrimonio Inicial"]
+              : 1;
 
-            const totalRiskBudget = strategyMetrics.reduce((sum, s) => sum + s.riskBudget, 0);
+            const totalPatrimonioAtual = strategyProcessed.reduce((sum, s) => sum + s.posicaoAtual, 0);
 
-            // Calcular percentual de risk budget
-            const strategyRiskBudgets = strategyMetrics.map(s => ({
-              ...s,
-              riskBudgetPercent: totalRiskBudget > 0 ? (s.riskBudget / totalRiskBudget) * 100 : 0
-            }));
+            // Calcular métricas corretas
+            const strategyMetrics = strategyProcessed.map(({ name, posicaoAtual, contribuicaoTotal }) => {
+              // Risco = % alocado atualmente
+              const risco = totalPatrimonioAtual > 0 
+                ? (posicaoAtual / totalPatrimonioAtual) * 100 
+                : 0;
+              
+              // Retorno = contribuição para o retorno total (em % do patrimônio inicial)
+              const retorno = patrimonioInicial > 0
+                ? (contribuicaoTotal / patrimonioInicial) * 100
+                : 0;
+              
+              // Eficiência = retorno / risco (quanto retorno gerou por unidade de risco)
+              const eficiencia = risco > 0 ? retorno / risco : 0;
+              
+              return {
+                name,
+                risco,          // % alocado
+                retorno,        // % contribuído para o retorno total
+                eficiencia      // retorno/risco
+              };
+            });
+
+            // Ordenar por risco (maior alocação primeiro)
+            strategyMetrics.sort((a, b) => b.risco - a.risco);
 
             // Calcular Omega Ratio da carteira
             const allReturns = dadosData.map(d => d.Rendimento * 100);
@@ -1895,44 +1908,44 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
 
             return (
               <div className="space-y-6">
-                {strategyRiskBudgets.map((strategy, index) => {
+                {strategyMetrics.map((strategy, index) => {
                   const barColor = strategy.eficiencia >= 1 
                     ? 'hsl(var(--chart-2))' 
-                    : 'hsl(var(--chart-5))';
+                    : strategy.eficiencia >= 0.5 
+                      ? 'hsl(var(--chart-3))' 
+                      : 'hsl(var(--chart-1))';
                   
                   return (
                     <div key={strategy.name} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold text-foreground">{strategy.name}</h4>
-                        <span className="text-sm text-muted-foreground">
-                          {strategy.riskBudgetPercent.toFixed(0)}% do risco total
-                        </span>
+                        <span className="text-sm font-bold">{strategy.risco.toFixed(1)}%</span>
                       </div>
                       
                       <div className="relative">
                         <Progress 
-                          value={strategy.riskBudgetPercent} 
+                          value={strategy.risco} 
                           className="h-8"
                         />
                         <div 
                           className="absolute top-0 left-0 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white transition-all"
                           style={{
-                            width: `${Math.max(strategy.riskBudgetPercent, 8)}%`,
+                            width: `${Math.max(strategy.risco, 8)}%`,
                             backgroundColor: barColor
                           }}
                         >
-                          {strategy.riskBudgetPercent.toFixed(0)}%
+                          {strategy.risco.toFixed(0)}%
                         </div>
                       </div>
                       
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">
-                          Risco: {strategy.volatilidade.toFixed(1)}%
+                          Risco (Alocação): {strategy.risco.toFixed(2)}%
                         </span>
                         <span className="text-muted-foreground">
-                          Retorno: {strategy.retornoMedio.toFixed(1)}%
+                          Retorno Contribuído: {strategy.retorno.toFixed(2)}%
                         </span>
-                        <span className={strategy.eficiencia >= 1 ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
+                        <span className={strategy.eficiencia >= 1 ? "text-green-600 font-semibold" : strategy.eficiencia >= 0.5 ? "text-yellow-600 font-semibold" : "text-red-600 font-semibold"}>
                           Eficiência: {strategy.eficiencia.toFixed(2)}x
                         </span>
                       </div>
