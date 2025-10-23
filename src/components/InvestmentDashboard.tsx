@@ -1086,10 +1086,11 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
      });
    })()}
                 </div>
-                </CardContent>
-              </Card>
-            </div>
-        </main>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </main>
 
         <MaturityDialog
           open={maturityDialogOpen}
