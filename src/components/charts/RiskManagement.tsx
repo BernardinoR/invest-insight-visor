@@ -1555,6 +1555,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                   <YAxis 
                     stroke="hsl(var(--muted-foreground))"
                     tick={{ fontSize: 12 }}
+                    reversed={true}
                     domain={[0, 'dataMax']}
                     tickFormatter={(value) => `${value.toFixed(1)}%`}
                     label={{ 
