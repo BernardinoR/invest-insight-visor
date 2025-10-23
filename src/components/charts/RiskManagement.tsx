@@ -1898,58 +1898,50 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               return strategy;
             };
 
-            // Função para converter competência em Date para comparação correta
-            const competenciaToDate = (competencia: string) => {
-              const [month, year] = competencia.split('/');
-              return new Date(parseInt(year), parseInt(month) - 1);
-            };
-
-            // Identificar a última competência do período filtrado (usando comparação de data)
+            // Identificar a última competência do período filtrado
             const ultimaCompetenciaFiltrada = filteredDadosForRisk.reduce((latest, item) => {
-              if (!latest) return item.Competencia;
-              
-              const latestDate = competenciaToDate(latest);
-              const currentDate = competenciaToDate(item.Competencia);
-              
-              return currentDate > latestDate ? item.Competencia : latest;
+              if (!latest || item.Competencia > latest) {
+                return item.Competencia;
+              }
+              return latest;
             }, '');
 
-            // Filtrar apenas dados da última competência
-            const dadosUltimaCompetencia = filteredDadosForRisk.filter(
-              item => item.Competencia === ultimaCompetenciaFiltrada
-            );
-
-            // Agrupar por estratégia e somar TODAS as posições da última competência
-            const strategyGroupsUltimaComp = dadosUltimaCompetencia.reduce((acc, item) => {
-              const groupedStrategy = groupStrategy(item["Classe do ativo"] || "Outros");
+            // Agrupar dados por estratégia agrupada com dados de cada mês
+            const strategyData = filteredDadosForRisk.reduce((acc, item) => {
+              const originalStrategy = item["Classe do ativo"] || "Outros";
+              const groupedStrategy = groupStrategy(originalStrategy);
+              
               if (!acc[groupedStrategy]) {
-                acc[groupedStrategy] = 0;
+                acc[groupedStrategy] = {
+                  meses: []
+                };
               }
-              acc[groupedStrategy] += item.Posicao || 0;
+              
+              acc[groupedStrategy].meses.push({
+                competencia: item.Competencia,
+                posicao: item.Posicao,
+                rendimento: item.Rendimento
+              });
+              
               return acc;
-            }, {} as Record<string, number>);
+            }, {} as Record<string, { meses: Array<{competencia: string, posicao: number, rendimento: number}> }>);
 
-            // Agrupar dados por estratégia para calcular contribuição total
-            const strategyContribuicao = filteredDadosForRisk.reduce((acc, item) => {
-              const groupedStrategy = groupStrategy(item["Classe do ativo"] || "Outros");
-              if (!acc[groupedStrategy]) {
-                acc[groupedStrategy] = 0;
-              }
-              acc[groupedStrategy] += (item.Posicao * item.Rendimento);
-              return acc;
-            }, {} as Record<string, number>);
-
-            // Combinar posição atual (última competência) com contribuição total (todas competências)
-            const allStrategies = new Set([
-              ...Object.keys(strategyGroupsUltimaComp),
-              ...Object.keys(strategyContribuicao)
-            ]);
-
-            const strategyProcessed = Array.from(allStrategies).map(name => {
+            // Para cada estratégia, calcular posição atual e contribuição total
+            const strategyProcessed = Object.entries(strategyData).map(([name, data]) => {
+              // Ordenar meses por competência
+              data.meses.sort((a, b) => a.competencia.localeCompare(b.competencia));
+              
+              // CORREÇÃO: Buscar posição da ÚLTIMA COMPETÊNCIA DO FILTRO
+              const mesUltimaCompetencia = data.meses.find(m => m.competencia === ultimaCompetenciaFiltrada);
+              const posicaoAtual = mesUltimaCompetencia ? mesUltimaCompetencia.posicao : 0;
+              
+              // Soma de todas as contribuições em valor absoluto
+              const contribuicaoTotal = data.meses.reduce((sum, m) => sum + (m.posicao * m.rendimento), 0);
+              
               return {
                 name,
-                posicaoAtual: strategyGroupsUltimaComp[name] || 0,
-                contribuicaoTotal: strategyContribuicao[name] || 0
+                posicaoAtual,
+                contribuicaoTotal
               };
             });
 
