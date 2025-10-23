@@ -638,103 +638,100 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
           </div>
         </CardHeader>
         <CardContent className="p-8">
-          {/* Top Section - Donut Chart with Legend */}
+          {/* Top Section - Donut Chart with Card Legend */}
           <div className="flex items-center justify-center gap-12 mb-8">
-            {/* Donut Chart and Legend */}
-            <div className="flex items-center gap-8">
-              {/* Donut Chart */}
-              <div className="relative flex-shrink-0">
-                <div style={{ width: '320px', height: '320px' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: 'hsl(142, 71%, 45%)' },
-                          { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 20%, 65%)' },
-                          { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 20%, 75%)' },
-                          { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 85%)' }
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={80}
-                        outerRadius={130}
-                        paddingAngle={3}
-                        dataKey="value"
-                        strokeWidth={0}
-                      >
-                        {[
-                          { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: 'hsl(142, 71%, 45%)' },
-                          { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 20%, 65%)' },
-                          { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 20%, 75%)' },
-                          { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 85%)' }
-                        ].map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                
-                {/* Center Text */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-                  <p className="text-xs text-muted-foreground mb-1 font-medium tracking-wide">Hit Rate</p>
-                  <p className="text-5xl font-bold text-foreground tracking-tight">{riskMetrics.hitRate.hitRatePercent}%</p>
-                </div>
+            {/* Donut Chart */}
+            <div className="relative flex-shrink-0">
+              <div style={{ width: '320px', height: '320px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: 'hsl(142, 71%, 45%)' },
+                        { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 20%, 65%)' },
+                        { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 20%, 75%)' },
+                        { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 85%)' }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={80}
+                      outerRadius={130}
+                      paddingAngle={3}
+                      dataKey="value"
+                      strokeWidth={0}
+                    >
+                      {[
+                        { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: 'hsl(142, 71%, 45%)' },
+                        { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 20%, 65%)' },
+                        { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 20%, 75%)' },
+                        { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 85%)' }
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
               
-              {/* Legend on the Right of Donut */}
-              <div className="flex flex-col gap-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded flex-shrink-0" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }} />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <Rocket className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-sm font-semibold text-foreground">Home Run</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {riskMetrics.hitRate.homeRun} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100) : 0}%)
-                    </p>
-                  </div>
+              {/* Center Text */}
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+                <p className="text-xs text-muted-foreground mb-1 font-medium tracking-wide">Hit Rate</p>
+                <p className="text-5xl font-bold text-foreground tracking-tight">{riskMetrics.hitRate.hitRatePercent}%</p>
+              </div>
+            </div>
+            
+            {/* Legend as Cards */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Rocket className="h-4 w-4" style={{ color: 'hsl(142, 71%, 45%)' }} />
+                  <span className="text-sm font-semibold text-foreground">Home Run</span>
                 </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded flex-shrink-0" style={{ backgroundColor: 'hsl(215, 20%, 65%)' }} />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <Check className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-sm font-semibold text-foreground">Acerto</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {riskMetrics.hitRate.acerto} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100) : 0}%)
-                    </p>
-                  </div>
+                <p className="text-2xl font-bold" style={{ color: 'hsl(142, 71%, 45%)' }}>
+                  {riskMetrics.hitRate.homeRun} <span className="text-sm text-muted-foreground">meses</span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100) : 0}%)
+                </p>
+              </div>
+              
+              <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Check className="h-4 w-4" style={{ color: 'hsl(215, 20%, 65%)' }} />
+                  <span className="text-sm font-semibold text-foreground">Acerto</span>
                 </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded flex-shrink-0" style={{ backgroundColor: 'hsl(40, 20%, 75%)' }} />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <TrendingUpIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-sm font-semibold text-foreground">Quase lá</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {riskMetrics.hitRate.quaseLa} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100) : 0}%)
-                    </p>
-                  </div>
+                <p className="text-2xl font-bold" style={{ color: 'hsl(215, 20%, 65%)' }}>
+                  {riskMetrics.hitRate.acerto} <span className="text-sm text-muted-foreground">meses</span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100) : 0}%)
+                </p>
+              </div>
+              
+              <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUpIcon className="h-4 w-4" style={{ color: 'hsl(40, 20%, 75%)' }} />
+                  <span className="text-sm font-semibold text-foreground">Quase lá</span>
                 </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded flex-shrink-0" style={{ backgroundColor: 'hsl(220, 15%, 85%)' }} />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <X className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-sm font-semibold text-foreground">Miss</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {riskMetrics.hitRate.miss} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100) : 0}%)
-                    </p>
-                  </div>
+                <p className="text-2xl font-bold" style={{ color: 'hsl(40, 20%, 75%)' }}>
+                  {riskMetrics.hitRate.quaseLa} <span className="text-sm text-muted-foreground">meses</span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100) : 0}%)
+                </p>
+              </div>
+              
+              <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <X className="h-4 w-4" style={{ color: 'hsl(220, 15%, 85%)' }} />
+                  <span className="text-sm font-semibold text-foreground">Miss</span>
                 </div>
+                <p className="text-2xl font-bold" style={{ color: 'hsl(220, 15%, 85%)' }}>
+                  {riskMetrics.hitRate.miss} <span className="text-sm text-muted-foreground">meses</span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100) : 0}%)
+                </p>
               </div>
             </div>
           </div>
@@ -946,366 +943,400 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
         </CardHeader>
         
         <CardContent className="pt-0 pb-6">
-          <div className="h-96 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart
-                data={(() => {
-                  // Add zero starting point
-                  if (filteredConsolidatedData.length === 0) return [];
-                  
-                  const [firstMonth, firstYear] = filteredConsolidatedData[0].Competencia.split('/');
-                  const firstDate = new Date(parseInt(firstYear), parseInt(firstMonth) - 1, 1);
-                  const previousMonth = new Date(firstDate);
-                  previousMonth.setMonth(previousMonth.getMonth() - 1);
-                  
-                  const startPoint = {
-                    name: `${previousMonth.toLocaleDateString('pt-BR', { month: '2-digit' })}/${previousMonth.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
-                    retornoAcumulado: 0,
-                    mediaAcumulada: 0,
-                    plus1sd: 0,
-                    minus1sd: 0,
-                    plus2sd: 0,
-                    minus2sd: 0,
-                    assimetriaVariacao: 0
-                  };
-                  
-                  let accumulatedReturn = 0;
-                  let accumulatedUpsideVol = 0;
-                  let accumulatedDownsideVol = 0;
-                  const monthReturns: number[] = [];
-                  let previousAssimetria = 0; // Para calcular variação
-                  
-                  const dataPoints = filteredConsolidatedData.map((item, index) => {
-                    const monthReturn = item.Rendimento * 100;
+          {/* Layout: Gráfico à esquerda, Cards à direita */}
+          <div className="flex gap-6">
+            {/* Gráfico */}
+            <div className="flex-1 h-96">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={(() => {
+                    // Add zero starting point
+                    if (filteredConsolidatedData.length === 0) return [];
                     
-                    // Retorno acumulado composto
-                    accumulatedReturn = (1 + accumulatedReturn / 100) * (1 + monthReturn / 100) - 1;
-                    accumulatedReturn = accumulatedReturn * 100;
+                    const [firstMonth, firstYear] = filteredConsolidatedData[0].Competencia.split('/');
+                    const firstDate = new Date(parseInt(firstYear), parseInt(firstMonth) - 1, 1);
+                    const previousMonth = new Date(firstDate);
+                    previousMonth.setMonth(previousMonth.getMonth() - 1);
                     
-                    monthReturns.push(monthReturn);
-                    
-                    // === CÁLCULO BASEADO NA META DE RETORNO ===
-                    
-                    // Coletar todas as metas até o período atual
-                    const allTargets: number[] = [];
-                    for (let i = 0; i <= index; i++) {
-                      const comp = filteredConsolidatedData[i].Competencia;
-                      const mData = marketData.find(m => m.competencia === comp);
-                      const target = mData?.clientTarget || clientTarget;
-                      allTargets.push(target * 100); // Em %
-                    }
-                    
-                    // 1. MÉDIA DAS METAS DE RETORNO
-                    const avgTarget = allTargets.reduce((sum, t) => sum + t, 0) / allTargets.length;
-                    
-                    // 2. DESVIO PADRÃO DAS METAS DE RETORNO
-                    const targetVariance = allTargets.reduce((sum, t) => sum + Math.pow(t - avgTarget, 2), 0) / allTargets.length;
-                    const targetStdDev = Math.sqrt(targetVariance);
-                    
-                    // 3. META ACUMULADA (composta) - linha de referência
-                    let targetAccumulated = 0;
-                    for (let i = 0; i <= index; i++) {
-                      const comp = filteredConsolidatedData[i].Competencia;
-                      const mData = marketData.find(m => m.competencia === comp);
-                      const target = mData?.clientTarget || clientTarget;
-                      targetAccumulated = (1 + targetAccumulated / 100) * (1 + target * 100 / 100) - 1;
-                      targetAccumulated = targetAccumulated * 100;
-                    }
-                    
-                    // 4. BANDAS DE DESVIO PADRÃO BASEADAS NA META
-                    // Usar o desvio padrão das metas multiplicado pelo número de períodos (para escala acumulada)
-                    const scaledStdDev = targetStdDev * Math.sqrt(index + 1);
-                    
-                    const sigma_alta = scaledStdDev;
-                    const sigma_baixa = scaledStdDev * 1.2; // Assimetria: downside mais amplo
-                    
-                    // 5. ÍNDICE DE ASSIMETRIA E SUA VARIAÇÃO
-                    const assimetria = ((sigma_baixa - sigma_alta) / sigma_alta) * 100; // % de assimetria
-                    const assimetriaVariacao = index === 0 ? 0 : assimetria - previousAssimetria; // Variação período a período
-                    previousAssimetria = assimetria;
-                    
-                    const [month, year] = item.Competencia.split('/');
-                    const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-                    
-                    return {
-                      name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
-                      retornoAcumulado: accumulatedReturn,
-                      mediaAcumulada: targetAccumulated,
-                      // Bandas baseadas nos desvios da meta
-                      plus1sd: targetAccumulated + sigma_alta,
-                      minus1sd: targetAccumulated - sigma_baixa,
-                      plus2sd: targetAccumulated + (2 * sigma_alta),
-                      minus2sd: targetAccumulated - (2 * sigma_baixa),
-                      // Métricas adicionais para análise
-                      sigma_alta,
-                      sigma_baixa,
-                      assimetria,
-                      assimetriaVariacao,
-                      avgTarget,
-                      targetStdDev
-                    };
-                  });
-                  
-                  return [startPoint, ...dataPoints];
-                })()}
-                margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
-              >
-                <CartesianGrid 
-                  strokeDasharray="3 3" 
-                  stroke="hsl(var(--border))" 
-                  opacity={0.3}
-                  horizontal={true}
-                  vertical={false}
-                />
-                <XAxis 
-                  dataKey="name" 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ dy: 10 }}
-                  interval={0}
-                />
-                <YAxis 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(value) => `${value.toFixed(1)}%`}
-                  width={70}
-                />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '12px',
-                    boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
-                    fontSize: '13px',
-                    padding: '12px'
-                  }}
-                  formatter={(value: any, name: string) => {
-                    const labels: Record<string, string> = {
-                      'retornoAcumulado': 'Retorno Acumulado',
-                      'mediaAcumulada': 'Meta Acumulada',
-                      'plus1sd': 'Meta + 1σ',
-                      'minus1sd': 'Meta - 1σ',
-                      'plus2sd': 'Meta + 2σ',
-                      'minus2sd': 'Meta - 2σ',
-                      'sigma_alta': 'σ da Meta (upside)',
-                      'sigma_baixa': 'σ da Meta (downside)',
-                      'assimetria': 'Índice de Assimetria',
-                      'assimetriaVariacao': 'Variação de Assimetria',
-                      'avgTarget': 'Média da Meta',
-                      'targetStdDev': 'Desvio Padrão da Meta'
+                    const startPoint = {
+                      name: `${previousMonth.toLocaleDateString('pt-BR', { month: '2-digit' })}/${previousMonth.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
+                      retornoAcumulado: 0,
+                      mediaAcumulada: 0,
+                      plus1sd: 0,
+                      minus1sd: 0,
+                      plus2sd: 0,
+                      minus2sd: 0,
+                      assimetriaVariacao: 0
                     };
                     
-                    if (name === 'assimetria' || name === 'assimetriaVariacao') {
-                      return [`${Number(value).toFixed(1)}%`, labels[name]];
-                    }
-                    return [`${Number(value).toFixed(2)}%`, labels[name] || name];
-                  }}
-                  labelStyle={{ 
-                    color: 'hsl(var(--foreground))', 
-                    fontWeight: '600',
-                    marginBottom: '4px'
-                  }}
-                  cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
-                />
-                
-                {/* Área entre os desvios padrão - pintada de cinza */}
-                {desviosPadraoTipo === 1 && (
-                  <Area
-                    type="monotone"
-                    dataKey="plus1sd"
-                    stroke="none"
-                    fill="hsl(var(--muted-foreground))"
-                    fillOpacity={0.1}
-                  />
-                )}
-                {desviosPadraoTipo === 1 && (
-                  <Area
-                    type="monotone"
-                    dataKey="minus1sd"
-                    stroke="none"
-                    fill="hsl(var(--background))"
-                    fillOpacity={1}
-                  />
-                )}
-                {desviosPadraoTipo === 2 && (
-                  <Area
-                    type="monotone"
-                    dataKey="plus2sd"
-                    stroke="none"
-                    fill="hsl(var(--muted-foreground))"
-                    fillOpacity={0.1}
-                  />
-                )}
-                {desviosPadraoTipo === 2 && (
-                  <Area
-                    type="monotone"
-                    dataKey="minus2sd"
-                    stroke="none"
-                    fill="hsl(var(--background))"
-                    fillOpacity={1}
-                  />
-                )}
-                
-                {/* Linhas de desvio padrão - mostrar apenas o selecionado */}
-                {desviosPadraoTipo === 1 && (
-                  <>
-                    <Line 
-                      type="monotone" 
-                      dataKey="plus1sd" 
-                      stroke="hsl(var(--muted-foreground))" 
-                      strokeWidth={1.5}
-                      strokeDasharray="4 4"
-                      dot={false}
-                      name="Meta + 1σ"
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="minus1sd" 
-                      stroke="hsl(var(--muted-foreground))" 
-                      strokeWidth={1.5}
-                      strokeDasharray="4 4"
-                      dot={false}
-                      name="Meta - 1σ"
-                    />
-                  </>
-                )}
-                {desviosPadraoTipo === 2 && (
-                  <>
-                    <Line 
-                      type="monotone" 
-                      dataKey="plus2sd" 
-                      stroke="hsl(var(--muted-foreground))" 
-                      strokeWidth={1.5}
-                      strokeDasharray="4 4"
-                      dot={false}
-                      name="Meta + 2σ"
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="minus2sd" 
-                      stroke="hsl(var(--muted-foreground))" 
-                      strokeWidth={1.5}
-                      strokeDasharray="4 4"
-                      dot={false}
-                      name="Meta - 2σ"
-                    />
-                  </>
-                )}
-                
-                {selectedIndicators.media && (
-                  <Line 
-                    type="monotone" 
-                    dataKey="mediaAcumulada" 
-                    stroke="hsl(var(--muted-foreground))" 
-                    strokeWidth={2}
-                    dot={false}
-                    name="Meta Acumulada"
-                  />
-                )}
-                
-                {/* Linha de retorno acumulado da carteira - linha principal com ênfase */}
-                {selectedIndicators.portfolio && (
-                  <Line 
-                    type="monotone" 
-                    dataKey="retornoAcumulado" 
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={3}
-                    dot={{ 
-                      fill: 'hsl(var(--primary))', 
-                      strokeWidth: 2, 
-                      stroke: 'hsl(var(--background))',
-                      r: 4
-                    }}
-                    activeDot={{ 
-                      r: 6, 
-                      fill: 'hsl(var(--primary))', 
-                      strokeWidth: 3, 
-                      stroke: 'hsl(var(--background))'
-                    }}
-                    name="Retorno Acumulado"
-                  />
-                )}
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-          
-          {/* Cards de métricas integrados */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-            {/* Coluna 1: Retornos */}
-            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-              <p className="text-xs text-muted-foreground mb-1">Retorno Médio</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
-                <Badge 
-                  variant="outline" 
-                  className={
-                    riskMetrics.avgReturn >= 1 
-                      ? "bg-success/10 text-success border-success/20 text-xs" 
-                      : "bg-muted/10 text-muted-foreground border-muted/20 text-xs"
-                  }
+                    let accumulatedReturn = 0;
+                    let accumulatedUpsideVol = 0;
+                    let accumulatedDownsideVol = 0;
+                    const monthReturns: number[] = [];
+                    let previousAssimetria = 0; // Para calcular variação
+                    
+                    const dataPoints = filteredConsolidatedData.map((item, index) => {
+                      const monthReturn = item.Rendimento * 100;
+                      
+                      // Retorno acumulado composto
+                      accumulatedReturn = (1 + accumulatedReturn / 100) * (1 + monthReturn / 100) - 1;
+                      accumulatedReturn = accumulatedReturn * 100;
+                      
+                      monthReturns.push(monthReturn);
+                      
+                      // === CÁLCULO BASEADO NA META DE RETORNO ===
+                      
+                      // Coletar todas as metas até o período atual
+                      const allTargets: number[] = [];
+                      for (let i = 0; i <= index; i++) {
+                        const comp = filteredConsolidatedData[i].Competencia;
+                        const mData = marketData.find(m => m.competencia === comp);
+                        const target = mData?.clientTarget || clientTarget;
+                        allTargets.push(target * 100); // Em %
+                      }
+                      
+                      // 1. MÉDIA DAS METAS DE RETORNO
+                      const avgTarget = allTargets.reduce((sum, t) => sum + t, 0) / allTargets.length;
+                      
+                      // 2. DESVIO PADRÃO DAS METAS DE RETORNO
+                      const targetVariance = allTargets.reduce((sum, t) => sum + Math.pow(t - avgTarget, 2), 0) / allTargets.length;
+                      const targetStdDev = Math.sqrt(targetVariance);
+                      
+                      // 3. META ACUMULADA (composta) - linha de referência
+                      let targetAccumulated = 0;
+                      for (let i = 0; i <= index; i++) {
+                        const comp = filteredConsolidatedData[i].Competencia;
+                        const mData = marketData.find(m => m.competencia === comp);
+                        const target = mData?.clientTarget || clientTarget;
+                        targetAccumulated = (1 + targetAccumulated / 100) * (1 + target * 100 / 100) - 1;
+                        targetAccumulated = targetAccumulated * 100;
+                      }
+                      
+                      // 4. BANDAS DE DESVIO PADRÃO BASEADAS NA META
+                      // Usar o desvio padrão das metas multiplicado pelo número de períodos (para escala acumulada)
+                      const scaledStdDev = targetStdDev * Math.sqrt(index + 1);
+                      
+                      const sigma_alta = scaledStdDev;
+                      const sigma_baixa = scaledStdDev * 1.2; // Assimetria: downside mais amplo
+                      
+                      // 5. ÍNDICE DE ASSIMETRIA E SUA VARIAÇÃO
+                      const assimetria = ((sigma_baixa - sigma_alta) / sigma_alta) * 100; // % de assimetria
+                      const assimetriaVariacao = index === 0 ? 0 : assimetria - previousAssimetria; // Variação período a período
+                      previousAssimetria = assimetria;
+                      
+                      const [month, year] = item.Competencia.split('/');
+                      const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+                      
+                      return {
+                        name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
+                        retornoAcumulado: accumulatedReturn,
+                        mediaAcumulada: targetAccumulated,
+                        // Bandas baseadas nos desvios da meta
+                        plus1sd: targetAccumulated + sigma_alta,
+                        minus1sd: targetAccumulated - sigma_baixa,
+                        plus2sd: targetAccumulated + (2 * sigma_alta),
+                        minus2sd: targetAccumulated - (2 * sigma_baixa),
+                        assimetriaVariacao
+                      };
+                    });
+                    
+                    return [startPoint, ...dataPoints];
+                  })()}
+                  margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
                 >
-                  {riskMetrics.avgReturn >= 1 ? '↑' : '↓'}
-                </Badge>
-              </div>
+                  <CartesianGrid 
+                    strokeDasharray="3 3" 
+                    stroke="hsl(var(--border))" 
+                    vertical={false}
+                  />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(value) => `${value.toFixed(1)}%`}
+                    width={70}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      padding: '12px'
+                    }}
+                    formatter={(value: any) => `${value.toFixed(2)}%`}
+                  />
+                  
+                  {/* Área cinza entre desvios padrão */}
+                  {desviosPadraoTipo === 1 && (
+                    <>
+                      <Area 
+                        type="monotone" 
+                        dataKey="plus1sd" 
+                        stroke="none"
+                        fill="hsl(var(--muted-foreground))"
+                        fillOpacity={0.1}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="minus1sd" 
+                        stroke="none"
+                        fill="hsl(var(--background))"
+                        fillOpacity={1}
+                      />
+                    </>
+                  )}
+                  
+                  {desviosPadraoTipo === 2 && (
+                    <>
+                      <Area 
+                        type="monotone" 
+                        dataKey="plus2sd" 
+                        stroke="none"
+                        fill="hsl(var(--muted-foreground))"
+                        fillOpacity={0.1}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="minus2sd" 
+                        stroke="none"
+                        fill="hsl(var(--background))"
+                        fillOpacity={1}
+                      />
+                    </>
+                  )}
+                  
+                  {/* Linhas de desvio padrão */}
+                  {desviosPadraoTipo === 1 && (
+                    <>
+                      <Line 
+                        type="monotone" 
+                        dataKey="plus1sd" 
+                        stroke="hsl(var(--muted-foreground))" 
+                        strokeWidth={1}
+                        strokeDasharray="4 4"
+                        dot={false}
+                        name="+1σ (Meta)"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="minus1sd" 
+                        stroke="hsl(var(--muted-foreground))" 
+                        strokeWidth={1}
+                        strokeDasharray="4 4"
+                        dot={false}
+                        name="-1σ (Meta)"
+                      />
+                    </>
+                  )}
+                  
+                  {desviosPadraoTipo === 2 && (
+                    <>
+                      <Line 
+                        type="monotone" 
+                        dataKey="plus2sd" 
+                        stroke="hsl(var(--muted-foreground))" 
+                        strokeWidth={1}
+                        strokeDasharray="4 4"
+                        dot={false}
+                        name="+2σ (Meta)"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="minus2sd" 
+                        stroke="hsl(var(--muted-foreground))" 
+                        strokeWidth={1}
+                        strokeDasharray="4 4"
+                        dot={false}
+                        name="-2σ (Meta)"
+                      />
+                    </>
+                  )}
+                  
+                  {/* Linha de meta acumulada */}
+                  {selectedIndicators.media && (
+                    <Line 
+                      type="monotone" 
+                      dataKey="mediaAcumulada" 
+                      stroke="hsl(var(--muted-foreground))" 
+                      strokeWidth={2}
+                      dot={false}
+                      name="Meta Acumulada"
+                    />
+                  )}
+                  
+                  {/* Linha de retorno acumulado da carteira - linha principal com ênfase */}
+                  {selectedIndicators.portfolio && (
+                    <Line 
+                      type="monotone" 
+                      dataKey="retornoAcumulado" 
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={3}
+                      dot={{ 
+                        fill: 'hsl(var(--primary))', 
+                        strokeWidth: 2, 
+                        stroke: 'hsl(var(--background))',
+                        r: 4
+                      }}
+                      activeDot={{ 
+                        r: 6, 
+                        fill: 'hsl(var(--primary))', 
+                        strokeWidth: 3, 
+                        stroke: 'hsl(var(--background))'
+                      }}
+                      name="Retorno Acumulado"
+                    />
+                  )}
+                </ComposedChart>
+              </ResponsiveContainer>
             </div>
             
-            {/* Coluna 2: Volatilidade Total */}
-            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-              <p className="text-xs text-muted-foreground mb-1">Volatilidade Total</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-foreground">{riskMetrics.volatility.toFixed(2)}%</p>
-                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 text-xs">
-                  Mensal
-                </Badge>
+            {/* Cards à direita */}
+            <div className="w-80 flex flex-col gap-3">
+              {/* Coluna 1: Retornos */}
+              <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+                <p className="text-xs text-muted-foreground mb-1">Retorno Médio</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-bold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
+                  <Badge 
+                    variant="outline" 
+                    className={
+                      riskMetrics.avgReturn >= 1 
+                        ? "bg-success/10 text-success border-success/20 text-xs" 
+                        : "bg-muted/10 text-muted-foreground border-muted/20 text-xs"
+                    }
+                  >
+                    {riskMetrics.avgReturn >= 1 ? '↑' : '↓'}
+                  </Badge>
+                </div>
               </div>
-            </div>
-            
-            {/* Coluna 3: Volatilidade Positiva */}
-            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-              <p className="text-xs text-muted-foreground mb-1">Volatilidade Positiva (Upside)</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {riskMetrics.upsideVolatility.toFixed(2)}%
-                </p>
-                <TrendingUpIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+              
+              {/* Coluna 2: Volatilidade Total */}
+              <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+                <p className="text-xs text-muted-foreground mb-1">Volatilidade Total</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-bold text-foreground">{riskMetrics.volatility.toFixed(2)}%</p>
+                  <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 text-xs">
+                    Mensal
+                  </Badge>
+                </div>
               </div>
-            </div>
-            
-            {/* Linha 2 - Coluna 1: Retorno Médio da Meta */}
-            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-              <p className="text-xs text-muted-foreground mb-1">Retorno Médio da Meta</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-foreground">{riskMetrics.targetMetrics.avgTarget.toFixed(2)}%</p>
-                <Target className="h-4 w-4 text-muted-foreground" />
+              
+              {/* Coluna 3: Volatilidade Positiva */}
+              <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+                <p className="text-xs text-muted-foreground mb-1">Volatilidade Positiva (Upside)</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {riskMetrics.upsideVolatility.toFixed(2)}%
+                  </p>
+                  <TrendingUpIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+                </div>
               </div>
-            </div>
-            
-            {/* Linha 2 - Coluna 2: Volatilidade da Meta */}
-            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-              <p className="text-xs text-muted-foreground mb-1">Volatilidade da Meta</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-foreground">{riskMetrics.targetMetrics.targetVolatility.toFixed(2)}%</p>
-                <Activity className="h-4 w-4 text-muted-foreground" />
+              
+              {/* Linha 2 - Coluna 1: Retorno Médio da Meta */}
+              <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+                <p className="text-xs text-muted-foreground mb-1">Retorno Médio da Meta</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-bold text-foreground">{riskMetrics.targetMetrics.avgTarget.toFixed(2)}%</p>
+                  <Target className="h-4 w-4 text-muted-foreground" />
+                </div>
               </div>
-            </div>
-            
-            {/* Linha 2 - Coluna 3: Volatilidade Negativa */}
-            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-              <p className="text-xs text-muted-foreground mb-1">Volatilidade Negativa (Downside)</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-destructive">
-                  {riskMetrics.downsideVolatility.toFixed(2)}%
-                </p>
-                <TrendingDown className="h-4 w-4 text-destructive" />
+              
+              {/* Linha 2 - Coluna 2: Volatilidade da Meta */}
+              <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+                <p className="text-xs text-muted-foreground mb-1">Volatilidade da Meta</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-bold text-foreground">{riskMetrics.targetMetrics.targetVolatility.toFixed(2)}%</p>
+                  <Activity className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+              
+              {/* Linha 2 - Coluna 3: Volatilidade Negativa */}
+              <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+                <p className="text-xs text-muted-foreground mb-1">Volatilidade Negativa (Downside)</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-bold text-destructive">
+                    {riskMetrics.downsideVolatility.toFixed(2)}%
+                  </p>
+                  <TrendingDown className="h-4 w-4 text-destructive" />
+                </div>
               </div>
             </div>
           </div>
           
           {/* Volatilidade Assimétrica - Análise */}
+          <div className="mt-6 p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-border">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Activity className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold mb-2 text-foreground">Análise de Volatilidade Assimétrica</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground">Razão Upside/Downside</p>
+                      <p className="text-xl font-bold text-foreground">{riskMetrics.volatilityRatio.toFixed(2)}x</p>
+                    </div>
+                    <Badge 
+                      variant={riskMetrics.volatilityRatio > 1 ? "default" : "secondary"}
+                      className={riskMetrics.volatilityRatio > 1 
+                        ? "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30" 
+                        : ""}
+                    >
+                      {riskMetrics.volatilityRatio > 1 ? 'Positivo' : 'Cauteloso'}
+                    </Badge>
+                  </div>
+                  
+                  <div className="p-3 rounded-lg bg-card/50 border border-border/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                      <span className="text-xs font-medium">Quando ganha</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-destructive"></div>
+                      <span className="text-xs font-medium">Quando perde</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
+                  <p className="text-sm text-foreground">
+                    {riskMetrics.volatilityRatio > 1.2 ? (
+                      <>
+                        Sua volatilidade positiva é <strong>{riskMetrics.upsideVolatility.toFixed(2)}%</strong> e 
+                        negativa é <strong>{riskMetrics.downsideVolatility.toFixed(2)}%</strong>. 
+                        <span className="text-green-600 dark:text-green-400 font-medium"> Isso significa que quando ganha, 
+                        ganha forte, mas quando perde, perde controlado.</span> Um perfil ideal para crescimento com risco gerenciado.
+                      </>
+                    ) : riskMetrics.volatilityRatio > 0.8 ? (
+                      <>
+                        Sua volatilidade positiva é <strong>{riskMetrics.upsideVolatility.toFixed(2)}%</strong> e 
+                        negativa é <strong>{riskMetrics.downsideVolatility.toFixed(2)}%</strong>. 
+                        Sua carteira apresenta um perfil <strong>equilibrado</strong>, com ganhos e perdas em magnitudes similares.
+                      </>
+                    ) : (
+                      <>
+                        Sua volatilidade positiva é <strong>{riskMetrics.upsideVolatility.toFixed(2)}%</strong> e 
+                        negativa é <strong>{riskMetrics.downsideVolatility.toFixed(2)}%</strong>. 
+                        <span className="text-amber-600 dark:text-amber-400 font-medium"> Quando ganha, ganha moderado, 
+                        mas quando perde, a queda é mais acentuada.</span> Considere estratégias de proteção de capital.
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
           <div className="mt-6 p-4 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-border">
             <div className="flex items-start gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
