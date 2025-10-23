@@ -1771,25 +1771,22 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
         <CardHeader>
           <CardTitle className="text-foreground flex items-center gap-2">
             <Target className="w-5 h-5" />
-            Análise Beta & Alpha vs Meta
+            Beta & Alpha Acumulado
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Medidas de risco e retorno excedente da carteira
+            Volatilidade relativa e retorno excedente desde o início
           </p>
         </CardHeader>
         <CardContent>
           {(() => {
-            // Retornos da carteira e da meta
-            const portfolioReturns = filteredConsolidatedData.map(item => item.Rendimento * 100);
+            // Usar todos os dados consolidados (acumulado desde o início)
+            const portfolioReturns = consolidatedData.map(item => item.Rendimento * 100);
             const targetReturns: number[] = [];
-            const excessReturns: number[] = [];
             
-            filteredConsolidatedData.forEach((item) => {
+            consolidatedData.forEach((item) => {
               const mData = marketData.find(m => m.competencia === item.Competencia);
               const target = mData?.clientTarget || clientTarget;
-              const targetPercent = target * 100;
-              targetReturns.push(targetPercent);
-              excessReturns.push((item.Rendimento * 100) - targetPercent);
+              targetReturns.push(target * 100);
             });
 
             if (portfolioReturns.length < 2) {
@@ -1803,7 +1800,6 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
             // Cálculo de médias
             const avgPortfolio = portfolioReturns.reduce((a, b) => a + b, 0) / portfolioReturns.length;
             const avgTarget = targetReturns.reduce((a, b) => a + b, 0) / targetReturns.length;
-            const avgExcess = excessReturns.reduce((a, b) => a + b, 0) / excessReturns.length;
 
             // Volatilidade (desvio padrão) da carteira
             const portfolioVariance = portfolioReturns.reduce((sum, r) => 
@@ -1819,287 +1815,156 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
             const beta = targetVolatility !== 0 ? portfolioVolatility / targetVolatility : 0;
 
             // Alpha = Retorno Médio da Carteira - Retorno Médio da Meta
-            // (Retorno excedente médio)
-            const alpha = avgExcess;
+            const alpha = avgPortfolio - avgTarget;
 
-            // Information Ratio = Alpha / Tracking Error
-            const trackingErrorVariance = excessReturns.reduce((sum, r) => 
-              sum + Math.pow(r - avgExcess, 2), 0) / excessReturns.length;
-            const trackingError = Math.sqrt(trackingErrorVariance);
-            const informationRatio = trackingError !== 0 ? alpha / trackingError : 0;
-
-            // Dados para gráficos comparativos
-            const comparisonData = filteredConsolidatedData.map((item, index) => ({
-              competencia: formatCompetenciaDisplay(item.Competencia),
-              carteira: portfolioReturns[index],
-              meta: targetReturns[index],
-              excesso: excessReturns[index]
-            }));
-
-            // Estatísticas de excesso
-            const positiveExcess = excessReturns.filter(r => r > 0).length;
-            const negativeExcess = excessReturns.filter(r => r < 0).length;
-            const winRate = portfolioReturns.length > 0 
-              ? (positiveExcess / portfolioReturns.length) * 100 
-              : 0;
-
-            const maxExcess = Math.max(...excessReturns);
-            const minExcess = Math.min(...excessReturns);
+            // Retorno acumulado total
+            const totalPortfolioReturn = portfolioReturns.reduce((product, r) => 
+              product * (1 + r / 100), 1) - 1;
+            const totalTargetReturn = targetReturns.reduce((product, r) => 
+              product * (1 + r / 100), 1) - 1;
+            const totalExcess = totalPortfolioReturn - totalTargetReturn;
 
             return (
               <div className="space-y-6">
                 {/* Métricas Principais */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-6 rounded-lg border border-border bg-card">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-medium text-muted-foreground">Beta (β)</h4>
-                      <Activity className="w-4 h-4 text-blue-500" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-8 rounded-lg border-2 border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-blue-500/5">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-base font-semibold text-foreground">Beta (β)</h4>
+                      <Activity className="w-6 h-6 text-blue-500" />
                     </div>
-                    <div className="text-3xl font-bold text-foreground mb-1">
+                    <div className="text-5xl font-bold text-foreground mb-4">
                       {beta.toFixed(3)}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Volatilidade: {portfolioVolatility.toFixed(2)}% vs Meta: {targetVolatility.toFixed(2)}%
-                    </p>
-                    <div className="mt-3">
-                      <Progress value={Math.min(beta * 50, 100)} className="h-2" />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {beta > 1 ? `${((beta - 1) * 100).toFixed(0)}% mais volátil` : 
-                         beta < 1 ? `${((1 - beta) * 100).toFixed(0)}% menos volátil` : 
-                         'Mesma volatilidade'}
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between items-center pb-2 border-b border-border">
+                        <span className="text-muted-foreground">Volatilidade Carteira</span>
+                        <span className="font-semibold text-foreground">{portfolioVolatility.toFixed(2)}%</span>
+                      </div>
+                      <div className="flex justify-between items-center pb-2 border-b border-border">
+                        <span className="text-muted-foreground">Volatilidade Meta</span>
+                        <span className="font-semibold text-foreground">{targetVolatility.toFixed(2)}%</span>
+                      </div>
+                      <div className="flex justify-between items-center pt-2">
+                        <span className="text-muted-foreground">Relação (β)</span>
+                        <span className="font-bold text-blue-600">{beta.toFixed(3)}x</span>
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <p className="text-sm text-muted-foreground">
+                        {beta > 1.2 && '⚠️ Carteira significativamente mais volátil que a meta'}
+                        {beta >= 0.8 && beta <= 1.2 && '✓ Volatilidade similar à meta'}
+                        {beta < 0.8 && '✓ Carteira mais estável que a meta'}
                       </p>
+                      {beta > 1 && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          A carteira amplifica os movimentos da meta em {((beta - 1) * 100).toFixed(0)}%
+                        </p>
+                      )}
+                      {beta < 1 && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          A carteira amortece os movimentos da meta em {((1 - beta) * 100).toFixed(0)}%
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  <div className="p-6 rounded-lg border border-border bg-card">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-medium text-muted-foreground">Alpha (α)</h4>
-                      <Rocket className={`w-4 h-4 ${alpha >= 0 ? 'text-green-500' : 'text-red-500'}`} />
+                  <div className={`p-8 rounded-lg border-2 ${
+                    alpha >= 0 
+                      ? 'border-green-500/30 bg-gradient-to-br from-green-500/10 to-green-500/5' 
+                      : 'border-red-500/30 bg-gradient-to-br from-red-500/10 to-red-500/5'
+                  }`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-base font-semibold text-foreground">Alpha (α)</h4>
+                      <Rocket className={`w-6 h-6 ${alpha >= 0 ? 'text-green-500' : 'text-red-500'}`} />
                     </div>
-                    <div className={`text-3xl font-bold mb-1 ${alpha >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className={`text-5xl font-bold mb-4 ${alpha >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {alpha >= 0 ? '+' : ''}{alpha.toFixed(2)}%
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Retorno excedente médio por período
-                    </p>
-                    <div className="mt-3 flex gap-2">
-                      <div className="flex-1">
-                        <p className="text-xs text-muted-foreground">Máx</p>
-                        <p className="text-sm font-semibold text-green-600">+{maxExcess.toFixed(2)}%</p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between items-center pb-2 border-b border-border">
+                        <span className="text-muted-foreground">Retorno Médio Carteira</span>
+                        <span className="font-semibold text-foreground">{avgPortfolio.toFixed(2)}%</span>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-muted-foreground">Mín</p>
-                        <p className="text-sm font-semibold text-red-600">{minExcess.toFixed(2)}%</p>
+                      <div className="flex justify-between items-center pb-2 border-b border-border">
+                        <span className="text-muted-foreground">Retorno Médio Meta</span>
+                        <span className="font-semibold text-foreground">{avgTarget.toFixed(2)}%</span>
+                      </div>
+                      <div className="flex justify-between items-center pt-2">
+                        <span className="text-muted-foreground">Diferença (α)</span>
+                        <span className={`font-bold ${alpha >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {alpha >= 0 ? '+' : ''}{alpha.toFixed(2)}%
+                        </span>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="p-6 rounded-lg border border-border bg-card">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-medium text-muted-foreground">Information Ratio</h4>
-                      <TrendingUp className="w-4 h-4 text-purple-500" />
-                    </div>
-                    <div className="text-3xl font-bold text-foreground mb-1">
-                      {informationRatio.toFixed(2)}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Alpha / Tracking Error ({trackingError.toFixed(2)}%)
-                    </p>
-                    <div className="mt-3">
-                      <p className="text-xs text-muted-foreground">Taxa de Acerto</p>
-                      <p className="text-sm font-semibold">
-                        {positiveExcess}/{portfolioReturns.length} meses ({winRate.toFixed(0)}%)
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <p className="text-sm text-muted-foreground">
+                        {alpha >= 1 && '✓ Excelente geração de valor acima da meta'}
+                        {alpha >= 0 && alpha < 1 && '✓ Performance positiva acima da meta'}
+                        {alpha < 0 && alpha >= -1 && '○ Leve underperformance vs meta'}
+                        {alpha < -1 && '⚠️ Underperformance significativa'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Retorno excedente médio de {alpha >= 0 ? '+' : ''}{alpha.toFixed(2)}% por período
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Gráfico de Retornos: Carteira vs Meta */}
-                <div>
-                  <h4 className="text-sm font-semibold mb-3 text-foreground">Retornos: Carteira vs Meta</h4>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <ComposedChart data={comparisonData} margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis 
-                        dataKey="competencia" 
-                        stroke="hsl(var(--muted-foreground))"
-                        angle={-45}
-                        textAnchor="end"
-                        height={80}
-                        tick={{ fontSize: 11 }}
-                      />
-                      <YAxis 
-                        stroke="hsl(var(--muted-foreground))"
-                        label={{ 
-                          value: 'Retorno (%)', 
-                          angle: -90, 
-                          position: 'insideLeft',
-                          fill: 'hsl(var(--muted-foreground))'
-                        }}
-                      />
-                      <Tooltip 
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px',
-                          color: 'hsl(var(--foreground))'
-                        }}
-                        formatter={(value: any) => `${Number(value).toFixed(2)}%`}
-                      />
-                      <Bar dataKey="meta" fill="hsl(var(--muted))" name="Meta" opacity={0.5} />
-                      <Line 
-                        type="monotone" 
-                        dataKey="carteira" 
-                        stroke="hsl(var(--primary))" 
-                        strokeWidth={2.5}
-                        name="Carteira"
-                        dot={{ fill: 'hsl(var(--primary))', r: 4 }}
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
+                {/* Retorno Acumulado Total */}
+                <div className="p-6 rounded-lg bg-muted/50 border border-border">
+                  <h4 className="text-sm font-semibold mb-4 text-foreground flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    Retorno Acumulado Total ({consolidatedData.length} períodos)
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Carteira</p>
+                      <p className="text-2xl font-bold text-foreground">
+                        {(totalPortfolioReturn * 100).toFixed(2)}%
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Meta</p>
+                      <p className="text-2xl font-bold text-foreground">
+                        {(totalTargetReturn * 100).toFixed(2)}%
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Excesso Acumulado</p>
+                      <p className={`text-2xl font-bold ${totalExcess >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {totalExcess >= 0 ? '+' : ''}{(totalExcess * 100).toFixed(2)}%
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Gráfico de Retorno Excedente (Alpha ao longo do tempo) */}
-                <div>
-                  <h4 className="text-sm font-semibold mb-3 text-foreground">Retorno Excedente (Alpha por Período)</h4>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={comparisonData} margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis 
-                        dataKey="competencia" 
-                        stroke="hsl(var(--muted-foreground))"
-                        angle={-45}
-                        textAnchor="end"
-                        height={80}
-                        tick={{ fontSize: 11 }}
-                      />
-                      <YAxis 
-                        stroke="hsl(var(--muted-foreground))"
-                        label={{ 
-                          value: 'Excesso (%)', 
-                          angle: -90, 
-                          position: 'insideLeft',
-                          fill: 'hsl(var(--muted-foreground))'
-                        }}
-                      />
-                      <Tooltip 
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px',
-                          color: 'hsl(var(--foreground))'
-                        }}
-                        formatter={(value: any) => `${Number(value).toFixed(2)}%`}
-                      />
-                      <Bar dataKey="excesso" name="Retorno Excedente">
-                        {comparisonData.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={entry.excesso >= 0 ? 'hsl(var(--chart-2))' : 'hsl(var(--chart-1))'} 
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Análise e Interpretação */}
+                {/* Explicações */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                    <div className="flex items-start gap-2">
-                      <Activity className="h-4 w-4 text-blue-500 mt-1 flex-shrink-0" />
-                      <div>
-                        <h4 className="text-sm font-semibold mb-2 text-foreground">Beta: Análise de Volatilidade</h4>
-                        <div className="space-y-2 text-xs text-muted-foreground">
-                          <div className="flex justify-between">
-                            <span>Volatilidade da Carteira:</span>
-                            <span className="font-semibold text-foreground">{portfolioVolatility.toFixed(2)}%</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Volatilidade da Meta:</span>
-                            <span className="font-semibold text-foreground">{targetVolatility.toFixed(2)}%</span>
-                          </div>
-                          <div className="flex justify-between pt-2 border-t border-border">
-                            <span>Beta (σ_carteira / σ_meta):</span>
-                            <span className="font-bold text-blue-600">{beta.toFixed(3)}x</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-3">
-                          {beta > 1.2 && '⚠️ Carteira amplifica movimentos da meta'}
-                          {beta >= 0.8 && beta <= 1.2 && '✓ Volatilidade similar à meta'}
-                          {beta < 0.8 && '✓ Carteira mais estável que a meta'}
-                        </p>
-                      </div>
-                    </div>
+                  <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <h5 className="text-sm font-semibold mb-2 text-foreground">O que é Beta?</h5>
+                    <p className="text-xs text-muted-foreground">
+                      Beta mede a volatilidade relativa da carteira em relação à meta. 
+                      É calculado como: <strong>β = σ_carteira / σ_meta</strong>
+                    </p>
+                    <ul className="text-xs text-muted-foreground mt-2 space-y-1 list-disc list-inside">
+                      <li>β = 1: mesma volatilidade da meta</li>
+                      <li>β {'>'} 1: mais volátil que a meta</li>
+                      <li>β {'<'} 1: menos volátil que a meta</li>
+                    </ul>
                   </div>
 
-                  <div className={`p-4 rounded-lg border ${
-                    alpha >= 0 
-                      ? 'bg-green-500/10 border-green-500/30' 
-                      : 'bg-red-500/10 border-red-500/30'
-                  }`}>
-                    <div className="flex items-start gap-2">
-                      <Rocket className={`h-4 w-4 mt-1 flex-shrink-0 ${alpha >= 0 ? 'text-green-500' : 'text-red-500'}`} />
-                      <div>
-                        <h4 className="text-sm font-semibold mb-2 text-foreground">Alpha: Retorno Excedente</h4>
-                        <div className="space-y-2 text-xs text-muted-foreground">
-                          <div className="flex justify-between">
-                            <span>Retorno Médio Carteira:</span>
-                            <span className="font-semibold text-foreground">{avgPortfolio.toFixed(2)}%</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Retorno Médio Meta:</span>
-                            <span className="font-semibold text-foreground">{avgTarget.toFixed(2)}%</span>
-                          </div>
-                          <div className="flex justify-between pt-2 border-t border-border">
-                            <span>Alpha (diferença):</span>
-                            <span className={`font-bold ${alpha >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {alpha >= 0 ? '+' : ''}{alpha.toFixed(2)}%
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-3">
-                          {Math.abs(alpha) < 0.5 && '≈ Desempenho alinhado com a meta'}
-                          {alpha >= 0.5 && '✓ Geração consistente de valor'}
-                          {alpha < -0.5 && '⚠️ Underperformance vs meta'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Information Ratio e Tracking Error */}
-                <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/30">
-                  <div className="flex items-start gap-2">
-                    <TrendingUp className="h-4 w-4 text-purple-500 mt-1 flex-shrink-0" />
-                    <div className="flex-1">
-                      <h4 className="text-sm font-semibold mb-2 text-foreground">Information Ratio</h4>
-                      <div className="grid grid-cols-2 gap-4 text-xs">
-                        <div>
-                          <p className="text-muted-foreground mb-1">IR = {informationRatio.toFixed(2)}</p>
-                          <p className="text-muted-foreground">
-                            Mede o Alpha gerado por unidade de risco ativo (tracking error)
-                          </p>
-                        </div>
-                        <div>
-                          <div className="flex justify-between mb-1">
-                            <span className="text-muted-foreground">Períodos Positivos:</span>
-                            <span className="font-semibold text-green-600">{positiveExcess}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Períodos Negativos:</span>
-                            <span className="font-semibold text-red-600">{negativeExcess}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-3 pt-3 border-t border-purple-500/20">
-                        <p className="text-xs text-muted-foreground">
-                          {informationRatio > 0.5 && '✓ Excelente - IR > 0.5 indica gestão ativa eficiente'}
-                          {informationRatio >= 0 && informationRatio <= 0.5 && '○ IR positivo mas moderado'}
-                          {informationRatio < 0 && '⚠️ IR negativo - tracking error sem compensação de alpha'}
-                        </p>
-                      </div>
-                    </div>
+                  <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <h5 className="text-sm font-semibold mb-2 text-foreground">O que é Alpha?</h5>
+                    <p className="text-xs text-muted-foreground">
+                      Alpha representa o retorno excedente médio da carteira em relação à meta. 
+                      É calculado como: <strong>α = Retorno_médio_carteira - Retorno_médio_meta</strong>
+                    </p>
+                    <ul className="text-xs text-muted-foreground mt-2 space-y-1 list-disc list-inside">
+                      <li>α {'>'} 0: superando a meta</li>
+                      <li>α = 0: performance igual à meta</li>
+                      <li>α {'<'} 0: abaixo da meta</li>
+                    </ul>
                   </div>
                 </div>
               </div>
