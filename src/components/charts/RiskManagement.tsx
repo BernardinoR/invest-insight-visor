@@ -1943,31 +1943,46 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
 
             const totalPatrimonioAtual = strategyProcessed.reduce((sum, s) => sum + s.posicaoAtual, 0);
 
+            // Calcular retorno total do período
+            const retornoTotalPeriodo = consolidadoData
+              .filter(d => {
+                const competencias = filteredDadosForRisk.map(fd => fd.Competencia);
+                return competencias.includes(d.Competencia);
+              })
+              .reduce((sum, d) => sum + (d.Rendimento || 0), 0) * 100;
+
             // Calcular métricas corretas
             const strategyMetrics = strategyProcessed.map(({ name, posicaoAtual, contribuicaoTotal }) => {
-              // Risco = % alocado atualmente
+              // 1. Risco = % alocado atualmente
               const risco = totalPatrimonioAtual > 0 
                 ? (posicaoAtual / totalPatrimonioAtual) * 100 
                 : 0;
               
-              // Retorno = contribuição para o retorno total (em % do patrimônio inicial)
+              // 2. Retorno = contribuição em pontos percentuais (p.p.)
               const retorno = patrimonioInicial > 0
                 ? (contribuicaoTotal / patrimonioInicial) * 100
                 : 0;
               
-              // Eficiência = retorno / risco (quanto retorno gerou por unidade de risco)
-              const eficiencia = risco > 0 ? retorno / risco : 0;
+              // 3. Composição = % do retorno total que essa estratégia gerou
+              const composicao = retornoTotalPeriodo > 0
+                ? (retorno / retornoTotalPeriodo) * 100
+                : 0;
+              
+              // 4. Eficiência = composição / risco
+              // Quantas unidades de contribuição cada unidade de risco gerou
+              const eficiencia = risco > 0 ? composicao / risco : 0;
               
               return {
                 name,
-                risco,          // % alocado
-                retorno,        // % contribuído para o retorno total
-                eficiencia      // retorno/risco
+                risco,          // Ex: 10% da carteira
+                retorno,        // Ex: 2% em p.p.
+                composicao,     // Ex: 50% do retorno total
+                eficiencia      // Ex: 5x (50%/10%)
               };
             });
 
-            // Ordenar por risco (maior alocação primeiro)
-            strategyMetrics.sort((a, b) => b.risco - a.risco);
+            // Ordenar por composição (maior contribuição primeiro)
+            strategyMetrics.sort((a, b) => b.composicao - a.composicao);
 
             // Calcular Omega Ratio da carteira
             const allReturns = dadosData.map(d => d.Rendimento * 100);
@@ -2008,20 +2023,55 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                         </div>
                       </div>
                       
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">
-                          Risco (Alocação): {strategy.risco.toFixed(2)}%
-                        </span>
-                        <span className="text-muted-foreground">
-                          Retorno Contribuído: {strategy.retorno.toFixed(2)}%
-                        </span>
-                        <span className={strategy.eficiencia >= 1 ? "text-green-600 font-semibold" : strategy.eficiencia >= 0.5 ? "text-yellow-600 font-semibold" : "text-red-600 font-semibold"}>
-                          Eficiência: {strategy.eficiencia.toFixed(2)}x
-                        </span>
+                      <div className="grid grid-cols-4 gap-4 text-xs text-muted-foreground">
+                        <div>
+                          <div className="font-medium">Risco (Alocação)</div>
+                          <div>{strategy.risco.toFixed(2)}%</div>
+                        </div>
+                        <div>
+                          <div className="font-medium">Retorno (p.p.)</div>
+                          <div>{strategy.retorno.toFixed(2)}%</div>
+                        </div>
+                        <div>
+                          <div className="font-medium">Composição</div>
+                          <div className="font-semibold">{strategy.composicao.toFixed(1)}%</div>
+                        </div>
+                        <div>
+                          <div className="font-medium">Eficiência</div>
+                          <div className={
+                            strategy.eficiencia >= 1.5 ? "text-green-600 font-semibold" : 
+                            strategy.eficiencia >= 1 ? "text-green-600" : 
+                            strategy.eficiencia >= 0.5 ? "text-yellow-600" : 
+                            "text-red-600"
+                          }>
+                            {strategy.eficiencia.toFixed(2)}x
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
                 })}
+
+                {/* Resumo do Período */}
+                <div className="mt-6 pt-6 border-t border-border">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-4 bg-muted/50 rounded-lg">
+                      <div className="text-sm text-muted-foreground">Retorno Total do Período</div>
+                      <div className="text-2xl font-bold text-primary">{retornoTotalPeriodo.toFixed(2)}%</div>
+                    </div>
+                    <div className="text-center p-4 bg-muted/50 rounded-lg">
+                      <div className="text-sm text-muted-foreground">Patrimônio Final</div>
+                      <div className="text-2xl font-bold">
+                        {totalPatrimonioAtual.toLocaleString('pt-BR', { 
+                          style: 'currency', 
+                          currency: 'BRL',
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Omega Ratio Card */}
                 <div className="mt-8 bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 rounded-lg p-6">
