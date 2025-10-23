@@ -1234,7 +1234,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
           </div>
           
           {/* Cards de métricas integrados */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mt-4">
             <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
               <p className="text-xs text-muted-foreground mb-1">Volatilidade Total</p>
               <div className="flex items-baseline gap-2">
@@ -1279,6 +1279,22 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 >
                   {riskMetrics.avgReturn >= 1 ? '↑' : '↓'}
                 </Badge>
+              </div>
+            </div>
+            
+            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+              <p className="text-xs text-muted-foreground mb-1">Retorno Médio da Meta</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-foreground">{riskMetrics.targetMetrics.avgTarget.toFixed(2)}%</p>
+                <Target className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+            
+            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+              <p className="text-xs text-muted-foreground mb-1">Volatilidade da Meta</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-foreground">{riskMetrics.targetMetrics.targetVolatility.toFixed(2)}%</p>
+                <Activity className="h-4 w-4 text-muted-foreground" />
               </div>
             </div>
           </div>
