@@ -2009,213 +2009,196 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
             const omegaRatio = lossesBelowThreshold > 0 ? gainsAboveThreshold / lossesBelowThreshold : 0;
 
             return (
-              <div className="grid grid-cols-2 gap-6">
-                {/* Coluna 1: Métricas de Estratégias */}
-                <div className="space-y-4">
-                  {strategyMetrics.slice(0, Math.ceil(strategyMetrics.length / 2)).map((strategy, index) => {
-                    const barColor = strategy.eficiencia >= 1 
-                      ? 'hsl(var(--chart-2))' 
-                      : strategy.eficiencia >= 0.5 
-                        ? 'hsl(var(--chart-3))' 
-                        : 'hsl(var(--chart-1))';
+              <div className="space-y-8">
+                {/* Grid de Estratégias */}
+                <div className="grid grid-cols-2 gap-6">
+                  {strategyMetrics.map((strategy, index) => {
+                    const isEfficient = strategy.eficiencia >= 1;
+                    const isMedium = strategy.eficiencia >= 0.5 && strategy.eficiencia < 1;
+                    const isLow = strategy.eficiencia < 0.5;
                     
                     return (
-                      <div key={strategy.name} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-semibold text-foreground">{strategy.name}</h4>
-                          <div className="flex gap-4 text-xs">
-                            <span className="text-muted-foreground">
-                              Risco: <span className="font-semibold text-blue-600">{strategy.risco.toFixed(1)}%</span>
-                            </span>
-                            <span className="text-muted-foreground">
-                              Composição: <span className="font-semibold" style={{
-                                color: strategy.eficiencia >= 1 
-                                  ? 'rgb(34, 197, 94)' 
-                                  : strategy.eficiencia >= 0.5 
-                                    ? 'rgb(234, 179, 8)' 
-                                    : 'rgb(239, 68, 68)'
-                              }}>{strategy.composicao.toFixed(1)}%</span>
-                            </span>
+                      <div 
+                        key={strategy.name} 
+                        className="group relative bg-gradient-to-br from-card/50 to-card border border-border/50 rounded-xl p-5 hover:border-primary/30 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
+                      >
+                        {/* Header da Estratégia */}
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <h4 className="text-base font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
+                              {strategy.name}
+                            </h4>
+                            <div className="flex items-center gap-3 text-xs">
+                              <span className="text-muted-foreground">
+                                Risco: <span className="font-semibold text-blue-500">{strategy.risco.toFixed(1)}%</span>
+                              </span>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="text-muted-foreground">
+                                Composição: <span 
+                                  className="font-semibold"
+                                  style={{
+                                    color: isEfficient 
+                                      ? 'rgb(34, 197, 94)' 
+                                      : isMedium 
+                                        ? 'rgb(234, 179, 8)' 
+                                        : 'rgb(239, 68, 68)'
+                                  }}
+                                >
+                                  {strategy.composicao.toFixed(1)}%
+                                </span>
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Badge de Eficiência */}
+                          <div className={`
+                            px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ml-2
+                            ${isEfficient 
+                              ? 'bg-green-500/10 text-green-600 border border-green-500/20' 
+                              : isMedium 
+                                ? 'bg-yellow-500/10 text-yellow-600 border border-yellow-500/20' 
+                                : 'bg-red-500/10 text-red-600 border border-red-500/20'
+                            }
+                          `}>
+                            {strategy.eficiencia.toFixed(2)}x
                           </div>
                         </div>
-                        
-                        <div className="relative h-8 bg-muted/30 rounded-lg overflow-hidden">
-                          {/* Barra de Risco (Alocação) - Fundo Azul */}
+
+                        {/* Barra de Progresso Sofisticada */}
+                        <div className="relative h-10 bg-muted/20 rounded-lg overflow-hidden mb-4 border border-border/30">
+                          {/* Barra de Risco (Fundo) */}
                           <div 
-                            className="absolute top-0 left-0 h-8 rounded-lg transition-all"
-                            style={{
-                              width: `${Math.max(strategy.risco, 2)}%`,
-                              backgroundColor: strategy.composicao > strategy.risco 
-                                ? 'rgb(59, 130, 246, 0.3)' // blue-500 mais claro quando composição > risco
-                                : 'rgb(59, 130, 246, 0.5)' // blue-500 normal
-                            }}
-                          />
+                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500/30 to-blue-400/20 transition-all duration-500 ease-out"
+                            style={{ width: `${Math.max(strategy.risco, 2)}%` }}
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent"></div>
+                          </div>
                           
-                          {/* Barra de Composição (Contribuição) - Sobreposta */}
+                          {/* Barra de Composição (Sobreposta) */}
                           <div 
-                            className="absolute top-0 left-0 h-8 rounded-lg flex items-center justify-center text-xs font-semibold text-white transition-all"
-                            style={{
+                            className="absolute inset-y-0 left-0 flex items-center justify-center text-xs font-bold text-white transition-all duration-500 ease-out rounded-lg overflow-hidden"
+                            style={{ 
                               width: `${Math.max(strategy.composicao, 2)}%`,
-                              backgroundColor: strategy.composicao > strategy.risco
-                                ? strategy.eficiencia >= 1.5
-                                  ? 'rgb(16, 185, 129)' // green-600 mais escuro (super performance)
-                                  : 'rgb(34, 197, 94)' // green-500 (boa performance)
-                                : strategy.eficiencia >= 0.5 
-                                  ? 'rgb(234, 179, 8)' // yellow-500 (performance média)
-                                  : 'rgb(239, 68, 68)' // red-500 (baixa performance)
+                              background: isEfficient
+                                ? 'linear-gradient(135deg, rgb(34, 197, 94) 0%, rgb(16, 185, 129) 100%)'
+                                : isMedium
+                                  ? 'linear-gradient(135deg, rgb(234, 179, 8) 0%, rgb(202, 138, 4) 100%)'
+                                  : 'linear-gradient(135deg, rgb(239, 68, 68) 0%, rgb(220, 38, 38) 100%)',
+                              boxShadow: isEfficient
+                                ? '0 0 20px rgba(34, 197, 94, 0.3)'
+                                : isMedium
+                                  ? '0 0 20px rgba(234, 179, 8, 0.3)'
+                                  : '0 0 20px rgba(239, 68, 68, 0.3)'
                             }}
                           >
-                            {strategy.composicao > 8 && `${strategy.composicao.toFixed(0)}%`}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-white/10"></div>
+                            {strategy.composicao > 8 && (
+                              <span className="relative z-10 drop-shadow-md">
+                                {strategy.composicao.toFixed(0)}%
+                              </span>
+                            )}
                           </div>
+
+                          {/* Linha divisória vertical no meio da barra para comparação visual */}
+                          {strategy.risco > 0 && (
+                            <div 
+                              className="absolute inset-y-0 w-px bg-border/40"
+                              style={{ left: `${strategy.risco}%` }}
+                            />
+                          )}
                         </div>
-                        
-                        <div className="grid grid-cols-4 gap-4 text-xs text-muted-foreground">
-                          <div>
-                            <div className="font-medium">Risco (Alocação)</div>
-                            <div className="text-blue-600 font-semibold">{strategy.risco.toFixed(2)}%</div>
+
+                        {/* Métricas Grid */}
+                        <div className="grid grid-cols-4 gap-3">
+                          <div className="bg-muted/30 rounded-lg p-2.5 border border-border/30">
+                            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                              Risco
+                            </div>
+                            <div className="text-sm font-bold text-blue-500">
+                              {strategy.risco.toFixed(2)}%
+                            </div>
                           </div>
-                          <div>
-                            <div className="font-medium">Retorno (p.p.)</div>
-                            <div>{strategy.retorno.toFixed(2)}%</div>
+                          
+                          <div className="bg-muted/30 rounded-lg p-2.5 border border-border/30">
+                            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                              Retorno
+                            </div>
+                            <div className="text-sm font-bold text-foreground">
+                              {strategy.retorno.toFixed(2)}%
+                            </div>
                           </div>
-                          <div>
-                            <div className="font-medium">Composição</div>
-                            <div className="font-semibold" style={{
-                              color: strategy.eficiencia >= 1 
-                                ? 'rgb(34, 197, 94)' 
-                                : strategy.eficiencia >= 0.5 
-                                  ? 'rgb(234, 179, 8)' 
-                                  : 'rgb(239, 68, 68)'
-                            }}>
+                          
+                          <div className="bg-muted/30 rounded-lg p-2.5 border border-border/30">
+                            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                              Composição
+                            </div>
+                            <div 
+                              className="text-sm font-bold"
+                              style={{
+                                color: isEfficient 
+                                  ? 'rgb(34, 197, 94)' 
+                                  : isMedium 
+                                    ? 'rgb(234, 179, 8)' 
+                                    : 'rgb(239, 68, 68)'
+                              }}
+                            >
                               {strategy.composicao.toFixed(1)}%
                             </div>
                           </div>
-                          <div>
-                            <div className="font-medium">Eficiência</div>
-                            <div className={
-                              strategy.eficiencia >= 1.5 ? "text-green-600 font-semibold" : 
-                              strategy.eficiencia >= 1 ? "text-green-600" : 
-                              strategy.eficiencia >= 0.5 ? "text-yellow-600" : 
-                              "text-red-600"
-                            }>
+                          
+                          <div className="bg-muted/30 rounded-lg p-2.5 border border-border/30">
+                            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                              Eficiência
+                            </div>
+                            <div 
+                              className="text-sm font-bold"
+                              style={{
+                                color: isEfficient 
+                                  ? 'rgb(34, 197, 94)' 
+                                  : isMedium 
+                                    ? 'rgb(234, 179, 8)' 
+                                    : 'rgb(239, 68, 68)'
+                              }}
+                            >
                               {strategy.eficiencia.toFixed(2)}x
                             </div>
                           </div>
                         </div>
+
+                        {/* Indicador de Performance Visual (canto superior direito) */}
+                        <div className="absolute top-3 right-3 w-2 h-2 rounded-full animate-pulse" style={{
+                          backgroundColor: isEfficient 
+                            ? 'rgb(34, 197, 94)' 
+                            : isMedium 
+                              ? 'rgb(234, 179, 8)' 
+                              : 'rgb(239, 68, 68)',
+                          boxShadow: `0 0 10px ${isEfficient 
+                            ? 'rgba(34, 197, 94, 0.6)' 
+                            : isMedium 
+                              ? 'rgba(234, 179, 8, 0.6)' 
+                              : 'rgba(239, 68, 68, 0.6)'}`
+                        }}></div>
                       </div>
                     );
                   })}
-
-                  {/* Resumo do Período - Coluna 1 */}
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <div className="text-sm text-muted-foreground">Retorno Total do Período</div>
-                      <div className="text-2xl font-bold text-primary">{retornoTotalPeriodo.toFixed(2)}%</div>
-                    </div>
-                  </div>
                 </div>
 
-                {/* Coluna 2: Métricas de Estratégias */}
-                <div className="space-y-4">
-                  {strategyMetrics.slice(Math.ceil(strategyMetrics.length / 2)).map((strategy, index) => {
-                    const barColor = strategy.eficiencia >= 1 
-                      ? 'hsl(var(--chart-2))' 
-                      : strategy.eficiencia >= 0.5 
-                        ? 'hsl(var(--chart-3))' 
-                        : 'hsl(var(--chart-1))';
-                    
-                    return (
-                      <div key={strategy.name} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-semibold text-foreground">{strategy.name}</h4>
-                          <div className="flex gap-4 text-xs">
-                            <span className="text-muted-foreground">
-                              Risco: <span className="font-semibold text-blue-600">{strategy.risco.toFixed(1)}%</span>
-                            </span>
-                            <span className="text-muted-foreground">
-                              Composição: <span className="font-semibold" style={{
-                                color: strategy.eficiencia >= 1 
-                                  ? 'rgb(34, 197, 94)' 
-                                  : strategy.eficiencia >= 0.5 
-                                    ? 'rgb(234, 179, 8)' 
-                                    : 'rgb(239, 68, 68)'
-                              }}>{strategy.composicao.toFixed(1)}%</span>
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="relative h-8 bg-muted/30 rounded-lg overflow-hidden">
-                          {/* Barra de Risco (Alocação) - Fundo Azul */}
-                          <div 
-                            className="absolute top-0 left-0 h-8 rounded-lg transition-all"
-                            style={{
-                              width: `${Math.max(strategy.risco, 2)}%`,
-                              backgroundColor: strategy.composicao > strategy.risco 
-                                ? 'rgb(59, 130, 246, 0.3)' // blue-500 mais claro quando composição > risco
-                                : 'rgb(59, 130, 246, 0.5)' // blue-500 normal
-                            }}
-                          />
-                          
-                          {/* Barra de Composição (Contribuição) - Sobreposta */}
-                          <div 
-                            className="absolute top-0 left-0 h-8 rounded-lg flex items-center justify-center text-xs font-semibold text-white transition-all"
-                            style={{
-                              width: `${Math.max(strategy.composicao, 2)}%`,
-                              backgroundColor: strategy.composicao > strategy.risco
-                                ? strategy.eficiencia >= 1.5
-                                  ? 'rgb(16, 185, 129)' // green-600 mais escuro (super performance)
-                                  : 'rgb(34, 197, 94)' // green-500 (boa performance)
-                                : strategy.eficiencia >= 0.5 
-                                  ? 'rgb(234, 179, 8)' // yellow-500 (performance média)
-                                  : 'rgb(239, 68, 68)' // red-500 (baixa performance)
-                            }}
-                          >
-                            {strategy.composicao > 8 && `${strategy.composicao.toFixed(0)}%`}
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-4 gap-4 text-xs text-muted-foreground">
-                          <div>
-                            <div className="font-medium">Risco (Alocação)</div>
-                            <div className="text-blue-600 font-semibold">{strategy.risco.toFixed(2)}%</div>
-                          </div>
-                          <div>
-                            <div className="font-medium">Retorno (p.p.)</div>
-                            <div>{strategy.retorno.toFixed(2)}%</div>
-                          </div>
-                          <div>
-                            <div className="font-medium">Composição</div>
-                            <div className="font-semibold" style={{
-                              color: strategy.eficiencia >= 1 
-                                ? 'rgb(34, 197, 94)' 
-                                : strategy.eficiencia >= 0.5 
-                                  ? 'rgb(234, 179, 8)' 
-                                  : 'rgb(239, 68, 68)'
-                            }}>
-                              {strategy.composicao.toFixed(1)}%
-                            </div>
-                          </div>
-                          <div>
-                            <div className="font-medium">Eficiência</div>
-                            <div className={
-                              strategy.eficiencia >= 1.5 ? "text-green-600 font-semibold" : 
-                              strategy.eficiencia >= 1 ? "text-green-600" : 
-                              strategy.eficiencia >= 0.5 ? "text-yellow-600" : 
-                              "text-red-600"
-                            }>
-                              {strategy.eficiencia.toFixed(2)}x
-                            </div>
-                          </div>
+                {/* Card de Resumo - Centralizado e Destacado */}
+                <div className="flex justify-center">
+                  <div className="inline-block bg-gradient-to-br from-primary/10 via-accent/5 to-primary/5 border-2 border-primary/20 rounded-2xl p-8 shadow-xl backdrop-blur-sm">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <TrendingUpIcon className="w-5 h-5 text-primary" />
+                        <div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                          Retorno Total do Período
                         </div>
                       </div>
-                    );
-                  })}
-
-                  {/* Resumo do Período - Coluna 2 */}
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <div className="text-sm text-muted-foreground">Retorno Total do Período</div>
-                      <div className="text-2xl font-bold text-primary">{retornoTotalPeriodo.toFixed(2)}%</div>
+                      <div className="text-5xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent mb-1">
+                        {retornoTotalPeriodo.toFixed(2)}%
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Performance consolidada
+                      </div>
                     </div>
                   </div>
                 </div>
