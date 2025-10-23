@@ -2211,30 +2211,12 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     );
                   })}
 
-                  {/* Patrimônio Final - Coluna 2 */}
+                  {/* Resumo do Período - Coluna 2 */}
                   <div className="mt-4 pt-4 border-t border-border">
                     <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <div className="text-sm text-muted-foreground">Patrimônio Final</div>
-                      <div className="text-2xl font-bold">
-                        {totalPatrimonioAtual.toLocaleString('pt-BR', { 
-                          style: 'currency', 
-                          currency: 'BRL',
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0
-                        })}
-                      </div>
+                      <div className="text-sm text-muted-foreground">Retorno Total do Período</div>
+                      <div className="text-2xl font-bold text-primary">{retornoTotalPeriodo.toFixed(2)}%</div>
                     </div>
-                  </div>
-
-                  {/* Omega Ratio Card - Coluna 2 */}
-                  <div className="bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-foreground mb-2">Omega Ratio</h3>
-                    <div className="text-5xl font-bold text-foreground mb-3">
-                      {omegaRatio.toFixed(2)}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Para cada R$1 de risco assumido abaixo da meta, você está gerando R${omegaRatio.toFixed(2)} de retorno acima da meta
-                    </p>
                   </div>
                 </div>
               </div>
