@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 
 interface MarketIndicatorData {
   competencia: string;
@@ -1753,6 +1754,148 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               />
             </ScatterChart>
           </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Risk Budget Dashboard */}
+      <Card className="bg-gradient-card border-border/50">
+        <CardHeader>
+          <CardTitle className="text-foreground flex items-center gap-2">
+            <Target className="w-5 h-5" />
+            Risk Budget Dashboard
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Alocação de risco por estratégia baseada em volatilidade e exposição
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Gráfico de barras */}
+            <div>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart 
+                  data={[
+                    { estrategia: 'Renda Fixa', riskBudget: 20, fill: 'hsl(var(--chart-1))' },
+                    { estrategia: 'Ações', riskBudget: 50, fill: 'hsl(var(--chart-2))' },
+                    { estrategia: 'Alternativas', riskBudget: 30, fill: 'hsl(var(--chart-3))' }
+                  ]}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="estrategia" 
+                    stroke="hsl(var(--muted-foreground))"
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    label={{ 
+                      value: 'Risk Budget (%)', 
+                      angle: -90, 
+                      position: 'insideLeft',
+                      fill: 'hsl(var(--muted-foreground))'
+                    }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      color: 'hsl(var(--foreground))'
+                    }}
+                    formatter={(value: any) => [`${value}%`, 'Risk Budget']}
+                  />
+                  <Bar dataKey="riskBudget" radius={[8, 8, 0, 0]}>
+                    {[
+                      { estrategia: 'Renda Fixa', riskBudget: 20, fill: 'hsl(var(--chart-1))' },
+                      { estrategia: 'Ações', riskBudget: 50, fill: 'hsl(var(--chart-2))' },
+                      { estrategia: 'Alternativas', riskBudget: 30, fill: 'hsl(var(--chart-3))' }
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Cards de métricas */}
+            <div className="space-y-4">
+              <div className="bg-card/50 border border-border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--chart-1))' }} />
+                    <span className="font-semibold text-foreground">Renda Fixa</span>
+                  </div>
+                  <Badge variant="outline" className="bg-background/50">20%</Badge>
+                </div>
+                <Progress value={20} className="h-2 mb-2" />
+                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div>
+                    <p className="font-medium">Volatilidade</p>
+                    <p className="text-foreground">~1.5%</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">Contribuição</p>
+                    <p className="text-foreground">Baixa</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-card/50 border border-border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--chart-2))' }} />
+                    <span className="font-semibold text-foreground">Ações</span>
+                  </div>
+                  <Badge variant="outline" className="bg-background/50">50%</Badge>
+                </div>
+                <Progress value={50} className="h-2 mb-2" />
+                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div>
+                    <p className="font-medium">Volatilidade</p>
+                    <p className="text-foreground">~8.5%</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">Contribuição</p>
+                    <p className="text-foreground">Alta</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-card/50 border border-border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--chart-3))' }} />
+                    <span className="font-semibold text-foreground">Alternativas</span>
+                  </div>
+                  <Badge variant="outline" className="bg-background/50">30%</Badge>
+                </div>
+                <Progress value={30} className="h-2 mb-2" />
+                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div>
+                    <p className="font-medium">Volatilidade</p>
+                    <p className="text-foreground">~5.0%</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">Contribuição</p>
+                    <p className="text-foreground">Média</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-accent/10 border border-accent/30 rounded-lg p-3 mt-4">
+                <p className="text-xs text-muted-foreground mb-1">Risk Budget Total Utilizado</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-foreground">100%</span>
+                  <Badge variant="outline" className="bg-accent/20 text-accent-foreground border-accent/50">
+                    Otimizado
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Alocação balanceada entre retorno esperado e risco assumido
+                </p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
