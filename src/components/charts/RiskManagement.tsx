@@ -461,8 +461,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
     const chartData: Array<{
       competencia: string;
       patrimonio: number;
-      peak: number;
-      drawdown: number;
+      rendimento: number;
       drawdownPercent: number;
     }> = [];
     
@@ -514,13 +513,15 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
       }
       
       // Adicionar dados para o gráfico
-      const drawdownPercent = peak > 0 ? ((peak - current) / peak) * 100 : 0;
+      // Calcular drawdown baseado no rendimento mensal
+      const monthlyReturn = item.Rendimento * 100; // Converter para percentual
+      const drawdownPercent = monthlyReturn < 0 ? Math.abs(monthlyReturn) : 0;
+      
       chartData.push({
         competencia: item.Competencia,
         patrimonio: current,
-        peak: peak,
-        drawdown: peak - current,
-        drawdownPercent: drawdownPercent // Positivo para mostrar queda
+        rendimento: monthlyReturn,
+        drawdownPercent: drawdownPercent // Positivo quando há queda
       });
     });
     
@@ -1571,7 +1572,12 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                       color: 'hsl(var(--foreground))'
                     }}
                     formatter={(value: any, name: string) => {
-                      if (name === 'drawdownPercent') return [`${Number(value).toFixed(2)}%`, 'Drawdown'];
+                      if (name === 'drawdownPercent' && Number(value) > 0) {
+                        return [`-${Number(value).toFixed(2)}%`, 'Queda no Mês'];
+                      }
+                      if (name === 'rendimento') {
+                        return [`${Number(value).toFixed(2)}%`, 'Rendimento'];
+                      }
                       return [value, name];
                     }}
                   />
