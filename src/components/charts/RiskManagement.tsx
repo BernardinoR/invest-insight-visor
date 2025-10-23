@@ -2009,27 +2009,31 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                             Risco: <span className="font-semibold text-blue-600">{strategy.risco.toFixed(1)}%</span>
                           </span>
                           <span className="text-muted-foreground">
-                            Composição: <span className="font-semibold text-green-600">{strategy.composicao.toFixed(1)}%</span>
+                            Composição: <span className="font-semibold" style={{
+                              color: strategy.eficiencia >= 1 
+                                ? 'rgb(34, 197, 94)' 
+                                : strategy.eficiencia >= 0.5 
+                                  ? 'rgb(234, 179, 8)' 
+                                  : 'rgb(239, 68, 68)'
+                            }}>{strategy.composicao.toFixed(1)}%</span>
                           </span>
                         </div>
                       </div>
                       
-                      <div className="relative h-12 bg-muted/30 rounded-lg overflow-hidden">
-                        {/* Barra de Risco (Alocação) - Azul */}
+                      <div className="relative h-8 bg-muted/30 rounded-lg overflow-hidden">
+                        {/* Barra de Risco (Alocação) - Fundo Azul */}
                         <div 
-                          className="absolute top-0 left-0 h-6 bg-blue-500/70 flex items-center justify-start px-3 text-xs font-semibold text-white transition-all"
+                          className="absolute top-0 left-0 h-8 bg-blue-500/40 rounded-lg transition-all"
                           style={{
-                            width: `${Math.max(strategy.risco, 5)}%`
+                            width: `${Math.max(strategy.risco, 2)}%`
                           }}
-                        >
-                          {strategy.risco > 10 && `${strategy.risco.toFixed(0)}%`}
-                        </div>
+                        />
                         
-                        {/* Barra de Composição (Contribuição) - Verde/Laranja/Vermelho */}
+                        {/* Barra de Composição (Contribuição) - Sobreposta */}
                         <div 
-                          className="absolute bottom-0 left-0 h-6 flex items-center justify-start px-3 text-xs font-semibold text-white transition-all"
+                          className="absolute top-0 left-0 h-8 rounded-lg flex items-center justify-center text-xs font-semibold text-white transition-all"
                           style={{
-                            width: `${Math.max(strategy.composicao, 5)}%`,
+                            width: `${Math.max(strategy.composicao, 2)}%`,
                             backgroundColor: strategy.eficiencia >= 1 
                               ? 'rgb(34, 197, 94)' // green-500
                               : strategy.eficiencia >= 0.5 
@@ -2037,7 +2041,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                                 : 'rgb(239, 68, 68)' // red-500
                           }}
                         >
-                          {strategy.composicao > 10 && `${strategy.composicao.toFixed(0)}%`}
+                          {strategy.composicao > 8 && `${strategy.composicao.toFixed(0)}%`}
                         </div>
                       </div>
                       
