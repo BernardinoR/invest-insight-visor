@@ -1898,6 +1898,14 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               return strategy;
             };
 
+            // Identificar a última competência do período filtrado
+            const ultimaCompetenciaFiltrada = filteredDadosForRisk.reduce((latest, item) => {
+              if (!latest || item.Competencia > latest) {
+                return item.Competencia;
+              }
+              return latest;
+            }, '');
+
             // Agrupar dados por estratégia agrupada com dados de cada mês
             const strategyData = filteredDadosForRisk.reduce((acc, item) => {
               const originalStrategy = item["Classe do ativo"] || "Outros";
@@ -1923,8 +1931,9 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               // Ordenar meses por competência
               data.meses.sort((a, b) => a.competencia.localeCompare(b.competencia));
               
-              // Posição mais recente (último mês)
-              const posicaoAtual = data.meses[data.meses.length - 1].posicao;
+              // CORREÇÃO: Buscar posição da ÚLTIMA COMPETÊNCIA DO FILTRO
+              const mesUltimaCompetencia = data.meses.find(m => m.competencia === ultimaCompetenciaFiltrada);
+              const posicaoAtual = mesUltimaCompetencia ? mesUltimaCompetencia.posicao : 0;
               
               // Soma de todas as contribuições em valor absoluto
               const contribuicaoTotal = data.meses.reduce((sum, m) => sum + (m.posicao * m.rendimento), 0);
