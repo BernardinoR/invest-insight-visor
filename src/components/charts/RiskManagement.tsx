@@ -1898,12 +1898,20 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               return strategy;
             };
 
-            // Identificar a última competência do período filtrado
+            // Função para converter competência em Date para comparação correta
+            const competenciaToDate = (competencia: string) => {
+              const [month, year] = competencia.split('/');
+              return new Date(parseInt(year), parseInt(month) - 1);
+            };
+
+            // Identificar a última competência do período filtrado (usando comparação de data)
             const ultimaCompetenciaFiltrada = filteredDadosForRisk.reduce((latest, item) => {
-              if (!latest || item.Competencia > latest) {
-                return item.Competencia;
-              }
-              return latest;
+              if (!latest) return item.Competencia;
+              
+              const latestDate = competenciaToDate(latest);
+              const currentDate = competenciaToDate(item.Competencia);
+              
+              return currentDate > latestDate ? item.Competencia : latest;
             }, '');
 
             // Filtrar apenas dados da última competência
