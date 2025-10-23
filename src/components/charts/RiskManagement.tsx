@@ -1037,18 +1037,6 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                   tickFormatter={(value) => `${value.toFixed(1)}%`}
                   width={70}
                 />
-                {/* YAxis secundário para as barras de assimetria */}
-                <YAxis 
-                  yAxisId="bars"
-                  orientation="right"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(value) => `${value.toFixed(1)}%`}
-                  width={70}
-                  domain={['auto', 'auto']}
-                />
                 <Tooltip 
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
@@ -1204,31 +1192,6 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     name="Retorno Acumulado"
                   />
                 )}
-                
-                {/* Barras de Variação de Assimetria */}
-                <Bar 
-                  dataKey="assimetriaVariacao" 
-                  fill="hsl(var(--success))"
-                  yAxisId="bars"
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={20}
-                >
-                  {(() => {
-                    const data = filteredConsolidatedData;
-                    return data.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={index === 0 || (data[index] as any).assimetriaVariacao === undefined
-                          ? 'transparent'
-                          : (data[index] as any).assimetriaVariacao >= 0 
-                            ? 'hsl(var(--success))' 
-                            : 'hsl(var(--destructive))'
-                        }
-                        fillOpacity={0.7}
-                      />
-                    ));
-                  })()}
-                </Bar>
               </ComposedChart>
             </ResponsiveContainer>
           </div>
