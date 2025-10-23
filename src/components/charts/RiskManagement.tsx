@@ -946,59 +946,25 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     
                     monthReturns.push(monthReturn);
                     
-                    // === VOLATILIDADE BASEADA NA META DE RETORNO ===
+                    // === CÁLCULO BASEADO NA META DE RETORNO ===
                     
-                    // Buscar a meta mensal para cada competência
-                    const competencia = item.Competencia;
-                    const marketDataForCompetencia = marketData.find(m => m.competencia === competencia);
-                    const monthlyTarget = marketDataForCompetencia?.clientTarget || clientTarget;
-                    const targetPercent = monthlyTarget * 100; // Meta em %
-                    
-                    // Pegar últimos 3 períodos (ou menos se não houver 3)
-                    const windowSize = 3;
-                    const startIdx = Math.max(0, index - windowSize + 1);
-                    const recentReturns = monthReturns.slice(startIdx, index + 1);
-                    
-                    // Calcular metas para os últimos 3 períodos
-                    const recentTargets = filteredConsolidatedData.slice(startIdx, index + 1).map(d => {
-                      const comp = d.Competencia;
+                    // Coletar todas as metas até o período atual
+                    const allTargets: number[] = [];
+                    for (let i = 0; i <= index; i++) {
+                      const comp = filteredConsolidatedData[i].Competencia;
                       const mData = marketData.find(m => m.competencia === comp);
                       const target = mData?.clientTarget || clientTarget;
-                      return target * 100;
-                    });
-                    
-                    // 1. SEPARAÇÃO DOS RETORNOS (acima vs abaixo da meta)
-                    const returnsAboveTarget = recentReturns.filter((r, i) => r > recentTargets[i]);
-                    const returnsBelowTarget = recentReturns.filter((r, i) => r < recentTargets[i]);
-                    
-                    // 2. CÁLCULO DE VOLATILIDADE DIFERENCIADA BASEADA NA META
-                    // σ_alta = √(Σ((r - meta)²) / n) para retornos acima da meta
-                    let sigma_alta = 2; // Padrão caso não haja retornos acima da meta
-                    if (returnsAboveTarget.length > 0) {
-                      const deviationsAbove = returnsAboveTarget.map((r, i) => {
-                        const idx = recentReturns.indexOf(r);
-                        return Math.pow(r - recentTargets[idx], 2);
-                      });
-                      const sumSquaresAbove = deviationsAbove.reduce((sum, dev) => sum + dev, 0);
-                      sigma_alta = Math.sqrt(sumSquaresAbove / returnsAboveTarget.length);
+                      allTargets.push(target * 100); // Em %
                     }
                     
-                    // σ_baixa = √(Σ((meta - r)²) / n) × 1.5 para retornos abaixo da meta
-                    let sigma_baixa = 2.5; // Padrão caso não haja retornos abaixo da meta
-                    if (returnsBelowTarget.length > 0) {
-                      const deviationsBelow = returnsBelowTarget.map((r, i) => {
-                        const idx = recentReturns.indexOf(r);
-                        return Math.pow(recentTargets[idx] - r, 2);
-                      });
-                      const sumSquaresBelow = deviationsBelow.reduce((sum, dev) => sum + dev, 0);
-                      sigma_baixa = Math.sqrt(sumSquaresBelow / returnsBelowTarget.length) * 1.5;
-                    }
+                    // 1. MÉDIA DAS METAS DE RETORNO
+                    const avgTarget = allTargets.reduce((sum, t) => sum + t, 0) / allTargets.length;
                     
-                    // 3. CONSTRUÇÃO DAS BANDAS ASSIMÉTRICAS BASEADAS NA META
-                    // Banda Superior = Retorno_Acumulado + (σ_alta × n_desvios)
-                    // Banda Inferior = Retorno_Acumulado - (σ_baixa × n_desvios)
+                    // 2. DESVIO PADRÃO DAS METAS DE RETORNO
+                    const targetVariance = allTargets.reduce((sum, t) => sum + Math.pow(t - avgTarget, 2), 0) / allTargets.length;
+                    const targetStdDev = Math.sqrt(targetVariance);
                     
-                    // Meta acumulada para referência (composta)
+                    // 3. META ACUMULADA (composta) - linha de referência
                     let targetAccumulated = 0;
                     for (let i = 0; i <= index; i++) {
                       const comp = filteredConsolidatedData[i].Competencia;
@@ -1008,7 +974,14 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                       targetAccumulated = targetAccumulated * 100;
                     }
                     
-                    // 4. ÍNDICE DE ASSIMETRIA E SUA VARIAÇÃO
+                    // 4. BANDAS DE DESVIO PADRÃO BASEADAS NA META
+                    // Usar o desvio padrão das metas multiplicado pelo número de períodos (para escala acumulada)
+                    const scaledStdDev = targetStdDev * Math.sqrt(index + 1);
+                    
+                    const sigma_alta = scaledStdDev;
+                    const sigma_baixa = scaledStdDev * 1.2; // Assimetria: downside mais amplo
+                    
+                    // 5. ÍNDICE DE ASSIMETRIA E SUA VARIAÇÃO
                     const assimetria = ((sigma_baixa - sigma_alta) / sigma_alta) * 100; // % de assimetria
                     const assimetriaVariacao = index === 0 ? 0 : assimetria - previousAssimetria; // Variação período a período
                     previousAssimetria = assimetria;
@@ -1020,16 +993,18 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                       name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
                       retornoAcumulado: accumulatedReturn,
                       mediaAcumulada: targetAccumulated,
-                      // Bandas assimétricas - Superior usa σ_alta, Inferior usa σ_baixa
-                      plus1sd: accumulatedReturn + sigma_alta,
-                      minus1sd: accumulatedReturn - sigma_baixa,
-                      plus2sd: accumulatedReturn + (2 * sigma_alta),
-                      minus2sd: accumulatedReturn - (2 * sigma_baixa),
+                      // Bandas baseadas nos desvios da meta
+                      plus1sd: targetAccumulated + sigma_alta,
+                      minus1sd: targetAccumulated - sigma_baixa,
+                      plus2sd: targetAccumulated + (2 * sigma_alta),
+                      minus2sd: targetAccumulated - (2 * sigma_baixa),
                       // Métricas adicionais para análise
                       sigma_alta,
                       sigma_baixa,
                       assimetria,
-                      assimetriaVariacao // Ganho/Diminuição de assimetria
+                      assimetriaVariacao,
+                      avgTarget,
+                      targetStdDev
                     };
                   });
                   
@@ -1085,15 +1060,17 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                   formatter={(value: any, name: string) => {
                     const labels: Record<string, string> = {
                       'retornoAcumulado': 'Retorno Acumulado',
-                      'mediaAcumulada': 'Média Acumulada',
-                      'plus1sd': '+1σ Alta (Upside)',
-                      'minus1sd': '-1σ Baixa (Downside)',
-                      'plus2sd': '+2σ Alta (Upside)',
-                      'minus2sd': '-2σ Baixa (Downside)',
-                      'sigma_alta': 'σ Alta (últimos 3 períodos)',
-                      'sigma_baixa': 'σ Baixa (últimos 3 períodos)',
+                      'mediaAcumulada': 'Meta Acumulada',
+                      'plus1sd': 'Meta + 1σ',
+                      'minus1sd': 'Meta - 1σ',
+                      'plus2sd': 'Meta + 2σ',
+                      'minus2sd': 'Meta - 2σ',
+                      'sigma_alta': 'σ da Meta (upside)',
+                      'sigma_baixa': 'σ da Meta (downside)',
                       'assimetria': 'Índice de Assimetria',
-                      'assimetriaVariacao': 'Variação de Assimetria'
+                      'assimetriaVariacao': 'Variação de Assimetria',
+                      'avgTarget': 'Média da Meta',
+                      'targetStdDev': 'Desvio Padrão da Meta'
                     };
                     
                     if (name === 'assimetria' || name === 'assimetriaVariacao') {
