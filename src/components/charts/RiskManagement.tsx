@@ -1548,9 +1548,9 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 <AreaChart data={drawdownAnalysis.chartData}>
                   <defs>
                     <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.8} />
-                      <stop offset="50%" stopColor="hsl(var(--destructive))" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.1} />
+                      <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.4} />
+                      <stop offset="50%" stopColor="hsl(var(--destructive))" stopOpacity={0.2} />
+                      <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.05} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
