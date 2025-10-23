@@ -2023,9 +2023,12 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                       <div className="relative h-8 bg-muted/30 rounded-lg overflow-hidden">
                         {/* Barra de Risco (Alocação) - Fundo Azul */}
                         <div 
-                          className="absolute top-0 left-0 h-8 bg-blue-500/40 rounded-lg transition-all"
+                          className="absolute top-0 left-0 h-8 rounded-lg transition-all"
                           style={{
-                            width: `${Math.max(strategy.risco, 2)}%`
+                            width: `${Math.max(strategy.risco, 2)}%`,
+                            backgroundColor: strategy.composicao > strategy.risco 
+                              ? 'rgb(59, 130, 246, 0.3)' // blue-500 mais claro quando composição > risco
+                              : 'rgb(59, 130, 246, 0.5)' // blue-500 normal
                           }}
                         />
                         
@@ -2034,11 +2037,13 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                           className="absolute top-0 left-0 h-8 rounded-lg flex items-center justify-center text-xs font-semibold text-white transition-all"
                           style={{
                             width: `${Math.max(strategy.composicao, 2)}%`,
-                            backgroundColor: strategy.eficiencia >= 1 
-                              ? 'rgb(34, 197, 94)' // green-500
+                            backgroundColor: strategy.composicao > strategy.risco
+                              ? strategy.eficiencia >= 1.5
+                                ? 'rgb(16, 185, 129)' // green-600 mais escuro (super performance)
+                                : 'rgb(34, 197, 94)' // green-500 (boa performance)
                               : strategy.eficiencia >= 0.5 
-                                ? 'rgb(234, 179, 8)' // yellow-500
-                                : 'rgb(239, 68, 68)' // red-500
+                                ? 'rgb(234, 179, 8)' // yellow-500 (performance média)
+                                : 'rgb(239, 68, 68)' // red-500 (baixa performance)
                           }}
                         >
                           {strategy.composicao > 8 && `${strategy.composicao.toFixed(0)}%`}
