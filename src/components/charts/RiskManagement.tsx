@@ -34,9 +34,17 @@ interface RiskManagementProps {
   }>;
   clientTarget?: number;
   marketData?: MarketIndicatorData[];
+  dadosData?: Array<{
+    id: number;
+    Ativo: string;
+    "Classe do ativo": string;
+    Posicao: number;
+    Rendimento: number;
+    Competencia: string;
+  }>;
 }
 
-export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData = [] }: RiskManagementProps) {
+export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData = [], dadosData = [] }: RiskManagementProps) {
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'all' | 'custom'>('12months');
   const [customStartCompetencia, setCustomStartCompetencia] = useState<string>('');
@@ -1762,140 +1770,137 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
         <CardHeader>
           <CardTitle className="text-foreground flex items-center gap-2">
             <Target className="w-5 h-5" />
-            Risk Budget Dashboard
+            Alocação de Risk Budget
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Alocação de risco por estratégia baseada em volatilidade e exposição
+            Distribuição do risco por estratégia baseada em volatilidade e alocação
           </p>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Gráfico de barras */}
-            <div>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart 
-                  data={[
-                    { estrategia: 'Renda Fixa', riskBudget: 20, fill: 'hsl(var(--chart-1))' },
-                    { estrategia: 'Ações', riskBudget: 50, fill: 'hsl(var(--chart-2))' },
-                    { estrategia: 'Alternativas', riskBudget: 30, fill: 'hsl(var(--chart-3))' }
-                  ]}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="estrategia" 
-                    stroke="hsl(var(--muted-foreground))"
-                  />
-                  <YAxis 
-                    stroke="hsl(var(--muted-foreground))"
-                    label={{ 
-                      value: 'Risk Budget (%)', 
-                      angle: -90, 
-                      position: 'insideLeft',
-                      fill: 'hsl(var(--muted-foreground))'
-                    }}
-                  />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      color: 'hsl(var(--foreground))'
-                    }}
-                    formatter={(value: any) => [`${value}%`, 'Risk Budget']}
-                  />
-                  <Bar dataKey="riskBudget" radius={[8, 8, 0, 0]}>
-                    {[
-                      { estrategia: 'Renda Fixa', riskBudget: 20, fill: 'hsl(var(--chart-1))' },
-                      { estrategia: 'Ações', riskBudget: 50, fill: 'hsl(var(--chart-2))' },
-                      { estrategia: 'Alternativas', riskBudget: 30, fill: 'hsl(var(--chart-3))' }
-                    ].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+          {(() => {
+            // Agrupar dados por estratégia
+            const strategyData = dadosData.reduce((acc, item) => {
+              const strategy = item["Classe do ativo"] || "Outros";
+              if (!acc[strategy]) {
+                acc[strategy] = {
+                  posicao: 0,
+                  rendimentos: []
+                };
+              }
+              acc[strategy].posicao += item.Posicao;
+              acc[strategy].rendimentos.push(item.Rendimento * 100);
+              return acc;
+            }, {} as Record<string, { posicao: number; rendimentos: number[] }>);
 
-            {/* Cards de métricas */}
-            <div className="space-y-4">
-              <div className="bg-card/50 border border-border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--chart-1))' }} />
-                    <span className="font-semibold text-foreground">Renda Fixa</span>
+            const totalPatrimonio = Object.values(strategyData).reduce((sum, s) => sum + s.posicao, 0);
+
+            // Calcular métricas por estratégia
+            const strategyMetrics = Object.entries(strategyData).map(([name, data]) => {
+              const alocacao = totalPatrimonio > 0 ? (data.posicao / totalPatrimonio) * 100 : 0;
+              const retornoMedio = data.rendimentos.length > 0 
+                ? data.rendimentos.reduce((a, b) => a + b, 0) / data.rendimentos.length 
+                : 0;
+              
+              // Calcular volatilidade (desvio padrão)
+              const variance = data.rendimentos.length > 0
+                ? data.rendimentos.reduce((sum, r) => sum + Math.pow(r - retornoMedio, 2), 0) / data.rendimentos.length
+                : 0;
+              const volatilidade = Math.sqrt(variance);
+              
+              // Risk budget = volatilidade × alocação
+              const riskBudget = (volatilidade / 100) * alocacao;
+              
+              // Eficiência = retorno / risco
+              const eficiencia = volatilidade > 0 ? retornoMedio / volatilidade : 0;
+              
+              return {
+                name,
+                alocacao,
+                retornoMedio,
+                volatilidade,
+                riskBudget,
+                eficiencia
+              };
+            });
+
+            // Ordenar por risk budget (maior primeiro)
+            strategyMetrics.sort((a, b) => b.riskBudget - a.riskBudget);
+
+            const totalRiskBudget = strategyMetrics.reduce((sum, s) => sum + s.riskBudget, 0);
+
+            // Calcular percentual de risk budget
+            const strategyRiskBudgets = strategyMetrics.map(s => ({
+              ...s,
+              riskBudgetPercent: totalRiskBudget > 0 ? (s.riskBudget / totalRiskBudget) * 100 : 0
+            }));
+
+            // Calcular Omega Ratio da carteira
+            const allReturns = dadosData.map(d => d.Rendimento * 100);
+            const threshold = clientTarget * 100;
+            const gainsAboveThreshold = allReturns.filter(r => r > threshold).reduce((sum, r) => sum + (r - threshold), 0);
+            const lossesBelowThreshold = allReturns.filter(r => r < threshold).reduce((sum, r) => sum + Math.abs(r - threshold), 0);
+            const omegaRatio = lossesBelowThreshold > 0 ? gainsAboveThreshold / lossesBelowThreshold : 0;
+
+            return (
+              <div className="space-y-6">
+                {strategyRiskBudgets.map((strategy, index) => {
+                  const barColor = strategy.eficiencia >= 1 
+                    ? 'hsl(var(--chart-2))' 
+                    : 'hsl(var(--chart-5))';
+                  
+                  return (
+                    <div key={strategy.name} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold text-foreground">{strategy.name}</h4>
+                        <span className="text-sm text-muted-foreground">
+                          {strategy.riskBudgetPercent.toFixed(0)}% do risco total
+                        </span>
+                      </div>
+                      
+                      <div className="relative">
+                        <Progress 
+                          value={strategy.riskBudgetPercent} 
+                          className="h-8"
+                        />
+                        <div 
+                          className="absolute top-0 left-0 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white transition-all"
+                          style={{
+                            width: `${Math.max(strategy.riskBudgetPercent, 8)}%`,
+                            backgroundColor: barColor
+                          }}
+                        >
+                          {strategy.riskBudgetPercent.toFixed(0)}%
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">
+                          Risco: {strategy.volatilidade.toFixed(1)}%
+                        </span>
+                        <span className="text-muted-foreground">
+                          Retorno: {strategy.retornoMedio.toFixed(1)}%
+                        </span>
+                        <span className={strategy.eficiencia >= 1 ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
+                          Eficiência: {strategy.eficiencia.toFixed(2)}x
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Omega Ratio Card */}
+                <div className="mt-8 bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Omega Ratio</h3>
+                  <div className="text-5xl font-bold text-foreground mb-3">
+                    {omegaRatio.toFixed(2)}
                   </div>
-                  <Badge variant="outline" className="bg-background/50">20%</Badge>
-                </div>
-                <Progress value={20} className="h-2 mb-2" />
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                  <div>
-                    <p className="font-medium">Volatilidade</p>
-                    <p className="text-foreground">~1.5%</p>
-                  </div>
-                  <div>
-                    <p className="font-medium">Contribuição</p>
-                    <p className="text-foreground">Baixa</p>
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Para cada R$1 de risco assumido abaixo da meta, você está gerando R${omegaRatio.toFixed(2)} de retorno acima da meta
+                  </p>
                 </div>
               </div>
-
-              <div className="bg-card/50 border border-border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--chart-2))' }} />
-                    <span className="font-semibold text-foreground">Ações</span>
-                  </div>
-                  <Badge variant="outline" className="bg-background/50">50%</Badge>
-                </div>
-                <Progress value={50} className="h-2 mb-2" />
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                  <div>
-                    <p className="font-medium">Volatilidade</p>
-                    <p className="text-foreground">~8.5%</p>
-                  </div>
-                  <div>
-                    <p className="font-medium">Contribuição</p>
-                    <p className="text-foreground">Alta</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-card/50 border border-border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--chart-3))' }} />
-                    <span className="font-semibold text-foreground">Alternativas</span>
-                  </div>
-                  <Badge variant="outline" className="bg-background/50">30%</Badge>
-                </div>
-                <Progress value={30} className="h-2 mb-2" />
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                  <div>
-                    <p className="font-medium">Volatilidade</p>
-                    <p className="text-foreground">~5.0%</p>
-                  </div>
-                  <div>
-                    <p className="font-medium">Contribuição</p>
-                    <p className="text-foreground">Média</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-accent/10 border border-accent/30 rounded-lg p-3 mt-4">
-                <p className="text-xs text-muted-foreground mb-1">Risk Budget Total Utilizado</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold text-foreground">100%</span>
-                  <Badge variant="outline" className="bg-accent/20 text-accent-foreground border-accent/50">
-                    Otimizado
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Alocação balanceada entre retorno esperado e risco assumido
-                </p>
-              </div>
-            </div>
-          </div>
+            );
+          })()}
         </CardContent>
       </Card>
     </div>

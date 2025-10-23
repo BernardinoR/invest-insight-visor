@@ -1110,6 +1110,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
               consolidadoData={filteredConsolidadoData}
               clientTarget={(clientTarget?.targetValue || 0) / 100}
               marketData={marketData}
+              dadosData={filteredDadosData}
             />
           </div>
         )}
