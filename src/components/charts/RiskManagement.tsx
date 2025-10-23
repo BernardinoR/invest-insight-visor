@@ -1234,7 +1234,8 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
           </div>
           
           {/* Cards de métricas integrados */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            {/* Linha 1 - Volatilidades */}
             <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
               <p className="text-xs text-muted-foreground mb-1">Volatilidade Total</p>
               <div className="flex items-baseline gap-2">
@@ -1265,6 +1266,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               </div>
             </div>
             
+            {/* Linha 2 - Retornos e Meta */}
             <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
               <p className="text-xs text-muted-foreground mb-1">Retorno Médio</p>
               <div className="flex items-baseline gap-2">
