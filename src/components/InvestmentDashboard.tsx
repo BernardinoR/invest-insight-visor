@@ -23,7 +23,7 @@ import { Building2, ChevronRight } from "lucide-react";
 import { useCallback } from "react";
 import { MaturityDialog } from "@/components/MaturityDialog";
 import { DiversificationDialog } from "@/components/DiversificationDialog";
-import { RiskManagement } from "@/components/charts/RiskManagement";
+
 
 interface InvestmentDashboardProps {
   selectedClient: string;
@@ -39,7 +39,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const [institutionCardData, setInstitutionCardData] = useState<any>(null);
   const [maturityDialogOpen, setMaturityDialogOpen] = useState(false);
   const [diversificationDialogOpen, setDiversificationDialogOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'performance' | 'risk'>('performance');
+  
 
   // Helper function to convert competencia string to comparable date
   const competenciaToDate = (competencia: string) => {
@@ -307,14 +307,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
         {/* Portfolio Overview */}
         <div className="mb-4">
-          <div 
-            onClick={() => setViewMode(viewMode === 'performance' ? 'risk' : 'performance')}
-            className="cursor-pointer hover:opacity-80 transition-opacity inline-block"
-          >
-            <h2 className="text-xl font-bold text-foreground mb-1">
-              {viewMode === 'performance' ? 'Portfolio Performance' : 'Gestão de Riscos'}
-            </h2>
-          </div>
+          <h2 className="text-xl font-bold text-foreground mb-1">
+            Portfolio Performance
+          </h2>
           <p className="text-xs text-muted-foreground">
             {selectedClient || "Selecione um cliente para visualizar os dados"}
             {selectedClient && hasData && " - Dados carregados"}
@@ -328,8 +323,6 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           onFilterChange={handleFilterChange}
         />
         
-        {viewMode === 'performance' && (
-        <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
           <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
@@ -565,26 +558,22 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             />
           }
         />
-        </>
+
+        {/* Strategy Breakdown */}
+        {filteredDadosData.length > 0 && (
+          <div className="mb-8">
+            <StrategyBreakdown dadosData={filteredDadosData} />
+          </div>
         )}
 
-        {viewMode === 'performance' && (
-          <>
-            {/* Strategy Breakdown */}
-            {filteredDadosData.length > 0 && (
-              <div className="mb-8">
-                <StrategyBreakdown dadosData={filteredDadosData} />
-              </div>
-            )}
-
-            {/* Investment Details Table */}
-            <div className="mb-8">
-              <InvestmentDetailsTable 
-                dadosData={filteredDadosData} 
-                selectedClient={selectedClient} 
-                filteredRange={filteredRange}
-              />
-            </div>
+        {/* Investment Details Table */}
+        <div className="mb-8">
+          <InvestmentDetailsTable 
+            dadosData={filteredDadosData} 
+            selectedClient={selectedClient} 
+            filteredRange={filteredRange}
+          />
+        </div>
 
             {/* Charts Grid */}
             <div className="grid grid-cols-1 gap-6 mb-8">
@@ -1096,38 +1085,23 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
        );
      });
    })()}
- </div>
-               </CardContent>
-             </Card>
-           </div>
-            )}
-          </>
-        )}
-        
-        {/* Risk Management View */}
-        {viewMode === 'risk' && (
-          <div className="space-y-6">
-            <RiskManagement 
-              consolidadoData={filteredConsolidadoData}
-              clientTarget={(clientTarget?.targetValue || 0) / 100}
-              marketData={marketData}
-              dadosData={filteredDadosData}
-            />
-          </div>
-        )}
-      </main>
+                </div>
+                </CardContent>
+              </Card>
+            </div>
+        </main>
 
-      <MaturityDialog
-        open={maturityDialogOpen}
-        onOpenChange={setMaturityDialogOpen}
-        dadosData={dadosData}
-      />
+        <MaturityDialog
+          open={maturityDialogOpen}
+          onOpenChange={setMaturityDialogOpen}
+          dadosData={dadosData}
+        />
 
-      <DiversificationDialog 
-        open={diversificationDialogOpen}
-        onOpenChange={setDiversificationDialogOpen}
-        dadosData={dadosData}
-      />
-    </div>
-  );
-}
+        <DiversificationDialog 
+          open={diversificationDialogOpen}
+          onOpenChange={setDiversificationDialogOpen}
+          dadosData={dadosData}
+        />
+      </div>
+    );
+  }
