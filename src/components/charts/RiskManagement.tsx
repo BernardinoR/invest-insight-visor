@@ -2009,196 +2009,116 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
             const omegaRatio = lossesBelowThreshold > 0 ? gainsAboveThreshold / lossesBelowThreshold : 0;
 
             return (
-              <div className="space-y-8">
-                {/* Grid de Estratégias */}
-                <div className="grid grid-cols-2 gap-6">
-                  {strategyMetrics.map((strategy, index) => {
+              <div className="space-y-12">
+                {/* Grid de Estratégias - Minimalista */}
+                <div className="grid grid-cols-2 gap-x-12 gap-y-8">
+                  {strategyMetrics.map((strategy) => {
                     const isEfficient = strategy.eficiencia >= 1;
                     const isMedium = strategy.eficiencia >= 0.5 && strategy.eficiencia < 1;
-                    const isLow = strategy.eficiencia < 0.5;
                     
                     return (
-                      <div 
-                        key={strategy.name} 
-                        className="group relative bg-gradient-to-br from-card/50 to-card border border-border/50 rounded-xl p-5 hover:border-primary/30 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
-                      >
-                        {/* Header da Estratégia */}
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex-1">
-                            <h4 className="text-base font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
-                              {strategy.name}
-                            </h4>
-                            <div className="flex items-center gap-3 text-xs">
-                              <span className="text-muted-foreground">
-                                Risco: <span className="font-semibold text-blue-500">{strategy.risco.toFixed(1)}%</span>
-                              </span>
-                              <span className="text-muted-foreground">•</span>
-                              <span className="text-muted-foreground">
-                                Composição: <span 
-                                  className="font-semibold"
-                                  style={{
-                                    color: isEfficient 
-                                      ? 'rgb(34, 197, 94)' 
-                                      : isMedium 
-                                        ? 'rgb(234, 179, 8)' 
-                                        : 'rgb(239, 68, 68)'
-                                  }}
-                                >
-                                  {strategy.composicao.toFixed(1)}%
-                                </span>
-                              </span>
-                            </div>
-                          </div>
-                          
-                          {/* Badge de Eficiência */}
-                          <div className={`
-                            px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ml-2
-                            ${isEfficient 
-                              ? 'bg-green-500/10 text-green-600 border border-green-500/20' 
-                              : isMedium 
-                                ? 'bg-yellow-500/10 text-yellow-600 border border-yellow-500/20' 
-                                : 'bg-red-500/10 text-red-600 border border-red-500/20'
-                            }
-                          `}>
+                      <div key={strategy.name} className="space-y-4">
+                        {/* Header Minimalista */}
+                        <div className="flex items-baseline justify-between">
+                          <h4 className="text-sm font-medium text-foreground">
+                            {strategy.name}
+                          </h4>
+                          <span className="text-xs text-muted-foreground font-mono">
                             {strategy.eficiencia.toFixed(2)}x
-                          </div>
+                          </span>
                         </div>
 
-                        {/* Barra de Progresso Sofisticada */}
-                        <div className="relative h-10 bg-muted/20 rounded-lg overflow-hidden mb-4 border border-border/30">
-                          {/* Barra de Risco (Fundo) */}
+                        {/* Barra Minimalista */}
+                        <div className="relative h-1.5 bg-border/30 rounded-full overflow-hidden">
+                          {/* Barra de Risco - Fundo sutil */}
                           <div 
-                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500/30 to-blue-400/20 transition-all duration-500 ease-out"
-                            style={{ width: `${Math.max(strategy.risco, 2)}%` }}
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent"></div>
-                          </div>
+                            className="absolute inset-y-0 left-0 bg-muted-foreground/20 rounded-full"
+                            style={{ width: `${Math.max(strategy.risco, 1)}%` }}
+                          />
                           
-                          {/* Barra de Composição (Sobreposta) */}
+                          {/* Barra de Composição - Sobreposta */}
                           <div 
-                            className="absolute inset-y-0 left-0 flex items-center justify-center text-xs font-bold text-white transition-all duration-500 ease-out rounded-lg overflow-hidden"
+                            className="absolute inset-y-0 left-0 rounded-full transition-all duration-300"
                             style={{ 
-                              width: `${Math.max(strategy.composicao, 2)}%`,
-                              background: isEfficient
-                                ? 'linear-gradient(135deg, rgb(34, 197, 94) 0%, rgb(16, 185, 129) 100%)'
-                                : isMedium
-                                  ? 'linear-gradient(135deg, rgb(234, 179, 8) 0%, rgb(202, 138, 4) 100%)'
-                                  : 'linear-gradient(135deg, rgb(239, 68, 68) 0%, rgb(220, 38, 38) 100%)',
-                              boxShadow: isEfficient
-                                ? '0 0 20px rgba(34, 197, 94, 0.3)'
-                                : isMedium
-                                  ? '0 0 20px rgba(234, 179, 8, 0.3)'
-                                  : '0 0 20px rgba(239, 68, 68, 0.3)'
+                              width: `${Math.max(strategy.composicao, 1)}%`,
+                              backgroundColor: isEfficient 
+                                ? 'hsl(var(--chart-2))' 
+                                : isMedium 
+                                  ? 'hsl(var(--chart-3))' 
+                                  : 'hsl(var(--chart-1))'
                             }}
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-white/10"></div>
-                            {strategy.composicao > 8 && (
-                              <span className="relative z-10 drop-shadow-md">
-                                {strategy.composicao.toFixed(0)}%
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Linha divisória vertical no meio da barra para comparação visual */}
-                          {strategy.risco > 0 && (
-                            <div 
-                              className="absolute inset-y-0 w-px bg-border/40"
-                              style={{ left: `${strategy.risco}%` }}
-                            />
-                          )}
+                          />
                         </div>
 
-                        {/* Métricas Grid */}
-                        <div className="grid grid-cols-4 gap-3">
-                          <div className="bg-muted/30 rounded-lg p-2.5 border border-border/30">
-                            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                        {/* Métricas - Grid Clean */}
+                        <div className="grid grid-cols-4 gap-6 pt-2">
+                          <div>
+                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
                               Risco
                             </div>
-                            <div className="text-sm font-bold text-blue-500">
-                              {strategy.risco.toFixed(2)}%
+                            <div className="text-sm font-medium text-foreground font-mono">
+                              {strategy.risco.toFixed(1)}%
                             </div>
                           </div>
                           
-                          <div className="bg-muted/30 rounded-lg p-2.5 border border-border/30">
-                            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                          <div>
+                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
                               Retorno
                             </div>
-                            <div className="text-sm font-bold text-foreground">
+                            <div className="text-sm font-medium text-foreground font-mono">
                               {strategy.retorno.toFixed(2)}%
                             </div>
                           </div>
                           
-                          <div className="bg-muted/30 rounded-lg p-2.5 border border-border/30">
-                            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                          <div>
+                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
                               Composição
                             </div>
                             <div 
-                              className="text-sm font-bold"
+                              className="text-sm font-medium font-mono"
                               style={{
                                 color: isEfficient 
-                                  ? 'rgb(34, 197, 94)' 
+                                  ? 'hsl(var(--chart-2))' 
                                   : isMedium 
-                                    ? 'rgb(234, 179, 8)' 
-                                    : 'rgb(239, 68, 68)'
+                                    ? 'hsl(var(--chart-3))' 
+                                    : 'hsl(var(--chart-1))'
                               }}
                             >
                               {strategy.composicao.toFixed(1)}%
                             </div>
                           </div>
                           
-                          <div className="bg-muted/30 rounded-lg p-2.5 border border-border/30">
-                            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                          <div>
+                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
                               Eficiência
                             </div>
                             <div 
-                              className="text-sm font-bold"
+                              className="text-sm font-medium font-mono"
                               style={{
                                 color: isEfficient 
-                                  ? 'rgb(34, 197, 94)' 
+                                  ? 'hsl(var(--chart-2))' 
                                   : isMedium 
-                                    ? 'rgb(234, 179, 8)' 
-                                    : 'rgb(239, 68, 68)'
+                                    ? 'hsl(var(--chart-3))' 
+                                    : 'hsl(var(--chart-1))'
                               }}
                             >
                               {strategy.eficiencia.toFixed(2)}x
                             </div>
                           </div>
                         </div>
-
-                        {/* Indicador de Performance Visual (canto superior direito) */}
-                        <div className="absolute top-3 right-3 w-2 h-2 rounded-full animate-pulse" style={{
-                          backgroundColor: isEfficient 
-                            ? 'rgb(34, 197, 94)' 
-                            : isMedium 
-                              ? 'rgb(234, 179, 8)' 
-                              : 'rgb(239, 68, 68)',
-                          boxShadow: `0 0 10px ${isEfficient 
-                            ? 'rgba(34, 197, 94, 0.6)' 
-                            : isMedium 
-                              ? 'rgba(234, 179, 8, 0.6)' 
-                              : 'rgba(239, 68, 68, 0.6)'}`
-                        }}></div>
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Card de Resumo - Centralizado e Destacado */}
-                <div className="flex justify-center">
-                  <div className="inline-block bg-gradient-to-br from-primary/10 via-accent/5 to-primary/5 border-2 border-primary/20 rounded-2xl p-8 shadow-xl backdrop-blur-sm">
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-2 mb-2">
-                        <TrendingUpIcon className="w-5 h-5 text-primary" />
-                        <div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                          Retorno Total do Período
-                        </div>
-                      </div>
-                      <div className="text-5xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent mb-1">
-                        {retornoTotalPeriodo.toFixed(2)}%
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Performance consolidada
-                      </div>
+                {/* Resumo Minimalista - Centralizado */}
+                <div className="flex justify-center pt-8 border-t border-border/30">
+                  <div className="text-center space-y-2">
+                    <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Retorno Total do Período
+                    </div>
+                    <div className="text-4xl font-light text-foreground font-mono tracking-tight">
+                      {retornoTotalPeriodo.toFixed(2)}%
                     </div>
                   </div>
                 </div>
