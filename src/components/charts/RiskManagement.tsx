@@ -1235,38 +1235,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
           
           {/* Cards de métricas integrados */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-            {/* Linha 1 - Volatilidades */}
-            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-              <p className="text-xs text-muted-foreground mb-1">Volatilidade Total</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-foreground">{riskMetrics.volatility.toFixed(2)}%</p>
-                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 text-xs">
-                  Mensal
-                </Badge>
-              </div>
-            </div>
-            
-            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-              <p className="text-xs text-muted-foreground mb-1">Volatilidade Positiva (Upside)</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {riskMetrics.upsideVolatility.toFixed(2)}%
-                </p>
-                <TrendingUpIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
-              </div>
-            </div>
-            
-            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-              <p className="text-xs text-muted-foreground mb-1">Volatilidade Negativa (Downside)</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-destructive">
-                  {riskMetrics.downsideVolatility.toFixed(2)}%
-                </p>
-                <TrendingDown className="h-4 w-4 text-destructive" />
-              </div>
-            </div>
-            
-            {/* Linha 2 - Retornos e Meta */}
+            {/* Coluna 1: Retornos */}
             <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
               <p className="text-xs text-muted-foreground mb-1">Retorno Médio</p>
               <div className="flex items-baseline gap-2">
@@ -1284,6 +1253,29 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               </div>
             </div>
             
+            {/* Coluna 2: Volatilidade Total */}
+            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+              <p className="text-xs text-muted-foreground mb-1">Volatilidade Total</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-foreground">{riskMetrics.volatility.toFixed(2)}%</p>
+                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 text-xs">
+                  Mensal
+                </Badge>
+              </div>
+            </div>
+            
+            {/* Coluna 3: Volatilidade Positiva */}
+            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+              <p className="text-xs text-muted-foreground mb-1">Volatilidade Positiva (Upside)</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {riskMetrics.upsideVolatility.toFixed(2)}%
+                </p>
+                <TrendingUpIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+            
+            {/* Linha 2 - Coluna 1: Retorno Médio da Meta */}
             <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
               <p className="text-xs text-muted-foreground mb-1">Retorno Médio da Meta</p>
               <div className="flex items-baseline gap-2">
@@ -1292,11 +1284,23 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               </div>
             </div>
             
+            {/* Linha 2 - Coluna 2: Volatilidade da Meta */}
             <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
               <p className="text-xs text-muted-foreground mb-1">Volatilidade da Meta</p>
               <div className="flex items-baseline gap-2">
                 <p className="text-2xl font-bold text-foreground">{riskMetrics.targetMetrics.targetVolatility.toFixed(2)}%</p>
                 <Activity className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+            
+            {/* Linha 2 - Coluna 3: Volatilidade Negativa */}
+            <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+              <p className="text-xs text-muted-foreground mb-1">Volatilidade Negativa (Downside)</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-destructive">
+                  {riskMetrics.downsideVolatility.toFixed(2)}%
+                </p>
+                <TrendingDown className="h-4 w-4 text-destructive" />
               </div>
             </div>
           </div>
