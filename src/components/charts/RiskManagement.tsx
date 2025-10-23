@@ -1767,22 +1767,23 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
       </Card>
 
       {/* Risk Budget Dashboard */}
-      <Card className="bg-gradient-card border-border/50">
-        <CardHeader>
+      <Card className="border-border/40">
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-foreground flex items-center gap-2">
-                <Target className="w-5 h-5" />
-                Alocação de Risk Budget
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Target className="h-4 w-4 text-primary" />
+                Risk Budget Dashboard
               </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Distribuição do risco por estratégia baseada em volatilidade e alocação
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Risco vs. Contribuição por estratégia
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               <Button
                 variant={riskBudgetPeriod === 'month' ? 'default' : 'outline'}
                 size="sm"
+                className="h-7 px-2.5 text-xs"
                 onClick={() => setRiskBudgetPeriod('month')}
               >
                 Mês
@@ -1790,6 +1791,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               <Button
                 variant={riskBudgetPeriod === 'year' ? 'default' : 'outline'}
                 size="sm"
+                className="h-7 px-2.5 text-xs"
                 onClick={() => setRiskBudgetPeriod('year')}
               >
                 Ano
@@ -1797,6 +1799,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               <Button
                 variant={riskBudgetPeriod === '12months' ? 'default' : 'outline'}
                 size="sm"
+                className="h-7 px-2.5 text-xs"
                 onClick={() => setRiskBudgetPeriod('12months')}
               >
                 12M
@@ -1804,14 +1807,15 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               <Button
                 variant={riskBudgetPeriod === 'all' ? 'default' : 'outline'}
                 size="sm"
+                className="h-7 px-2.5 text-xs"
                 onClick={() => setRiskBudgetPeriod('all')}
               >
-                Ótimo
+                Tudo
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           {(() => {
             // Filtrar dadosData baseado no período selecionado
             const getFilteredDadosData = () => {
@@ -2009,7 +2013,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
             const omegaRatio = lossesBelowThreshold > 0 ? gainsAboveThreshold / lossesBelowThreshold : 0;
 
             return (
-              <div className="space-y-6">
+              <div className="space-y-3">
                 {strategyMetrics.map((strategy, index) => {
                   const barColor = strategy.eficiencia >= 1 
                     ? 'hsl(var(--chart-2))' 
@@ -2018,83 +2022,83 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                       : 'hsl(var(--chart-1))';
                   
                   return (
-                    <div key={strategy.name} className="space-y-2">
+                    <div key={strategy.name} className="space-y-1.5 group hover:bg-accent/5 p-2 rounded-md transition-colors">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-semibold text-foreground">{strategy.name}</h4>
-                        <div className="flex gap-4 text-xs">
+                        <h4 className="text-xs font-semibold text-foreground">{strategy.name}</h4>
+                        <div className="flex gap-3 text-[10px]">
                           <span className="text-muted-foreground">
-                            Risco: <span className="font-semibold text-blue-600">{strategy.risco.toFixed(1)}%</span>
+                            Risco: <span className="font-semibold text-chart-1">{strategy.risco.toFixed(1)}%</span>
                           </span>
                           <span className="text-muted-foreground">
-                            Composição: <span className="font-semibold" style={{
+                            Comp.: <span className="font-semibold" style={{
                               color: strategy.eficiencia >= 1 
-                                ? 'rgb(34, 197, 94)' 
+                                ? 'hsl(var(--chart-2))' 
                                 : strategy.eficiencia >= 0.5 
-                                  ? 'rgb(234, 179, 8)' 
-                                  : 'rgb(239, 68, 68)'
+                                  ? 'hsl(var(--chart-3))' 
+                                  : 'hsl(var(--chart-1))'
                             }}>{strategy.composicao.toFixed(1)}%</span>
                           </span>
                         </div>
                       </div>
                       
-                      <div className="relative h-8 bg-muted/30 rounded-lg overflow-hidden">
+                      <div className="relative h-5 bg-muted/30 rounded overflow-hidden">
                         {/* Barra de Risco (Alocação) - Fundo Azul */}
                         <div 
-                          className="absolute top-0 left-0 h-8 rounded-lg transition-all"
+                          className="absolute top-0 left-0 h-5 rounded transition-all"
                           style={{
                             width: `${Math.max(strategy.risco, 2)}%`,
                             backgroundColor: strategy.composicao > strategy.risco 
-                              ? 'rgb(59, 130, 246, 0.3)' // blue-500 mais claro quando composição > risco
-                              : 'rgb(59, 130, 246, 0.5)' // blue-500 normal
+                              ? 'hsl(var(--chart-1) / 0.3)'
+                              : 'hsl(var(--chart-1) / 0.5)'
                           }}
                         />
                         
                         {/* Barra de Composição (Contribuição) - Sobreposta */}
                         <div 
-                          className="absolute top-0 left-0 h-8 rounded-lg flex items-center justify-center text-xs font-semibold text-white transition-all"
+                          className="absolute top-0 left-0 h-5 rounded flex items-center justify-center text-[9px] font-semibold text-primary-foreground transition-all"
                           style={{
                             width: `${Math.max(strategy.composicao, 2)}%`,
                             backgroundColor: strategy.composicao > strategy.risco
                               ? strategy.eficiencia >= 1.5
-                                ? 'rgb(16, 185, 129)' // green-600 mais escuro (super performance)
-                                : 'rgb(34, 197, 94)' // green-500 (boa performance)
+                                ? 'hsl(var(--chart-2))'
+                                : 'hsl(var(--chart-2) / 0.8)'
                               : strategy.eficiencia >= 0.5 
-                                ? 'rgb(234, 179, 8)' // yellow-500 (performance média)
-                                : 'rgb(239, 68, 68)' // red-500 (baixa performance)
+                                ? 'hsl(var(--chart-3))' 
+                                : 'hsl(var(--chart-1))'
                           }}
                         >
                           {strategy.composicao > 8 && `${strategy.composicao.toFixed(0)}%`}
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-4 gap-4 text-xs text-muted-foreground">
+                      <div className="grid grid-cols-4 gap-2 text-[10px] text-muted-foreground">
                         <div>
-                          <div className="font-medium">Risco (Alocação)</div>
-                          <div className="text-blue-600 font-semibold">{strategy.risco.toFixed(2)}%</div>
+                          <div className="font-medium text-muted-foreground/80">Risco</div>
+                          <div className="text-chart-1 font-semibold">{strategy.risco.toFixed(2)}%</div>
                         </div>
                         <div>
-                          <div className="font-medium">Retorno (p.p.)</div>
-                          <div>{strategy.retorno.toFixed(2)}%</div>
+                          <div className="font-medium text-muted-foreground/80">Retorno</div>
+                          <div className="text-foreground">{strategy.retorno.toFixed(2)}%</div>
                         </div>
                         <div>
-                          <div className="font-medium">Composição</div>
+                          <div className="font-medium text-muted-foreground/80">Comp.</div>
                           <div className="font-semibold" style={{
                             color: strategy.eficiencia >= 1 
-                              ? 'rgb(34, 197, 94)' 
+                              ? 'hsl(var(--chart-2))' 
                               : strategy.eficiencia >= 0.5 
-                                ? 'rgb(234, 179, 8)' 
-                                : 'rgb(239, 68, 68)'
+                                ? 'hsl(var(--chart-3))' 
+                                : 'hsl(var(--chart-1))'
                           }}>
                             {strategy.composicao.toFixed(1)}%
                           </div>
                         </div>
                         <div>
-                          <div className="font-medium">Eficiência</div>
+                          <div className="font-medium text-muted-foreground/80">Efic.</div>
                           <div className={
-                            strategy.eficiencia >= 1.5 ? "text-green-600 font-semibold" : 
-                            strategy.eficiencia >= 1 ? "text-green-600" : 
-                            strategy.eficiencia >= 0.5 ? "text-yellow-600" : 
-                            "text-red-600"
+                            strategy.eficiencia >= 1.5 ? "text-chart-2 font-semibold" : 
+                            strategy.eficiencia >= 1 ? "text-chart-2" : 
+                            strategy.eficiencia >= 0.5 ? "text-chart-3" : 
+                            "text-chart-1"
                           }>
                             {strategy.eficiencia.toFixed(2)}x
                           </div>
@@ -2104,16 +2108,16 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                   );
                 })}
 
-                {/* Resumo do Período */}
-                <div className="mt-6 pt-6 border-t border-border">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <div className="text-sm text-muted-foreground">Retorno Total do Período</div>
-                      <div className="text-2xl font-bold text-primary">{retornoTotalPeriodo.toFixed(2)}%</div>
+                {/* Resumo do Período - Compacto */}
+                <div className="mt-4 pt-3 border-t border-border/40">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="text-center p-2.5 bg-muted/30 rounded-md">
+                      <div className="text-[10px] text-muted-foreground mb-0.5">Retorno Total</div>
+                      <div className="text-lg font-bold text-primary">{retornoTotalPeriodo.toFixed(2)}%</div>
                     </div>
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <div className="text-sm text-muted-foreground">Patrimônio Final</div>
-                      <div className="text-2xl font-bold">
+                    <div className="text-center p-2.5 bg-muted/30 rounded-md">
+                      <div className="text-[10px] text-muted-foreground mb-0.5">Patrimônio Final</div>
+                      <div className="text-lg font-bold text-foreground">
                         {totalPatrimonioAtual.toLocaleString('pt-BR', { 
                           style: 'currency', 
                           currency: 'BRL',
@@ -2125,14 +2129,14 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                   </div>
                 </div>
 
-                {/* Omega Ratio Card */}
-                <div className="mt-8 bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-foreground mb-2">Omega Ratio</h3>
-                  <div className="text-5xl font-bold text-foreground mb-3">
+                {/* Omega Ratio Card - Compacto */}
+                <div className="mt-4 bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 rounded-md p-3">
+                  <h3 className="text-xs font-semibold text-foreground mb-1">Omega Ratio</h3>
+                  <div className="text-3xl font-bold text-primary mb-1.5">
                     {omegaRatio.toFixed(2)}
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Para cada R$1 de risco assumido abaixo da meta, você está gerando R${omegaRatio.toFixed(2)} de retorno acima da meta
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    Para cada R$1 de risco abaixo da meta, gera-se R${omegaRatio.toFixed(2)} de retorno acima da meta
                   </p>
                 </div>
               </div>
