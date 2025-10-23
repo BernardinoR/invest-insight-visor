@@ -520,7 +520,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
         patrimonio: current,
         peak: peak,
         drawdown: peak - current,
-        drawdownPercent: drawdownPercent > 0 ? -drawdownPercent : 0 // Negativo para mostrar queda de cima para baixo
+        drawdownPercent: drawdownPercent // Positivo para mostrar queda
       });
     });
     
@@ -1554,9 +1554,8 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                   <YAxis 
                     stroke="hsl(var(--muted-foreground))"
                     tick={{ fontSize: 12 }}
-                    reversed={true}
-                    domain={['dataMin', 0]}
-                    tickFormatter={(value) => `${Math.abs(value).toFixed(1)}%`}
+                    domain={[0, 'dataMax']}
+                    tickFormatter={(value) => `${value.toFixed(1)}%`}
                     label={{ 
                       value: 'Drawdown (%)', 
                       angle: -90, 
@@ -1572,7 +1571,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                       color: 'hsl(var(--foreground))'
                     }}
                     formatter={(value: any, name: string) => {
-                      if (name === 'drawdownPercent') return [`${Math.abs(Number(value)).toFixed(2)}%`, 'Drawdown'];
+                      if (name === 'drawdownPercent') return [`${Number(value).toFixed(2)}%`, 'Drawdown'];
                       return [value, name];
                     }}
                   />
