@@ -946,39 +946,67 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     
                     monthReturns.push(monthReturn);
                     
-                    // === VOLATILIDADE ASSIMÉTRICA COM JANELA MÓVEL DE 3 PERÍODOS ===
+                    // === VOLATILIDADE BASEADA NA META DE RETORNO ===
+                    
+                    // Buscar a meta mensal para cada competência
+                    const competencia = item.Competencia;
+                    const marketDataForCompetencia = marketData.find(m => m.competencia === competencia);
+                    const monthlyTarget = marketDataForCompetencia?.clientTarget || clientTarget;
+                    const targetPercent = monthlyTarget * 100; // Meta em %
                     
                     // Pegar últimos 3 períodos (ou menos se não houver 3)
                     const windowSize = 3;
                     const startIdx = Math.max(0, index - windowSize + 1);
                     const recentReturns = monthReturns.slice(startIdx, index + 1);
                     
-                    // 1. SEPARAÇÃO DOS RETORNOS (positivos vs negativos)
-                    const positiveReturns = recentReturns.filter(r => r > 0);
-                    const negativeReturns = recentReturns.filter(r => r < 0);
+                    // Calcular metas para os últimos 3 períodos
+                    const recentTargets = filteredConsolidatedData.slice(startIdx, index + 1).map(d => {
+                      const comp = d.Competencia;
+                      const mData = marketData.find(m => m.competencia === comp);
+                      const target = mData?.clientTarget || clientTarget;
+                      return target * 100;
+                    });
                     
-                    // 2. CÁLCULO DE VOLATILIDADE DIFERENCIADA
-                    // σ_alta = √(Σ(r_positivos²) / n_positivos)
-                    let sigma_alta = 2; // Padrão caso não haja retornos positivos
-                    if (positiveReturns.length > 0) {
-                      const sumSquaresPositive = positiveReturns.reduce((sum, r) => sum + Math.pow(r, 2), 0);
-                      sigma_alta = Math.sqrt(sumSquaresPositive / positiveReturns.length);
+                    // 1. SEPARAÇÃO DOS RETORNOS (acima vs abaixo da meta)
+                    const returnsAboveTarget = recentReturns.filter((r, i) => r > recentTargets[i]);
+                    const returnsBelowTarget = recentReturns.filter((r, i) => r < recentTargets[i]);
+                    
+                    // 2. CÁLCULO DE VOLATILIDADE DIFERENCIADA BASEADA NA META
+                    // σ_alta = √(Σ((r - meta)²) / n) para retornos acima da meta
+                    let sigma_alta = 2; // Padrão caso não haja retornos acima da meta
+                    if (returnsAboveTarget.length > 0) {
+                      const deviationsAbove = returnsAboveTarget.map((r, i) => {
+                        const idx = recentReturns.indexOf(r);
+                        return Math.pow(r - recentTargets[idx], 2);
+                      });
+                      const sumSquaresAbove = deviationsAbove.reduce((sum, dev) => sum + dev, 0);
+                      sigma_alta = Math.sqrt(sumSquaresAbove / returnsAboveTarget.length);
                     }
                     
-                    // σ_baixa = √(Σ(r_negativos²) / n_negativos) × 1.5 (fator de assimetria)
-                    let sigma_baixa = 2.5; // Padrão caso não haja retornos negativos
-                    if (negativeReturns.length > 0) {
-                      const sumSquaresNegative = negativeReturns.reduce((sum, r) => sum + Math.pow(r, 2), 0);
-                      sigma_baixa = Math.sqrt(sumSquaresNegative / negativeReturns.length) * 1.5;
+                    // σ_baixa = √(Σ((meta - r)²) / n) × 1.5 para retornos abaixo da meta
+                    let sigma_baixa = 2.5; // Padrão caso não haja retornos abaixo da meta
+                    if (returnsBelowTarget.length > 0) {
+                      const deviationsBelow = returnsBelowTarget.map((r, i) => {
+                        const idx = recentReturns.indexOf(r);
+                        return Math.pow(recentTargets[idx] - r, 2);
+                      });
+                      const sumSquaresBelow = deviationsBelow.reduce((sum, dev) => sum + dev, 0);
+                      sigma_baixa = Math.sqrt(sumSquaresBelow / returnsBelowTarget.length) * 1.5;
                     }
                     
-                    // 3. CONSTRUÇÃO DAS BANDAS ASSIMÉTRICAS
+                    // 3. CONSTRUÇÃO DAS BANDAS ASSIMÉTRICAS BASEADAS NA META
                     // Banda Superior = Retorno_Acumulado + (σ_alta × n_desvios)
                     // Banda Inferior = Retorno_Acumulado - (σ_baixa × n_desvios)
                     
-                    // Média acumulada para referência
-                    const avgReturnArithmetic = monthReturns.reduce((a, b) => a + b, 0) / monthReturns.length;
-                    const avgAccumulated = avgReturnArithmetic * (index + 1);
+                    // Meta acumulada para referência (composta)
+                    let targetAccumulated = 0;
+                    for (let i = 0; i <= index; i++) {
+                      const comp = filteredConsolidatedData[i].Competencia;
+                      const mData = marketData.find(m => m.competencia === comp);
+                      const target = mData?.clientTarget || clientTarget;
+                      targetAccumulated = (1 + targetAccumulated / 100) * (1 + target * 100 / 100) - 1;
+                      targetAccumulated = targetAccumulated * 100;
+                    }
                     
                     // 4. ÍNDICE DE ASSIMETRIA E SUA VARIAÇÃO
                     const assimetria = ((sigma_baixa - sigma_alta) / sigma_alta) * 100; // % de assimetria
@@ -991,7 +1019,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     return {
                       name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
                       retornoAcumulado: accumulatedReturn,
-                      mediaAcumulada: avgAccumulated,
+                      mediaAcumulada: targetAccumulated,
                       // Bandas assimétricas - Superior usa σ_alta, Inferior usa σ_baixa
                       plus1sd: accumulatedReturn + sigma_alta,
                       minus1sd: accumulatedReturn - sigma_baixa,
