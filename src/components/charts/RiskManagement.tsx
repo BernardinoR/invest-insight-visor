@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie, Area, ComposedChart } from 'recharts';
 import { useMemo, useState } from "react";
 import { TrendingDown, TrendingUp, Activity, AlertTriangle, Target, Calendar, Settings, Rocket, Check, X, TrendingUp as TrendingUpIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
     sd1: true,
     sd2: true
   });
+  const [desviosPadraoTipo, setDesviosPadraoTipo] = useState<1 | 2>(1); // Novo estado para controlar 1 ou 2 desvios
 
   // Consolidar dados por competência
   const consolidateByCompetencia = (data: typeof consolidadoData) => {
@@ -812,29 +813,29 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                             setSelectedIndicators(prev => ({ ...prev, media: checked as boolean }))
                           }
                         />
-                        <label htmlFor="media" className="text-sm">Média Acumulada</label>
+                        <label htmlFor="media" className="text-sm">Meta Acumulada</label>
                       </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="sd1" 
-                          checked={selectedIndicators.sd1}
-                          onCheckedChange={(checked) => 
-                            setSelectedIndicators(prev => ({ ...prev, sd1: checked as boolean }))
-                          }
-                        />
-                        <label htmlFor="sd1" className="text-sm">±1 Desvio Padrão</label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="sd2" 
-                          checked={selectedIndicators.sd2}
-                          onCheckedChange={(checked) => 
-                            setSelectedIndicators(prev => ({ ...prev, sd2: checked as boolean }))
-                          }
-                        />
-                        <label htmlFor="sd2" className="text-sm">±2 Desvios Padrão</label>
+                    </div>
+                    
+                    <div className="space-y-2 mt-4">
+                      <h4 className="font-medium text-sm">Desvios Padrão</h4>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant={desviosPadraoTipo === 1 ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setDesviosPadraoTipo(1)}
+                          className="text-xs flex-1"
+                        >
+                          ±1σ
+                        </Button>
+                        <Button
+                          variant={desviosPadraoTipo === 2 ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setDesviosPadraoTipo(2)}
+                          className="text-xs flex-1"
+                        >
+                          ±2σ
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -910,7 +911,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
         <CardContent className="pt-0 pb-6">
           <div className="h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart 
+              <ComposedChart
                 data={(() => {
                   // Add zero starting point
                   if (filteredConsolidatedData.length === 0) return [];
@@ -1086,55 +1087,98 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                   cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
                 />
                 
-                {/* Linhas de desvio padrão */}
-                {selectedIndicators.sd2 && (
-                  <>
-                    <Line 
-                      type="monotone" 
-                      dataKey="plus2sd" 
-                      stroke="hsl(var(--muted-foreground) / 0.3)" 
-                      strokeWidth={1.5}
-                      dot={false}
-                      name="+2 Desvios Padrão"
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="minus2sd" 
-                      stroke="hsl(var(--muted-foreground) / 0.3)" 
-                      strokeWidth={1.5}
-                      dot={false}
-                      name="-2 Desvios Padrão"
-                    />
-                  </>
+                {/* Área entre os desvios padrão - pintada de cinza */}
+                {desviosPadraoTipo === 1 && (
+                  <Area
+                    type="monotone"
+                    dataKey="plus1sd"
+                    stroke="none"
+                    fill="hsl(var(--muted-foreground))"
+                    fillOpacity={0.1}
+                  />
                 )}
-                {selectedIndicators.sd1 && (
+                {desviosPadraoTipo === 1 && (
+                  <Area
+                    type="monotone"
+                    dataKey="minus1sd"
+                    stroke="none"
+                    fill="hsl(var(--background))"
+                    fillOpacity={1}
+                  />
+                )}
+                {desviosPadraoTipo === 2 && (
+                  <Area
+                    type="monotone"
+                    dataKey="plus2sd"
+                    stroke="none"
+                    fill="hsl(var(--muted-foreground))"
+                    fillOpacity={0.1}
+                  />
+                )}
+                {desviosPadraoTipo === 2 && (
+                  <Area
+                    type="monotone"
+                    dataKey="minus2sd"
+                    stroke="none"
+                    fill="hsl(var(--background))"
+                    fillOpacity={1}
+                  />
+                )}
+                
+                {/* Linhas de desvio padrão - mostrar apenas o selecionado */}
+                {desviosPadraoTipo === 1 && (
                   <>
                     <Line 
                       type="monotone" 
                       dataKey="plus1sd" 
-                      stroke="hsl(var(--muted-foreground) / 0.5)" 
+                      stroke="hsl(var(--muted-foreground))" 
                       strokeWidth={1.5}
+                      strokeDasharray="4 4"
                       dot={false}
-                      name="+1 Desvio Padrão"
+                      name="Meta + 1σ"
                     />
                     <Line 
                       type="monotone" 
                       dataKey="minus1sd" 
-                      stroke="hsl(var(--muted-foreground) / 0.5)" 
+                      stroke="hsl(var(--muted-foreground))" 
                       strokeWidth={1.5}
+                      strokeDasharray="4 4"
                       dot={false}
-                      name="-1 Desvio Padrão"
+                      name="Meta - 1σ"
                     />
                   </>
                 )}
+                {desviosPadraoTipo === 2 && (
+                  <>
+                    <Line 
+                      type="monotone" 
+                      dataKey="plus2sd" 
+                      stroke="hsl(var(--muted-foreground))" 
+                      strokeWidth={1.5}
+                      strokeDasharray="4 4"
+                      dot={false}
+                      name="Meta + 2σ"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="minus2sd" 
+                      stroke="hsl(var(--muted-foreground))" 
+                      strokeWidth={1.5}
+                      strokeDasharray="4 4"
+                      dot={false}
+                      name="Meta - 2σ"
+                    />
+                  </>
+                )}
+                
                 {selectedIndicators.media && (
                   <Line 
                     type="monotone" 
                     dataKey="mediaAcumulada" 
-                    stroke="hsl(var(--muted-foreground) / 0.4)" 
-                    strokeWidth={1.5}
+                    stroke="hsl(var(--muted-foreground))" 
+                    strokeWidth={2}
                     dot={false}
-                    name="Média Acumulada"
+                    name="Meta Acumulada"
                   />
                 )}
                 
@@ -1185,7 +1229,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     ));
                   })()}
                 </Bar>
-              </LineChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
           
