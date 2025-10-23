@@ -278,23 +278,24 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     <div className="min-h-screen bg-gradient-hero">
       {/* Header */}
       <header className="border-b border-border/50 bg-card/30 backdrop-blur-sm">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-3 py-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="h-8 w-8 rounded-lg bg-gradient-accent flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-primary-foreground" />
+            <div className="flex items-center space-x-2">
+              <div className="h-6 w-6 rounded-lg bg-gradient-accent flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Investment Insight Visor</h1>
-                <p className="text-sm text-muted-foreground">Relatório de Performance de Investimentos</p>
+                <h1 className="text-lg font-bold text-foreground">Investment Insight Visor</h1>
+                <p className="text-xs text-muted-foreground">Relatório de Performance de Investimentos</p>
               </div>
             </div>
             <Button 
               variant="outline" 
               className="bg-card/50 border-primary/20 hover:bg-primary/10"
               onClick={copyShareLink}
+              size="sm"
             >
-              <Share2 className="mr-2 h-4 w-4" />
+              <Share2 className="mr-1 h-3 w-3" />
               Compartilhar Link
             </Button>
           </div>
@@ -302,19 +303,19 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-3 py-4">
 
         {/* Portfolio Overview */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div 
             onClick={() => setViewMode(viewMode === 'performance' ? 'risk' : 'performance')}
             className="cursor-pointer hover:opacity-80 transition-opacity inline-block"
           >
-            <h2 className="text-3xl font-bold text-foreground mb-2">
+            <h2 className="text-xl font-bold text-foreground mb-1">
               {viewMode === 'performance' ? 'Portfolio Performance' : 'Gestão de Riscos'}
             </h2>
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {selectedClient || "Selecione um cliente para visualizar os dados"}
             {selectedClient && hasData && " - Dados carregados"}
             {selectedClient && !hasData && loading && " - Carregando..."}
@@ -329,32 +330,32 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
         
         {viewMode === 'performance' && (
         <>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
           <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Patrimônio Total</CardTitle>
-              <DollarSign className="h-4 w-4 text-primary" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Patrimônio Total</CardTitle>
+              <DollarSign className="h-3 w-3 text-primary" />
             </CardHeader>
-            <CardContent>
-               <div className="text-2xl font-bold text-foreground">
+            <CardContent className="pt-1">
+               <div className="text-lg font-bold text-foreground">
                  {hasData ? `R$ ${displayPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : "R$ --"}
                </div>
-               <p className={`text-xs ${patrimonioGrowth.hasData && patrimonioGrowth.growth >= 0 ? "text-success" : patrimonioGrowth.hasData ? "text-destructive" : "text-muted-foreground"}`}>
+               <p className={`text-[10px] ${patrimonioGrowth.hasData && patrimonioGrowth.growth >= 0 ? "text-success" : patrimonioGrowth.hasData ? "text-destructive" : "text-muted-foreground"}`}>
                  {patrimonioGrowth.hasData 
-                   ? `${patrimonioGrowth.growth >= 0 ? "+" : ""}${patrimonioGrowth.growth.toFixed(2)}% em relação ao mês anterior`
-                   : hasData ? "Sem mês anterior para comparar" : "Aguardando dados"
+                   ? `${patrimonioGrowth.growth >= 0 ? "+" : ""}${patrimonioGrowth.growth.toFixed(2)}% vs mês anterior`
+                   : hasData ? "Sem mês anterior" : "Aguardando dados"
                  }
                </p>
             </CardContent>
           </Card>
           
           <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Rentabilidade no mês</CardTitle>
-              <Target className="h-4 w-4 text-primary" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Rentabilidade no mês</CardTitle>
+              <Target className="h-3 w-3 text-primary" />
             </CardHeader>
-            <CardContent>
-               <div className="text-2xl font-bold text-foreground">
+            <CardContent className="pt-1">
+               <div className="text-lg font-bold text-foreground">
                  {(() => {
                    if (!hasData || consolidadoData.length === 0) return "--%";
                    
@@ -392,8 +393,8 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                    const avgRendimento = weightedRendimento / totalPatrimonioWeighted;
                    return `${(avgRendimento * 100).toFixed(2)}%`;
                  })()}
-               </div>
-                <p className="text-xs text-success">
+                </div>
+                 <p className="text-[10px] text-success">
                   {(() => {
                     if (!hasData) return "Aguardando dados";
                     
@@ -440,15 +441,15 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             onClick={() => setDiversificationDialogOpen(true)}
           >
             <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Diversificação</CardTitle>
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-primary" />
-                <ChevronRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Diversificação</CardTitle>
+              <div className="flex items-center gap-1">
+                <Building2 className="h-3 w-3 text-primary" />
+                <ChevronRight className="h-3 w-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
             </CardHeader>
-            <CardContent>
-               <div className="text-2xl font-bold text-foreground">
+            <CardContent className="pt-1">
+               <div className="text-lg font-bold text-foreground">
                  {(() => {
                    if (!hasData || filteredDadosData.length === 0) return "--";
                    
@@ -466,7 +467,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                    return assetsInFinalCompetencia.length;
                  })()}
                </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] text-muted-foreground">
                 {hasData ? "Ativos na carteira" : "Aguardando dados"}
               </p>
             </CardContent>
@@ -477,15 +478,15 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             onClick={() => setMaturityDialogOpen(true)}
           >
             <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Próximo Vencimento</CardTitle>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-primary" />
-                <ChevronRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Próximo Vencimento</CardTitle>
+              <div className="flex items-center gap-1">
+                <Calendar className="h-3 w-3 text-primary" />
+                <ChevronRight className="h-3 w-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
+            <CardContent className="pt-1">
+              <div className="text-lg font-bold text-foreground">
                 {(() => {
                   if (!hasData || dadosData.length === 0) return "--";
                   
@@ -511,7 +512,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                     : "--";
                 })()}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] text-muted-foreground">
                 {(() => {
                   if (!hasData || dadosData.length === 0) return "Aguardando dados";
                   
