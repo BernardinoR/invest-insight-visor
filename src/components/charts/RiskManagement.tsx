@@ -58,6 +58,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
     sd2: true
   });
   const [desviosPadraoTipo, setDesviosPadraoTipo] = useState<1 | 2>(1); // Novo estado para controlar 1 ou 2 desvios
+  const [riskBudgetPeriod, setRiskBudgetPeriod] = useState<'month' | 'year' | '12months' | 'all' | 'custom'>('all');
 
   // Consolidar dados por competência
   const consolidateByCompetencia = (data: typeof consolidadoData) => {
@@ -1768,16 +1769,85 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
       {/* Risk Budget Dashboard */}
       <Card className="bg-gradient-card border-border/50">
         <CardHeader>
-          <CardTitle className="text-foreground flex items-center gap-2">
-            <Target className="w-5 h-5" />
-            Alocação de Risk Budget
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Distribuição do risco por estratégia baseada em volatilidade e alocação
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-foreground flex items-center gap-2">
+                <Target className="w-5 h-5" />
+                Alocação de Risk Budget
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Distribuição do risco por estratégia baseada em volatilidade e alocação
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant={riskBudgetPeriod === 'month' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setRiskBudgetPeriod('month')}
+              >
+                Mês
+              </Button>
+              <Button
+                variant={riskBudgetPeriod === 'year' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setRiskBudgetPeriod('year')}
+              >
+                Ano
+              </Button>
+              <Button
+                variant={riskBudgetPeriod === '12months' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setRiskBudgetPeriod('12months')}
+              >
+                12M
+              </Button>
+              <Button
+                variant={riskBudgetPeriod === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setRiskBudgetPeriod('all')}
+              >
+                Ótimo
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {(() => {
+            // Filtrar dadosData baseado no período selecionado
+            const getFilteredDadosData = () => {
+              if (dadosData.length === 0) return [];
+              
+              let filtered = dadosData;
+              
+              switch (riskBudgetPeriod) {
+                case 'month':
+                  // Pegar apenas a última competência
+                  const lastCompetencia = consolidadoData[consolidadoData.length - 1]?.Competencia;
+                  filtered = dadosData.filter(d => d.Competencia === lastCompetencia);
+                  break;
+                case 'year':
+                  // Pegar apenas o último ano
+                  if (consolidadoData.length > 0) {
+                    const mostRecentCompetencia = consolidadoData[consolidadoData.length - 1].Competencia;
+                    const mostRecentYear = mostRecentCompetencia.split('/')[1];
+                    filtered = dadosData.filter(d => d.Competencia.split('/')[1] === mostRecentYear);
+                  }
+                  break;
+                case '12months':
+                  // Pegar os últimos 12 meses
+                  const last12Competencias = consolidadoData.slice(-12).map(d => d.Competencia);
+                  filtered = dadosData.filter(d => last12Competencias.includes(d.Competencia));
+                  break;
+                case 'all':
+                  filtered = dadosData;
+                  break;
+              }
+              
+              return filtered;
+            };
+            
+            const filteredDadosForRisk = getFilteredDadosData();
+            
             // Função para agrupar estratégias
             const groupStrategy = (strategy: string): string => {
               const strategyLower = strategy.toLowerCase();
@@ -1829,7 +1899,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
             };
 
             // Agrupar dados por estratégia agrupada com dados de cada mês
-            const strategyData = dadosData.reduce((acc, item) => {
+            const strategyData = filteredDadosForRisk.reduce((acc, item) => {
               const originalStrategy = item["Classe do ativo"] || "Outros";
               const groupedStrategy = groupStrategy(originalStrategy);
               
