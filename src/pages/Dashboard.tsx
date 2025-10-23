@@ -44,16 +44,16 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-hero">
-      <div className="container mx-auto px-6 py-4">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex gap-4">
+      <div className="container mx-auto px-3 py-2">
+        <div className="flex justify-between items-center mb-2">
+          <div className="flex gap-2">
             {!isClientView && (
               <Button 
                 variant="outline" 
                 onClick={() => navigate("/")}
                 className="bg-card/50 border-primary/20 hover:bg-primary/10"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-1 h-3 w-3" />
                 Voltar à Lista
               </Button>
             )}
@@ -63,7 +63,7 @@ export default function Dashboard() {
                 onClick={() => navigate(`/data-management/${encodeURIComponent(decodedClientName)}`)}
                 className="bg-primary hover:bg-primary/90"
               >
-                <Settings className="mr-2 h-4 w-4" />
+                <Settings className="mr-1 h-3 w-3" />
                 Gerenciar Dados
               </Button>
             )}
