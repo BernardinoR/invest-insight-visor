@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+
 interface MarketIndicatorData {
   competencia: string;
   ibovespa: number;
@@ -19,6 +20,7 @@ interface MarketIndicatorData {
   accumulatedIpca: number;
   accumulatedClientTarget: number;
 }
+
 interface RiskManagementProps {
   consolidadoData: Array<{
     Data: string;
@@ -41,12 +43,8 @@ interface RiskManagementProps {
     Competencia: string;
   }>;
 }
-export function RiskManagement({
-  consolidadoData,
-  clientTarget = 0.7,
-  marketData = [],
-  dadosData = []
-}: RiskManagementProps) {
+
+export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData = [], dadosData = [] }: RiskManagementProps) {
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'all' | 'custom'>('12months');
   const [customStartCompetencia, setCustomStartCompetencia] = useState<string>('');
@@ -65,7 +63,9 @@ export function RiskManagement({
   // Consolidar dados por competência
   const consolidateByCompetencia = (data: typeof consolidadoData) => {
     console.log('🔍 CONSOLIDAÇÃO - Dados brutos recebidos:', data.length);
+    
     const competenciaMap = new Map();
+    
     data.forEach(item => {
       const competencia = item.Competencia;
       if (!competenciaMap.has(competencia)) {
@@ -81,17 +81,20 @@ export function RiskManagement({
           patrimonioForWeightedAvg: 0
         });
       }
+      
       const consolidated = competenciaMap.get(competencia);
       consolidated["Patrimonio Final"] += item["Patrimonio Final"] || 0;
       consolidated["Patrimonio Inicial"] += item["Patrimonio Inicial"] || 0;
       consolidated["Movimentação"] += item["Movimentação"] || 0;
       consolidated["Ganho Financeiro"] += item["Ganho Financeiro"] || 0;
       consolidated.Impostos += item.Impostos || 0;
+      
       const patrimonio = item["Patrimonio Final"] || 0;
       const rendimento = item.Rendimento || 0;
       consolidated.rendimentoSum += rendimento * patrimonio;
       consolidated.patrimonioForWeightedAvg += patrimonio;
     });
+    
     const result = Array.from(competenciaMap.values()).map(item => ({
       Data: item.Data,
       Competencia: item.Competencia,
@@ -100,44 +103,55 @@ export function RiskManagement({
       "Movimentação": item["Movimentação"],
       "Ganho Financeiro": item["Ganho Financeiro"],
       Impostos: item.Impostos,
-      Rendimento: item.patrimonioForWeightedAvg > 0 ? item.rendimentoSum / item.patrimonioForWeightedAvg : 0
+      Rendimento: item.patrimonioForWeightedAvg > 0 
+        ? item.rendimentoSum / item.patrimonioForWeightedAvg 
+        : 0
     })).sort((a, b) => {
       const [monthA, yearA] = a.Competencia.split('/').map(Number);
       const [monthB, yearB] = b.Competencia.split('/').map(Number);
       if (yearA !== yearB) return yearA - yearB;
       return monthA - monthB;
     });
+    
     console.log('✅ CONSOLIDAÇÃO - Competências únicas:', result.length);
     console.log('📊 CONSOLIDAÇÃO - Primeiros 3 meses:', result.slice(0, 3).map(r => ({
       competencia: r.Competencia,
       rendimento: (r.Rendimento * 100).toFixed(2) + '%'
     })));
+    
     return result;
   };
+
   const consolidatedData = useMemo(() => consolidateByCompetencia(consolidadoData), [consolidadoData]);
 
   // Get available competencias for custom selector - sorted chronologically
   const availableCompetencias = useMemo(() => {
-    return [...new Set(consolidatedData.map(item => item.Competencia))].sort((a, b) => {
-      const [monthA, yearA] = a.split('/');
-      const [monthB, yearB] = b.split('/');
-      const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-      const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
-      return dateA.getTime() - dateB.getTime();
-    });
+    return [...new Set(consolidatedData.map(item => item.Competencia))]
+      .sort((a, b) => {
+        const [monthA, yearA] = a.split('/');
+        const [monthB, yearB] = b.split('/');
+        const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+        const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+        return dateA.getTime() - dateB.getTime();
+      });
   }, [consolidatedData]);
 
   // Format competencia display
   const formatCompetenciaDisplay = (competencia: string) => {
     const [month, year] = competencia.split('/');
-    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const monthNames = [
+      'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+      'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
+    ];
     return `${monthNames[parseInt(month) - 1]}/${year}`;
   };
 
   // Filter data based on selected period
   const getFilteredData = () => {
     if (consolidatedData.length === 0) return [];
+    
     let filteredData = consolidatedData;
+
     switch (selectedPeriod) {
       case 'month':
         filteredData = consolidatedData.slice(-1);
@@ -164,16 +178,20 @@ export function RiskManagement({
             const [itemMonth, itemYear] = item.Competencia.split('/');
             const [startMonth, startYear] = customStartCompetencia.split('/');
             const [endMonth, endYear] = customEndCompetencia.split('/');
+            
             const itemDate = new Date(parseInt(itemYear), parseInt(itemMonth) - 1);
             const startDate = new Date(parseInt(startYear), parseInt(startMonth) - 1);
             const endDate = new Date(parseInt(endYear), parseInt(endMonth) - 1);
+            
             return itemDate >= startDate && itemDate <= endDate;
           });
         }
         break;
     }
+
     return filteredData;
   };
+
   const filteredConsolidatedData = getFilteredData();
 
   // Calcular métricas de risco usando dados filtrados
@@ -188,14 +206,8 @@ export function RiskManagement({
         downwardVolatility: 0,
         monthsAboveTarget: 0,
         monthsBelowTarget: 0,
-        bestMonth: {
-          return: 0,
-          competencia: ''
-        },
-        worstMonth: {
-          return: 0,
-          competencia: ''
-        },
+        bestMonth: { return: 0, competencia: '' },
+        worstMonth: { return: 0, competencia: '' },
         hitRate: {
           homeRun: 0,
           acerto: 0,
@@ -210,61 +222,72 @@ export function RiskManagement({
         }
       };
     }
-    const returns = filteredConsolidatedData.map(item => item.Rendimento * 100);
 
+    const returns = filteredConsolidatedData.map(item => item.Rendimento * 100);
+    
     // Média ARITMÉTICA (para cálculos estatísticos de volatilidade)
     const avgReturnArithmetic = returns.reduce((a, b) => a + b, 0) / returns.length;
-
+    
     // Média GEOMÉTRICA (para retorno composto real)
     const compoundedReturn = returns.reduce((product, r) => {
       return product * (1 + r / 100); // Converter % para decimal
     }, 1);
     const avgReturnGeometric = (Math.pow(compoundedReturn, 1 / returns.length) - 1) * 100;
-
+    
     // Volatilidade (desvio padrão) - calculada com base na média ARITMÉTICA
     const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturnArithmetic, 2), 0) / returns.length;
     const volatility = Math.sqrt(variance);
-
+    
     // Sharpe Ratio - usando média GEOMÉTRICA (performance real) e volatilidade (risco estatístico)
     const riskFreeRate = 0.5;
     const sharpe = volatility !== 0 ? (avgReturnGeometric - riskFreeRate) / volatility : 0;
-
+    
     // Sortino Ratio - usando média GEOMÉTRICA (performance real)
     const negativeReturns = returns.filter(r => r < clientTarget * 100);
-    const downwardVariance = negativeReturns.length > 0 ? negativeReturns.reduce((sum, r) => sum + Math.pow(r - clientTarget * 100, 2), 0) / negativeReturns.length : 0;
+    const downwardVariance = negativeReturns.length > 0
+      ? negativeReturns.reduce((sum, r) => sum + Math.pow(r - clientTarget * 100, 2), 0) / negativeReturns.length
+      : 0;
     const downwardVolatility = Math.sqrt(downwardVariance);
     const sortino = downwardVolatility !== 0 ? (avgReturnGeometric - clientTarget * 100) / downwardVolatility : 0;
-
+    
     // Volatilidade Assimétrica (Upside vs Downside) - usando média ARITMÉTICA
     const positiveReturns = returns.filter(r => r > avgReturnArithmetic);
     const negativeReturnsFromAvg = returns.filter(r => r < avgReturnArithmetic);
-    const upsideVariance = positiveReturns.length > 0 ? positiveReturns.reduce((sum, r) => sum + Math.pow(r - avgReturnArithmetic, 2), 0) / positiveReturns.length : 0;
+    
+    const upsideVariance = positiveReturns.length > 0
+      ? positiveReturns.reduce((sum, r) => sum + Math.pow(r - avgReturnArithmetic, 2), 0) / positiveReturns.length
+      : 0;
     const upsideVolatility = Math.sqrt(upsideVariance);
-    const downsideVariance = negativeReturnsFromAvg.length > 0 ? negativeReturnsFromAvg.reduce((sum, r) => sum + Math.pow(r - avgReturnArithmetic, 2), 0) / negativeReturnsFromAvg.length : 0;
+    
+    const downsideVariance = negativeReturnsFromAvg.length > 0
+      ? negativeReturnsFromAvg.reduce((sum, r) => sum + Math.pow(r - avgReturnArithmetic, 2), 0) / negativeReturnsFromAvg.length
+      : 0;
     const downsideVolatility = Math.sqrt(downsideVariance);
+    
     const volatilityRatio = downsideVolatility !== 0 ? upsideVolatility / downsideVolatility : 0;
-
+    
     // Drawdown máximo
     let maxDrawdown = 0;
     let peak = filteredConsolidatedData[0]["Patrimonio Final"];
     filteredConsolidatedData.forEach(item => {
       const current = item["Patrimonio Final"];
       if (current > peak) peak = current;
-      const drawdown = (peak - current) / peak * 100;
+      const drawdown = ((peak - current) / peak) * 100;
       if (drawdown > maxDrawdown) maxDrawdown = drawdown;
     });
-
+    
     // Meses acima e abaixo da meta (usando meta mensal correta)
     let monthsAboveTarget = 0;
     let monthsBelowTarget = 0;
+
     returns.forEach((returnValue, index) => {
       const competencia = filteredConsolidatedData[index]?.Competencia;
-
+      
       // Buscar a meta mensal correta para esta competência nos marketData
       const marketDataForCompetencia = marketData?.find(m => m.competencia === competencia);
       const monthlyTarget = marketDataForCompetencia?.clientTarget || 0;
       const targetPercent = monthlyTarget * 100; // Converter para %
-
+      
       // Comparar retorno mensal com meta mensal
       if (returnValue >= targetPercent) {
         monthsAboveTarget++;
@@ -272,34 +295,37 @@ export function RiskManagement({
         monthsBelowTarget++;
       }
     });
-
+    
     // Melhor e pior mês
     const maxReturn = Math.max(...returns);
     const minReturn = Math.min(...returns);
     const bestMonthIndex = returns.indexOf(maxReturn);
     const worstMonthIndex = returns.indexOf(minReturn);
-
+    
     // Hit Rate Analysis - usando a meta MENSAL correta de cada competência
     let homeRun = 0;
     let acerto = 0;
     let quaseLa = 0;
     let miss = 0;
+    
     console.log('🎯 === HIT RATE ANÁLISE DETALHADA (META MENSAL) ===');
     console.log('📊 Total de períodos únicos consolidados:', returns.length);
     console.log('📈 Volatilidade mensal (σ):', volatility.toFixed(4) + '%');
     console.log('');
     console.log('📅 Análise mês a mês (usando meta mensal de cada competência):');
+    
     returns.forEach((returnValue, index) => {
       const competencia = filteredConsolidatedData[index]?.Competencia;
-
+      
       // Buscar a meta mensal correta para esta competência nos marketData
       const marketDataForCompetencia = marketData.find(m => m.competencia === competencia);
       const monthlyTarget = marketDataForCompetencia?.clientTarget || 0;
       const targetPercent = monthlyTarget * 100; // Converter para %
       const homeRunThreshold = targetPercent + volatility; // Meta mensal + 1σ
-
+      
       let category = '';
       let emoji = '';
+      
       if (returnValue >= homeRunThreshold) {
         homeRun++;
         category = 'HOME RUN';
@@ -317,8 +343,10 @@ export function RiskManagement({
         category = 'MISS';
         emoji = '❌';
       }
+      
       console.log(`  ${emoji} ${competencia}: Retorno ${returnValue.toFixed(2)}% | Meta ${targetPercent.toFixed(2)}% | Threshold ${homeRunThreshold.toFixed(2)}% → ${category}`);
     });
+    
     console.log('');
     console.log('📊 === RESULTADO FINAL ===');
     console.log('  🚀 Home Run:', homeRun, 'meses');
@@ -326,31 +354,42 @@ export function RiskManagement({
     console.log('  ⚠️  Quase Lá:', quaseLa, 'meses');
     console.log('  ❌ Miss:', miss, 'meses');
     console.log('  📈 Total:', homeRun + acerto + quaseLa + miss, 'meses');
-    console.log('  🎯 Hit Rate (Home Run + Acerto):', homeRun + acerto, '/', returns.length, '=', Math.round((homeRun + acerto) / returns.length * 100) + '%');
+    console.log('  🎯 Hit Rate (Home Run + Acerto):', homeRun + acerto, '/', returns.length, '=', Math.round(((homeRun + acerto) / returns.length) * 100) + '%');
     console.log('=================================');
-    const hitRatePercent = returns.length > 0 ? Math.round((homeRun + acerto) / returns.length * 100) : 0;
+    
+    const hitRatePercent = returns.length > 0 
+      ? Math.round(((homeRun + acerto) / returns.length) * 100)
+      : 0;
+    
     const positiveMonths = returns.filter(r => r > 0).length;
-    const positivePercent = returns.length > 0 ? Math.round(positiveMonths / returns.length * 100) : 0;
-
+    const positivePercent = returns.length > 0
+      ? Math.round((positiveMonths / returns.length) * 100)
+      : 0;
+    
     // Calcular métricas da meta
     const allTargets: number[] = [];
-    filteredConsolidatedData.forEach(item => {
+    filteredConsolidatedData.forEach((item) => {
       const mData = marketData.find(m => m.competencia === item.Competencia);
       const target = mData?.clientTarget || clientTarget;
       allTargets.push(target * 100); // Em %
     });
-    const avgTarget = allTargets.length > 0 ? allTargets.reduce((sum, t) => sum + t, 0) / allTargets.length : 0;
-    const targetVariance = allTargets.length > 0 ? allTargets.reduce((sum, t) => sum + Math.pow(t - avgTarget, 2), 0) / allTargets.length : 0;
+    
+    const avgTarget = allTargets.length > 0
+      ? allTargets.reduce((sum, t) => sum + t, 0) / allTargets.length
+      : 0;
+    
+    const targetVariance = allTargets.length > 0
+      ? allTargets.reduce((sum, t) => sum + Math.pow(t - avgTarget, 2), 0) / allTargets.length
+      : 0;
     const targetVolatility = Math.sqrt(targetVariance);
+    
     return {
       sharpe,
       sortino,
       volatility,
       maxDrawdown,
-      avgReturn: avgReturnGeometric,
-      // Exibir média geométrica nos cards
-      avgReturnArithmetic,
-      // Disponível para análises estatísticas
+      avgReturn: avgReturnGeometric, // Exibir média geométrica nos cards
+      avgReturnArithmetic, // Disponível para análises estatísticas
       downwardVolatility,
       upsideVolatility,
       downsideVolatility,
@@ -392,6 +431,7 @@ export function RiskManagement({
   // Dados para correlação interativa (simulação de correlação entre meses)
   const correlationData = useMemo(() => {
     if (filteredConsolidatedData.length < 2) return [];
+    
     return filteredConsolidatedData.slice(0, -1).map((item, index) => {
       const nextItem = filteredConsolidatedData[index + 1];
       return {
@@ -414,16 +454,12 @@ export function RiskManagement({
 
   // Cálculo de Drawdown com Pain Index baseado em retornos percentuais
   const drawdownAnalysis = useMemo(() => {
-    if (filteredConsolidatedData.length === 0) return {
-      drawdowns: [],
-      maxPainIndex: 0,
-      chartData: []
-    };
-
+    if (filteredConsolidatedData.length === 0) return { drawdowns: [], maxPainIndex: 0, chartData: [] };
+    
     // Calcular retorno acumulado (base 100)
     let cumulativeReturn = 100;
     const returnData = filteredConsolidatedData.map(item => {
-      cumulativeReturn *= 1 + item.Rendimento;
+      cumulativeReturn *= (1 + item.Rendimento);
       return {
         competencia: item.Competencia,
         patrimonio: item["Patrimonio Final"],
@@ -431,7 +467,7 @@ export function RiskManagement({
         cumulativeReturn: cumulativeReturn
       };
     });
-
+    
     // Detectar drawdowns baseado em retorno acumulado
     let peak = returnData[0].cumulativeReturn;
     let peakIndex = 0;
@@ -444,19 +480,22 @@ export function RiskManagement({
       recoveryMonths: number | null;
       painIndex: number;
     }> = [];
+    
     let currentDrawdownStart: number | null = null;
     let currentDrawdownDepth = 0;
     let currentDrawdownEnd: number | null = null;
     const MIN_DRAWDOWN_DEPTH = 0.5; // Filtrar drawdowns menores que 0.5%
-
+    
     returnData.forEach((item, index) => {
       const current = item.cumulativeReturn;
+      
       if (current >= peak) {
         // Novo pico ou recuperação
         if (currentDrawdownStart !== null && currentDrawdownEnd !== null && currentDrawdownDepth >= MIN_DRAWDOWN_DEPTH) {
           const durationMonths = currentDrawdownEnd - currentDrawdownStart;
           const recoveryMonths = index - currentDrawdownEnd;
-          const painIndex = currentDrawdownDepth * durationMonths / 100;
+          const painIndex = (currentDrawdownDepth * durationMonths) / 100;
+          
           drawdowns.push({
             startCompetencia: returnData[currentDrawdownStart].competencia,
             endCompetencia: returnData[currentDrawdownEnd].competencia,
@@ -467,6 +506,7 @@ export function RiskManagement({
             painIndex: painIndex
           });
         }
+        
         peak = current;
         peakIndex = index;
         currentDrawdownStart = null;
@@ -477,18 +517,20 @@ export function RiskManagement({
         if (currentDrawdownStart === null) {
           currentDrawdownStart = peakIndex;
         }
-        const drawdownPercent = (peak - current) / peak * 100;
+        
+        const drawdownPercent = ((peak - current) / peak) * 100;
         if (drawdownPercent > currentDrawdownDepth) {
           currentDrawdownDepth = drawdownPercent;
           currentDrawdownEnd = index;
         }
       }
     });
-
+    
     // Drawdown em andamento
     if (currentDrawdownStart !== null && currentDrawdownEnd !== null && currentDrawdownDepth >= MIN_DRAWDOWN_DEPTH) {
       const durationMonths = currentDrawdownEnd - currentDrawdownStart;
-      const painIndex = currentDrawdownDepth * durationMonths / 100;
+      const painIndex = (currentDrawdownDepth * durationMonths) / 100;
+      
       drawdowns.push({
         startCompetencia: returnData[currentDrawdownStart].competencia,
         endCompetencia: returnData[currentDrawdownEnd].competencia,
@@ -499,14 +541,17 @@ export function RiskManagement({
         painIndex: painIndex
       });
     }
-
+    
     // Calcular drawdown para o gráfico baseado em retorno acumulado
     let chartPeak = returnData[0].cumulativeReturn;
     const chartData = returnData.map(item => {
       if (item.cumulativeReturn > chartPeak) {
         chartPeak = item.cumulativeReturn;
       }
-      const drawdownPercent = item.cumulativeReturn < chartPeak ? (chartPeak - item.cumulativeReturn) / chartPeak * 100 : 0;
+      const drawdownPercent = item.cumulativeReturn < chartPeak 
+        ? ((chartPeak - item.cumulativeReturn) / chartPeak) * 100 
+        : 0;
+      
       return {
         competencia: item.competencia,
         patrimonio: item.patrimonio,
@@ -514,30 +559,24 @@ export function RiskManagement({
         drawdownPercent: drawdownPercent
       };
     });
-    const maxPainIndex = drawdowns.length > 0 ? Math.max(...drawdowns.map(d => d.painIndex)) : 0;
-    return {
-      drawdowns,
-      maxPainIndex,
-      chartData
-    };
+    
+    const maxPainIndex = drawdowns.length > 0 
+      ? Math.max(...drawdowns.map(d => d.painIndex))
+      : 0;
+    
+    return { drawdowns, maxPainIndex, chartData };
   }, [filteredConsolidatedData]);
-  const periodButtons = [{
-    id: 'month',
-    label: 'Mês'
-  }, {
-    id: 'year',
-    label: 'Ano'
-  }, {
-    id: '12months',
-    label: '12M'
-  }, {
-    id: 'all',
-    label: 'Ótimo'
-  }, {
-    id: 'custom',
-    label: 'Personalizado'
-  }];
-  return <div className="space-y-6">
+
+  const periodButtons = [
+    { id: 'month', label: 'Mês' },
+    { id: 'year', label: 'Ano' },
+    { id: '12months', label: '12M' },
+    { id: 'all', label: 'Ótimo' },
+    { id: 'custom', label: 'Personalizado' }
+  ];
+
+  return (
+    <div className="space-y-6">
       {/* Hit Rate Analysis */}
       <Card className="bg-gradient-card border-border/50">
         <CardHeader>
@@ -552,16 +591,25 @@ export function RiskManagement({
             
             {/* Period Selection */}
             <div className="flex items-center gap-1">
-              {periodButtons.map(button => <Button key={button.id} variant={selectedPeriod === button.id ? "default" : "ghost"} size="sm" onClick={() => {
-              setSelectedPeriod(button.id as any);
-              if (button.id === 'custom') {
-                setShowCustomSelector(true);
-              }
-            }} className="text-xs px-3 py-1 h-8">
+              {periodButtons.map((button) => (
+                <Button
+                  key={button.id}
+                  variant={selectedPeriod === button.id ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setSelectedPeriod(button.id as any);
+                    if (button.id === 'custom') {
+                      setShowCustomSelector(true);
+                    }
+                  }}
+                  className="text-xs px-3 py-1 h-8"
+                >
                   {button.label}
-                </Button>)}
+                </Button>
+              ))}
               
-              {selectedPeriod === 'custom' && <Popover open={showCustomSelector} onOpenChange={setShowCustomSelector}>
+              {selectedPeriod === 'custom' && (
+                <Popover open={showCustomSelector} onOpenChange={setShowCustomSelector}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" size="sm" className="ml-2">
                       <Calendar className="h-4 w-4" />
@@ -576,9 +624,11 @@ export function RiskManagement({
                             <SelectValue placeholder="Selecione a competência inicial" />
                           </SelectTrigger>
                           <SelectContent className="bg-background border-border z-50">
-                            {availableCompetencias.map(competencia => <SelectItem key={competencia} value={competencia}>
+                            {availableCompetencias.map((competencia) => (
+                              <SelectItem key={competencia} value={competencia}>
                                 {formatCompetenciaDisplay(competencia)}
-                              </SelectItem>)}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -589,15 +639,18 @@ export function RiskManagement({
                             <SelectValue placeholder="Selecione a competência final" />
                           </SelectTrigger>
                           <SelectContent className="bg-background border-border z-50">
-                            {availableCompetencias.map(competencia => <SelectItem key={competencia} value={competencia}>
+                            {availableCompetencias.map((competencia) => (
+                              <SelectItem key={competencia} value={competencia}>
                                 {formatCompetenciaDisplay(competencia)}
-                              </SelectItem>)}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
                   </PopoverContent>
-                </Popover>}
+                </Popover>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -608,46 +661,32 @@ export function RiskManagement({
             <div className="flex items-center gap-8">
               {/* Donut Chart */}
               <div className="relative flex-shrink-0">
-                <div style={{
-                width: '320px',
-                height: '320px'
-              }}>
+                <div style={{ width: '320px', height: '320px' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={[{
-                      name: 'Home Run',
-                      value: riskMetrics.hitRate.homeRun,
-                      color: 'hsl(142, 71%, 45%)'
-                    }, {
-                      name: 'Acerto',
-                      value: riskMetrics.hitRate.acerto,
-                      color: 'hsl(215, 20%, 65%)'
-                    }, {
-                      name: 'Quase lá',
-                      value: riskMetrics.hitRate.quaseLa,
-                      color: 'hsl(40, 20%, 75%)'
-                    }, {
-                      name: 'Miss',
-                      value: riskMetrics.hitRate.miss,
-                      color: 'hsl(220, 15%, 85%)'
-                    }]} cx="50%" cy="50%" innerRadius={80} outerRadius={130} paddingAngle={3} dataKey="value" strokeWidth={0}>
-                        {[{
-                        name: 'Home Run',
-                        value: riskMetrics.hitRate.homeRun,
-                        color: 'hsl(142, 71%, 45%)'
-                      }, {
-                        name: 'Acerto',
-                        value: riskMetrics.hitRate.acerto,
-                        color: 'hsl(215, 20%, 65%)'
-                      }, {
-                        name: 'Quase lá',
-                        value: riskMetrics.hitRate.quaseLa,
-                        color: 'hsl(40, 20%, 75%)'
-                      }, {
-                        name: 'Miss',
-                        value: riskMetrics.hitRate.miss,
-                        color: 'hsl(220, 15%, 85%)'
-                      }].map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                      <Pie
+                        data={[
+                          { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: 'hsl(142, 71%, 45%)' },
+                          { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 20%, 65%)' },
+                          { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 20%, 75%)' },
+                          { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 85%)' }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={80}
+                        outerRadius={130}
+                        paddingAngle={3}
+                        dataKey="value"
+                        strokeWidth={0}
+                      >
+                        {[
+                          { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: 'hsl(142, 71%, 45%)' },
+                          { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 20%, 65%)' },
+                          { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 20%, 75%)' },
+                          { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 85%)' }
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
                       </Pie>
                     </PieChart>
                   </ResponsiveContainer>
@@ -663,61 +702,53 @@ export function RiskManagement({
               {/* Legend on the Right of Donut */}
               <div className="flex flex-col gap-5">
                 <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded flex-shrink-0" style={{
-                  backgroundColor: 'hsl(142, 71%, 45%)'
-                }} />
+                  <div className="w-4 h-4 rounded flex-shrink-0" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }} />
                   <div className="flex-1">
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <Rocket className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-sm font-semibold text-foreground">Home Run</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {riskMetrics.hitRate.homeRun} meses ({filteredConsolidatedData.length > 0 ? Math.round(riskMetrics.hitRate.homeRun / filteredConsolidatedData.length * 100) : 0}%)
+                      {riskMetrics.hitRate.homeRun} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100) : 0}%)
                     </p>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded flex-shrink-0" style={{
-                  backgroundColor: 'hsl(215, 20%, 65%)'
-                }} />
+                  <div className="w-4 h-4 rounded flex-shrink-0" style={{ backgroundColor: 'hsl(215, 20%, 65%)' }} />
                   <div className="flex-1">
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <Check className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-sm font-semibold text-foreground">Acerto</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {riskMetrics.hitRate.acerto} meses ({filteredConsolidatedData.length > 0 ? Math.round(riskMetrics.hitRate.acerto / filteredConsolidatedData.length * 100) : 0}%)
+                      {riskMetrics.hitRate.acerto} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100) : 0}%)
                     </p>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded flex-shrink-0" style={{
-                  backgroundColor: 'hsl(40, 20%, 75%)'
-                }} />
+                  <div className="w-4 h-4 rounded flex-shrink-0" style={{ backgroundColor: 'hsl(40, 20%, 75%)' }} />
                   <div className="flex-1">
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <TrendingUpIcon className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-sm font-semibold text-foreground">Quase lá</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {riskMetrics.hitRate.quaseLa} meses ({filteredConsolidatedData.length > 0 ? Math.round(riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length * 100) : 0}%)
+                      {riskMetrics.hitRate.quaseLa} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100) : 0}%)
                     </p>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded flex-shrink-0" style={{
-                  backgroundColor: 'hsl(220, 15%, 85%)'
-                }} />
+                  <div className="w-4 h-4 rounded flex-shrink-0" style={{ backgroundColor: 'hsl(220, 15%, 85%)' }} />
                   <div className="flex-1">
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <X className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-sm font-semibold text-foreground">Miss</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {riskMetrics.hitRate.miss} meses ({filteredConsolidatedData.length > 0 ? Math.round(riskMetrics.hitRate.miss / filteredConsolidatedData.length * 100) : 0}%)
+                      {riskMetrics.hitRate.miss} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100) : 0}%)
                     </p>
                   </div>
                 </div>
@@ -768,7 +799,9 @@ export function RiskManagement({
                 <div className="flex items-baseline gap-2">
                   <p className="text-2xl font-bold text-success">{riskMetrics.monthsAboveTarget}</p>
                   <Badge variant="outline" className="bg-success/10 text-success border-success/30 px-1.5 py-0.5 text-xs">
-                    {filteredConsolidatedData.length > 0 ? Math.round(riskMetrics.monthsAboveTarget / filteredConsolidatedData.length * 100) : 0}%
+                    {filteredConsolidatedData.length > 0 
+                      ? Math.round((riskMetrics.monthsAboveTarget / filteredConsolidatedData.length) * 100)
+                      : 0}%
                   </Badge>
                 </div>
               </div>
@@ -778,7 +811,9 @@ export function RiskManagement({
                 <div className="flex items-baseline gap-2">
                   <p className="text-2xl font-bold text-destructive">{riskMetrics.monthsBelowTarget}</p>
                   <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 px-1.5 py-0.5 text-xs">
-                    {filteredConsolidatedData.length > 0 ? Math.round(riskMetrics.monthsBelowTarget / filteredConsolidatedData.length * 100) : 0}%
+                    {filteredConsolidatedData.length > 0 
+                      ? Math.round((riskMetrics.monthsBelowTarget / filteredConsolidatedData.length) * 100)
+                      : 0}%
                   </Badge>
                 </div>
               </div>
@@ -814,18 +849,24 @@ export function RiskManagement({
                     <h4 className="font-medium text-sm">Selecionar Curvas</h4>
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
-                        <Checkbox id="portfolio" checked={selectedIndicators.portfolio} onCheckedChange={checked => setSelectedIndicators(prev => ({
-                        ...prev,
-                        portfolio: checked as boolean
-                      }))} />
+                        <Checkbox 
+                          id="portfolio" 
+                          checked={selectedIndicators.portfolio}
+                          onCheckedChange={(checked) => 
+                            setSelectedIndicators(prev => ({ ...prev, portfolio: checked as boolean }))
+                          }
+                        />
                         <label htmlFor="portfolio" className="text-sm">Retorno Acumulado</label>
                       </div>
                       
                       <div className="flex items-center space-x-2">
-                        <Checkbox id="media" checked={selectedIndicators.media} onCheckedChange={checked => setSelectedIndicators(prev => ({
-                        ...prev,
-                        media: checked as boolean
-                      }))} />
+                        <Checkbox 
+                          id="media" 
+                          checked={selectedIndicators.media}
+                          onCheckedChange={(checked) => 
+                            setSelectedIndicators(prev => ({ ...prev, media: checked as boolean }))
+                          }
+                        />
                         <label htmlFor="media" className="text-sm">Meta Acumulada</label>
                       </div>
                     </div>
@@ -833,10 +874,20 @@ export function RiskManagement({
                     <div className="space-y-2 mt-4">
                       <h4 className="font-medium text-sm">Desvios Padrão</h4>
                       <div className="flex items-center gap-2">
-                        <Button variant={desviosPadraoTipo === 1 ? "default" : "outline"} size="sm" onClick={() => setDesviosPadraoTipo(1)} className="text-xs flex-1">
+                        <Button
+                          variant={desviosPadraoTipo === 1 ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setDesviosPadraoTipo(1)}
+                          className="text-xs flex-1"
+                        >
                           ±1σ
                         </Button>
-                        <Button variant={desviosPadraoTipo === 2 ? "default" : "outline"} size="sm" onClick={() => setDesviosPadraoTipo(2)} className="text-xs flex-1">
+                        <Button
+                          variant={desviosPadraoTipo === 2 ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setDesviosPadraoTipo(2)}
+                          className="text-xs flex-1"
+                        >
                           ±2σ
                         </Button>
                       </div>
@@ -846,16 +897,25 @@ export function RiskManagement({
               </Popover>
               
               <div className="flex items-center gap-1">
-                {periodButtons.map(button => <Button key={button.id} variant={selectedPeriod === button.id ? "default" : "ghost"} size="sm" onClick={() => {
-                setSelectedPeriod(button.id as any);
-                if (button.id === 'custom') {
-                  setShowCustomSelector(true);
-                }
-              }} className="text-xs px-3 py-1 h-8">
+                {periodButtons.map((button) => (
+                  <Button
+                    key={button.id}
+                    variant={selectedPeriod === button.id ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => {
+                      setSelectedPeriod(button.id as any);
+                      if (button.id === 'custom') {
+                        setShowCustomSelector(true);
+                      }
+                    }}
+                    className="text-xs px-3 py-1 h-8"
+                  >
                     {button.label}
-                  </Button>)}
+                  </Button>
+                ))}
                 
-                {selectedPeriod === 'custom' && <Popover open={showCustomSelector} onOpenChange={setShowCustomSelector}>
+                {selectedPeriod === 'custom' && (
+                  <Popover open={showCustomSelector} onOpenChange={setShowCustomSelector}>
                     <PopoverTrigger asChild>
                       <Button variant="outline" size="sm" className="ml-2">
                         <Calendar className="h-4 w-4" />
@@ -870,9 +930,11 @@ export function RiskManagement({
                               <SelectValue placeholder="Selecione a competência inicial" />
                             </SelectTrigger>
                             <SelectContent className="bg-background border-border z-50">
-                              {availableCompetencias.map(competencia => <SelectItem key={competencia} value={competencia}>
+                              {availableCompetencias.map((competencia) => (
+                                <SelectItem key={competencia} value={competencia}>
                                   {formatCompetenciaDisplay(competencia)}
-                                </SelectItem>)}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -883,15 +945,18 @@ export function RiskManagement({
                               <SelectValue placeholder="Selecione a competência final" />
                             </SelectTrigger>
                             <SelectContent className="bg-background border-border z-50">
-                              {availableCompetencias.map(competencia => <SelectItem key={competencia} value={competencia}>
+                              {availableCompetencias.map((competencia) => (
+                                <SelectItem key={competencia} value={competencia}>
                                   {formatCompetenciaDisplay(competencia)}
-                                </SelectItem>)}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
                       </div>
                     </PopoverContent>
-                  </Popover>}
+                  </Popover>
+                )}
               </div>
             </div>
           </div>
@@ -900,179 +965,287 @@ export function RiskManagement({
         <CardContent className="pt-0 pb-6">
           <div className="h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={(() => {
-              // Add zero starting point
-              if (filteredConsolidatedData.length === 0) return [];
-              const [firstMonth, firstYear] = filteredConsolidatedData[0].Competencia.split('/');
-              const firstDate = new Date(parseInt(firstYear), parseInt(firstMonth) - 1, 1);
-              const previousMonth = new Date(firstDate);
-              previousMonth.setMonth(previousMonth.getMonth() - 1);
-              const startPoint = {
-                name: `${previousMonth.toLocaleDateString('pt-BR', {
-                  month: '2-digit'
-                })}/${previousMonth.toLocaleDateString('pt-BR', {
-                  year: '2-digit'
-                })}`,
-                retornoAcumulado: 0,
-                mediaAcumulada: 0,
-                plus1sd: 0,
-                minus1sd: 0,
-                plus2sd: 0,
-                minus2sd: 0,
-                assimetriaVariacao: 0
-              };
-              let accumulatedReturn = 0;
-              let accumulatedUpsideVol = 0;
-              let accumulatedDownsideVol = 0;
-              const monthReturns: number[] = [];
-              let previousAssimetria = 0; // Para calcular variação
-
-              const dataPoints = filteredConsolidatedData.map((item, index) => {
-                const monthReturn = item.Rendimento * 100;
-
-                // Retorno acumulado composto
-                accumulatedReturn = (1 + accumulatedReturn / 100) * (1 + monthReturn / 100) - 1;
-                accumulatedReturn = accumulatedReturn * 100;
-                monthReturns.push(monthReturn);
-
-                // === CÁLCULO BASEADO NA META DE RETORNO ===
-
-                // Coletar todas as metas até o período atual
-                const allTargets: number[] = [];
-                for (let i = 0; i <= index; i++) {
-                  const comp = filteredConsolidatedData[i].Competencia;
-                  const mData = marketData.find(m => m.competencia === comp);
-                  const target = mData?.clientTarget || clientTarget;
-                  allTargets.push(target * 100); // Em %
-                }
-
-                // 1. MÉDIA DAS METAS DE RETORNO
-                const avgTarget = allTargets.reduce((sum, t) => sum + t, 0) / allTargets.length;
-
-                // 2. DESVIO PADRÃO DAS METAS DE RETORNO
-                const targetVariance = allTargets.reduce((sum, t) => sum + Math.pow(t - avgTarget, 2), 0) / allTargets.length;
-                const targetStdDev = Math.sqrt(targetVariance);
-
-                // 3. META ACUMULADA (composta) - linha de referência
-                let targetAccumulated = 0;
-                for (let i = 0; i <= index; i++) {
-                  const comp = filteredConsolidatedData[i].Competencia;
-                  const mData = marketData.find(m => m.competencia === comp);
-                  const target = mData?.clientTarget || clientTarget;
-                  targetAccumulated = (1 + targetAccumulated / 100) * (1 + target * 100 / 100) - 1;
-                  targetAccumulated = targetAccumulated * 100;
-                }
-
-                // 4. BANDAS DE DESVIO PADRÃO BASEADAS NA META
-                // Usar o desvio padrão das metas multiplicado pelo número de períodos (para escala acumulada)
-                const scaledStdDev = targetStdDev * Math.sqrt(index + 1);
-                const sigma_alta = scaledStdDev;
-                const sigma_baixa = scaledStdDev * 1.2; // Assimetria: downside mais amplo
-
-                // 5. ÍNDICE DE ASSIMETRIA E SUA VARIAÇÃO
-                const assimetria = (sigma_baixa - sigma_alta) / sigma_alta * 100; // % de assimetria
-                const assimetriaVariacao = index === 0 ? 0 : assimetria - previousAssimetria; // Variação período a período
-                previousAssimetria = assimetria;
-                const [month, year] = item.Competencia.split('/');
-                const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-                return {
-                  name: `${competenciaDate.toLocaleDateString('pt-BR', {
-                    month: '2-digit'
-                  })}/${competenciaDate.toLocaleDateString('pt-BR', {
-                    year: '2-digit'
-                  })}`,
-                  retornoAcumulado: accumulatedReturn,
-                  mediaAcumulada: targetAccumulated,
-                  // Bandas baseadas nos desvios da meta
-                  plus1sd: targetAccumulated + sigma_alta,
-                  minus1sd: targetAccumulated - sigma_baixa,
-                  plus2sd: targetAccumulated + 2 * sigma_alta,
-                  minus2sd: targetAccumulated - 2 * sigma_baixa,
-                  // Métricas adicionais para análise
-                  sigma_alta,
-                  sigma_baixa,
-                  assimetria,
-                  assimetriaVariacao,
-                  avgTarget,
-                  targetStdDev
-                };
-              });
-              return [startPoint, ...dataPoints];
-            })()} margin={{
-              top: 20,
-              right: 20,
-              left: 20,
-              bottom: 20
-            }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} horizontal={true} vertical={false} />
-                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} axisLine={false} tickLine={false} tick={{
-                dy: 10
-              }} interval={0} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} axisLine={false} tickLine={false} tickFormatter={value => `${value.toFixed(1)}%`} width={70} />
-                <Tooltip contentStyle={{
-                backgroundColor: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '12px',
-                boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
-                fontSize: '13px',
-                padding: '12px'
-              }} formatter={(value: any, name: string) => {
-                const labels: Record<string, string> = {
-                  'retornoAcumulado': 'Retorno Acumulado',
-                  'mediaAcumulada': 'Meta Acumulada',
-                  'plus1sd': 'Meta + 1σ',
-                  'minus1sd': 'Meta - 1σ',
-                  'plus2sd': 'Meta + 2σ',
-                  'minus2sd': 'Meta - 2σ',
-                  'sigma_alta': 'σ da Meta (upside)',
-                  'sigma_baixa': 'σ da Meta (downside)',
-                  'assimetria': 'Índice de Assimetria',
-                  'assimetriaVariacao': 'Variação de Assimetria',
-                  'avgTarget': 'Média da Meta',
-                  'targetStdDev': 'Desvio Padrão da Meta'
-                };
-                if (name === 'assimetria' || name === 'assimetriaVariacao') {
-                  return [`${Number(value).toFixed(1)}%`, labels[name]];
-                }
-                return [`${Number(value).toFixed(2)}%`, labels[name] || name];
-              }} labelStyle={{
-                color: 'hsl(var(--foreground))',
-                fontWeight: '600',
-                marginBottom: '4px'
-              }} cursor={{
-                fill: 'hsl(var(--primary) / 0.1)'
-              }} />
+              <ComposedChart
+                data={(() => {
+                  // Add zero starting point
+                  if (filteredConsolidatedData.length === 0) return [];
+                  
+                  const [firstMonth, firstYear] = filteredConsolidatedData[0].Competencia.split('/');
+                  const firstDate = new Date(parseInt(firstYear), parseInt(firstMonth) - 1, 1);
+                  const previousMonth = new Date(firstDate);
+                  previousMonth.setMonth(previousMonth.getMonth() - 1);
+                  
+                  const startPoint = {
+                    name: `${previousMonth.toLocaleDateString('pt-BR', { month: '2-digit' })}/${previousMonth.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
+                    retornoAcumulado: 0,
+                    mediaAcumulada: 0,
+                    plus1sd: 0,
+                    minus1sd: 0,
+                    plus2sd: 0,
+                    minus2sd: 0,
+                    assimetriaVariacao: 0
+                  };
+                  
+                  let accumulatedReturn = 0;
+                  let accumulatedUpsideVol = 0;
+                  let accumulatedDownsideVol = 0;
+                  const monthReturns: number[] = [];
+                  let previousAssimetria = 0; // Para calcular variação
+                  
+                  const dataPoints = filteredConsolidatedData.map((item, index) => {
+                    const monthReturn = item.Rendimento * 100;
+                    
+                    // Retorno acumulado composto
+                    accumulatedReturn = (1 + accumulatedReturn / 100) * (1 + monthReturn / 100) - 1;
+                    accumulatedReturn = accumulatedReturn * 100;
+                    
+                    monthReturns.push(monthReturn);
+                    
+                    // === CÁLCULO BASEADO NA META DE RETORNO ===
+                    
+                    // Coletar todas as metas até o período atual
+                    const allTargets: number[] = [];
+                    for (let i = 0; i <= index; i++) {
+                      const comp = filteredConsolidatedData[i].Competencia;
+                      const mData = marketData.find(m => m.competencia === comp);
+                      const target = mData?.clientTarget || clientTarget;
+                      allTargets.push(target * 100); // Em %
+                    }
+                    
+                    // 1. MÉDIA DAS METAS DE RETORNO
+                    const avgTarget = allTargets.reduce((sum, t) => sum + t, 0) / allTargets.length;
+                    
+                    // 2. DESVIO PADRÃO DAS METAS DE RETORNO
+                    const targetVariance = allTargets.reduce((sum, t) => sum + Math.pow(t - avgTarget, 2), 0) / allTargets.length;
+                    const targetStdDev = Math.sqrt(targetVariance);
+                    
+                    // 3. META ACUMULADA (composta) - linha de referência
+                    let targetAccumulated = 0;
+                    for (let i = 0; i <= index; i++) {
+                      const comp = filteredConsolidatedData[i].Competencia;
+                      const mData = marketData.find(m => m.competencia === comp);
+                      const target = mData?.clientTarget || clientTarget;
+                      targetAccumulated = (1 + targetAccumulated / 100) * (1 + target * 100 / 100) - 1;
+                      targetAccumulated = targetAccumulated * 100;
+                    }
+                    
+                    // 4. BANDAS DE DESVIO PADRÃO BASEADAS NA META
+                    // Usar o desvio padrão das metas multiplicado pelo número de períodos (para escala acumulada)
+                    const scaledStdDev = targetStdDev * Math.sqrt(index + 1);
+                    
+                    const sigma_alta = scaledStdDev;
+                    const sigma_baixa = scaledStdDev * 1.2; // Assimetria: downside mais amplo
+                    
+                    // 5. ÍNDICE DE ASSIMETRIA E SUA VARIAÇÃO
+                    const assimetria = ((sigma_baixa - sigma_alta) / sigma_alta) * 100; // % de assimetria
+                    const assimetriaVariacao = index === 0 ? 0 : assimetria - previousAssimetria; // Variação período a período
+                    previousAssimetria = assimetria;
+                    
+                    const [month, year] = item.Competencia.split('/');
+                    const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+                    
+                    return {
+                      name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
+                      retornoAcumulado: accumulatedReturn,
+                      mediaAcumulada: targetAccumulated,
+                      // Bandas baseadas nos desvios da meta
+                      plus1sd: targetAccumulated + sigma_alta,
+                      minus1sd: targetAccumulated - sigma_baixa,
+                      plus2sd: targetAccumulated + (2 * sigma_alta),
+                      minus2sd: targetAccumulated - (2 * sigma_baixa),
+                      // Métricas adicionais para análise
+                      sigma_alta,
+                      sigma_baixa,
+                      assimetria,
+                      assimetriaVariacao,
+                      avgTarget,
+                      targetStdDev
+                    };
+                  });
+                  
+                  return [startPoint, ...dataPoints];
+                })()}
+                margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+              >
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="hsl(var(--border))" 
+                  opacity={0.3}
+                  horizontal={true}
+                  vertical={false}
+                />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ dy: 10 }}
+                  interval={0}
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => `${value.toFixed(1)}%`}
+                  width={70}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
+                    fontSize: '13px',
+                    padding: '12px'
+                  }}
+                  formatter={(value: any, name: string) => {
+                    const labels: Record<string, string> = {
+                      'retornoAcumulado': 'Retorno Acumulado',
+                      'mediaAcumulada': 'Meta Acumulada',
+                      'plus1sd': 'Meta + 1σ',
+                      'minus1sd': 'Meta - 1σ',
+                      'plus2sd': 'Meta + 2σ',
+                      'minus2sd': 'Meta - 2σ',
+                      'sigma_alta': 'σ da Meta (upside)',
+                      'sigma_baixa': 'σ da Meta (downside)',
+                      'assimetria': 'Índice de Assimetria',
+                      'assimetriaVariacao': 'Variação de Assimetria',
+                      'avgTarget': 'Média da Meta',
+                      'targetStdDev': 'Desvio Padrão da Meta'
+                    };
+                    
+                    if (name === 'assimetria' || name === 'assimetriaVariacao') {
+                      return [`${Number(value).toFixed(1)}%`, labels[name]];
+                    }
+                    return [`${Number(value).toFixed(2)}%`, labels[name] || name];
+                  }}
+                  labelStyle={{ 
+                    color: 'hsl(var(--foreground))', 
+                    fontWeight: '600',
+                    marginBottom: '4px'
+                  }}
+                  cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
+                />
                 
                 {/* Área entre os desvios padrão - pintada de cinza */}
-                {desviosPadraoTipo === 1 && <Area type="monotone" dataKey="plus1sd" stroke="none" fill="hsl(var(--muted-foreground))" fillOpacity={0.1} />}
-                {desviosPadraoTipo === 1 && <Area type="monotone" dataKey="minus1sd" stroke="none" fill="hsl(var(--background))" fillOpacity={1} />}
-                {desviosPadraoTipo === 2 && <Area type="monotone" dataKey="plus2sd" stroke="none" fill="hsl(var(--muted-foreground))" fillOpacity={0.1} />}
-                {desviosPadraoTipo === 2 && <Area type="monotone" dataKey="minus2sd" stroke="none" fill="hsl(var(--background))" fillOpacity={1} />}
+                {desviosPadraoTipo === 1 && (
+                  <Area
+                    type="monotone"
+                    dataKey="plus1sd"
+                    stroke="none"
+                    fill="hsl(var(--muted-foreground))"
+                    fillOpacity={0.1}
+                  />
+                )}
+                {desviosPadraoTipo === 1 && (
+                  <Area
+                    type="monotone"
+                    dataKey="minus1sd"
+                    stroke="none"
+                    fill="hsl(var(--background))"
+                    fillOpacity={1}
+                  />
+                )}
+                {desviosPadraoTipo === 2 && (
+                  <Area
+                    type="monotone"
+                    dataKey="plus2sd"
+                    stroke="none"
+                    fill="hsl(var(--muted-foreground))"
+                    fillOpacity={0.1}
+                  />
+                )}
+                {desviosPadraoTipo === 2 && (
+                  <Area
+                    type="monotone"
+                    dataKey="minus2sd"
+                    stroke="none"
+                    fill="hsl(var(--background))"
+                    fillOpacity={1}
+                  />
+                )}
                 
                 {/* Linhas de desvio padrão - mostrar apenas o selecionado */}
-                {desviosPadraoTipo === 1 && <>
-                    <Line type="monotone" dataKey="plus1sd" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Meta + 1σ" />
-                    <Line type="monotone" dataKey="minus1sd" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Meta - 1σ" />
-                  </>}
-                {desviosPadraoTipo === 2 && <>
-                    <Line type="monotone" dataKey="plus2sd" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Meta + 2σ" />
-                    <Line type="monotone" dataKey="minus2sd" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Meta - 2σ" />
-                  </>}
+                {desviosPadraoTipo === 1 && (
+                  <>
+                    <Line 
+                      type="monotone" 
+                      dataKey="plus1sd" 
+                      stroke="hsl(var(--muted-foreground))" 
+                      strokeWidth={1.5}
+                      strokeDasharray="4 4"
+                      dot={false}
+                      name="Meta + 1σ"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="minus1sd" 
+                      stroke="hsl(var(--muted-foreground))" 
+                      strokeWidth={1.5}
+                      strokeDasharray="4 4"
+                      dot={false}
+                      name="Meta - 1σ"
+                    />
+                  </>
+                )}
+                {desviosPadraoTipo === 2 && (
+                  <>
+                    <Line 
+                      type="monotone" 
+                      dataKey="plus2sd" 
+                      stroke="hsl(var(--muted-foreground))" 
+                      strokeWidth={1.5}
+                      strokeDasharray="4 4"
+                      dot={false}
+                      name="Meta + 2σ"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="minus2sd" 
+                      stroke="hsl(var(--muted-foreground))" 
+                      strokeWidth={1.5}
+                      strokeDasharray="4 4"
+                      dot={false}
+                      name="Meta - 2σ"
+                    />
+                  </>
+                )}
                 
-                {selectedIndicators.media && <Line type="monotone" dataKey="mediaAcumulada" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Meta Acumulada" />}
+                {selectedIndicators.media && (
+                  <Line 
+                    type="monotone" 
+                    dataKey="mediaAcumulada" 
+                    stroke="hsl(var(--muted-foreground))" 
+                    strokeWidth={2}
+                    dot={false}
+                    name="Meta Acumulada"
+                  />
+                )}
                 
                 {/* Linha de retorno acumulado da carteira - linha principal com ênfase */}
-                {selectedIndicators.portfolio && <Line type="monotone" dataKey="retornoAcumulado" stroke="hsl(var(--primary))" strokeWidth={3} dot={{
-                fill: 'hsl(var(--primary))',
-                strokeWidth: 2,
-                stroke: 'hsl(var(--background))',
-                r: 4
-              }} activeDot={{
-                r: 6,
-                fill: 'hsl(var(--primary))',
-                strokeWidth: 3,
-                stroke: 'hsl(var(--background))'
-              }} name="Retorno Acumulado" />}
+                {selectedIndicators.portfolio && (
+                  <Line 
+                    type="monotone" 
+                    dataKey="retornoAcumulado" 
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={3}
+                    dot={{ 
+                      fill: 'hsl(var(--primary))', 
+                      strokeWidth: 2, 
+                      stroke: 'hsl(var(--background))',
+                      r: 4
+                    }}
+                    activeDot={{ 
+                      r: 6, 
+                      fill: 'hsl(var(--primary))', 
+                      strokeWidth: 3, 
+                      stroke: 'hsl(var(--background))'
+                    }}
+                    name="Retorno Acumulado"
+                  />
+                )}
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -1084,7 +1257,14 @@ export function RiskManagement({
               <p className="text-xs text-muted-foreground mb-1">Retorno Médio</p>
               <div className="flex items-baseline gap-2">
                 <p className="text-2xl font-bold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
-                <Badge variant="outline" className={riskMetrics.avgReturn >= 1 ? "bg-success/10 text-success border-success/20 text-xs" : "bg-muted/10 text-muted-foreground border-muted/20 text-xs"}>
+                <Badge 
+                  variant="outline" 
+                  className={
+                    riskMetrics.avgReturn >= 1 
+                      ? "bg-success/10 text-success border-success/20 text-xs" 
+                      : "bg-muted/10 text-muted-foreground border-muted/20 text-xs"
+                  }
+                >
                   {riskMetrics.avgReturn >= 1 ? '↑' : '↓'}
                 </Badge>
               </div>
@@ -1156,7 +1336,12 @@ export function RiskManagement({
                       <p className="text-xs text-muted-foreground">Razão Upside/Downside</p>
                       <p className="text-xl font-bold text-foreground">{riskMetrics.volatilityRatio.toFixed(2)}x</p>
                     </div>
-                    <Badge variant={riskMetrics.volatilityRatio > 1 ? "default" : "secondary"} className={riskMetrics.volatilityRatio > 1 ? "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30" : ""}>
+                    <Badge 
+                      variant={riskMetrics.volatilityRatio > 1 ? "default" : "secondary"}
+                      className={riskMetrics.volatilityRatio > 1 
+                        ? "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30" 
+                        : ""}
+                    >
                       {riskMetrics.volatilityRatio > 1 ? 'Positivo' : 'Cauteloso'}
                     </Badge>
                   </div>
@@ -1175,21 +1360,27 @@ export function RiskManagement({
                 
                 <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
                   <p className="text-sm text-foreground">
-                    {riskMetrics.volatilityRatio > 1.2 ? <>
+                    {riskMetrics.volatilityRatio > 1.2 ? (
+                      <>
                         Sua volatilidade positiva é <strong>{riskMetrics.upsideVolatility.toFixed(2)}%</strong> e 
                         negativa é <strong>{riskMetrics.downsideVolatility.toFixed(2)}%</strong>. 
                         <span className="text-green-600 dark:text-green-400 font-medium"> Isso significa que quando ganha, 
                         ganha forte, mas quando perde, perde controlado.</span> Um perfil ideal para crescimento com risco gerenciado.
-                      </> : riskMetrics.volatilityRatio > 0.8 ? <>
+                      </>
+                    ) : riskMetrics.volatilityRatio > 0.8 ? (
+                      <>
                         Sua volatilidade positiva é <strong>{riskMetrics.upsideVolatility.toFixed(2)}%</strong> e 
                         negativa é <strong>{riskMetrics.downsideVolatility.toFixed(2)}%</strong>. 
                         Sua carteira apresenta um perfil <strong>equilibrado</strong>, com ganhos e perdas em magnitudes similares.
-                      </> : <>
+                      </>
+                    ) : (
+                      <>
                         Sua volatilidade positiva é <strong>{riskMetrics.upsideVolatility.toFixed(2)}%</strong> e 
                         negativa é <strong>{riskMetrics.downsideVolatility.toFixed(2)}%</strong>. 
                         <span className="text-amber-600 dark:text-amber-400 font-medium"> Quando ganha, ganha moderado, 
                         mas quando perde, a queda é mais acentuada.</span> Considere estratégias de proteção de capital.
-                      </>}
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
@@ -1199,10 +1390,94 @@ export function RiskManagement({
       </Card>
 
       {/* Gráfico de Risco x Retorno */}
-      
+      <Card className="bg-gradient-card border-border/50">
+        <CardHeader>
+          <CardTitle className="text-foreground">Risco x Retorno por Período</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={350}>
+            <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis 
+                type="number" 
+                dataKey="risco" 
+                name="Risco" 
+                unit="%" 
+                stroke="hsl(var(--muted-foreground))"
+                label={{ value: 'Risco (%)', position: 'insideBottom', offset: -10, fill: 'hsl(var(--muted-foreground))' }}
+              />
+              <YAxis 
+                type="number" 
+                dataKey="retorno" 
+                name="Retorno" 
+                unit="%" 
+                stroke="hsl(var(--muted-foreground))"
+                label={{ value: 'Retorno (%)', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
+              />
+              <Tooltip 
+                cursor={{ strokeDasharray: '3 3' }}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  color: 'hsl(var(--foreground))'
+                }}
+                formatter={(value: any) => [`${Number(value).toFixed(2)}%`]}
+              />
+              <Scatter 
+                name="Períodos" 
+                data={riskReturnData} 
+                fill="hsl(var(--primary))"
+                fillOpacity={0.6}
+              />
+            </ScatterChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
       {/* Gráfico de Meses Acima/Abaixo da Meta */}
-      
+      <Card className="bg-gradient-card border-border/50">
+        <CardHeader>
+          <CardTitle className="text-foreground">Retornos vs Meta de {(clientTarget * 100).toFixed(2)}%</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={targetComparisonData} margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis 
+                dataKey="competencia" 
+                stroke="hsl(var(--muted-foreground))"
+                angle={-45}
+                textAnchor="end"
+                height={80}
+              />
+              <YAxis stroke="hsl(var(--muted-foreground))" unit="%" />
+              <Tooltip 
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  color: 'hsl(var(--foreground))'
+                }}
+                formatter={(value: any) => [`${Number(value).toFixed(2)}%`]}
+              />
+              <Bar dataKey="retorno" radius={[8, 8, 0, 0]}>
+                {targetComparisonData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.acimaMeta ? 'hsl(var(--success))' : 'hsl(var(--destructive))'} />
+                ))}
+              </Bar>
+              <Line 
+                type="monotone" 
+                dataKey="meta" 
+                stroke="hsl(var(--primary))" 
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={false}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
       {/* Drawdown Analysis Chart */}
       <Card className="bg-gradient-card border-border/50">
@@ -1218,16 +1493,25 @@ export function RiskManagement({
             
             {/* Period Selection */}
             <div className="flex items-center gap-1">
-              {periodButtons.map(button => <Button key={button.id} variant={selectedPeriod === button.id ? "default" : "ghost"} size="sm" onClick={() => {
-              setSelectedPeriod(button.id as any);
-              if (button.id === 'custom') {
-                setShowCustomSelector(true);
-              }
-            }} className="text-xs px-3 py-1 h-8">
+              {periodButtons.map((button) => (
+                <Button
+                  key={button.id}
+                  variant={selectedPeriod === button.id ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setSelectedPeriod(button.id as any);
+                    if (button.id === 'custom') {
+                      setShowCustomSelector(true);
+                    }
+                  }}
+                  className="text-xs px-3 py-1 h-8"
+                >
                   {button.label}
-                </Button>)}
+                </Button>
+              ))}
               
-              {selectedPeriod === 'custom' && <Popover open={showCustomSelector} onOpenChange={setShowCustomSelector}>
+              {selectedPeriod === 'custom' && (
+                <Popover open={showCustomSelector} onOpenChange={setShowCustomSelector}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" size="sm" className="ml-2">
                       <Calendar className="h-4 w-4" />
@@ -1242,9 +1526,11 @@ export function RiskManagement({
                             <SelectValue placeholder="Selecione a competência inicial" />
                           </SelectTrigger>
                           <SelectContent className="bg-background border-border z-50">
-                            {availableCompetencias.map(competencia => <SelectItem key={competencia} value={competencia}>
+                            {availableCompetencias.map((competencia) => (
+                              <SelectItem key={competencia} value={competencia}>
                                 {formatCompetenciaDisplay(competencia)}
-                              </SelectItem>)}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -1255,15 +1541,18 @@ export function RiskManagement({
                             <SelectValue placeholder="Selecione a competência final" />
                           </SelectTrigger>
                           <SelectContent className="bg-background border-border z-50">
-                            {availableCompetencias.map(competencia => <SelectItem key={competencia} value={competencia}>
+                            {availableCompetencias.map((competencia) => (
+                              <SelectItem key={competencia} value={competencia}>
                                 {formatCompetenciaDisplay(competencia)}
-                              </SelectItem>)}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
                   </PopoverContent>
-                </Popover>}
+                </Popover>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -1281,48 +1570,72 @@ export function RiskManagement({
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                  <XAxis dataKey="competencia" stroke="hsl(var(--muted-foreground))" tick={{
-                  fontSize: 12
-                }} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" tick={{
-                  fontSize: 12
-                }} reversed={true} domain={[0, 'dataMax']} tickFormatter={value => `${value.toFixed(1)}%`} label={{
-                  value: 'Drawdown (%)',
-                  angle: -90,
-                  position: 'insideLeft',
-                  fill: 'hsl(var(--muted-foreground))'
-                }} />
-                  <Tooltip contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  color: 'hsl(var(--foreground))'
-                }} formatter={(value: any, name: string) => {
-                  if (name === 'drawdownPercent' && Number(value) > 0) {
-                    return [`-${Number(value).toFixed(2)}%`, 'Queda no Mês'];
-                  }
-                  if (name === 'rendimento') {
-                    return [`${Number(value).toFixed(2)}%`, 'Rendimento'];
-                  }
-                  return [value, name];
-                }} />
-                  <Area type="monotone" dataKey="drawdownPercent" stroke="hsl(var(--destructive))" fill="url(#drawdownGradient)" strokeWidth={2.5} name="Drawdown" />
+                  <XAxis 
+                    dataKey="competencia" 
+                    stroke="hsl(var(--muted-foreground))"
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    tick={{ fontSize: 12 }}
+                    reversed={true}
+                    domain={[0, 'dataMax']}
+                    tickFormatter={(value) => `${value.toFixed(1)}%`}
+                    label={{ 
+                      value: 'Drawdown (%)', 
+                      angle: -90, 
+                      position: 'insideLeft',
+                      fill: 'hsl(var(--muted-foreground))'
+                    }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      color: 'hsl(var(--foreground))'
+                    }}
+                    formatter={(value: any, name: string) => {
+                      if (name === 'drawdownPercent' && Number(value) > 0) {
+                        return [`-${Number(value).toFixed(2)}%`, 'Queda no Mês'];
+                      }
+                      if (name === 'rendimento') {
+                        return [`${Number(value).toFixed(2)}%`, 'Rendimento'];
+                      }
+                      return [value, name];
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="drawdownPercent" 
+                    stroke="hsl(var(--destructive))" 
+                    fill="url(#drawdownGradient)"
+                    strokeWidth={2.5}
+                    name="Drawdown"
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
 
             {/* Drawdown Events Table */}
-            {drawdownAnalysis.drawdowns.length > 0 && <div>
+            {drawdownAnalysis.drawdowns.length > 0 && (
+              <div>
                 <h4 className="text-sm font-semibold mb-3 text-foreground">Eventos de Drawdown</h4>
                 <div className="space-y-3">
-                  {drawdownAnalysis.drawdowns.sort((a, b) => {
-                // Sort by start date, most recent first
-                const [monthA, yearA] = a.startCompetencia.split('/').map(Number);
-                const [monthB, yearB] = b.startCompetencia.split('/').map(Number);
-                const dateA = new Date(2000 + yearA, monthA - 1);
-                const dateB = new Date(2000 + yearB, monthB - 1);
-                return dateB.getTime() - dateA.getTime();
-              }).map((dd, index) => <div key={index} className="p-4 rounded-lg border border-border bg-card/50">
+                  {drawdownAnalysis.drawdowns
+                    .sort((a, b) => {
+                      // Sort by start date, most recent first
+                      const [monthA, yearA] = a.startCompetencia.split('/').map(Number);
+                      const [monthB, yearB] = b.startCompetencia.split('/').map(Number);
+                      const dateA = new Date(2000 + yearA, monthA - 1);
+                      const dateB = new Date(2000 + yearB, monthB - 1);
+                      return dateB.getTime() - dateA.getTime();
+                    })
+                    .map((dd, index) => (
+                    <div 
+                      key={index}
+                      className="p-4 rounded-lg border border-border bg-card/50"
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <Badge variant="destructive" className="text-xs">
@@ -1332,11 +1645,15 @@ export function RiskManagement({
                             Pain Index: {dd.painIndex.toFixed(2)}
                           </Badge>
                         </div>
-                        {dd.recoveryCompetencia ? <Badge variant="default" className="text-xs bg-green-500/20 text-green-600 dark:text-green-400">
+                        {dd.recoveryCompetencia ? (
+                          <Badge variant="default" className="text-xs bg-green-500/20 text-green-600 dark:text-green-400">
                             Recuperado
-                          </Badge> : <Badge variant="secondary" className="text-xs">
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
                             Em andamento
-                          </Badge>}
+                          </Badge>
+                        )}
                       </div>
                       
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
@@ -1355,23 +1672,32 @@ export function RiskManagement({
                         <div>
                           <p className="text-muted-foreground text-xs">Recuperação</p>
                           <p className="font-medium">
-                            {dd.recoveryMonths !== null ? `${dd.recoveryMonths} ${dd.recoveryMonths === 1 ? 'mês' : 'meses'}` : 'Aguardando'}
+                            {dd.recoveryMonths !== null 
+                              ? `${dd.recoveryMonths} ${dd.recoveryMonths === 1 ? 'mês' : 'meses'}`
+                              : 'Aguardando'
+                            }
                           </p>
                         </div>
                       </div>
                       
-                      {dd.recoveryCompetencia && <div className="mt-2 pt-2 border-t border-border">
+                      {dd.recoveryCompetencia && (
+                        <div className="mt-2 pt-2 border-t border-border">
                           <p className="text-xs text-muted-foreground">
                             Recuperado em: <span className="font-medium text-foreground">{formatCompetenciaDisplay(dd.recoveryCompetencia)}</span>
                           </p>
-                        </div>}
-                    </div>)}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
                 
-                {drawdownAnalysis.drawdowns.length > 0 && <p className="text-xs text-muted-foreground mt-3 text-center">
+                {drawdownAnalysis.drawdowns.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-3 text-center">
                     Mostrando {drawdownAnalysis.drawdowns.length} {drawdownAnalysis.drawdowns.length === 1 ? 'evento' : 'eventos'} de drawdown
-                  </p>}
-              </div>}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Pain Index Explanation */}
             <div className="p-4 rounded-lg bg-muted/30 border border-border">
@@ -1401,34 +1727,40 @@ export function RiskManagement({
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={350}>
-            <ScatterChart margin={{
-            top: 20,
-            right: 30,
-            bottom: 20,
-            left: 20
-          }}>
+            <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis type="number" dataKey="current" name="Retorno Atual" unit="%" stroke="hsl(var(--muted-foreground))" label={{
-              value: 'Retorno Mês Atual (%)',
-              position: 'insideBottom',
-              offset: -10,
-              fill: 'hsl(var(--muted-foreground))'
-            }} />
-              <YAxis type="number" dataKey="next" name="Próximo Retorno" unit="%" stroke="hsl(var(--muted-foreground))" label={{
-              value: 'Retorno Próximo Mês (%)',
-              angle: -90,
-              position: 'insideLeft',
-              fill: 'hsl(var(--muted-foreground))'
-            }} />
-              <Tooltip cursor={{
-              strokeDasharray: '3 3'
-            }} contentStyle={{
-              backgroundColor: 'hsl(var(--card))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '8px',
-              color: 'hsl(var(--foreground))'
-            }} formatter={(value: any) => [`${Number(value).toFixed(2)}%`]} />
-              <Scatter name="Correlação" data={correlationData} fill="hsl(var(--accent))" fillOpacity={0.6} />
+              <XAxis 
+                type="number" 
+                dataKey="current" 
+                name="Retorno Atual" 
+                unit="%" 
+                stroke="hsl(var(--muted-foreground))"
+                label={{ value: 'Retorno Mês Atual (%)', position: 'insideBottom', offset: -10, fill: 'hsl(var(--muted-foreground))' }}
+              />
+              <YAxis 
+                type="number" 
+                dataKey="next" 
+                name="Próximo Retorno" 
+                unit="%" 
+                stroke="hsl(var(--muted-foreground))"
+                label={{ value: 'Retorno Próximo Mês (%)', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
+              />
+              <Tooltip 
+                cursor={{ strokeDasharray: '3 3' }}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  color: 'hsl(var(--foreground))'
+                }}
+                formatter={(value: any) => [`${Number(value).toFixed(2)}%`]}
+              />
+              <Scatter 
+                name="Correlação" 
+                data={correlationData} 
+                fill="hsl(var(--accent))"
+                fillOpacity={0.6}
+              />
             </ScatterChart>
           </ResponsiveContainer>
         </CardContent>
@@ -1447,43 +1779,53 @@ export function RiskManagement({
         </CardHeader>
         <CardContent>
           {(() => {
-          // Usar todos os dados consolidados (acumulado desde o início)
-          const portfolioReturns = consolidatedData.map(item => item.Rendimento * 100);
-          const targetReturns: number[] = [];
-          consolidatedData.forEach(item => {
-            const mData = marketData.find(m => m.competencia === item.Competencia);
-            const target = mData?.clientTarget || clientTarget;
-            targetReturns.push(target * 100);
-          });
-          if (portfolioReturns.length < 2) {
-            return <div className="text-center py-8 text-muted-foreground">
+            // Usar todos os dados consolidados (acumulado desde o início)
+            const portfolioReturns = consolidatedData.map(item => item.Rendimento * 100);
+            const targetReturns: number[] = [];
+            
+            consolidatedData.forEach((item) => {
+              const mData = marketData.find(m => m.competencia === item.Competencia);
+              const target = mData?.clientTarget || clientTarget;
+              targetReturns.push(target * 100);
+            });
+
+            if (portfolioReturns.length < 2) {
+              return (
+                <div className="text-center py-8 text-muted-foreground">
                   Dados insuficientes para cálculo de Beta e Alpha
-                </div>;
-          }
+                </div>
+              );
+            }
 
-          // Cálculo de médias
-          const avgPortfolio = portfolioReturns.reduce((a, b) => a + b, 0) / portfolioReturns.length;
-          const avgTarget = targetReturns.reduce((a, b) => a + b, 0) / targetReturns.length;
+            // Cálculo de médias
+            const avgPortfolio = portfolioReturns.reduce((a, b) => a + b, 0) / portfolioReturns.length;
+            const avgTarget = targetReturns.reduce((a, b) => a + b, 0) / targetReturns.length;
 
-          // Volatilidade (desvio padrão) da carteira
-          const portfolioVariance = portfolioReturns.reduce((sum, r) => sum + Math.pow(r - avgPortfolio, 2), 0) / portfolioReturns.length;
-          const portfolioVolatility = Math.sqrt(portfolioVariance);
+            // Volatilidade (desvio padrão) da carteira
+            const portfolioVariance = portfolioReturns.reduce((sum, r) => 
+              sum + Math.pow(r - avgPortfolio, 2), 0) / portfolioReturns.length;
+            const portfolioVolatility = Math.sqrt(portfolioVariance);
 
-          // Volatilidade (desvio padrão) da meta
-          const targetVariance = targetReturns.reduce((sum, r) => sum + Math.pow(r - avgTarget, 2), 0) / targetReturns.length;
-          const targetVolatility = Math.sqrt(targetVariance);
+            // Volatilidade (desvio padrão) da meta
+            const targetVariance = targetReturns.reduce((sum, r) => 
+              sum + Math.pow(r - avgTarget, 2), 0) / targetReturns.length;
+            const targetVolatility = Math.sqrt(targetVariance);
 
-          // Beta = Volatilidade da Carteira / Volatilidade da Meta
-          const beta = targetVolatility !== 0 ? portfolioVolatility / targetVolatility : 0;
+            // Beta = Volatilidade da Carteira / Volatilidade da Meta
+            const beta = targetVolatility !== 0 ? portfolioVolatility / targetVolatility : 0;
 
-          // Alpha = Retorno Médio da Carteira - Retorno Médio da Meta
-          const alpha = avgPortfolio - avgTarget;
+            // Alpha = Retorno Médio da Carteira - Retorno Médio da Meta
+            const alpha = avgPortfolio - avgTarget;
 
-          // Retorno acumulado total
-          const totalPortfolioReturn = portfolioReturns.reduce((product, r) => product * (1 + r / 100), 1) - 1;
-          const totalTargetReturn = targetReturns.reduce((product, r) => product * (1 + r / 100), 1) - 1;
-          const totalExcess = totalPortfolioReturn - totalTargetReturn;
-          return <div className="space-y-6">
+            // Retorno acumulado total
+            const totalPortfolioReturn = portfolioReturns.reduce((product, r) => 
+              product * (1 + r / 100), 1) - 1;
+            const totalTargetReturn = targetReturns.reduce((product, r) => 
+              product * (1 + r / 100), 1) - 1;
+            const totalExcess = totalPortfolioReturn - totalTargetReturn;
+
+            return (
+              <div className="space-y-6">
                 {/* Métricas Principais */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="p-8 rounded-lg border-2 border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-blue-500/5">
@@ -1514,16 +1856,24 @@ export function RiskManagement({
                         {beta >= 0.8 && beta <= 1.2 && '✓ Volatilidade similar à meta'}
                         {beta < 0.8 && '✓ Carteira mais estável que a meta'}
                       </p>
-                      {beta > 1 && <p className="text-xs text-muted-foreground mt-2">
+                      {beta > 1 && (
+                        <p className="text-xs text-muted-foreground mt-2">
                           A carteira amplifica os movimentos da meta em {((beta - 1) * 100).toFixed(0)}%
-                        </p>}
-                      {beta < 1 && <p className="text-xs text-muted-foreground mt-2">
+                        </p>
+                      )}
+                      {beta < 1 && (
+                        <p className="text-xs text-muted-foreground mt-2">
                           A carteira amortece os movimentos da meta em {((1 - beta) * 100).toFixed(0)}%
-                        </p>}
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  <div className={`p-8 rounded-lg border-2 ${alpha >= 0 ? 'border-green-500/30 bg-gradient-to-br from-green-500/10 to-green-500/5' : 'border-red-500/30 bg-gradient-to-br from-red-500/10 to-red-500/5'}`}>
+                  <div className={`p-8 rounded-lg border-2 ${
+                    alpha >= 0 
+                      ? 'border-green-500/30 bg-gradient-to-br from-green-500/10 to-green-500/5' 
+                      : 'border-red-500/30 bg-gradient-to-br from-red-500/10 to-red-500/5'
+                  }`}>
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-base font-semibold text-foreground">Alpha (α)</h4>
                       <Rocket className={`w-6 h-6 ${alpha >= 0 ? 'text-green-500' : 'text-red-500'}`} />
@@ -1617,8 +1967,9 @@ export function RiskManagement({
                     </ul>
                   </div>
                 </div>
-              </div>;
-        })()}
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 
@@ -1632,38 +1983,44 @@ export function RiskManagement({
         </CardHeader>
         <CardContent className="pt-6">
           {(() => {
-          if (filteredConsolidatedData.length < 2) {
-            return <p className="text-muted-foreground">Dados insuficientes para análise de correlação</p>;
-          }
+            if (filteredConsolidatedData.length < 2) {
+              return <p className="text-muted-foreground">Dados insuficientes para análise de correlação</p>;
+            }
 
-          // Calcular correlação entre retornos consecutivos
-          const returns = filteredConsolidatedData.map(item => item.Rendimento * 100);
-          const currentReturns = returns.slice(0, -1);
-          const nextReturns = returns.slice(1);
+            // Calcular correlação entre retornos consecutivos
+            const returns = filteredConsolidatedData.map(item => item.Rendimento * 100);
+            const currentReturns = returns.slice(0, -1);
+            const nextReturns = returns.slice(1);
 
-          // Médias
-          const avgCurrent = currentReturns.reduce((a, b) => a + b, 0) / currentReturns.length;
-          const avgNext = nextReturns.reduce((a, b) => a + b, 0) / nextReturns.length;
+            // Médias
+            const avgCurrent = currentReturns.reduce((a, b) => a + b, 0) / currentReturns.length;
+            const avgNext = nextReturns.reduce((a, b) => a + b, 0) / nextReturns.length;
 
-          // Covariância
-          const covariance = currentReturns.reduce((sum, current, i) => {
-            return sum + (current - avgCurrent) * (nextReturns[i] - avgNext);
-          }, 0) / currentReturns.length;
+            // Covariância
+            const covariance = currentReturns.reduce((sum, current, i) => {
+              return sum + (current - avgCurrent) * (nextReturns[i] - avgNext);
+            }, 0) / currentReturns.length;
 
-          // Desvios padrão
-          const stdCurrent = Math.sqrt(currentReturns.reduce((sum, r) => sum + Math.pow(r - avgCurrent, 2), 0) / currentReturns.length);
-          const stdNext = Math.sqrt(nextReturns.reduce((sum, r) => sum + Math.pow(r - avgNext, 2), 0) / nextReturns.length);
+            // Desvios padrão
+            const stdCurrent = Math.sqrt(
+              currentReturns.reduce((sum, r) => sum + Math.pow(r - avgCurrent, 2), 0) / currentReturns.length
+            );
+            const stdNext = Math.sqrt(
+              nextReturns.reduce((sum, r) => sum + Math.pow(r - avgNext, 2), 0) / nextReturns.length
+            );
 
-          // Correlação de Pearson
-          const correlation = stdCurrent * stdNext !== 0 ? covariance / (stdCurrent * stdNext) : 0;
+            // Correlação de Pearson
+            const correlation = (stdCurrent * stdNext) !== 0 ? covariance / (stdCurrent * stdNext) : 0;
 
-          // Dados para scatter plot
-          const scatterData = currentReturns.map((current, i) => ({
-            current,
-            next: nextReturns[i],
-            competencia: filteredConsolidatedData[i].Competencia
-          }));
-          return <div className="space-y-6">
+            // Dados para scatter plot
+            const scatterData = currentReturns.map((current, i) => ({
+              current,
+              next: nextReturns[i],
+              competencia: filteredConsolidatedData[i].Competencia
+            }));
+
+            return (
+              <div className="space-y-6">
                 {/* Métrica Principal */}
                 <div className="p-6 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/30">
                   <div className="flex items-center justify-between mb-3">
@@ -1707,37 +2064,37 @@ export function RiskManagement({
                     Retorno Atual vs Retorno Seguinte
                   </h4>
                   <ResponsiveContainer width="100%" height={300}>
-                    <ScatterChart margin={{
-                  top: 20,
-                  right: 20,
-                  bottom: 20,
-                  left: 20
-                }}>
+                    <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis type="number" dataKey="current" name="Retorno Atual" label={{
-                    value: 'Retorno Atual (%)',
-                    position: 'insideBottom',
-                    offset: -10
-                  }} stroke="hsl(var(--foreground))" />
-                      <YAxis type="number" dataKey="next" name="Retorno Seguinte" label={{
-                    value: 'Retorno Seguinte (%)',
-                    angle: -90,
-                    position: 'insideLeft'
-                  }} stroke="hsl(var(--foreground))" />
-                      <Tooltip content={({
-                    active,
-                    payload
-                  }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload;
-                      return <div className="bg-background border border-border rounded-lg shadow-lg p-3">
+                      <XAxis 
+                        type="number" 
+                        dataKey="current" 
+                        name="Retorno Atual"
+                        label={{ value: 'Retorno Atual (%)', position: 'insideBottom', offset: -10 }}
+                        stroke="hsl(var(--foreground))"
+                      />
+                      <YAxis 
+                        type="number" 
+                        dataKey="next" 
+                        name="Retorno Seguinte"
+                        label={{ value: 'Retorno Seguinte (%)', angle: -90, position: 'insideLeft' }}
+                        stroke="hsl(var(--foreground))"
+                      />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-background border border-border rounded-lg shadow-lg p-3">
                                 <p className="text-xs font-semibold mb-1">{data.competencia}</p>
                                 <p className="text-xs text-muted-foreground">Atual: {data.current.toFixed(2)}%</p>
                                 <p className="text-xs text-muted-foreground">Seguinte: {data.next.toFixed(2)}%</p>
-                              </div>;
-                    }
-                    return null;
-                  }} />
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
                       <Scatter data={scatterData} fill="hsl(var(--primary))" />
                     </ScatterChart>
                   </ResponsiveContainer>
@@ -1755,8 +2112,9 @@ export function RiskManagement({
                     <li><strong>-1:</strong> Retornos tendem a reverter (mean reversion)</li>
                   </ul>
                 </div>
-              </div>;
-        })()}
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 
@@ -1770,60 +2128,68 @@ export function RiskManagement({
         </CardHeader>
         <CardContent className="pt-6">
           {(() => {
-          if (filteredConsolidatedData.length === 0) {
-            return <p className="text-muted-foreground">Dados insuficientes para stress test</p>;
-          }
-          const returns = filteredConsolidatedData.map(item => item.Rendimento * 100);
-          const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
-          const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length;
-          const volatility = Math.sqrt(variance);
+            if (filteredConsolidatedData.length === 0) {
+              return <p className="text-muted-foreground">Dados insuficientes para stress test</p>;
+            }
 
-          // Cenários de stress
-          const scenarios = [{
-            name: 'Cenário Leve',
-            description: 'Queda de 1 desvio padrão',
-            shock: -1 * volatility,
-            severity: 'low',
-            color: 'text-yellow-600'
-          }, {
-            name: 'Cenário Moderado',
-            description: 'Queda de 2 desvios padrão',
-            shock: -2 * volatility,
-            severity: 'medium',
-            color: 'text-orange-600'
-          }, {
-            name: 'Cenário Severo',
-            description: 'Queda de 3 desvios padrão',
-            shock: -3 * volatility,
-            severity: 'high',
-            color: 'text-red-600'
-          }, {
-            name: 'Pior Mês Histórico',
-            description: 'Repetição do pior mês registrado',
-            shock: riskMetrics.worstMonth.return,
-            severity: 'historical',
-            color: 'text-red-700'
-          }];
-          const currentPatrimonio = filteredConsolidatedData[filteredConsolidatedData.length - 1]["Patrimonio Final"];
-          return <div className="space-y-6">
+            const returns = filteredConsolidatedData.map(item => item.Rendimento * 100);
+            const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+            const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length;
+            const volatility = Math.sqrt(variance);
+
+            // Cenários de stress
+            const scenarios = [
+              {
+                name: 'Cenário Leve',
+                description: 'Queda de 1 desvio padrão',
+                shock: -1 * volatility,
+                severity: 'low',
+                color: 'text-yellow-600'
+              },
+              {
+                name: 'Cenário Moderado',
+                description: 'Queda de 2 desvios padrão',
+                shock: -2 * volatility,
+                severity: 'medium',
+                color: 'text-orange-600'
+              },
+              {
+                name: 'Cenário Severo',
+                description: 'Queda de 3 desvios padrão',
+                shock: -3 * volatility,
+                severity: 'high',
+                color: 'text-red-600'
+              },
+              {
+                name: 'Pior Mês Histórico',
+                description: 'Repetição do pior mês registrado',
+                shock: riskMetrics.worstMonth.return,
+                severity: 'historical',
+                color: 'text-red-700'
+              }
+            ];
+
+            const currentPatrimonio = filteredConsolidatedData[filteredConsolidatedData.length - 1]["Patrimonio Final"];
+
+            return (
+              <div className="space-y-6">
                 {/* Patrimônio Atual */}
                 <div className="p-4 rounded-lg bg-muted/50 border border-border">
                   <p className="text-xs text-muted-foreground mb-1">Patrimônio Atual</p>
                   <p className="text-2xl font-bold text-foreground">
-                    R$ {currentPatrimonio.toLocaleString('pt-BR', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2
-                })}
+                    R$ {currentPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
 
                 {/* Cenários de Stress */}
                 <div className="space-y-4">
                   {scenarios.map((scenario, index) => {
-                const impactedPatrimonio = currentPatrimonio * (1 + scenario.shock / 100);
-                const loss = currentPatrimonio - impactedPatrimonio;
-                const lossPercent = loss / currentPatrimonio * 100;
-                return <div key={index} className="p-5 rounded-lg border-2 border-border bg-gradient-to-r from-background to-muted/30">
+                    const impactedPatrimonio = currentPatrimonio * (1 + scenario.shock / 100);
+                    const loss = currentPatrimonio - impactedPatrimonio;
+                    const lossPercent = (loss / currentPatrimonio) * 100;
+
+                    return (
+                      <div key={index} className="p-5 rounded-lg border-2 border-border bg-gradient-to-r from-background to-muted/30">
                         <div className="flex items-start justify-between mb-3">
                           <div>
                             <h4 className="text-sm font-semibold text-foreground">{scenario.name}</h4>
@@ -1838,19 +2204,13 @@ export function RiskManagement({
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Patrimônio Após Stress</p>
                             <p className={`text-lg font-bold ${scenario.color}`}>
-                              R$ {impactedPatrimonio.toLocaleString('pt-BR', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        })}
+                              R$ {impactedPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Perda Potencial</p>
                             <p className={`text-lg font-bold ${scenario.color}`}>
-                              R$ {loss.toLocaleString('pt-BR', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        })}
+                              R$ {loss.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                           </div>
                         </div>
@@ -1859,8 +2219,9 @@ export function RiskManagement({
                         <p className="text-xs text-muted-foreground mt-2 text-right">
                           Retenção: {(100 - lossPercent).toFixed(1)}%
                         </p>
-                      </div>;
-              })}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Resumo Estatístico */}
@@ -1887,8 +2248,9 @@ export function RiskManagement({
                     e avaliar a resiliência da carteira em crises.
                   </p>
                 </div>
-              </div>;
-        })()}
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 
@@ -1902,75 +2264,87 @@ export function RiskManagement({
         </CardHeader>
         <CardContent className="pt-6">
           {(() => {
-          if (filteredConsolidatedData.length === 0) {
-            return <p className="text-muted-foreground">Dados insuficientes para cálculo de índices</p>;
-          }
-          const returns = filteredConsolidatedData.map(item => item.Rendimento * 100);
+            if (filteredConsolidatedData.length === 0) {
+              return <p className="text-muted-foreground">Dados insuficientes para cálculo de índices</p>;
+            }
 
-          // Média geométrica (retorno composto real)
-          const compoundedReturn = returns.reduce((product, r) => product * (1 + r / 100), 1);
-          const avgReturn = (Math.pow(compoundedReturn, 1 / returns.length) - 1) * 100;
+            const returns = filteredConsolidatedData.map(item => item.Rendimento * 100);
+            
+            // Média geométrica (retorno composto real)
+            const compoundedReturn = returns.reduce((product, r) => product * (1 + r / 100), 1);
+            const avgReturn = (Math.pow(compoundedReturn, 1 / returns.length) - 1) * 100;
+            
+            // Volatilidade
+            const avgArithmetic = returns.reduce((a, b) => a + b, 0) / returns.length;
+            const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgArithmetic, 2), 0) / returns.length;
+            const volatility = Math.sqrt(variance);
+            
+            // Taxa livre de risco (CDI mensal aproximado)
+            const riskFreeRate = 0.5;
+            
+            // Sharpe Ratio
+            const sharpe = volatility !== 0 ? (avgReturn - riskFreeRate) / volatility : 0;
+            
+            // Sortino Ratio (downside deviation)
+            const negativeReturns = returns.filter(r => r < riskFreeRate);
+            const downwardVariance = negativeReturns.length > 0
+              ? negativeReturns.reduce((sum, r) => sum + Math.pow(r - riskFreeRate, 2), 0) / negativeReturns.length
+              : 0;
+            const downwardVolatility = Math.sqrt(downwardVariance);
+            const sortino = downwardVolatility !== 0 ? (avgReturn - riskFreeRate) / downwardVolatility : 0;
+            
+            // Calmar Ratio (retorno anualizado / max drawdown)
+            let maxDrawdown = 0;
+            let peak = filteredConsolidatedData[0]["Patrimonio Final"];
+            filteredConsolidatedData.forEach(item => {
+              const current = item["Patrimonio Final"];
+              if (current > peak) peak = current;
+              const drawdown = ((peak - current) / peak) * 100;
+              if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+            });
+            
+            const annualizedReturn = avgReturn * 12; // Retorno médio mensal * 12
+            const calmar = maxDrawdown !== 0 ? annualizedReturn / maxDrawdown : 0;
 
-          // Volatilidade
-          const avgArithmetic = returns.reduce((a, b) => a + b, 0) / returns.length;
-          const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgArithmetic, 2), 0) / returns.length;
-          const volatility = Math.sqrt(variance);
+            const indices = [
+              {
+                name: 'Sharpe Ratio',
+                value: sharpe,
+                description: 'Retorno ajustado ao risco total',
+                formula: '(Retorno - RF) / Volatilidade',
+                interpretation: sharpe > 1 ? 'Excelente' : sharpe > 0.5 ? 'Bom' : sharpe > 0 ? 'Aceitável' : 'Ruim',
+                color: sharpe > 1 ? 'text-green-600' : sharpe > 0.5 ? 'text-blue-600' : sharpe > 0 ? 'text-yellow-600' : 'text-red-600',
+                bgColor: sharpe > 1 ? 'from-green-500/10 to-green-500/5' : sharpe > 0.5 ? 'from-blue-500/10 to-blue-500/5' : sharpe > 0 ? 'from-yellow-500/10 to-yellow-500/5' : 'from-red-500/10 to-red-500/5',
+                borderColor: sharpe > 1 ? 'border-green-500/30' : sharpe > 0.5 ? 'border-blue-500/30' : sharpe > 0 ? 'border-yellow-500/30' : 'border-red-500/30'
+              },
+              {
+                name: 'Sortino Ratio',
+                value: sortino,
+                description: 'Retorno ajustado ao risco negativo',
+                formula: '(Retorno - RF) / Downside Deviation',
+                interpretation: sortino > 1.5 ? 'Excelente' : sortino > 1 ? 'Bom' : sortino > 0.5 ? 'Aceitável' : 'Ruim',
+                color: sortino > 1.5 ? 'text-green-600' : sortino > 1 ? 'text-blue-600' : sortino > 0.5 ? 'text-yellow-600' : 'text-red-600',
+                bgColor: sortino > 1.5 ? 'from-green-500/10 to-green-500/5' : sortino > 1 ? 'from-blue-500/10 to-blue-500/5' : sortino > 0.5 ? 'from-yellow-500/10 to-yellow-500/5' : 'from-red-500/10 to-red-500/5',
+                borderColor: sortino > 1.5 ? 'border-green-500/30' : sortino > 1 ? 'border-blue-500/30' : sortino > 0.5 ? 'border-yellow-500/30' : 'border-red-500/30'
+              },
+              {
+                name: 'Calmar Ratio',
+                value: calmar,
+                description: 'Retorno anualizado / Max Drawdown',
+                formula: 'Retorno Anual / Drawdown Máximo',
+                interpretation: calmar > 3 ? 'Excelente' : calmar > 1.5 ? 'Bom' : calmar > 0.5 ? 'Aceitável' : 'Ruim',
+                color: calmar > 3 ? 'text-green-600' : calmar > 1.5 ? 'text-blue-600' : calmar > 0.5 ? 'text-yellow-600' : 'text-red-600',
+                bgColor: calmar > 3 ? 'from-green-500/10 to-green-500/5' : calmar > 1.5 ? 'from-blue-500/10 to-blue-500/5' : calmar > 0.5 ? 'from-yellow-500/10 to-yellow-500/5' : 'from-red-500/10 to-red-500/5',
+                borderColor: calmar > 3 ? 'border-green-500/30' : calmar > 1.5 ? 'border-blue-500/30' : calmar > 0.5 ? 'border-yellow-500/30' : 'border-red-500/30'
+              }
+            ];
 
-          // Taxa livre de risco (CDI mensal aproximado)
-          const riskFreeRate = 0.5;
-
-          // Sharpe Ratio
-          const sharpe = volatility !== 0 ? (avgReturn - riskFreeRate) / volatility : 0;
-
-          // Sortino Ratio (downside deviation)
-          const negativeReturns = returns.filter(r => r < riskFreeRate);
-          const downwardVariance = negativeReturns.length > 0 ? negativeReturns.reduce((sum, r) => sum + Math.pow(r - riskFreeRate, 2), 0) / negativeReturns.length : 0;
-          const downwardVolatility = Math.sqrt(downwardVariance);
-          const sortino = downwardVolatility !== 0 ? (avgReturn - riskFreeRate) / downwardVolatility : 0;
-
-          // Calmar Ratio (retorno anualizado / max drawdown)
-          let maxDrawdown = 0;
-          let peak = filteredConsolidatedData[0]["Patrimonio Final"];
-          filteredConsolidatedData.forEach(item => {
-            const current = item["Patrimonio Final"];
-            if (current > peak) peak = current;
-            const drawdown = (peak - current) / peak * 100;
-            if (drawdown > maxDrawdown) maxDrawdown = drawdown;
-          });
-          const annualizedReturn = avgReturn * 12; // Retorno médio mensal * 12
-          const calmar = maxDrawdown !== 0 ? annualizedReturn / maxDrawdown : 0;
-          const indices = [{
-            name: 'Sharpe Ratio',
-            value: sharpe,
-            description: 'Retorno ajustado ao risco total',
-            formula: '(Retorno - RF) / Volatilidade',
-            interpretation: sharpe > 1 ? 'Excelente' : sharpe > 0.5 ? 'Bom' : sharpe > 0 ? 'Aceitável' : 'Ruim',
-            color: sharpe > 1 ? 'text-green-600' : sharpe > 0.5 ? 'text-blue-600' : sharpe > 0 ? 'text-yellow-600' : 'text-red-600',
-            bgColor: sharpe > 1 ? 'from-green-500/10 to-green-500/5' : sharpe > 0.5 ? 'from-blue-500/10 to-blue-500/5' : sharpe > 0 ? 'from-yellow-500/10 to-yellow-500/5' : 'from-red-500/10 to-red-500/5',
-            borderColor: sharpe > 1 ? 'border-green-500/30' : sharpe > 0.5 ? 'border-blue-500/30' : sharpe > 0 ? 'border-yellow-500/30' : 'border-red-500/30'
-          }, {
-            name: 'Sortino Ratio',
-            value: sortino,
-            description: 'Retorno ajustado ao risco negativo',
-            formula: '(Retorno - RF) / Downside Deviation',
-            interpretation: sortino > 1.5 ? 'Excelente' : sortino > 1 ? 'Bom' : sortino > 0.5 ? 'Aceitável' : 'Ruim',
-            color: sortino > 1.5 ? 'text-green-600' : sortino > 1 ? 'text-blue-600' : sortino > 0.5 ? 'text-yellow-600' : 'text-red-600',
-            bgColor: sortino > 1.5 ? 'from-green-500/10 to-green-500/5' : sortino > 1 ? 'from-blue-500/10 to-blue-500/5' : sortino > 0.5 ? 'from-yellow-500/10 to-yellow-500/5' : 'from-red-500/10 to-red-500/5',
-            borderColor: sortino > 1.5 ? 'border-green-500/30' : sortino > 1 ? 'border-blue-500/30' : sortino > 0.5 ? 'border-yellow-500/30' : 'border-red-500/30'
-          }, {
-            name: 'Calmar Ratio',
-            value: calmar,
-            description: 'Retorno anualizado / Max Drawdown',
-            formula: 'Retorno Anual / Drawdown Máximo',
-            interpretation: calmar > 3 ? 'Excelente' : calmar > 1.5 ? 'Bom' : calmar > 0.5 ? 'Aceitável' : 'Ruim',
-            color: calmar > 3 ? 'text-green-600' : calmar > 1.5 ? 'text-blue-600' : calmar > 0.5 ? 'text-yellow-600' : 'text-red-600',
-            bgColor: calmar > 3 ? 'from-green-500/10 to-green-500/5' : calmar > 1.5 ? 'from-blue-500/10 to-blue-500/5' : calmar > 0.5 ? 'from-yellow-500/10 to-yellow-500/5' : 'from-red-500/10 to-red-500/5',
-            borderColor: calmar > 3 ? 'border-green-500/30' : calmar > 1.5 ? 'border-blue-500/30' : calmar > 0.5 ? 'border-yellow-500/30' : 'border-red-500/30'
-          }];
-          return <div className="space-y-6">
+            return (
+              <div className="space-y-6">
                 {/* Cards de Índices */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {indices.map((index, i) => <div key={i} className={`p-6 rounded-lg border-2 bg-gradient-to-br ${index.bgColor} ${index.borderColor}`}>
+                  {indices.map((index, i) => (
+                    <div key={i} className={`p-6 rounded-lg border-2 bg-gradient-to-br ${index.bgColor} ${index.borderColor}`}>
                       <h4 className="text-sm font-semibold text-foreground mb-2">{index.name}</h4>
                       <div className={`text-4xl font-bold mb-3 ${index.color}`}>
                         {index.value.toFixed(3)}
@@ -1982,7 +2356,8 @@ export function RiskManagement({
                       <p className="text-xs text-muted-foreground font-mono bg-background/50 p-2 rounded">
                         {index.formula}
                       </p>
-                    </div>)}
+                    </div>
+                  ))}
                 </div>
 
                 {/* Componentes dos Cálculos */}
@@ -2012,31 +2387,29 @@ export function RiskManagement({
                 <div>
                   <h4 className="text-sm font-semibold mb-4 text-foreground">Comparativo de Índices</h4>
                   <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={indices} margin={{
-                  top: 20,
-                  right: 30,
-                  left: 20,
-                  bottom: 5
-                }}>
+                    <BarChart data={indices} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="name" stroke="hsl(var(--foreground))" />
                       <YAxis stroke="hsl(var(--foreground))" />
-                      <Tooltip content={({
-                    active,
-                    payload
-                  }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload;
-                      return <div className="bg-background border border-border rounded-lg shadow-lg p-3">
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-background border border-border rounded-lg shadow-lg p-3">
                                 <p className="text-sm font-semibold mb-1">{data.name}</p>
                                 <p className="text-lg font-bold text-primary">{data.value.toFixed(3)}</p>
                                 <p className="text-xs text-muted-foreground mt-1">{data.interpretation}</p>
-                              </div>;
-                    }
-                    return null;
-                  }} />
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
                       <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                        {indices.map((entry, index) => <Cell key={`cell-${index}`} fill="hsl(var(--primary))" />)}
+                        {indices.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill="hsl(var(--primary))" />
+                        ))}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
@@ -2063,10 +2436,12 @@ export function RiskManagement({
                     </p>
                   </div>
                 </div>
-              </div>;
-        })()}
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 
-    </div>;
+    </div>
+  );
 }
