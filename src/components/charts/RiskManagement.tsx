@@ -2442,6 +2442,277 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
         </CardContent>
       </Card>
 
+      {/* Card 14: Simulação Monte Carlo */}
+      <Card className="border-2 border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300">
+        <CardHeader className="pb-4 border-b border-border">
+          <CardTitle className="flex items-center gap-3 text-xl font-bold">
+            <Rocket className="w-6 h-6 text-primary" />
+            Simulação Monte Carlo
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          {(() => {
+            if (filteredConsolidatedData.length === 0) {
+              return <p className="text-muted-foreground">Dados insuficientes para simulação</p>;
+            }
+
+            const returns = filteredConsolidatedData.map(item => item.Rendimento * 100);
+            const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+            const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length;
+            const volatility = Math.sqrt(variance);
+
+            const currentPatrimonio = filteredConsolidatedData[filteredConsolidatedData.length - 1]["Patrimonio Final"];
+            const numSimulations = 1000;
+            const periodsAhead = 12; // 12 meses à frente
+
+            // Função para gerar número aleatório de distribuição normal (Box-Muller)
+            const randomNormal = () => {
+              const u1 = Math.random();
+              const u2 = Math.random();
+              return Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+            };
+
+            // Gerar simulações
+            const simulations: number[][] = [];
+            for (let s = 0; s < numSimulations; s++) {
+              const path = [currentPatrimonio];
+              for (let p = 0; p < periodsAhead; p++) {
+                const randomReturn = avgReturn + volatility * randomNormal();
+                const nextValue = path[p] * (1 + randomReturn / 100);
+                path.push(nextValue);
+              }
+              simulations.push(path);
+            }
+
+            // Calcular percentis para cada período
+            const percentiles = Array.from({ length: periodsAhead + 1 }, (_, period) => {
+              const valuesAtPeriod = simulations.map(sim => sim[period]).sort((a, b) => a - b);
+              return {
+                period: period,
+                p5: valuesAtPeriod[Math.floor(numSimulations * 0.05)],
+                p25: valuesAtPeriod[Math.floor(numSimulations * 0.25)],
+                p50: valuesAtPeriod[Math.floor(numSimulations * 0.50)],
+                p75: valuesAtPeriod[Math.floor(numSimulations * 0.75)],
+                p95: valuesAtPeriod[Math.floor(numSimulations * 0.95)]
+              };
+            });
+
+            // Calcular estatísticas finais
+            const finalValues = simulations.map(sim => sim[periodsAhead]);
+            const sortedFinalValues = [...finalValues].sort((a, b) => a - b);
+            const finalMedian = sortedFinalValues[Math.floor(numSimulations * 0.5)];
+            const final5th = sortedFinalValues[Math.floor(numSimulations * 0.05)];
+            const final95th = sortedFinalValues[Math.floor(numSimulations * 0.95)];
+            const finalAvg = finalValues.reduce((a, b) => a + b, 0) / finalValues.length;
+
+            // Probabilidade de crescimento
+            const positiveOutcomes = finalValues.filter(v => v > currentPatrimonio).length;
+            const probGrowth = (positiveOutcomes / numSimulations) * 100;
+
+            return (
+              <div className="space-y-6">
+                {/* Estatísticas Principais */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/30">
+                    <p className="text-xs text-muted-foreground mb-1">Patrimônio Atual</p>
+                    <p className="text-lg font-bold text-foreground">
+                      R$ {(currentPatrimonio / 1000).toFixed(0)}k
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-gradient-to-br from-green-500/10 to-green-500/5 border-2 border-green-500/30">
+                    <p className="text-xs text-muted-foreground mb-1">Mediana (12m)</p>
+                    <p className="text-lg font-bold text-green-600">
+                      R$ {(finalMedian / 1000).toFixed(0)}k
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-2 border-blue-500/30">
+                    <p className="text-xs text-muted-foreground mb-1">Cenário Otimista</p>
+                    <p className="text-lg font-bold text-blue-600">
+                      R$ {(final95th / 1000).toFixed(0)}k
+                    </p>
+                    <p className="text-xs text-muted-foreground">95º percentil</p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-gradient-to-br from-orange-500/10 to-orange-500/5 border-2 border-orange-500/30">
+                    <p className="text-xs text-muted-foreground mb-1">Cenário Pessimista</p>
+                    <p className="text-lg font-bold text-orange-600">
+                      R$ {(final5th / 1000).toFixed(0)}k
+                    </p>
+                    <p className="text-xs text-muted-foreground">5º percentil</p>
+                  </div>
+                </div>
+
+                {/* Probabilidade de Crescimento */}
+                <div className="p-5 rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/30">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-base font-semibold text-foreground">Probabilidade de Crescimento (12 meses)</h4>
+                    <TrendingUpIcon className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="flex items-end gap-3">
+                    <p className="text-5xl font-bold text-primary">{probGrowth.toFixed(1)}%</p>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      de {numSimulations.toLocaleString()} simulações
+                    </p>
+                  </div>
+                  <Progress value={probGrowth} className="h-3 mt-4" />
+                </div>
+
+                {/* Gráfico de Percentis */}
+                <div>
+                  <h4 className="text-sm font-semibold mb-4 text-foreground">
+                    Projeção de Cenários (12 meses à frente)
+                  </h4>
+                  <ResponsiveContainer width="100%" height={350}>
+                    <AreaChart data={percentiles} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis 
+                        dataKey="period" 
+                        label={{ value: 'Meses à Frente', position: 'insideBottom', offset: -5 }}
+                        stroke="hsl(var(--foreground))"
+                      />
+                      <YAxis 
+                        label={{ value: 'Patrimônio (R$)', angle: -90, position: 'insideLeft' }}
+                        tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                        stroke="hsl(var(--foreground))"
+                      />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-background border border-border rounded-lg shadow-lg p-4">
+                                <p className="text-xs font-semibold mb-2">Mês {data.period}</p>
+                                <div className="space-y-1">
+                                  <p className="text-xs text-blue-600">95º: R$ {(data.p95 / 1000).toFixed(0)}k</p>
+                                  <p className="text-xs text-green-600">75º: R$ {(data.p75 / 1000).toFixed(0)}k</p>
+                                  <p className="text-xs font-semibold text-foreground">50º: R$ {(data.p50 / 1000).toFixed(0)}k</p>
+                                  <p className="text-xs text-orange-600">25º: R$ {(data.p25 / 1000).toFixed(0)}k</p>
+                                  <p className="text-xs text-red-600">5º: R$ {(data.p5 / 1000).toFixed(0)}k</p>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="p95" 
+                        stackId="1"
+                        stroke="hsl(var(--primary))" 
+                        fill="hsl(var(--primary))"
+                        fillOpacity={0.1}
+                        name="95º percentil"
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="p75" 
+                        stackId="2"
+                        stroke="hsl(var(--primary))" 
+                        fill="hsl(var(--primary))"
+                        fillOpacity={0.2}
+                        name="75º percentil"
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="p50" 
+                        stackId="3"
+                        stroke="hsl(var(--primary))" 
+                        fill="hsl(var(--primary))"
+                        fillOpacity={0.4}
+                        strokeWidth={2}
+                        name="Mediana"
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="p25" 
+                        stackId="4"
+                        stroke="hsl(var(--primary))" 
+                        fill="hsl(var(--primary))"
+                        fillOpacity={0.2}
+                        name="25º percentil"
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="p5" 
+                        stackId="5"
+                        stroke="hsl(var(--primary))" 
+                        fill="hsl(var(--primary))"
+                        fillOpacity={0.1}
+                        name="5º percentil"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Parâmetros da Simulação */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                    <h5 className="text-sm font-semibold mb-3 text-foreground">Parâmetros</h5>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Simulações</span>
+                        <span className="font-semibold text-foreground">{numSimulations.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Períodos</span>
+                        <span className="font-semibold text-foreground">{periodsAhead} meses</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Retorno Médio</span>
+                        <span className="font-semibold text-foreground">{avgReturn.toFixed(2)}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Volatilidade</span>
+                        <span className="font-semibold text-foreground">{volatility.toFixed(2)}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                    <h5 className="text-sm font-semibold mb-3 text-foreground">Resultados Esperados</h5>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Média</span>
+                        <span className="font-semibold text-foreground">R$ {(finalAvg / 1000).toFixed(0)}k</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Mediana</span>
+                        <span className="font-semibold text-foreground">R$ {(finalMedian / 1000).toFixed(0)}k</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Ganho Médio</span>
+                        <span className="font-semibold text-green-600">
+                          {(((finalAvg - currentPatrimonio) / currentPatrimonio) * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Intervalo 90%</span>
+                        <span className="font-semibold text-foreground">
+                          {(final5th / 1000).toFixed(0)}k - {(final95th / 1000).toFixed(0)}k
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Explicação */}
+                <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                  <h5 className="text-sm font-semibold mb-2 text-foreground">O que é Monte Carlo?</h5>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Simulação estocástica que gera milhares de cenários futuros possíveis com base no retorno médio 
+                    e volatilidade histórica da carteira.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Interpretação:</strong> A área central (50º percentil) representa o resultado mais provável. 
+                    Quanto maior a dispersão entre os percentis, maior a incerteza da projeção.
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
+
     </div>
   );
 }
