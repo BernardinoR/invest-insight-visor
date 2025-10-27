@@ -25,6 +25,9 @@ import { MaturityDialog } from "@/components/MaturityDialog";
 import { DiversificationDialog } from "@/components/DiversificationDialog";
 import { RiskManagement } from "@/components/charts/RiskManagement";
 import { InvestmentPolicyCompliance } from "@/components/charts/InvestmentPolicyCompliance";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { DashboardSidebar } from "@/components/DashboardSidebar";
+import { DashboardOverview } from "@/components/DashboardOverview";
 
 interface InvestmentDashboardProps {
   selectedClient: string;
@@ -40,7 +43,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const [institutionCardData, setInstitutionCardData] = useState<any>(null);
   const [maturityDialogOpen, setMaturityDialogOpen] = useState(false);
   const [diversificationDialogOpen, setDiversificationDialogOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'performance' | 'risk' | 'policy'>('performance');
+  const [viewMode, setViewMode] = useState<'overview' | 'performance' | 'risk' | 'policy' | 'portfolio'>('overview');
 
   // Helper function to convert competencia string to comparable date
   const competenciaToDate = (competencia: string) => {
@@ -276,62 +279,69 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const patrimonioGrowth = getPatrimonioGrowth();
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
-      {/* Header */}
-      <header className="border-b border-border/50 bg-card/30 backdrop-blur-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="h-8 w-8 rounded-lg bg-gradient-accent flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Investment Insight Visor</h1>
-                <p className="text-sm text-muted-foreground">Relatório de Performance de Investimentos</p>
+    <SidebarProvider defaultOpen>
+      <div className="flex min-h-screen w-full bg-gradient-hero">
+        {/* Sidebar */}
+        <DashboardSidebar 
+          onNavigate={(section) => setViewMode(section as typeof viewMode)} 
+          currentSection={viewMode}
+        />
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col w-full">
+          {/* Header */}
+          <header className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-10">
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <SidebarTrigger />
+                  <div className="flex items-center space-x-4">
+                    <div className="h-8 w-8 rounded-lg bg-gradient-accent flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h1 className="text-xl font-bold text-foreground">Investment Insight Visor</h1>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedClient || "Selecione um cliente"}
+                        {selectedClient && hasData && " • Dados carregados"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="bg-card/50 border-primary/20 hover:bg-primary/10"
+                  onClick={copyShareLink}
+                >
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Compartilhar
+                </Button>
               </div>
             </div>
-            <Button 
-              variant="outline" 
-              className="bg-card/50 border-primary/20 hover:bg-primary/10"
-              onClick={copyShareLink}
-            >
-              <Share2 className="mr-2 h-4 w-4" />
-              Compartilhar Link
-            </Button>
-          </div>
-        </div>
-      </header>
+          </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+          {/* Content Area */}
+          <main className="flex-1 overflow-auto">
+            {viewMode === 'overview' && (
+              <DashboardOverview 
+                totalPatrimonio={displayPatrimonio}
+                totalRendimento={displayRendimentoValue}
+                consolidadoData={filteredConsolidadoData}
+                dadosData={filteredDadosData}
+                clientTarget={clientTarget?.targetValue || 0}
+              />
+            )}
 
-        {/* Portfolio Overview */}
-        <div className="mb-8">
-          <div 
-            onClick={() => {
-              if (viewMode === 'performance') setViewMode('risk');
-              else if (viewMode === 'risk') setViewMode('policy');
-              else setViewMode('performance');
-            }}
-            className="cursor-pointer hover:opacity-80 transition-opacity inline-block"
-          >
-            <h2 className="text-3xl font-bold text-foreground mb-2">
-              {viewMode === 'performance' ? 'Portfolio Performance' : 
-               viewMode === 'risk' ? 'Gestão de Riscos' : 'Política de Investimentos'}
-            </h2>
-          </div>
-          <p className="text-muted-foreground">
-            {selectedClient || "Selecione um cliente para visualizar os dados"}
-            {selectedClient && hasData && " - Dados carregados"}
-            {selectedClient && !hasData && loading && " - Carregando..."}
-          </p>
-        </div>
-
-        {/* Competencia Seletor */}
-        <CompetenciaSeletor 
-          selectedClient={selectedClient}
-          onFilterChange={handleFilterChange}
-        />
+            {viewMode !== 'overview' && (
+              <div className="p-6">
+                {/* Competencia Seletor */}
+                <div className="mb-6">
+                  <CompetenciaSeletor 
+                    selectedClient={selectedClient}
+                    onFilterChange={handleFilterChange}
+                  />
+                </div>
         
         {viewMode === 'performance' && (
         <>
@@ -1130,19 +1140,23 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             />
           </div>
         )}
-      </main>
+              </div>
+            )}
+          </main>
 
-      <MaturityDialog
-        open={maturityDialogOpen}
-        onOpenChange={setMaturityDialogOpen}
-        dadosData={dadosData}
-      />
+          <MaturityDialog
+            open={maturityDialogOpen}
+            onOpenChange={setMaturityDialogOpen}
+            dadosData={dadosData}
+          />
 
-      <DiversificationDialog 
-        open={diversificationDialogOpen}
-        onOpenChange={setDiversificationDialogOpen}
-        dadosData={dadosData}
-      />
-    </div>
+          <DiversificationDialog 
+            open={diversificationDialogOpen}
+            onOpenChange={setDiversificationDialogOpen}
+            dadosData={dadosData}
+          />
+        </div>
+      </div>
+    </SidebarProvider>
   );
 }
