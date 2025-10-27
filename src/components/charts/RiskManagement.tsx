@@ -1973,6 +1973,475 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
         </CardContent>
       </Card>
 
+      {/* Card 11: Correlação Interativa */}
+      <Card className="border-2 border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300">
+        <CardHeader className="pb-4 border-b border-border">
+          <CardTitle className="flex items-center gap-3 text-xl font-bold">
+            <Activity className="w-6 h-6 text-primary" />
+            Correlação Interativa
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          {(() => {
+            if (filteredConsolidatedData.length < 2) {
+              return <p className="text-muted-foreground">Dados insuficientes para análise de correlação</p>;
+            }
+
+            // Calcular correlação entre retornos consecutivos
+            const returns = filteredConsolidatedData.map(item => item.Rendimento * 100);
+            const currentReturns = returns.slice(0, -1);
+            const nextReturns = returns.slice(1);
+
+            // Médias
+            const avgCurrent = currentReturns.reduce((a, b) => a + b, 0) / currentReturns.length;
+            const avgNext = nextReturns.reduce((a, b) => a + b, 0) / nextReturns.length;
+
+            // Covariância
+            const covariance = currentReturns.reduce((sum, current, i) => {
+              return sum + (current - avgCurrent) * (nextReturns[i] - avgNext);
+            }, 0) / currentReturns.length;
+
+            // Desvios padrão
+            const stdCurrent = Math.sqrt(
+              currentReturns.reduce((sum, r) => sum + Math.pow(r - avgCurrent, 2), 0) / currentReturns.length
+            );
+            const stdNext = Math.sqrt(
+              nextReturns.reduce((sum, r) => sum + Math.pow(r - avgNext, 2), 0) / nextReturns.length
+            );
+
+            // Correlação de Pearson
+            const correlation = (stdCurrent * stdNext) !== 0 ? covariance / (stdCurrent * stdNext) : 0;
+
+            // Dados para scatter plot
+            const scatterData = currentReturns.map((current, i) => ({
+              current,
+              next: nextReturns[i],
+              competencia: filteredConsolidatedData[i].Competencia
+            }));
+
+            return (
+              <div className="space-y-6">
+                {/* Métrica Principal */}
+                <div className="p-6 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/30">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-base font-semibold text-foreground">Correlação Serial (Pearson)</h4>
+                    <Activity className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="text-5xl font-bold text-foreground mb-4">
+                    {correlation.toFixed(3)}
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center pb-2 border-b border-border">
+                      <span className="text-muted-foreground">Intensidade</span>
+                      <span className="font-semibold text-foreground">
+                        {Math.abs(correlation) > 0.7 && 'Forte'}
+                        {Math.abs(correlation) > 0.4 && Math.abs(correlation) <= 0.7 && 'Moderada'}
+                        {Math.abs(correlation) <= 0.4 && 'Fraca'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center pb-2 border-b border-border">
+                      <span className="text-muted-foreground">Direção</span>
+                      <span className="font-semibold text-foreground">
+                        {correlation > 0.1 && 'Positiva'}
+                        {correlation < -0.1 && 'Negativa'}
+                        {Math.abs(correlation) <= 0.1 && 'Neutra'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground">
+                      {Math.abs(correlation) < 0.2 && '✓ Retornos independentes - baixa previsibilidade'}
+                      {Math.abs(correlation) >= 0.2 && Math.abs(correlation) < 0.5 && '○ Correlação moderada entre períodos consecutivos'}
+                      {Math.abs(correlation) >= 0.5 && correlation > 0 && '⚠️ Alta correlação positiva - tendência de continuidade'}
+                      {Math.abs(correlation) >= 0.5 && correlation < 0 && '⚠️ Alta correlação negativa - tendência de reversão'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Gráfico de Dispersão */}
+                <div>
+                  <h4 className="text-sm font-semibold mb-4 text-foreground">
+                    Retorno Atual vs Retorno Seguinte
+                  </h4>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis 
+                        type="number" 
+                        dataKey="current" 
+                        name="Retorno Atual"
+                        label={{ value: 'Retorno Atual (%)', position: 'insideBottom', offset: -10 }}
+                        stroke="hsl(var(--foreground))"
+                      />
+                      <YAxis 
+                        type="number" 
+                        dataKey="next" 
+                        name="Retorno Seguinte"
+                        label={{ value: 'Retorno Seguinte (%)', angle: -90, position: 'insideLeft' }}
+                        stroke="hsl(var(--foreground))"
+                      />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-background border border-border rounded-lg shadow-lg p-3">
+                                <p className="text-xs font-semibold mb-1">{data.competencia}</p>
+                                <p className="text-xs text-muted-foreground">Atual: {data.current.toFixed(2)}%</p>
+                                <p className="text-xs text-muted-foreground">Seguinte: {data.next.toFixed(2)}%</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Scatter data={scatterData} fill="hsl(var(--primary))" />
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Explicação */}
+                <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                  <h5 className="text-sm font-semibold mb-2 text-foreground">O que é Correlação Serial?</h5>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Mede a relação entre retornos de períodos consecutivos. Valores próximos de:
+                  </p>
+                  <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                    <li><strong>+1:</strong> Retornos tendem a continuar na mesma direção</li>
+                    <li><strong>0:</strong> Retornos são independentes (ideal para eficiência de mercado)</li>
+                    <li><strong>-1:</strong> Retornos tendem a reverter (mean reversion)</li>
+                  </ul>
+                </div>
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
+
+      {/* Card 12: Stress Test */}
+      <Card className="border-2 border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300">
+        <CardHeader className="pb-4 border-b border-border">
+          <CardTitle className="flex items-center gap-3 text-xl font-bold">
+            <AlertTriangle className="w-6 h-6 text-primary" />
+            Stress Test
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          {(() => {
+            if (filteredConsolidatedData.length === 0) {
+              return <p className="text-muted-foreground">Dados insuficientes para stress test</p>;
+            }
+
+            const returns = filteredConsolidatedData.map(item => item.Rendimento * 100);
+            const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+            const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length;
+            const volatility = Math.sqrt(variance);
+
+            // Cenários de stress
+            const scenarios = [
+              {
+                name: 'Cenário Leve',
+                description: 'Queda de 1 desvio padrão',
+                shock: -1 * volatility,
+                severity: 'low',
+                color: 'text-yellow-600'
+              },
+              {
+                name: 'Cenário Moderado',
+                description: 'Queda de 2 desvios padrão',
+                shock: -2 * volatility,
+                severity: 'medium',
+                color: 'text-orange-600'
+              },
+              {
+                name: 'Cenário Severo',
+                description: 'Queda de 3 desvios padrão',
+                shock: -3 * volatility,
+                severity: 'high',
+                color: 'text-red-600'
+              },
+              {
+                name: 'Pior Mês Histórico',
+                description: 'Repetição do pior mês registrado',
+                shock: riskMetrics.worstMonth.return,
+                severity: 'historical',
+                color: 'text-red-700'
+              }
+            ];
+
+            const currentPatrimonio = filteredConsolidatedData[filteredConsolidatedData.length - 1]["Patrimonio Final"];
+
+            return (
+              <div className="space-y-6">
+                {/* Patrimônio Atual */}
+                <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-xs text-muted-foreground mb-1">Patrimônio Atual</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    R$ {currentPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+
+                {/* Cenários de Stress */}
+                <div className="space-y-4">
+                  {scenarios.map((scenario, index) => {
+                    const impactedPatrimonio = currentPatrimonio * (1 + scenario.shock / 100);
+                    const loss = currentPatrimonio - impactedPatrimonio;
+                    const lossPercent = (loss / currentPatrimonio) * 100;
+
+                    return (
+                      <div key={index} className="p-5 rounded-lg border-2 border-border bg-gradient-to-r from-background to-muted/30">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h4 className="text-sm font-semibold text-foreground">{scenario.name}</h4>
+                            <p className="text-xs text-muted-foreground">{scenario.description}</p>
+                          </div>
+                          <Badge variant={scenario.severity === 'high' || scenario.severity === 'historical' ? 'destructive' : 'secondary'}>
+                            {scenario.shock.toFixed(2)}%
+                          </Badge>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 mb-3">
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Patrimônio Após Stress</p>
+                            <p className={`text-lg font-bold ${scenario.color}`}>
+                              R$ {impactedPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Perda Potencial</p>
+                            <p className={`text-lg font-bold ${scenario.color}`}>
+                              R$ {loss.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                        </div>
+
+                        <Progress value={100 - lossPercent} className="h-2" />
+                        <p className="text-xs text-muted-foreground mt-2 text-right">
+                          Retenção: {(100 - lossPercent).toFixed(1)}%
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Resumo Estatístico */}
+                <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                  <h5 className="text-sm font-semibold mb-3 text-foreground">Estatísticas Base</h5>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Volatilidade Mensal</p>
+                      <p className="text-lg font-semibold text-foreground">{volatility.toFixed(2)}%</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Retorno Médio</p>
+                      <p className="text-lg font-semibold text-foreground">{avgReturn.toFixed(2)}%</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Explicação */}
+                <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                  <h5 className="text-sm font-semibold mb-2 text-foreground">O que é Stress Test?</h5>
+                  <p className="text-xs text-muted-foreground">
+                    Simula o impacto de cenários adversos extremos no patrimônio. 
+                    Utiliza múltiplos de desvio padrão e eventos históricos para estimar perdas potenciais 
+                    e avaliar a resiliência da carteira em crises.
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
+
+      {/* Card 13: Índices de Performance (Sharpe, Sortino, Calmar) */}
+      <Card className="border-2 border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300">
+        <CardHeader className="pb-4 border-b border-border">
+          <CardTitle className="flex items-center gap-3 text-xl font-bold">
+            <Target className="w-6 h-6 text-primary" />
+            Índices de Performance
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          {(() => {
+            if (filteredConsolidatedData.length === 0) {
+              return <p className="text-muted-foreground">Dados insuficientes para cálculo de índices</p>;
+            }
+
+            const returns = filteredConsolidatedData.map(item => item.Rendimento * 100);
+            
+            // Média geométrica (retorno composto real)
+            const compoundedReturn = returns.reduce((product, r) => product * (1 + r / 100), 1);
+            const avgReturn = (Math.pow(compoundedReturn, 1 / returns.length) - 1) * 100;
+            
+            // Volatilidade
+            const avgArithmetic = returns.reduce((a, b) => a + b, 0) / returns.length;
+            const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgArithmetic, 2), 0) / returns.length;
+            const volatility = Math.sqrt(variance);
+            
+            // Taxa livre de risco (CDI mensal aproximado)
+            const riskFreeRate = 0.5;
+            
+            // Sharpe Ratio
+            const sharpe = volatility !== 0 ? (avgReturn - riskFreeRate) / volatility : 0;
+            
+            // Sortino Ratio (downside deviation)
+            const negativeReturns = returns.filter(r => r < riskFreeRate);
+            const downwardVariance = negativeReturns.length > 0
+              ? negativeReturns.reduce((sum, r) => sum + Math.pow(r - riskFreeRate, 2), 0) / negativeReturns.length
+              : 0;
+            const downwardVolatility = Math.sqrt(downwardVariance);
+            const sortino = downwardVolatility !== 0 ? (avgReturn - riskFreeRate) / downwardVolatility : 0;
+            
+            // Calmar Ratio (retorno anualizado / max drawdown)
+            let maxDrawdown = 0;
+            let peak = filteredConsolidatedData[0]["Patrimonio Final"];
+            filteredConsolidatedData.forEach(item => {
+              const current = item["Patrimonio Final"];
+              if (current > peak) peak = current;
+              const drawdown = ((peak - current) / peak) * 100;
+              if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+            });
+            
+            const annualizedReturn = avgReturn * 12; // Retorno médio mensal * 12
+            const calmar = maxDrawdown !== 0 ? annualizedReturn / maxDrawdown : 0;
+
+            const indices = [
+              {
+                name: 'Sharpe Ratio',
+                value: sharpe,
+                description: 'Retorno ajustado ao risco total',
+                formula: '(Retorno - RF) / Volatilidade',
+                interpretation: sharpe > 1 ? 'Excelente' : sharpe > 0.5 ? 'Bom' : sharpe > 0 ? 'Aceitável' : 'Ruim',
+                color: sharpe > 1 ? 'text-green-600' : sharpe > 0.5 ? 'text-blue-600' : sharpe > 0 ? 'text-yellow-600' : 'text-red-600',
+                bgColor: sharpe > 1 ? 'from-green-500/10 to-green-500/5' : sharpe > 0.5 ? 'from-blue-500/10 to-blue-500/5' : sharpe > 0 ? 'from-yellow-500/10 to-yellow-500/5' : 'from-red-500/10 to-red-500/5',
+                borderColor: sharpe > 1 ? 'border-green-500/30' : sharpe > 0.5 ? 'border-blue-500/30' : sharpe > 0 ? 'border-yellow-500/30' : 'border-red-500/30'
+              },
+              {
+                name: 'Sortino Ratio',
+                value: sortino,
+                description: 'Retorno ajustado ao risco negativo',
+                formula: '(Retorno - RF) / Downside Deviation',
+                interpretation: sortino > 1.5 ? 'Excelente' : sortino > 1 ? 'Bom' : sortino > 0.5 ? 'Aceitável' : 'Ruim',
+                color: sortino > 1.5 ? 'text-green-600' : sortino > 1 ? 'text-blue-600' : sortino > 0.5 ? 'text-yellow-600' : 'text-red-600',
+                bgColor: sortino > 1.5 ? 'from-green-500/10 to-green-500/5' : sortino > 1 ? 'from-blue-500/10 to-blue-500/5' : sortino > 0.5 ? 'from-yellow-500/10 to-yellow-500/5' : 'from-red-500/10 to-red-500/5',
+                borderColor: sortino > 1.5 ? 'border-green-500/30' : sortino > 1 ? 'border-blue-500/30' : sortino > 0.5 ? 'border-yellow-500/30' : 'border-red-500/30'
+              },
+              {
+                name: 'Calmar Ratio',
+                value: calmar,
+                description: 'Retorno anualizado / Max Drawdown',
+                formula: 'Retorno Anual / Drawdown Máximo',
+                interpretation: calmar > 3 ? 'Excelente' : calmar > 1.5 ? 'Bom' : calmar > 0.5 ? 'Aceitável' : 'Ruim',
+                color: calmar > 3 ? 'text-green-600' : calmar > 1.5 ? 'text-blue-600' : calmar > 0.5 ? 'text-yellow-600' : 'text-red-600',
+                bgColor: calmar > 3 ? 'from-green-500/10 to-green-500/5' : calmar > 1.5 ? 'from-blue-500/10 to-blue-500/5' : calmar > 0.5 ? 'from-yellow-500/10 to-yellow-500/5' : 'from-red-500/10 to-red-500/5',
+                borderColor: calmar > 3 ? 'border-green-500/30' : calmar > 1.5 ? 'border-blue-500/30' : calmar > 0.5 ? 'border-yellow-500/30' : 'border-red-500/30'
+              }
+            ];
+
+            return (
+              <div className="space-y-6">
+                {/* Cards de Índices */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {indices.map((index, i) => (
+                    <div key={i} className={`p-6 rounded-lg border-2 bg-gradient-to-br ${index.bgColor} ${index.borderColor}`}>
+                      <h4 className="text-sm font-semibold text-foreground mb-2">{index.name}</h4>
+                      <div className={`text-4xl font-bold mb-3 ${index.color}`}>
+                        {index.value.toFixed(3)}
+                      </div>
+                      <Badge variant="outline" className="mb-3">
+                        {index.interpretation}
+                      </Badge>
+                      <p className="text-xs text-muted-foreground mb-2">{index.description}</p>
+                      <p className="text-xs text-muted-foreground font-mono bg-background/50 p-2 rounded">
+                        {index.formula}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Componentes dos Cálculos */}
+                <div className="p-5 rounded-lg bg-muted/50 border border-border">
+                  <h4 className="text-sm font-semibold mb-4 text-foreground">Componentes dos Cálculos</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Retorno Médio Mensal</p>
+                      <p className="text-lg font-semibold text-foreground">{avgReturn.toFixed(2)}%</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Volatilidade</p>
+                      <p className="text-lg font-semibold text-foreground">{volatility.toFixed(2)}%</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Downside Deviation</p>
+                      <p className="text-lg font-semibold text-foreground">{downwardVolatility.toFixed(2)}%</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Max Drawdown</p>
+                      <p className="text-lg font-semibold text-red-600">{maxDrawdown.toFixed(2)}%</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Comparativo Visual */}
+                <div>
+                  <h4 className="text-sm font-semibold mb-4 text-foreground">Comparativo de Índices</h4>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={indices} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" stroke="hsl(var(--foreground))" />
+                      <YAxis stroke="hsl(var(--foreground))" />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-background border border-border rounded-lg shadow-lg p-3">
+                                <p className="text-sm font-semibold mb-1">{data.name}</p>
+                                <p className="text-lg font-bold text-primary">{data.value.toFixed(3)}</p>
+                                <p className="text-xs text-muted-foreground mt-1">{data.interpretation}</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                        {indices.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill="hsl(var(--primary))" />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Explicações */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <h5 className="text-sm font-semibold mb-2 text-foreground">Sharpe Ratio</h5>
+                    <p className="text-xs text-muted-foreground">
+                      Mede o excesso de retorno por unidade de risco total. Quanto maior, melhor a relação risco-retorno.
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <h5 className="text-sm font-semibold mb-2 text-foreground">Sortino Ratio</h5>
+                    <p className="text-xs text-muted-foreground">
+                      Similar ao Sharpe, mas penaliza apenas volatilidade negativa. Mais relevante para investidores avessos a perdas.
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                    <h5 className="text-sm font-semibold mb-2 text-foreground">Calmar Ratio</h5>
+                    <p className="text-xs text-muted-foreground">
+                      Relaciona retorno anualizado com o pior drawdown. Útil para avaliar recuperação de perdas extremas.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
+
     </div>
   );
 }
