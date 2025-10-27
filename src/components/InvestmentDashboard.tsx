@@ -24,6 +24,7 @@ import { useCallback } from "react";
 import { MaturityDialog } from "@/components/MaturityDialog";
 import { DiversificationDialog } from "@/components/DiversificationDialog";
 import { RiskManagement } from "@/components/charts/RiskManagement";
+import { InvestmentPolicyCompliance } from "@/components/charts/InvestmentPolicyCompliance";
 
 interface InvestmentDashboardProps {
   selectedClient: string;
@@ -39,7 +40,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const [institutionCardData, setInstitutionCardData] = useState<any>(null);
   const [maturityDialogOpen, setMaturityDialogOpen] = useState(false);
   const [diversificationDialogOpen, setDiversificationDialogOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'performance' | 'risk'>('performance');
+  const [viewMode, setViewMode] = useState<'performance' | 'risk' | 'policy'>('performance');
 
   // Helper function to convert competencia string to comparable date
   const competenciaToDate = (competencia: string) => {
@@ -307,11 +308,16 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
         {/* Portfolio Overview */}
         <div className="mb-8">
           <div 
-            onClick={() => setViewMode(viewMode === 'performance' ? 'risk' : 'performance')}
+            onClick={() => {
+              if (viewMode === 'performance') setViewMode('risk');
+              else if (viewMode === 'risk') setViewMode('policy');
+              else setViewMode('performance');
+            }}
             className="cursor-pointer hover:opacity-80 transition-opacity inline-block"
           >
             <h2 className="text-3xl font-bold text-foreground mb-2">
-              {viewMode === 'performance' ? 'Portfolio Performance' : 'Gestão de Riscos'}
+              {viewMode === 'performance' ? 'Portfolio Performance' : 
+               viewMode === 'risk' ? 'Gestão de Riscos' : 'Política de Investimentos'}
             </h2>
           </div>
           <p className="text-muted-foreground">
@@ -1111,6 +1117,16 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
               clientTarget={(clientTarget?.targetValue || 0) / 100}
               marketData={marketData}
               dadosData={filteredDadosData}
+            />
+          </div>
+        )}
+
+        {/* Investment Policy Compliance View */}
+        {viewMode === 'policy' && (
+          <div className="space-y-6">
+            <InvestmentPolicyCompliance 
+              dadosData={filteredDadosData}
+              selectedClient={selectedClient}
             />
           </div>
         )}
