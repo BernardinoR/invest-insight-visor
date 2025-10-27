@@ -770,12 +770,6 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 <p className="text-xs text-muted-foreground">{riskMetrics.worstMonth.competencia}</p>
               </div>
               
-              <div className="bg-accent/20 border border-accent/30 rounded-lg p-3.5 hover:bg-accent/30 transition-colors">
-                <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Retorno médio</p>
-                <p className="text-xl font-bold text-foreground mb-0.5">{riskMetrics.avgReturn.toFixed(2)}%</p>
-                <p className="text-xs text-muted-foreground">por mês</p>
-              </div>
-              
               <div className="bg-primary/5 border border-primary/10 rounded-lg p-3.5 hover:bg-primary/8 transition-colors">
                 <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Consistência</p>
                 <p className="text-xl font-bold text-foreground mb-0.5">{riskMetrics.hitRate.positivePercent}%</p>
