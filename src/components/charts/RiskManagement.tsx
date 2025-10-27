@@ -777,12 +777,6 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               </div>
               
               <div className="bg-gradient-to-br from-primary/5 to-primary/8 border border-primary/15 rounded-lg p-3.5 hover:from-primary/8 hover:to-primary/12 transition-all">
-                <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Retorno médio da meta</p>
-                <p className="text-xl font-bold text-foreground mb-0.5">{riskMetrics.targetMetrics.avgTarget.toFixed(2)}%</p>
-                <p className="text-xs text-muted-foreground">meta mensal</p>
-              </div>
-              
-              <div className="bg-gradient-to-br from-primary/5 to-primary/8 border border-primary/15 rounded-lg p-3.5 hover:from-primary/8 hover:to-primary/12 transition-all">
                 <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Volatilidade da meta</p>
                 <p className="text-xl font-bold text-foreground mb-0.5">{riskMetrics.targetMetrics.targetVolatility.toFixed(2)}%</p>
                 <p className="text-xs text-muted-foreground">desvio padrão</p>
