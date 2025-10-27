@@ -1973,144 +1973,404 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
         </CardContent>
       </Card>
 
-      {/* Card 11: Correlação Interativa */}
+      {/* Card 11: Correlação Entre Estratégias */}
       <Card className="border-2 border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300">
         <CardHeader className="pb-4 border-b border-border">
           <CardTitle className="flex items-center gap-3 text-xl font-bold">
             <Activity className="w-6 h-6 text-primary" />
-            Correlação Interativa
+            Correlação Entre Estratégias
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
           {(() => {
-            if (filteredConsolidatedData.length < 2) {
-              return <p className="text-muted-foreground">Dados insuficientes para análise de correlação</p>;
+            if (!dadosData || dadosData.length === 0) {
+              return <p className="text-muted-foreground">Dados insuficientes para análise de correlação entre estratégias</p>;
             }
 
-            // Calcular correlação entre retornos consecutivos
-            const returns = filteredConsolidatedData.map(item => item.Rendimento * 100);
-            const currentReturns = returns.slice(0, -1);
-            const nextReturns = returns.slice(1);
+            // Estado local para seleção interativa
+            const [selectedStrategy1, setSelectedStrategy1] = useState<string>('');
+            const [selectedStrategy2, setSelectedStrategy2] = useState<string>('');
+            const [minCorrelation, setMinCorrelation] = useState<number>(-1);
+            const [maxCorrelation, setMaxCorrelation] = useState<number>(1);
 
-            // Médias
-            const avgCurrent = currentReturns.reduce((a, b) => a + b, 0) / currentReturns.length;
-            const avgNext = nextReturns.reduce((a, b) => a + b, 0) / nextReturns.length;
+            // Obter lista de estratégias únicas dos dados
+            const strategies = Array.from(new Set(dadosData.map(d => d["Classe do ativo"]))).sort();
 
-            // Covariância
-            const covariance = currentReturns.reduce((sum, current, i) => {
-              return sum + (current - avgCurrent) * (nextReturns[i] - avgNext);
-            }, 0) / currentReturns.length;
+            // Calcular retornos por estratégia e competência
+            const strategyReturns = new Map<string, Map<string, number>>();
+            
+            dadosData.forEach(item => {
+              const strategy = item["Classe do ativo"];
+              const competencia = item.Competencia;
+              const rendimento = item.Rendimento;
 
-            // Desvios padrão
-            const stdCurrent = Math.sqrt(
-              currentReturns.reduce((sum, r) => sum + Math.pow(r - avgCurrent, 2), 0) / currentReturns.length
+              if (!strategyReturns.has(strategy)) {
+                strategyReturns.set(strategy, new Map());
+              }
+              
+              const currentMap = strategyReturns.get(strategy)!;
+              if (!currentMap.has(competencia)) {
+                currentMap.set(competencia, 0);
+              }
+              
+              // Acumular rendimento ponderado pela posição
+              const currentValue = currentMap.get(competencia)!;
+              currentMap.set(competencia, currentValue + (rendimento * item.Posicao));
+            });
+
+            // Normalizar por posição total
+            const strategyData = new Map<string, number[]>();
+            const competencias = Array.from(new Set(dadosData.map(d => d.Competencia))).sort();
+
+            strategies.forEach(strategy => {
+              const returns: number[] = [];
+              const stratMap = strategyReturns.get(strategy);
+              
+              if (stratMap) {
+                competencias.forEach(comp => {
+                  // Calcular posição total para esta estratégia nesta competência
+                  const totalPosition = dadosData
+                    .filter(d => d["Classe do ativo"] === strategy && d.Competencia === comp)
+                    .reduce((sum, d) => sum + d.Posicao, 0);
+                  
+                  const weightedReturn = stratMap.get(comp) || 0;
+                  const avgReturn = totalPosition > 0 ? (weightedReturn / totalPosition) * 100 : 0;
+                  returns.push(avgReturn);
+                });
+              }
+              
+              strategyData.set(strategy, returns);
+            });
+
+            // Função para calcular correlação de Pearson
+            const calculateCorrelation = (returns1: number[], returns2: number[]) => {
+              if (returns1.length !== returns2.length || returns1.length === 0) return 0;
+
+              const mean1 = returns1.reduce((a, b) => a + b, 0) / returns1.length;
+              const mean2 = returns2.reduce((a, b) => a + b, 0) / returns2.length;
+
+              const numerator = returns1.reduce((sum, val1, i) => {
+                return sum + (val1 - mean1) * (returns2[i] - mean2);
+              }, 0);
+
+              const denominator1 = Math.sqrt(returns1.reduce((sum, val) => sum + Math.pow(val - mean1, 2), 0));
+              const denominator2 = Math.sqrt(returns2.reduce((sum, val) => sum + Math.pow(val - mean2, 2), 0));
+
+              if (denominator1 === 0 || denominator2 === 0) return 0;
+              return numerator / (denominator1 * denominator2);
+            };
+
+            // Calcular matriz de correlação
+            const correlationMatrix: { strategy1: string; strategy2: string; correlation: number }[] = [];
+            
+            strategies.forEach((strat1, i) => {
+              strategies.forEach((strat2, j) => {
+                if (i < j) { // Evitar duplicatas
+                  const returns1 = strategyData.get(strat1) || [];
+                  const returns2 = strategyData.get(strat2) || [];
+                  const correlation = calculateCorrelation(returns1, returns2);
+                  correlationMatrix.push({ strategy1: strat1, strategy2: strat2, correlation });
+                }
+              });
+            });
+
+            // Filtrar por correlação mínima/máxima
+            const filteredMatrix = correlationMatrix.filter(
+              c => c.correlation >= minCorrelation && c.correlation <= maxCorrelation
             );
-            const stdNext = Math.sqrt(
-              nextReturns.reduce((sum, r) => sum + Math.pow(r - avgNext, 2), 0) / nextReturns.length
-            );
 
-            // Correlação de Pearson
-            const correlation = (stdCurrent * stdNext) !== 0 ? covariance / (stdCurrent * stdNext) : 0;
+            // Ordenar por correlação absoluta (maior primeiro)
+            const sortedMatrix = [...filteredMatrix].sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation));
 
-            // Dados para scatter plot
-            const scatterData = currentReturns.map((current, i) => ({
-              current,
-              next: nextReturns[i],
-              competencia: filteredConsolidatedData[i].Competencia
-            }));
+            // Calcular correlação para par selecionado
+            let selectedCorrelation = 0;
+            let scatterData: { x: number; y: number; competencia: string }[] = [];
+            
+            if (selectedStrategy1 && selectedStrategy2 && selectedStrategy1 !== selectedStrategy2) {
+              const returns1 = strategyData.get(selectedStrategy1) || [];
+              const returns2 = strategyData.get(selectedStrategy2) || [];
+              selectedCorrelation = calculateCorrelation(returns1, returns2);
+              
+              scatterData = returns1.map((val, i) => ({
+                x: val,
+                y: returns2[i],
+                competencia: competencias[i]
+              }));
+            }
+
+            // Interpretação da correlação
+            const getCorrelationInterpretation = (corr: number) => {
+              const abs = Math.abs(corr);
+              if (abs >= 0.9) return 'Muito Forte';
+              if (abs >= 0.7) return 'Forte';
+              if (abs >= 0.5) return 'Moderada';
+              if (abs >= 0.3) return 'Fraca';
+              return 'Muito Fraca';
+            };
+
+            const getDiversificationBenefit = (corr: number) => {
+              if (corr < -0.3) return '✓ Excelente - Estratégias tendem a se mover em direções opostas';
+              if (corr < 0.3) return '✓ Ótimo - Baixa correlação proporciona boa diversificação';
+              if (corr < 0.7) return '○ Moderado - Algum benefício de diversificação';
+              return '⚠️ Limitado - Estratégias tendem a se mover juntas';
+            };
 
             return (
               <div className="space-y-6">
-                {/* Métrica Principal */}
-                <div className="p-6 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/30">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-base font-semibold text-foreground">Correlação Serial (Pearson)</h4>
-                    <Activity className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="text-5xl font-bold text-foreground mb-4">
-                    {correlation.toFixed(3)}
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between items-center pb-2 border-b border-border">
-                      <span className="text-muted-foreground">Intensidade</span>
-                      <span className="font-semibold text-foreground">
-                        {Math.abs(correlation) > 0.7 && 'Forte'}
-                        {Math.abs(correlation) > 0.4 && Math.abs(correlation) <= 0.7 && 'Moderada'}
-                        {Math.abs(correlation) <= 0.4 && 'Fraca'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center pb-2 border-b border-border">
-                      <span className="text-muted-foreground">Direção</span>
-                      <span className="font-semibold text-foreground">
-                        {correlation > 0.1 && 'Positiva'}
-                        {correlation < -0.1 && 'Negativa'}
-                        {Math.abs(correlation) <= 0.1 && 'Neutra'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <p className="text-sm text-muted-foreground">
-                      {Math.abs(correlation) < 0.2 && '✓ Retornos independentes - baixa previsibilidade'}
-                      {Math.abs(correlation) >= 0.2 && Math.abs(correlation) < 0.5 && '○ Correlação moderada entre períodos consecutivos'}
-                      {Math.abs(correlation) >= 0.5 && correlation > 0 && '⚠️ Alta correlação positiva - tendência de continuidade'}
-                      {Math.abs(correlation) >= 0.5 && correlation < 0 && '⚠️ Alta correlação negativa - tendência de reversão'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Gráfico de Dispersão */}
-                <div>
-                  <h4 className="text-sm font-semibold mb-4 text-foreground">
-                    Retorno Atual vs Retorno Seguinte
+                {/* Controles Interativos */}
+                <div className="p-6 rounded-lg bg-gradient-to-br from-primary/5 to-primary/10 border-2 border-primary/20">
+                  <h4 className="text-sm font-semibold mb-4 text-foreground flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                    Controles Interativos - Explore a Correlação
                   </h4>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis 
-                        type="number" 
-                        dataKey="current" 
-                        name="Retorno Atual"
-                        label={{ value: 'Retorno Atual (%)', position: 'insideBottom', offset: -10 }}
-                        stroke="hsl(var(--foreground))"
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-2 block">Estratégia 1</label>
+                      <Select value={selectedStrategy1} onValueChange={setSelectedStrategy1}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione estratégia" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {strategies.map(s => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-2 block">Estratégia 2</label>
+                      <Select value={selectedStrategy2} onValueChange={setSelectedStrategy2}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione estratégia" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {strategies.map(s => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-2 block">
+                        Correlação Mínima: {minCorrelation.toFixed(2)}
+                      </label>
+                      <input 
+                        type="range" 
+                        min="-1" 
+                        max="1" 
+                        step="0.1" 
+                        value={minCorrelation}
+                        onChange={(e) => setMinCorrelation(parseFloat(e.target.value))}
+                        className="w-full"
                       />
-                      <YAxis 
-                        type="number" 
-                        dataKey="next" 
-                        name="Retorno Seguinte"
-                        label={{ value: 'Retorno Seguinte (%)', angle: -90, position: 'insideLeft' }}
-                        stroke="hsl(var(--foreground))"
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-2 block">
+                        Correlação Máxima: {maxCorrelation.toFixed(2)}
+                      </label>
+                      <input 
+                        type="range" 
+                        min="-1" 
+                        max="1" 
+                        step="0.1" 
+                        value={maxCorrelation}
+                        onChange={(e) => setMaxCorrelation(parseFloat(e.target.value))}
+                        className="w-full"
                       />
-                      <Tooltip
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            const data = payload[0].payload;
-                            return (
-                              <div className="bg-background border border-border rounded-lg shadow-lg p-3">
-                                <p className="text-xs font-semibold mb-1">{data.competencia}</p>
-                                <p className="text-xs text-muted-foreground">Atual: {data.current.toFixed(2)}%</p>
-                                <p className="text-xs text-muted-foreground">Seguinte: {data.next.toFixed(2)}%</p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Scatter data={scatterData} fill="hsl(var(--primary))" />
-                    </ScatterChart>
-                  </ResponsiveContainer>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Explicação */}
+                {/* Análise do Par Selecionado */}
+                {selectedStrategy1 && selectedStrategy2 && selectedStrategy1 !== selectedStrategy2 && (
+                  <div className="p-6 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-2 border-blue-500/30">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-base font-semibold text-foreground">
+                        {selectedStrategy1} vs {selectedStrategy2}
+                      </h4>
+                      <Activity className="w-6 h-6 text-blue-500" />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                      <div className="text-center p-4 rounded-lg bg-background/50">
+                        <p className="text-xs text-muted-foreground mb-1">Correlação</p>
+                        <p className={`text-3xl font-bold ${
+                          Math.abs(selectedCorrelation) >= 0.7 ? 'text-red-600' :
+                          Math.abs(selectedCorrelation) >= 0.3 ? 'text-yellow-600' : 'text-green-600'
+                        }`}>
+                          {selectedCorrelation.toFixed(3)}
+                        </p>
+                      </div>
+
+                      <div className="text-center p-4 rounded-lg bg-background/50">
+                        <p className="text-xs text-muted-foreground mb-1">Intensidade</p>
+                        <p className="text-lg font-semibold text-foreground">
+                          {getCorrelationInterpretation(selectedCorrelation)}
+                        </p>
+                      </div>
+
+                      <div className="text-center p-4 rounded-lg bg-background/50">
+                        <p className="text-xs text-muted-foreground mb-1">Direção</p>
+                        <p className="text-lg font-semibold text-foreground">
+                          {selectedCorrelation > 0.1 ? 'Positiva' : selectedCorrelation < -0.1 ? 'Negativa' : 'Neutra'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mb-4 p-4 rounded-lg bg-muted/50">
+                      <p className="text-sm font-semibold mb-2 text-foreground">Benefício de Diversificação:</p>
+                      <p className="text-sm text-muted-foreground">
+                        {getDiversificationBenefit(selectedCorrelation)}
+                      </p>
+                    </div>
+
+                    {/* Scatter Plot */}
+                    {scatterData.length > 0 && (
+                      <div>
+                        <h5 className="text-sm font-semibold mb-3 text-foreground">
+                          Dispersão de Retornos
+                        </h5>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <ScatterChart margin={{ top: 20, right: 30, bottom: 40, left: 40 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis 
+                              type="number" 
+                              dataKey="x" 
+                              name={selectedStrategy1}
+                              stroke="hsl(var(--foreground))"
+                              label={{ 
+                                value: `${selectedStrategy1} (%)`, 
+                                position: 'insideBottom', 
+                                offset: -15,
+                                style: { fill: 'hsl(var(--foreground))' }
+                              }}
+                            />
+                            <YAxis 
+                              type="number" 
+                              dataKey="y" 
+                              name={selectedStrategy2}
+                              stroke="hsl(var(--foreground))"
+                              label={{ 
+                                value: `${selectedStrategy2} (%)`, 
+                                angle: -90, 
+                                position: 'insideLeft',
+                                style: { fill: 'hsl(var(--foreground))' }
+                              }}
+                            />
+                            <Tooltip
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  const data = payload[0].payload;
+                                  return (
+                                    <div className="bg-background border border-border rounded-lg shadow-lg p-3">
+                                      <p className="text-xs font-semibold mb-1">{data.competencia}</p>
+                                      <p className="text-xs text-muted-foreground">{selectedStrategy1}: {data.x.toFixed(2)}%</p>
+                                      <p className="text-xs text-muted-foreground">{selectedStrategy2}: {data.y.toFixed(2)}%</p>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <Scatter data={scatterData} fill="hsl(var(--chart-1))" />
+                          </ScatterChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Matriz de Correlação (Top Pares) */}
+                <div>
+                  <h4 className="text-sm font-semibold mb-4 text-foreground flex items-center gap-2">
+                    <TrendingUpIcon className="w-4 h-4" />
+                    Matriz de Correlação ({sortedMatrix.length} pares filtrados)
+                  </h4>
+                  
+                  <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                    {sortedMatrix.slice(0, 20).map((item, idx) => {
+                      const absCorr = Math.abs(item.correlation);
+                      return (
+                        <div 
+                          key={idx}
+                          className="p-4 rounded-lg border border-border bg-gradient-to-r from-background to-muted/20 hover:shadow-md transition-shadow cursor-pointer"
+                          onClick={() => {
+                            setSelectedStrategy1(item.strategy1);
+                            setSelectedStrategy2(item.strategy2);
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex-1">
+                              <p className="text-xs font-medium text-foreground">{item.strategy1}</p>
+                              <p className="text-xs text-muted-foreground">vs</p>
+                              <p className="text-xs font-medium text-foreground">{item.strategy2}</p>
+                            </div>
+                            
+                            <div className="text-right">
+                              <p className={`text-2xl font-bold ${
+                                absCorr >= 0.7 ? 'text-red-600' :
+                                absCorr >= 0.3 ? 'text-yellow-600' : 'text-green-600'
+                              }`}>
+                                {item.correlation.toFixed(3)}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {getCorrelationInterpretation(item.correlation)}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <Progress 
+                            value={(item.correlation + 1) * 50} 
+                            className="h-2"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Explicação Educacional */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <h5 className="text-sm font-semibold mb-2 text-foreground">O que é Correlação?</h5>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Mede como duas estratégias se movem em relação uma à outra. Varia de -1 a +1:
+                    </p>
+                    <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                      <li><strong>+1:</strong> Movem-se perfeitamente juntas</li>
+                      <li><strong>0:</strong> Independentes (ideal para diversificação)</li>
+                      <li><strong>-1:</strong> Movem-se em direções opostas</li>
+                    </ul>
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <h5 className="text-sm font-semibold mb-2 text-foreground">Por que é importante?</h5>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Correlação baixa entre estratégias reduz risco da carteira:
+                    </p>
+                    <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                      <li>Quando uma cai, outra pode subir</li>
+                      <li>Suaviza a volatilidade total</li>
+                      <li>Melhora relação risco-retorno</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Fórmula */}
                 <div className="p-4 rounded-lg bg-muted/50 border border-border">
-                  <h5 className="text-sm font-semibold mb-2 text-foreground">O que é Correlação Serial?</h5>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Mede a relação entre retornos de períodos consecutivos. Valores próximos de:
+                  <h5 className="text-sm font-semibold mb-2 text-foreground">Fórmula da Correlação de Pearson</h5>
+                  <div className="bg-background/50 p-3 rounded font-mono text-xs text-foreground">
+                    ρ(X,Y) = Cov(X,Y) / (σ_X × σ_Y)
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Onde Cov é a covariância e σ é o desvio padrão de cada estratégia
                   </p>
-                  <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-                    <li><strong>+1:</strong> Retornos tendem a continuar na mesma direção</li>
-                    <li><strong>0:</strong> Retornos são independentes (ideal para eficiência de mercado)</li>
-                    <li><strong>-1:</strong> Retornos tendem a reverter (mean reversion)</li>
-                  </ul>
                 </div>
               </div>
             );
