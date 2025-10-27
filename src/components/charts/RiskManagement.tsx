@@ -776,12 +776,6 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 <p className="text-xs text-muted-foreground">meses positivos</p>
               </div>
               
-              <div className="bg-gradient-to-br from-primary/5 to-primary/8 border border-primary/15 rounded-lg p-3.5 hover:from-primary/8 hover:to-primary/12 transition-all">
-                <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Volatilidade da meta</p>
-                <p className="text-xl font-bold text-foreground mb-0.5">{riskMetrics.targetMetrics.targetVolatility.toFixed(2)}%</p>
-                <p className="text-xs text-muted-foreground">desvio padrão</p>
-              </div>
-              
               <div className="bg-gradient-to-br from-success/5 to-success/8 border border-success/15 rounded-lg p-3.5 hover:from-success/8 hover:to-success/12 transition-all">
                 <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Meses acima da meta</p>
                 <div className="flex items-baseline gap-2">
