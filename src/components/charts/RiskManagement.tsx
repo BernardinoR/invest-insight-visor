@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie, Area, AreaChart, ComposedChart } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie, Area, AreaChart, ComposedChart, ReferenceLine } from 'recharts';
 import { useMemo, useState } from "react";
 import { TrendingDown, TrendingUp, Activity, AlertTriangle, Target, Calendar, Settings, Rocket, Check, X, TrendingUp as TrendingUpIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -655,186 +655,254 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
           </div>
         </CardHeader>
         <CardContent className="p-6">
-          {/* KPI Principal */}
-          <div className="mb-8 text-center">
-            <div className="inline-block bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-8">
-              <p className="text-sm text-muted-foreground mb-2 font-medium tracking-wide uppercase">Hit Rate Total</p>
-              <p className="text-7xl font-bold text-foreground mb-2">{riskMetrics.hitRate.hitRatePercent}%</p>
-              <p className="text-sm text-muted-foreground">
-                {riskMetrics.hitRate.homeRun + riskMetrics.hitRate.acerto} de {filteredConsolidatedData.length} meses atingiram a meta
-              </p>
-            </div>
-          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Lado Esquerdo - KPI e Gráfico de Barras */}
+            <div className="space-y-6">
+              {/* KPI Principal */}
+              <div className="text-center bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-xl p-6">
+                <p className="text-xs text-muted-foreground mb-2 font-medium tracking-wide uppercase">Hit Rate Total</p>
+                <p className="text-6xl font-bold text-foreground mb-1">{riskMetrics.hitRate.hitRatePercent}%</p>
+                <p className="text-sm text-muted-foreground">
+                  {riskMetrics.hitRate.homeRun + riskMetrics.hitRate.acerto} de {filteredConsolidatedData.length} meses
+                </p>
+              </div>
 
-          {/* Categorias de Performance - Cards Horizontais */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            {/* Home Run */}
-            <div className="bg-gradient-to-r from-success/10 to-success/5 border border-success/30 rounded-xl p-5 hover:from-success/15 hover:to-success/8 transition-all">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="bg-success/20 p-2 rounded-lg">
-                    <Rocket className="h-5 w-5 text-success" />
+              {/* Gráfico de Barras Horizontais */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground">Distribuição de Performance</h3>
+                
+                {/* Home Run */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <Rocket className="h-4 w-4 text-success" />
+                      <span className="font-medium text-foreground">Home Run</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-success">{riskMetrics.hitRate.homeRun}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({filteredConsolidatedData.length > 0 
+                          ? Math.round((riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100)
+                          : 0}%)
+                      </span>
+                    </div>
                   </div>
-                  <h3 className="text-lg font-bold text-foreground">Home Run</h3>
-                </div>
-                <div className="text-right">
-                  <p className="text-3xl font-bold text-success">{riskMetrics.hitRate.homeRun}</p>
-                  <p className="text-xs text-muted-foreground">meses</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Acima da meta</p>
-                <Badge variant="outline" className="bg-success/10 text-success border-success/30">
-                  {filteredConsolidatedData.length > 0 
-                    ? Math.round((riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100)
-                    : 0}%
-                </Badge>
-              </div>
-              {/* Barra de Progresso */}
-              <div className="mt-3 h-2 bg-success/10 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-success to-success/80 rounded-full transition-all"
-                  style={{ 
-                    width: `${filteredConsolidatedData.length > 0 
-                      ? (riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100
-                      : 0}%` 
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Acerto */}
-            <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-xl p-5 hover:from-primary/15 hover:to-primary/8 transition-all">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="bg-primary/20 p-2 rounded-lg">
-                    <Check className="h-5 w-5 text-primary" />
+                  <div className="h-8 bg-muted rounded-lg overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-success to-success/80 flex items-center justify-end px-3 transition-all duration-500"
+                      style={{ 
+                        width: `${filteredConsolidatedData.length > 0 
+                          ? (riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100
+                          : 0}%` 
+                      }}
+                    >
+                      {riskMetrics.hitRate.homeRun > 0 && (
+                        <span className="text-xs font-bold text-white">
+                          {riskMetrics.hitRate.homeRun} meses
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <h3 className="text-lg font-bold text-foreground">Acerto</h3>
                 </div>
-                <div className="text-right">
-                  <p className="text-3xl font-bold text-primary">{riskMetrics.hitRate.acerto}</p>
-                  <p className="text-xs text-muted-foreground">meses</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Dentro da meta</p>
-                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
-                  {filteredConsolidatedData.length > 0 
-                    ? Math.round((riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100)
-                    : 0}%
-                </Badge>
-              </div>
-              <div className="mt-3 h-2 bg-primary/10 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all"
-                  style={{ 
-                    width: `${filteredConsolidatedData.length > 0 
-                      ? (riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100
-                      : 0}%` 
-                  }}
-                />
-              </div>
-            </div>
 
-            {/* Quase lá */}
-            <div className="bg-gradient-to-r from-warning/10 to-warning/5 border border-warning/30 rounded-xl p-5 hover:from-warning/15 hover:to-warning/8 transition-all">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="bg-warning/20 p-2 rounded-lg">
-                    <TrendingUpIcon className="h-5 w-5 text-warning" />
+                {/* Acerto */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-primary" />
+                      <span className="font-medium text-foreground">Acerto</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-primary">{riskMetrics.hitRate.acerto}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({filteredConsolidatedData.length > 0 
+                          ? Math.round((riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100)
+                          : 0}%)
+                      </span>
+                    </div>
                   </div>
-                  <h3 className="text-lg font-bold text-foreground">Quase lá</h3>
-                </div>
-                <div className="text-right">
-                  <p className="text-3xl font-bold text-warning">{riskMetrics.hitRate.quaseLa}</p>
-                  <p className="text-xs text-muted-foreground">meses</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Próximo da meta</p>
-                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30">
-                  {filteredConsolidatedData.length > 0 
-                    ? Math.round((riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100)
-                    : 0}%
-                </Badge>
-              </div>
-              <div className="mt-3 h-2 bg-warning/10 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-warning to-warning/80 rounded-full transition-all"
-                  style={{ 
-                    width: `${filteredConsolidatedData.length > 0 
-                      ? (riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100
-                      : 0}%` 
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Miss */}
-            <div className="bg-gradient-to-r from-destructive/10 to-destructive/5 border border-destructive/30 rounded-xl p-5 hover:from-destructive/15 hover:to-destructive/8 transition-all">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="bg-destructive/20 p-2 rounded-lg">
-                    <X className="h-5 w-5 text-destructive" />
+                  <div className="h-8 bg-muted rounded-lg overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-end px-3 transition-all duration-500"
+                      style={{ 
+                        width: `${filteredConsolidatedData.length > 0 
+                          ? (riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100
+                          : 0}%` 
+                      }}
+                    >
+                      {riskMetrics.hitRate.acerto > 0 && (
+                        <span className="text-xs font-bold text-white">
+                          {riskMetrics.hitRate.acerto} meses
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <h3 className="text-lg font-bold text-foreground">Miss</h3>
                 </div>
-                <div className="text-right">
-                  <p className="text-3xl font-bold text-destructive">{riskMetrics.hitRate.miss}</p>
-                  <p className="text-xs text-muted-foreground">meses</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Abaixo da meta</p>
-                <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
-                  {filteredConsolidatedData.length > 0 
-                    ? Math.round((riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100)
-                    : 0}%
-                </Badge>
-              </div>
-              <div className="mt-3 h-2 bg-destructive/10 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-destructive to-destructive/80 rounded-full transition-all"
-                  style={{ 
-                    width: `${filteredConsolidatedData.length > 0 
-                      ? (riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100
-                      : 0}%` 
-                  }}
-                />
-              </div>
-            </div>
-          </div>
 
-          {/* Métricas Secundárias */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-success/5 border border-success/10 rounded-lg p-4 hover:bg-success/8 transition-colors">
-              <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Melhor mês</p>
-              <p className="text-2xl font-bold text-success mb-0.5">+{riskMetrics.bestMonth.return.toFixed(2)}%</p>
-              <p className="text-xs text-muted-foreground">{riskMetrics.bestMonth.competencia}</p>
+                {/* Quase lá */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <TrendingUpIcon className="h-4 w-4 text-warning" />
+                      <span className="font-medium text-foreground">Quase lá</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-warning">{riskMetrics.hitRate.quaseLa}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({filteredConsolidatedData.length > 0 
+                          ? Math.round((riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100)
+                          : 0}%)
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-8 bg-muted rounded-lg overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-warning to-warning/80 flex items-center justify-end px-3 transition-all duration-500"
+                      style={{ 
+                        width: `${filteredConsolidatedData.length > 0 
+                          ? (riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100
+                          : 0}%` 
+                      }}
+                    >
+                      {riskMetrics.hitRate.quaseLa > 0 && (
+                        <span className="text-xs font-bold text-white">
+                          {riskMetrics.hitRate.quaseLa} meses
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Miss */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <X className="h-4 w-4 text-destructive" />
+                      <span className="font-medium text-foreground">Miss</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-destructive">{riskMetrics.hitRate.miss}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({filteredConsolidatedData.length > 0 
+                          ? Math.round((riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100)
+                          : 0}%)
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-8 bg-muted rounded-lg overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-destructive to-destructive/80 flex items-center justify-end px-3 transition-all duration-500"
+                      style={{ 
+                        width: `${filteredConsolidatedData.length > 0 
+                          ? (riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100
+                          : 0}%` 
+                      }}
+                    >
+                      {riskMetrics.hitRate.miss > 0 && (
+                        <span className="text-xs font-bold text-white">
+                          {riskMetrics.hitRate.miss} meses
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            
-            <div className="bg-destructive/5 border border-destructive/10 rounded-lg p-4 hover:bg-destructive/8 transition-colors">
-              <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Pior mês</p>
-              <p className="text-2xl font-bold text-destructive mb-0.5">{riskMetrics.worstMonth.return.toFixed(2)}%</p>
-              <p className="text-xs text-muted-foreground">{riskMetrics.worstMonth.competencia}</p>
-            </div>
-            
-            <div className="bg-primary/5 border border-primary/10 rounded-lg p-4 hover:bg-primary/8 transition-colors">
-              <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Consistência</p>
-              <p className="text-2xl font-bold text-foreground mb-0.5">{riskMetrics.hitRate.positivePercent}%</p>
-              <p className="text-xs text-muted-foreground">meses positivos</p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-success/5 to-success/8 border border-success/15 rounded-lg p-4 hover:from-success/8 hover:to-success/12 transition-all">
-              <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Meses acima da meta</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-success">{riskMetrics.monthsAboveTarget}</p>
-                <Badge variant="outline" className="bg-success/10 text-success border-success/30 px-1.5 py-0.5 text-xs">
-                  {filteredConsolidatedData.length > 0 
-                    ? Math.round((riskMetrics.monthsAboveTarget / filteredConsolidatedData.length) * 100)
-                    : 0}%
-                </Badge>
+
+            {/* Lado Direito - Gráfico de Comparação com Meta */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-foreground">Performance Mensal vs Meta</h3>
+              <div className="h-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={targetComparisonData.slice(-12)} margin={{ top: 10, right: 10, left: -10, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                    <XAxis 
+                      dataKey="competencia" 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={11}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={11}
+                      tickFormatter={(value) => `${value.toFixed(1)}%`}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value: any) => [`${value.toFixed(2)}%`, '']}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                    />
+                    <ReferenceLine 
+                      y={clientTarget * 100} 
+                      stroke="hsl(var(--primary))" 
+                      strokeDasharray="5 5" 
+                      strokeWidth={2}
+                      label={{ 
+                        value: 'Meta', 
+                        position: 'right',
+                        fill: 'hsl(var(--primary))',
+                        fontSize: 12,
+                        fontWeight: 600
+                      }}
+                    />
+                    <Bar 
+                      dataKey="retorno" 
+                      radius={[8, 8, 0, 0]}
+                    >
+                      {targetComparisonData.slice(-12).map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={
+                            entry.retorno >= entry.meta * 1.5 
+                              ? 'hsl(142, 71%, 45%)' 
+                              : entry.retorno >= entry.meta
+                              ? 'hsl(215, 20%, 65%)'
+                              : entry.retorno >= entry.meta * 0.5
+                              ? 'hsl(40, 60%, 55%)'
+                              : 'hsl(0, 70%, 60%)'
+                          }
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Métricas Adicionais */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-success/5 border border-success/10 rounded-lg p-3">
+                  <p className="text-xs text-muted-foreground mb-1 font-medium uppercase tracking-wide">Melhor mês</p>
+                  <p className="text-xl font-bold text-success">+{riskMetrics.bestMonth.return.toFixed(2)}%</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{riskMetrics.bestMonth.competencia}</p>
+                </div>
+                
+                <div className="bg-destructive/5 border border-destructive/10 rounded-lg p-3">
+                  <p className="text-xs text-muted-foreground mb-1 font-medium uppercase tracking-wide">Pior mês</p>
+                  <p className="text-xl font-bold text-destructive">{riskMetrics.worstMonth.return.toFixed(2)}%</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{riskMetrics.worstMonth.competencia}</p>
+                </div>
+                
+                <div className="bg-primary/5 border border-primary/10 rounded-lg p-3">
+                  <p className="text-xs text-muted-foreground mb-1 font-medium uppercase tracking-wide">Consistência</p>
+                  <p className="text-xl font-bold text-foreground">{riskMetrics.hitRate.positivePercent}%</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">meses positivos</p>
+                </div>
+                
+                <div className="bg-success/5 border border-success/10 rounded-lg p-3">
+                  <p className="text-xs text-muted-foreground mb-1 font-medium uppercase tracking-wide">Acima da meta</p>
+                  <p className="text-xl font-bold text-success">{riskMetrics.monthsAboveTarget}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {filteredConsolidatedData.length > 0 
+                      ? Math.round((riskMetrics.monthsAboveTarget / filteredConsolidatedData.length) * 100)
+                      : 0}% do período
+                  </p>
+                </div>
               </div>
             </div>
           </div>
