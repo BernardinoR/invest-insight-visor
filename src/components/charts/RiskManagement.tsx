@@ -432,24 +432,41 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
         classeMap.set(classe, { rendimentos: [], posicoes: [] });
       }
       const data = classeMap.get(classe)!;
-      data.rendimentos.push(item.Rendimento * 100); // em %
+      data.rendimentos.push(item.Rendimento); // em decimal
       data.posicoes.push(item.Posicao);
     });
 
     const strategiesData = Array.from(classeMap.entries()).map(([classe, data]) => {
-      const avgReturn = data.rendimentos.reduce((sum, r) => sum + r, 0) / data.rendimentos.length;
-      const variance = data.rendimentos.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / data.rendimentos.length;
+      // Retorno total acumulado (composto)
+      let totalReturn = 1;
+      data.rendimentos.forEach(r => {
+        totalReturn *= (1 + r);
+      });
+      totalReturn = (totalReturn - 1) * 100; // em %
+      
+      // Volatilidade (desvio padrão dos retornos mensais em %)
+      const returnsInPercent = data.rendimentos.map(r => r * 100);
+      const avgReturn = returnsInPercent.reduce((sum, r) => sum + r, 0) / returnsInPercent.length;
+      const variance = returnsInPercent.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returnsInPercent.length;
       const stdDev = Math.sqrt(variance);
       
       return {
         name: classe,
-        retorno: avgReturn,
+        retorno: totalReturn,
         risco: stdDev,
         tipo: 'estrategia' as const
       };
     });
 
     // 2. Calcular Risco x Retorno da Carteira Total
+    // Retorno total acumulado da carteira
+    let portfolioTotalReturn = 1;
+    consolidadoData.forEach(item => {
+      portfolioTotalReturn *= (1 + item.Rendimento);
+    });
+    portfolioTotalReturn = (portfolioTotalReturn - 1) * 100; // em %
+    
+    // Volatilidade da carteira
     const portfolioReturns = consolidadoData.map(item => item.Rendimento * 100);
     const avgPortfolioReturn = portfolioReturns.reduce((sum, r) => sum + r, 0) / portfolioReturns.length;
     const portfolioVariance = portfolioReturns.reduce((sum, r) => sum + Math.pow(r - avgPortfolioReturn, 2), 0) / portfolioReturns.length;
@@ -457,7 +474,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
 
     const portfolioData = {
       name: 'Carteira Total',
-      retorno: avgPortfolioReturn,
+      retorno: portfolioTotalReturn,
       risco: portfolioStdDev,
       tipo: 'carteira' as const
     };
@@ -1548,7 +1565,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 unit="%" 
                 stroke="hsl(var(--muted-foreground))"
                 label={{ 
-                  value: 'Retorno Médio %', 
+                  value: 'Retorno Total %', 
                   angle: -90, 
                   position: 'insideLeft', 
                   fill: 'hsl(var(--muted-foreground))',
@@ -1570,7 +1587,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 labelStyle={{ fontWeight: 600, marginBottom: '8px', color: 'hsl(var(--foreground))' }}
                 formatter={(value: any, name: string) => {
                   if (name === 'risco') return [`${Number(value).toFixed(2)}%`, 'Volatilidade'];
-                  if (name === 'retorno') return [`${Number(value).toFixed(2)}%`, 'Retorno Médio'];
+                  if (name === 'retorno') return [`${Number(value).toFixed(2)}%`, 'Retorno Total'];
                   return [value, name];
                 }}
               />
