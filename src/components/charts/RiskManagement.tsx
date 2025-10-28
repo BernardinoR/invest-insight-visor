@@ -577,7 +577,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
 
   return (
     <div className="space-y-6">
-      {/* Hit Rate Analysis */}
+      {/* Hit Rate Analysis - Novo Layout */}
       <Card className="bg-gradient-card border-border/50">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -654,152 +654,190 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-8">
-          {/* Top Section - Donut Chart with Legend */}
-          <div className="flex items-center justify-center gap-12 mb-8">
-            {/* Donut Chart and Legend */}
-            <div className="flex items-center gap-8">
-              {/* Donut Chart */}
-              <div className="relative flex-shrink-0">
-                <div style={{ width: '320px', height: '320px' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: 'hsl(142, 71%, 45%)' },
-                          { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 20%, 65%)' },
-                          { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 20%, 75%)' },
-                          { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 85%)' }
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={80}
-                        outerRadius={130}
-                        paddingAngle={3}
-                        dataKey="value"
-                        strokeWidth={0}
-                      >
-                        {[
-                          { name: 'Home Run', value: riskMetrics.hitRate.homeRun, color: 'hsl(142, 71%, 45%)' },
-                          { name: 'Acerto', value: riskMetrics.hitRate.acerto, color: 'hsl(215, 20%, 65%)' },
-                          { name: 'Quase lá', value: riskMetrics.hitRate.quaseLa, color: 'hsl(40, 20%, 75%)' },
-                          { name: 'Miss', value: riskMetrics.hitRate.miss, color: 'hsl(220, 15%, 85%)' }
-                        ].map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
+        <CardContent className="p-6">
+          {/* KPI Principal */}
+          <div className="mb-8 text-center">
+            <div className="inline-block bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-8">
+              <p className="text-sm text-muted-foreground mb-2 font-medium tracking-wide uppercase">Hit Rate Total</p>
+              <p className="text-7xl font-bold text-foreground mb-2">{riskMetrics.hitRate.hitRatePercent}%</p>
+              <p className="text-sm text-muted-foreground">
+                {riskMetrics.hitRate.homeRun + riskMetrics.hitRate.acerto} de {filteredConsolidatedData.length} meses atingiram a meta
+              </p>
+            </div>
+          </div>
+
+          {/* Categorias de Performance - Cards Horizontais */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Home Run */}
+            <div className="bg-gradient-to-r from-success/10 to-success/5 border border-success/30 rounded-xl p-5 hover:from-success/15 hover:to-success/8 transition-all">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="bg-success/20 p-2 rounded-lg">
+                    <Rocket className="h-5 w-5 text-success" />
+                  </div>
+                  <h3 className="text-lg font-bold text-foreground">Home Run</h3>
                 </div>
-                
-                {/* Center Text */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-                  <p className="text-xs text-muted-foreground mb-1 font-medium tracking-wide">Hit Rate</p>
-                  <p className="text-5xl font-bold text-foreground tracking-tight">{riskMetrics.hitRate.hitRatePercent}%</p>
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-success">{riskMetrics.hitRate.homeRun}</p>
+                  <p className="text-xs text-muted-foreground">meses</p>
                 </div>
               </div>
-              
-              {/* Legend on the Right of Donut */}
-              <div className="flex flex-col gap-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded flex-shrink-0" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }} />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <Rocket className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-sm font-semibold text-foreground">Home Run</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {riskMetrics.hitRate.homeRun} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100) : 0}%)
-                    </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Acima da meta</p>
+                <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+                  {filteredConsolidatedData.length > 0 
+                    ? Math.round((riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100)
+                    : 0}%
+                </Badge>
+              </div>
+              {/* Barra de Progresso */}
+              <div className="mt-3 h-2 bg-success/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-success to-success/80 rounded-full transition-all"
+                  style={{ 
+                    width: `${filteredConsolidatedData.length > 0 
+                      ? (riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100
+                      : 0}%` 
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Acerto */}
+            <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-xl p-5 hover:from-primary/15 hover:to-primary/8 transition-all">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="bg-primary/20 p-2 rounded-lg">
+                    <Check className="h-5 w-5 text-primary" />
                   </div>
+                  <h3 className="text-lg font-bold text-foreground">Acerto</h3>
                 </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded flex-shrink-0" style={{ backgroundColor: 'hsl(215, 20%, 65%)' }} />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <Check className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-sm font-semibold text-foreground">Acerto</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {riskMetrics.hitRate.acerto} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100) : 0}%)
-                    </p>
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-primary">{riskMetrics.hitRate.acerto}</p>
+                  <p className="text-xs text-muted-foreground">meses</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Dentro da meta</p>
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                  {filteredConsolidatedData.length > 0 
+                    ? Math.round((riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100)
+                    : 0}%
+                </Badge>
+              </div>
+              <div className="mt-3 h-2 bg-primary/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all"
+                  style={{ 
+                    width: `${filteredConsolidatedData.length > 0 
+                      ? (riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100
+                      : 0}%` 
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Quase lá */}
+            <div className="bg-gradient-to-r from-warning/10 to-warning/5 border border-warning/30 rounded-xl p-5 hover:from-warning/15 hover:to-warning/8 transition-all">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="bg-warning/20 p-2 rounded-lg">
+                    <TrendingUpIcon className="h-5 w-5 text-warning" />
                   </div>
+                  <h3 className="text-lg font-bold text-foreground">Quase lá</h3>
                 </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded flex-shrink-0" style={{ backgroundColor: 'hsl(40, 20%, 75%)' }} />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <TrendingUpIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-sm font-semibold text-foreground">Quase lá</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {riskMetrics.hitRate.quaseLa} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100) : 0}%)
-                    </p>
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-warning">{riskMetrics.hitRate.quaseLa}</p>
+                  <p className="text-xs text-muted-foreground">meses</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Próximo da meta</p>
+                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30">
+                  {filteredConsolidatedData.length > 0 
+                    ? Math.round((riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100)
+                    : 0}%
+                </Badge>
+              </div>
+              <div className="mt-3 h-2 bg-warning/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-warning to-warning/80 rounded-full transition-all"
+                  style={{ 
+                    width: `${filteredConsolidatedData.length > 0 
+                      ? (riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100
+                      : 0}%` 
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Miss */}
+            <div className="bg-gradient-to-r from-destructive/10 to-destructive/5 border border-destructive/30 rounded-xl p-5 hover:from-destructive/15 hover:to-destructive/8 transition-all">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="bg-destructive/20 p-2 rounded-lg">
+                    <X className="h-5 w-5 text-destructive" />
                   </div>
+                  <h3 className="text-lg font-bold text-foreground">Miss</h3>
                 </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded flex-shrink-0" style={{ backgroundColor: 'hsl(220, 15%, 85%)' }} />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <X className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-sm font-semibold text-foreground">Miss</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {riskMetrics.hitRate.miss} meses ({filteredConsolidatedData.length > 0 ? Math.round((riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100) : 0}%)
-                    </p>
-                  </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-destructive">{riskMetrics.hitRate.miss}</p>
+                  <p className="text-xs text-muted-foreground">meses</p>
                 </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Abaixo da meta</p>
+                <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
+                  {filteredConsolidatedData.length > 0 
+                    ? Math.round((riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100)
+                    : 0}%
+                </Badge>
+              </div>
+              <div className="mt-3 h-2 bg-destructive/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-destructive to-destructive/80 rounded-full transition-all"
+                  style={{ 
+                    width: `${filteredConsolidatedData.length > 0 
+                      ? (riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100
+                      : 0}%` 
+                  }}
+                />
               </div>
             </div>
           </div>
-          
-          {/* Bottom Section - Secondary Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-              <div className="bg-success/5 border border-success/10 rounded-lg p-3.5 hover:bg-success/8 transition-colors">
-                <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Melhor mês</p>
-                <p className="text-xl font-bold text-success mb-0.5">+{riskMetrics.bestMonth.return.toFixed(2)}%</p>
-                <p className="text-xs text-muted-foreground">{riskMetrics.bestMonth.competencia}</p>
-              </div>
-              
-              <div className="bg-destructive/5 border border-destructive/10 rounded-lg p-3.5 hover:bg-destructive/8 transition-colors">
-                <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Pior mês</p>
-                <p className="text-xl font-bold text-destructive mb-0.5">{riskMetrics.worstMonth.return.toFixed(2)}%</p>
-                <p className="text-xs text-muted-foreground">{riskMetrics.worstMonth.competencia}</p>
-              </div>
-              
-              <div className="bg-primary/5 border border-primary/10 rounded-lg p-3.5 hover:bg-primary/8 transition-colors">
-                <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Consistência</p>
-                <p className="text-xl font-bold text-foreground mb-0.5">{riskMetrics.hitRate.positivePercent}%</p>
-                <p className="text-xs text-muted-foreground">meses positivos</p>
-              </div>
-              
-              <div className="bg-gradient-to-br from-success/5 to-success/8 border border-success/15 rounded-lg p-3.5 hover:from-success/8 hover:to-success/12 transition-all">
-                <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Meses acima da meta</p>
-                <div className="flex items-baseline gap-2">
-                  <p className="text-2xl font-bold text-success">{riskMetrics.monthsAboveTarget}</p>
-                  <Badge variant="outline" className="bg-success/10 text-success border-success/30 px-1.5 py-0.5 text-xs">
-                    {filteredConsolidatedData.length > 0 
-                      ? Math.round((riskMetrics.monthsAboveTarget / filteredConsolidatedData.length) * 100)
-                      : 0}%
-                  </Badge>
-                </div>
-              </div>
-              
-              <div className="bg-gradient-to-br from-destructive/5 to-destructive/8 border border-destructive/15 rounded-lg p-3.5 hover:from-destructive/8 hover:to-destructive/12 transition-all">
-                <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Meses abaixo da meta</p>
-                <div className="flex items-baseline gap-2">
-                  <p className="text-2xl font-bold text-destructive">{riskMetrics.monthsBelowTarget}</p>
-                  <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 px-1.5 py-0.5 text-xs">
-                    {filteredConsolidatedData.length > 0 
-                      ? Math.round((riskMetrics.monthsBelowTarget / filteredConsolidatedData.length) * 100)
-                      : 0}%
-                  </Badge>
-                </div>
+
+          {/* Métricas Secundárias */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-success/5 border border-success/10 rounded-lg p-4 hover:bg-success/8 transition-colors">
+              <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Melhor mês</p>
+              <p className="text-2xl font-bold text-success mb-0.5">+{riskMetrics.bestMonth.return.toFixed(2)}%</p>
+              <p className="text-xs text-muted-foreground">{riskMetrics.bestMonth.competencia}</p>
+            </div>
+            
+            <div className="bg-destructive/5 border border-destructive/10 rounded-lg p-4 hover:bg-destructive/8 transition-colors">
+              <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Pior mês</p>
+              <p className="text-2xl font-bold text-destructive mb-0.5">{riskMetrics.worstMonth.return.toFixed(2)}%</p>
+              <p className="text-xs text-muted-foreground">{riskMetrics.worstMonth.competencia}</p>
+            </div>
+            
+            <div className="bg-primary/5 border border-primary/10 rounded-lg p-4 hover:bg-primary/8 transition-colors">
+              <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Consistência</p>
+              <p className="text-2xl font-bold text-foreground mb-0.5">{riskMetrics.hitRate.positivePercent}%</p>
+              <p className="text-xs text-muted-foreground">meses positivos</p>
+            </div>
+            
+            <div className="bg-gradient-to-br from-success/5 to-success/8 border border-success/15 rounded-lg p-4 hover:from-success/8 hover:to-success/12 transition-all">
+              <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Meses acima da meta</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-success">{riskMetrics.monthsAboveTarget}</p>
+                <Badge variant="outline" className="bg-success/10 text-success border-success/30 px-1.5 py-0.5 text-xs">
+                  {filteredConsolidatedData.length > 0 
+                    ? Math.round((riskMetrics.monthsAboveTarget / filteredConsolidatedData.length) * 100)
+                    : 0}%
+                </Badge>
               </div>
             </div>
+          </div>
         </CardContent>
       </Card>
 
