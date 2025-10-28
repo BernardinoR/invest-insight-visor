@@ -419,14 +419,51 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
     };
   }, [filteredConsolidatedData, clientTarget, marketData]);
 
-  // Dados para o gráfico de Risco x Retorno
+  // Dados para o gráfico de Risco x Retorno - Estratégias + Carteira
   const riskReturnData = useMemo(() => {
-    return filteredConsolidatedData.map(item => ({
-      name: item.Competencia,
-      retorno: item.Rendimento * 100,
-      risco: Math.abs(item.Rendimento * 100 - riskMetrics.avgReturn)
-    }));
-  }, [filteredConsolidatedData, riskMetrics.avgReturn]);
+    if (consolidadoData.length === 0 || !dadosData || dadosData.length === 0) return [];
+
+    // 1. Calcular Risco x Retorno por Classe de Ativo (desde o início)
+    const classeMap = new Map<string, { rendimentos: number[], posicoes: number[] }>();
+    
+    dadosData.forEach(item => {
+      const classe = item["Classe do ativo"] || "Outros";
+      if (!classeMap.has(classe)) {
+        classeMap.set(classe, { rendimentos: [], posicoes: [] });
+      }
+      const data = classeMap.get(classe)!;
+      data.rendimentos.push(item.Rendimento * 100); // em %
+      data.posicoes.push(item.Posicao);
+    });
+
+    const strategiesData = Array.from(classeMap.entries()).map(([classe, data]) => {
+      const avgReturn = data.rendimentos.reduce((sum, r) => sum + r, 0) / data.rendimentos.length;
+      const variance = data.rendimentos.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / data.rendimentos.length;
+      const stdDev = Math.sqrt(variance);
+      
+      return {
+        name: classe,
+        retorno: avgReturn,
+        risco: stdDev,
+        tipo: 'estrategia' as const
+      };
+    });
+
+    // 2. Calcular Risco x Retorno da Carteira Total
+    const portfolioReturns = consolidadoData.map(item => item.Rendimento * 100);
+    const avgPortfolioReturn = portfolioReturns.reduce((sum, r) => sum + r, 0) / portfolioReturns.length;
+    const portfolioVariance = portfolioReturns.reduce((sum, r) => sum + Math.pow(r - avgPortfolioReturn, 2), 0) / portfolioReturns.length;
+    const portfolioStdDev = Math.sqrt(portfolioVariance);
+
+    const portfolioData = {
+      name: 'Carteira Total',
+      retorno: avgPortfolioReturn,
+      risco: portfolioStdDev,
+      tipo: 'carteira' as const
+    };
+
+    return [...strategiesData, portfolioData];
+  }, [consolidadoData, dadosData]);
 
   // Dados para correlação interativa (simulação de correlação entre meses)
   const correlationData = useMemo(() => {
@@ -1458,22 +1495,51 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
         </CardContent>
       </Card>
 
-      {/* Gráfico de Risco x Retorno */}
+      {/* Gráfico de Risco x Retorno - Estratégias */}
       <Card className="bg-gradient-card border-border/50">
         <CardHeader>
-          <CardTitle className="text-foreground">Risco x Retorno por Período</CardTitle>
+          <div>
+            <CardTitle className="text-foreground">Risco x Retorno das Estratégias</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">Análise desde o início por classe de ativo</p>
+          </div>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={350}>
-            <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <div className="mb-4 flex flex-wrap items-center gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-primary"></div>
+              <span className="text-muted-foreground font-medium">Carteira Total</span>
+            </div>
+            {riskReturnData.filter(d => d.tipo === 'estrategia').slice(0, 8).map((item, idx) => (
+              <div key={item.name} className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ 
+                    backgroundColor: `hsl(${(idx * 360) / 8}, 70%, 55%)` 
+                  }}
+                ></div>
+                <span className="text-muted-foreground">{item.name}</span>
+              </div>
+            ))}
+          </div>
+          
+          <ResponsiveContainer width="100%" height={450}>
+            <ScatterChart margin={{ top: 20, right: 30, bottom: 60, left: 60 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
               <XAxis 
                 type="number" 
                 dataKey="risco" 
                 name="Risco" 
                 unit="%" 
                 stroke="hsl(var(--muted-foreground))"
-                label={{ value: 'Risco (%)', position: 'insideBottom', offset: -10, fill: 'hsl(var(--muted-foreground))' }}
+                label={{ 
+                  value: 'Risco (Volatilidade) %', 
+                  position: 'insideBottom', 
+                  offset: -15, 
+                  fill: 'hsl(var(--muted-foreground))',
+                  fontSize: 13,
+                  fontWeight: 600
+                }}
+                tick={{ fontSize: 12 }}
               />
               <YAxis 
                 type="number" 
@@ -1481,24 +1547,59 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 name="Retorno" 
                 unit="%" 
                 stroke="hsl(var(--muted-foreground))"
-                label={{ value: 'Retorno (%)', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
+                label={{ 
+                  value: 'Retorno Médio %', 
+                  angle: -90, 
+                  position: 'insideLeft', 
+                  fill: 'hsl(var(--muted-foreground))',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  offset: -10
+                }}
+                tick={{ fontSize: 12 }}
               />
               <Tooltip 
                 cursor={{ strokeDasharray: '3 3' }}
                 contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
+                  backgroundColor: 'hsl(var(--background))',
                   border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  color: 'hsl(var(--foreground))'
+                  borderRadius: '12px',
+                  padding: '12px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                 }}
-                formatter={(value: any) => [`${Number(value).toFixed(2)}%`]}
+                labelStyle={{ fontWeight: 600, marginBottom: '8px', color: 'hsl(var(--foreground))' }}
+                formatter={(value: any, name: string) => {
+                  if (name === 'risco') return [`${Number(value).toFixed(2)}%`, 'Volatilidade'];
+                  if (name === 'retorno') return [`${Number(value).toFixed(2)}%`, 'Retorno Médio'];
+                  return [value, name];
+                }}
               />
+              
+              {/* Scatter das Estratégias */}
+              {riskReturnData.filter(d => d.tipo === 'estrategia').map((strategy, idx) => (
+                <Scatter 
+                  key={strategy.name}
+                  name={strategy.name}
+                  data={[strategy]}
+                  fill={`hsl(${(idx * 360) / riskReturnData.filter(d => d.tipo === 'estrategia').length}, 70%, 55%)`}
+                  shape="circle"
+                >
+                  <Cell 
+                    fill={`hsl(${(idx * 360) / riskReturnData.filter(d => d.tipo === 'estrategia').length}, 70%, 55%)`}
+                    r={8}
+                  />
+                </Scatter>
+              ))}
+              
+              {/* Scatter da Carteira - Destaque */}
               <Scatter 
-                name="Períodos" 
-                data={riskReturnData} 
+                name="Carteira Total"
+                data={riskReturnData.filter(d => d.tipo === 'carteira')}
                 fill="hsl(var(--primary))"
-                fillOpacity={0.6}
-              />
+                shape="diamond"
+              >
+                <Cell fill="hsl(var(--primary))" r={12} stroke="hsl(var(--background))" strokeWidth={3} />
+              </Scatter>
             </ScatterChart>
           </ResponsiveContainer>
         </CardContent>
