@@ -44,7 +44,9 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   const [selectedIndicators, setSelectedIndicators] = useState({
     cdi: false,
     target: true,
-    ipca: true
+    ipca: true,
+    ibovespa: false,
+    ifix: false
   });
   
   const { cdiData, loading: cdiLoading, error: cdiError } = useCDIData();
@@ -361,7 +363,9 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         ...point,
         cdiRetorno: 0,
         targetRetorno: 0,
-        ipcaRetorno: 0
+        ipcaRetorno: 0,
+        ibovespaRetorno: 0,
+        ifixRetorno: 0
       };
     } else {
       const firstCompetencia = chartData[1]?.competencia;
@@ -468,9 +472,6 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
             ipcaRetorno = currentMarketPoint.ipca * 100;
           }
         } else {
-          const ibovespaRelativeReturn = (1 + currentMarketPoint.accumulatedIbovespa) / (1 + firstMarketPoint.accumulatedIbovespa) - 1;
-          const ifixRelativeReturn = (1 + currentMarketPoint.accumulatedIfix) / (1 + firstMarketPoint.accumulatedIfix) - 1;
-          
           // Para IPCA, usar composição mensal como CDI
           const startMarketIndex = marketData.findIndex(m => m.competencia === firstCompetencia);
           const currentMarketIndex = marketData.findIndex(m => m.competencia === currentCompetencia);
@@ -494,11 +495,49 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         console.log('No market data found for competencias');
       }
       
+      // Calculate Ibovespa and IFIX returns
+      let ibovespaRetorno = null;
+      let ifixRetorno = null;
+      
+      if (currentMarketPoint && firstMarketPoint) {
+        if (currentCompetencia === firstCompetencia) {
+          // For first month, use monthly return
+          ibovespaRetorno = currentMarketPoint.ibovespa * 100;
+          ifixRetorno = currentMarketPoint.ifix * 100;
+        } else {
+          // For other months, calculate accumulated return from first to current
+          const startMarketIndex = marketData.findIndex(m => m.competencia === firstCompetencia);
+          const currentMarketIndex = marketData.findIndex(m => m.competencia === currentCompetencia);
+          
+          if (startMarketIndex !== -1 && currentMarketIndex !== -1) {
+            // Compose monthly returns for Ibovespa
+            let accumulatedIbovespa = 1;
+            for (let i = startMarketIndex; i <= currentMarketIndex; i++) {
+              if (marketData[i].ibovespa !== 0) {
+                accumulatedIbovespa *= (1 + marketData[i].ibovespa);
+              }
+            }
+            ibovespaRetorno = (accumulatedIbovespa - 1) * 100;
+            
+            // Compose monthly returns for IFIX
+            let accumulatedIfix = 1;
+            for (let i = startMarketIndex; i <= currentMarketIndex; i++) {
+              if (marketData[i].ifix !== 0) {
+                accumulatedIfix *= (1 + marketData[i].ifix);
+              }
+            }
+            ifixRetorno = (accumulatedIfix - 1) * 100;
+          }
+        }
+      }
+      
       return {
         ...point,
         cdiRetorno,
         targetRetorno,
-        ipcaRetorno
+        ipcaRetorno,
+        ibovespaRetorno,
+        ifixRetorno
       };
     }
   });
@@ -628,7 +667,6 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                          </label>
                       </div>
                       
-                      
                       <div className="flex items-center space-x-2">
                         <Checkbox 
                           id="ipca" 
@@ -638,6 +676,28 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                           }
                         />
                         <label htmlFor="ipca" className="text-sm">IPCA</label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="ibovespa" 
+                          checked={selectedIndicators.ibovespa}
+                          onCheckedChange={(checked) => 
+                            setSelectedIndicators(prev => ({ ...prev, ibovespa: checked as boolean }))
+                          }
+                        />
+                        <label htmlFor="ibovespa" className="text-sm">Ibovespa</label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="ifix" 
+                          checked={selectedIndicators.ifix}
+                          onCheckedChange={(checked) => 
+                            setSelectedIndicators(prev => ({ ...prev, ifix: checked as boolean }))
+                          }
+                        />
+                        <label htmlFor="ifix" className="text-sm">IFIX</label>
                       </div>
                     </div>
                   </div>
@@ -1007,6 +1067,12 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                     if (name === 'ipcaRetorno') {
                       return [`${value.toFixed(2)}%`, 'IPCA'];
                     }
+                    if (name === 'ibovespaRetorno') {
+                      return [`${value.toFixed(2)}%`, 'Ibovespa'];
+                    }
+                    if (name === 'ifixRetorno') {
+                      return [`${value.toFixed(2)}%`, 'IFIX'];
+                    }
                     return [`${value.toFixed(2)}%`, name];
                   }}
                   labelStyle={{ 
@@ -1092,6 +1158,48 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                     activeDot={{ 
                       r: 5, 
                       fill: 'hsl(var(--info))', 
+                      strokeWidth: 2, 
+                      stroke: 'hsl(var(--background))'
+                    }}
+                  />
+                )}
+                {selectedIndicators.ibovespa && (
+                  <Line 
+                    type="monotone" 
+                    dataKey="ibovespaRetorno" 
+                    stroke="hsl(25 95% 53%)"
+                    strokeWidth={2}
+                    connectNulls={false}
+                    dot={{ 
+                      fill: 'hsl(25 95% 53%)', 
+                      strokeWidth: 1, 
+                      stroke: 'hsl(var(--background))',
+                      r: 3
+                    }}
+                    activeDot={{ 
+                      r: 5, 
+                      fill: 'hsl(25 95% 53%)', 
+                      strokeWidth: 2, 
+                      stroke: 'hsl(var(--background))'
+                    }}
+                  />
+                )}
+                {selectedIndicators.ifix && (
+                  <Line 
+                    type="monotone" 
+                    dataKey="ifixRetorno" 
+                    stroke="hsl(280 65% 60%)"
+                    strokeWidth={2}
+                    connectNulls={false}
+                    dot={{ 
+                      fill: 'hsl(280 65% 60%)', 
+                      strokeWidth: 1, 
+                      stroke: 'hsl(var(--background))',
+                      r: 3
+                    }}
+                    activeDot={{ 
+                      r: 5, 
+                      fill: 'hsl(280 65% 60%)', 
                       strokeWidth: 2, 
                       stroke: 'hsl(var(--background))'
                     }}
