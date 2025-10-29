@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, LabelList } from 'recharts';
 import { TrendingUp, Calendar as CalendarIcon, Settings, ArrowLeftRight, Wallet, BarChart3 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
@@ -40,6 +40,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   const [showCustomSelector, setShowCustomSelector] = useState(false);
   const [showIndicators, setShowIndicators] = useState(false);
   const [viewMode, setViewMode] = useState<'rentabilidade' | 'patrimonio' | 'crescimento'>('rentabilidade');
+  const [showOnlyRendaGerada, setShowOnlyRendaGerada] = useState(false);
   const [selectedIndicators, setSelectedIndicators] = useState({
     cdi: false,
     target: true,
@@ -281,6 +282,25 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   const calculateGrowthData = (data: typeof filteredData) => {
     if (data.length === 0) return [];
     
+    // Calcular meta mensalizada do componente pré-fixado
+    let monthlyTargetRate = 0;
+    if (clientTarget?.meta) {
+      // Extrair o número da meta (exemplo: "IPCA+5%" -> 5)
+      const metaMatch = clientTarget.meta.match(/\+(\d+(?:\.\d+)?)/);
+      if (metaMatch) {
+        const preFixedComponent = parseFloat(metaMatch[1]) / 100; // Convert to decimal (5% -> 0.05)
+        // Mensalizar: (1 + preFixedComponent)^(1/12) - 1
+        monthlyTargetRate = Math.pow(1 + preFixedComponent, 1/12) - 1;
+        console.log('Monthly target rate calculated:', { 
+          meta: clientTarget.meta, 
+          preFixedComponent, 
+          monthlyTargetRate 
+        });
+      }
+    } else {
+      console.log('No clientTarget found for growth chart');
+    }
+    
     const result = [];
     
     data.forEach((item, index) => {
@@ -292,18 +312,36 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
       const movimentacao = item["Movimentação"] || 0;
       const ganhoFinanceiro = item["Ganho Financeiro"] || 0;
       
+      // Renda gerada = patrimônio do mês * meta mensalizada
+      const rendaGerada = patrimonioInicial * monthlyTargetRate;
+      
       // Total growth = movimentação + ganho financeiro = patrimônio final - patrimônio inicial
       const totalGrowth = patrimonioFinal - patrimonioInicial;
       const growthPercentage = patrimonioInicial > 0 ? (totalGrowth / patrimonioInicial) * 100 : 0;
       
+      // Ajustar patrimonioBase para subtrair a renda gerada
+      const patrimonioBaseAdjusted = Math.max(0, patrimonioInicial - rendaGerada);
+      
+      if (index === 0) {
+        console.log('First growth data point:', {
+          competencia: item.Competencia,
+          patrimonioInicial,
+          rendaGerada,
+          patrimonioBaseAdjusted,
+          monthlyTargetRate
+        });
+      }
+      
       result.push({
         name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
-        patrimonioBase: patrimonioInicial,
+        rendaGerada: rendaGerada,
+        patrimonioBase: patrimonioBaseAdjusted,
         growth: totalGrowth >= 0 ? totalGrowth : 0, // Positive growth for stacking
         negativeGrowth: totalGrowth < 0 ? totalGrowth : 0, // Negative growth
         totalGrowth,
         growthPercentage,
         patrimonioFinal,
+        patrimonioInicial,
         movimentacao,
         ganhoFinanceiro,
         competencia: item.Competencia
@@ -608,6 +646,18 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
             )}
             
             <div className="flex items-center gap-1">
+            {viewMode === 'crescimento' && (
+              <Button
+                variant={showOnlyRendaGerada ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowOnlyRendaGerada(!showOnlyRendaGerada)}
+                className="gap-2 text-xs px-3 py-1 h-8 mr-2"
+              >
+                <Wallet className="h-4 w-4" />
+                {showOnlyRendaGerada ? "Ver Tudo" : "Renda Gerada"}
+              </Button>
+            )}
+            
             {periodButtons.map((button) => (
               <Button
                 key={button.id}
@@ -683,6 +733,10 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                 barGap={8}
               >
                 <defs>
+                  <linearGradient id="barRendaGerada" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(47 100% 65%)" stopOpacity={0.7} />
+                    <stop offset="100%" stopColor="hsl(47 95% 55%)" stopOpacity={0.6} />
+                  </linearGradient>
                   <linearGradient id="barBase" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.45} />
                     <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
@@ -776,8 +830,14 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                         }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                             <span style={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))' }}>Patrimônio Inicial</span>
-                            <strong style={{ fontSize: '12px' }}>R$ {data.patrimonioBase.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                            <strong style={{ fontSize: '12px' }}>R$ {data.patrimonioInicial.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
                           </div>
+                          {data.rendaGerada > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                              <span style={{ fontSize: '11px', color: 'hsl(47 90% 45%)' }}>Renda Gerada</span>
+                              <strong style={{ fontSize: '12px', color: 'hsl(47 90% 40%)' }}>R$ {data.rendaGerada.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                            </div>
+                          )}
                         </div>
                         <div style={{ 
                           marginBottom: '10px',
@@ -844,11 +904,38 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                   cursor={{ fill: 'hsl(var(--primary) / 0.05)', radius: 4 }}
                 />
                 <Bar 
+                  dataKey="rendaGerada" 
+                  stackId="a"
+                  fill="url(#barRendaGerada)"
+                  radius={[0, 0, 6, 6]}
+                  maxBarSize={60}
+                  hide={showOnlyRendaGerada ? false : false}
+                >
+                  {showOnlyRendaGerada && (
+                    <LabelList
+                      dataKey="rendaGerada"
+                      position="top"
+                      formatter={(value: number) => {
+                        if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+                        if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
+                        return value.toFixed(0);
+                      }}
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        fill: 'hsl(var(--foreground))'
+                      }}
+                      offset={8}
+                    />
+                  )}
+                </Bar>
+                <Bar 
                   dataKey="patrimonioBase" 
                   stackId="a"
                   fill="url(#barBase)"
-                  radius={[0, 0, 6, 6]}
+                  radius={[0, 0, 0, 0]}
                   maxBarSize={60}
+                  hide={showOnlyRendaGerada}
                 />
                 <Bar 
                   dataKey="growth" 
@@ -856,6 +943,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                   fill="url(#barPositive)"
                   radius={[6, 6, 0, 0]}
                   maxBarSize={60}
+                  hide={showOnlyRendaGerada}
                 />
                 <Bar 
                   dataKey="negativeGrowth" 
@@ -863,6 +951,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                   fill="url(#barNegative)"
                   radius={[0, 0, 6, 6]}
                   maxBarSize={60}
+                  hide={showOnlyRendaGerada}
                 />
               </BarChart>
             ) : viewMode === 'rentabilidade' ? (
@@ -1144,7 +1233,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
             );
           })()
         ) : viewMode === 'crescimento' ? (
-          // Modo "Crescimento" - crescimento médio e total
+          // Modo "Crescimento" - crescimento médio e total + renda gerada
           growthData.length > 0 && (() => {
             // Calcular crescimento percentual médio
             const averageGrowthPercentage = growthData.reduce((sum, item) => sum + item.growthPercentage, 0) / growthData.length;
@@ -1155,46 +1244,98 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
             const periodGrowth = lastPatrimonio - firstPatrimonio;
             const periodGrowthPercentage = firstPatrimonio > 0 ? (periodGrowth / firstPatrimonio) * 100 : 0;
             
+            // Última renda gerada
+            const lastRendaGerada = growthData[growthData.length - 1]?.rendaGerada || 0;
+            const lastPatrimonioInicial = growthData[growthData.length - 1]?.patrimonioInicial || 0;
+            const rendaPercentage = lastPatrimonioInicial > 0 ? (lastRendaGerada / lastPatrimonioInicial) * 100 : 0;
+            
+            // Renda média dos últimos 12 meses
+            const last12MonthsData = growthData.slice(-12);
+            const averageRenda12M = last12MonthsData.reduce((sum, item) => sum + (item.rendaGerada || 0), 0) / last12MonthsData.length;
+            const totalRenda12M = last12MonthsData.reduce((sum, item) => sum + (item.rendaGerada || 0), 0);
+            
             return (
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-card border border-border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Crescimento médio</p>
-                      <p className="text-2xl font-semibold text-foreground">
-                        {averageGrowthPercentage >= 0 ? '+' : ''}{averageGrowthPercentage.toFixed(2)}%
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        por período
-                      </p>
+              <>
+                {!showOnlyRendaGerada && (
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-card border border-border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Crescimento médio</p>
+                          <p className="text-2xl font-semibold text-foreground">
+                            {averageGrowthPercentage >= 0 ? '+' : ''}{averageGrowthPercentage.toFixed(2)}%
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            por período
+                          </p>
+                        </div>
+                        <div className={`text-sm px-2 py-1 rounded ${
+                          averageGrowthPercentage >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                        }`}>
+                          {averageGrowthPercentage >= 0 ? '↑' : '↓'}
+                        </div>
+                      </div>
                     </div>
-                    <div className={`text-sm px-2 py-1 rounded ${
-                      averageGrowthPercentage >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
-                    }`}>
-                      {averageGrowthPercentage >= 0 ? '↑' : '↓'}
+                    
+                    <div className="bg-card border border-border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Crescimento total no período</p>
+                          <p className="text-2xl font-semibold text-foreground">
+                            {periodGrowthPercentage >= 0 ? '+' : ''}{periodGrowthPercentage.toFixed(2)}%
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            R$ {periodGrowth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                        <div className={`text-sm px-2 py-1 rounded ${
+                          periodGrowthPercentage >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                        }`}>
+                          {periodGrowthPercentage >= 0 ? '↑' : '↓'}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
                 
-                <div className="bg-card border border-border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Crescimento total no período</p>
-                      <p className="text-2xl font-semibold text-foreground">
-                        {periodGrowthPercentage >= 0 ? '+' : ''}{periodGrowthPercentage.toFixed(2)}%
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        R$ {periodGrowth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </p>
+                {showOnlyRendaGerada && (
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-card border border-border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Última renda gerada</p>
+                          <p className="text-2xl font-semibold text-foreground">
+                            R$ {lastRendaGerada.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {rendaPercentage.toFixed(2)}% do patrimônio
+                          </p>
+                        </div>
+                        <div className="text-sm px-2 py-1 rounded bg-[hsl(47_100%_65%)]/10" style={{ color: 'hsl(47 90% 40%)' }}>
+                          <Wallet className="h-4 w-4" />
+                        </div>
+                      </div>
                     </div>
-                    <div className={`text-sm px-2 py-1 rounded ${
-                      periodGrowthPercentage >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
-                    }`}>
-                      {periodGrowthPercentage >= 0 ? '↑' : '↓'}
+                    
+                    <div className="bg-card border border-border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Renda média (12M)</p>
+                          <p className="text-2xl font-semibold text-foreground">
+                            R$ {averageRenda12M.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Total: R$ {totalRenda12M.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                        <div className="text-sm px-2 py-1 rounded bg-[hsl(47_100%_65%)]/10" style={{ color: 'hsl(47 90% 40%)' }}>
+                          <Wallet className="h-4 w-4" />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                )}
+              </>
             );
           })()
         ) : (
