@@ -26,6 +26,8 @@ interface PerformanceChartProps {
     Competencia: string;
   }>;
   clientName?: string;
+  marketData?: any;
+  clientTarget?: any;
 }
 
 function decodeClientName(clientName?: string): string | undefined {
@@ -33,7 +35,7 @@ function decodeClientName(clientName?: string): string | undefined {
   return decodeURIComponent(clientName);
 }
 
-export function PerformanceChart({ consolidadoData, clientName }: PerformanceChartProps) {
+export function PerformanceChart({ consolidadoData, clientName, marketData: propMarketData, clientTarget: propClientTarget }: PerformanceChartProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'all' | 'custom'>('12months');
   const [customStartCompetencia, setCustomStartCompetencia] = useState<string>('');
   const [customEndCompetencia, setCustomEndCompetencia] = useState<string>('');
@@ -48,8 +50,14 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   });
   
   const { cdiData, loading: cdiLoading, error: cdiError } = useCDIData();
+  
+  // Use props if provided, otherwise fetch from hook
   const decodedClientName = decodeClientName(clientName);
-  const { marketData, clientTarget, loading: marketLoading, error: marketError } = useMarketIndicators(decodedClientName);
+  const hookData = useMarketIndicators(propMarketData || propClientTarget ? undefined : decodedClientName);
+  const marketData = propMarketData || hookData.marketData;
+  const clientTarget = propClientTarget || hookData.clientTarget;
+  const marketLoading = propMarketData ? false : hookData.loading;
+  const marketError = propMarketData ? null : hookData.error;
   
   console.log('PerformanceChart - Debug data:', {
     clientName,
