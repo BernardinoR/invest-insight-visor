@@ -24,30 +24,50 @@ export function useMarketIndicators(clientName?: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch real market data from B3 and Banco Central APIs
+  // Fetch real market data from InvestTester and Banco Central APIs
   const fetchMarketData = async (clientTargetValue?: ClientTarget | null): Promise<MarketIndicatorData[]> => {
     console.log('=== fetchMarketData called with clientTargetValue ===', clientTargetValue);
     try {
       const endDate = new Date();
+      endDate.setHours(0, 0, 0, 0); // Ensure start of day
       const startDate = new Date();
       startDate.setFullYear(startDate.getFullYear() - 2); // Last 2 years
+      startDate.setHours(0, 0, 0, 0);
 
-      const formatDate = (date: Date) => {
+      // Format for Banco Central API (DD/MM/YYYY)
+      const formatDateBacen = (date: Date) => {
         return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
       };
 
-      const startDateStr = formatDate(startDate);
-      const endDateStr = formatDate(endDate);
+      // Format for InvestTester API (YYYY-MM-DD)
+      const formatDateInvestTester = (date: Date) => {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      };
+
+      const startDateBacen = formatDateBacen(startDate);
+      const endDateBacen = formatDateBacen(endDate);
+      const startDateIT = formatDateInvestTester(startDate);
+      const endDateIT = formatDateInvestTester(endDate);
 
       console.log('Fetching market data...');
 
-      // Try to fetch IPCA data from Banco Central (this one usually works)
+      // Try to fetch IPCA data from Banco Central
       let ipcaData = [];
       try {
-        const ipcaResponse = await fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`);
+        const ipcaUrl = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json&dataInicial=${startDateBacen}&dataFinal=${endDateBacen}`;
+        console.log('Fetching IPCA from:', ipcaUrl);
+        
+        const ipcaResponse = await fetch(ipcaUrl);
         if (ipcaResponse.ok) {
-          ipcaData = await ipcaResponse.json();
-          console.log('IPCA data fetched successfully:', ipcaData.length, 'records');
+          const ipcaJson = await ipcaResponse.json();
+          
+          // Validate response is not an error object
+          if (!ipcaJson.erro && Array.isArray(ipcaJson)) {
+            ipcaData = ipcaJson;
+            console.log('IPCA data fetched successfully:', ipcaData.length, 'records');
+          } else {
+            console.error('IPCA API returned error:', ipcaJson);
+          }
         } else {
           console.error('IPCA API error:', ipcaResponse.status);
         }
@@ -55,25 +75,20 @@ export function useMarketIndicators(clientName?: string) {
         console.error('Error fetching IPCA:', ipcaError);
       }
 
-      // For B3 APIs, we'll use a CORS proxy service to bypass CORS restrictions
-      const corsProxy = 'https://api.allorigins.win/raw?url=';
-      
+      // Fetch Ibovespa and IFIX from InvestTester API
       let ibovespaData = null;
       let ifixData = null;
 
-      // Try to fetch Ibovespa data with CORS proxy
+      // Try to fetch Ibovespa data from InvestTester
       try {
-        console.log('Attempting to fetch Ibovespa data...');
-        const ibovUrl = `${corsProxy}${encodeURIComponent('https://sistemaswebb3-listados.b3.com.br/indexProxy/indexCall/GetPortfolioDay/IBOV')}`;
+        console.log('Attempting to fetch Ibovespa data from InvestTester...');
+        const ibovUrl = `https://investtester.com/api/acao/quotes?assetCodes=^BVSP&start=${startDateIT}&end=${endDateIT}`;
+        console.log('Ibovespa URL:', ibovUrl);
+        
         const ibovResponse = await fetch(ibovUrl);
         if (ibovResponse.ok) {
-          const ibovText = await ibovResponse.text();
-          try {
-            ibovespaData = JSON.parse(ibovText);
-            console.log('Ibovespa data fetched successfully:', ibovespaData);
-          } catch (parseError) {
-            console.error('Error parsing Ibovespa JSON:', parseError);
-          }
+          ibovespaData = await ibovResponse.json();
+          console.log('Ibovespa data fetched successfully:', ibovespaData);
         } else {
           console.error('Ibovespa API error:', ibovResponse.status);
         }
@@ -81,19 +96,16 @@ export function useMarketIndicators(clientName?: string) {
         console.error('Error fetching Ibovespa:', ibovError);
       }
 
-      // Try to fetch IFIX data with CORS proxy
+      // Try to fetch IFIX data from InvestTester
       try {
-        console.log('Attempting to fetch IFIX data...');
-        const ifixUrl = `${corsProxy}${encodeURIComponent('https://sistemaswebb3-listados.b3.com.br/indexProxy/indexCall/GetPortfolioDay/IFIX')}`;
+        console.log('Attempting to fetch IFIX data from InvestTester...');
+        const ifixUrl = `https://investtester.com/api/acao/quotes?assetCodes=IFIX11.SA&start=${startDateIT}&end=${endDateIT}`;
+        console.log('IFIX URL:', ifixUrl);
+        
         const ifixResponse = await fetch(ifixUrl);
         if (ifixResponse.ok) {
-          const ifixText = await ifixResponse.text();
-          try {
-            ifixData = JSON.parse(ifixText);
-            console.log('IFIX data fetched successfully:', ifixData);
-          } catch (parseError) {
-            console.error('Error parsing IFIX JSON:', parseError);
-          }
+          ifixData = await ifixResponse.json();
+          console.log('IFIX data fetched successfully:', ifixData);
         } else {
           console.error('IFIX API error:', ifixResponse.status);
         }
@@ -120,44 +132,76 @@ export function useMarketIndicators(clientName?: string) {
         return `${month}/${year}`;
       };
 
-      // Current competencia (for B3 current data)
-      const currentDate = new Date();
-      const currentCompetencia = `${String(currentDate.getMonth() + 1).padStart(2, '0')}/${currentDate.getFullYear()}`;
-
-      // Process B3 current data for current competencia
-      if (ibovespaData?.index) {
-        console.log('Processing Ibovespa data:', ibovespaData.index);
-        if (!competenciaMap.has(currentCompetencia)) {
-          competenciaMap.set(currentCompetencia, { ibovespa: [], ifix: [], ipca: [] });
-        }
-        // Get percentage variation from B3 data
-        const oscilacao = ibovespaData.index.oscilacao;
-        console.log('Ibovespa oscilacao:', oscilacao);
+      // Process InvestTester historical data
+      // Ibovespa data processing
+      if (ibovespaData && Array.isArray(ibovespaData) && ibovespaData.length > 0) {
+        console.log('Processing Ibovespa historical data:', ibovespaData.length, 'records');
         
-        if (oscilacao !== undefined && oscilacao !== null) {
-          const variation = parseFloat(oscilacao.toString().replace(',', '.')) / 100; // Convert percentage to decimal
-          if (!isNaN(variation)) {
-            competenciaMap.get(currentCompetencia)!.ibovespa.push(variation);
-            console.log('Added Ibovespa variation:', variation);
-          }
+        const firstAsset = ibovespaData[0];
+        if (firstAsset?.hist && Array.isArray(firstAsset.hist)) {
+          // Group by month and calculate monthly returns
+          const monthlyReturns = new Map<string, { firstPrice: number; lastPrice: number }>();
+          
+          firstAsset.hist.forEach((point: any) => {
+            if (!point.date || !point.close) return;
+            
+            const date = new Date(point.date);
+            const competencia = `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+            
+            if (!monthlyReturns.has(competencia)) {
+              monthlyReturns.set(competencia, { firstPrice: point.close, lastPrice: point.close });
+            } else {
+              monthlyReturns.get(competencia)!.lastPrice = point.close;
+            }
+          });
+          
+          // Calculate monthly percentage returns
+          monthlyReturns.forEach((prices, competencia) => {
+            if (!competenciaMap.has(competencia)) {
+              competenciaMap.set(competencia, { ibovespa: [], ifix: [], ipca: [] });
+            }
+            
+            const monthlyReturn = (prices.lastPrice - prices.firstPrice) / prices.firstPrice;
+            competenciaMap.get(competencia)!.ibovespa.push(monthlyReturn);
+          });
+          
+          console.log('Ibovespa monthly returns calculated for', monthlyReturns.size, 'months');
         }
       }
 
-      if (ifixData?.index) {
-        console.log('Processing IFIX data:', ifixData.index);
-        if (!competenciaMap.has(currentCompetencia)) {
-          competenciaMap.set(currentCompetencia, { ibovespa: [], ifix: [], ipca: [] });
-        }
-        // Get percentage variation from B3 data
-        const oscilacao = ifixData.index.oscilacao;
-        console.log('IFIX oscilacao:', oscilacao);
+      // IFIX data processing
+      if (ifixData && Array.isArray(ifixData) && ifixData.length > 0) {
+        console.log('Processing IFIX historical data:', ifixData.length, 'records');
         
-        if (oscilacao !== undefined && oscilacao !== null) {
-          const variation = parseFloat(oscilacao.toString().replace(',', '.')) / 100; // Convert percentage to decimal
-          if (!isNaN(variation)) {
-            competenciaMap.get(currentCompetencia)!.ifix.push(variation);
-            console.log('Added IFIX variation:', variation);
-          }
+        const firstAsset = ifixData[0];
+        if (firstAsset?.hist && Array.isArray(firstAsset.hist)) {
+          // Group by month and calculate monthly returns
+          const monthlyReturns = new Map<string, { firstPrice: number; lastPrice: number }>();
+          
+          firstAsset.hist.forEach((point: any) => {
+            if (!point.date || !point.close) return;
+            
+            const date = new Date(point.date);
+            const competencia = `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+            
+            if (!monthlyReturns.has(competencia)) {
+              monthlyReturns.set(competencia, { firstPrice: point.close, lastPrice: point.close });
+            } else {
+              monthlyReturns.get(competencia)!.lastPrice = point.close;
+            }
+          });
+          
+          // Calculate monthly percentage returns
+          monthlyReturns.forEach((prices, competencia) => {
+            if (!competenciaMap.has(competencia)) {
+              competenciaMap.set(competencia, { ibovespa: [], ifix: [], ipca: [] });
+            }
+            
+            const monthlyReturn = (prices.lastPrice - prices.firstPrice) / prices.firstPrice;
+            competenciaMap.get(competencia)!.ifix.push(monthlyReturn);
+          });
+          
+          console.log('IFIX monthly returns calculated for', monthlyReturns.size, 'months');
         }
       }
 

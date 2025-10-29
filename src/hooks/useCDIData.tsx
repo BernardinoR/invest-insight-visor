@@ -24,8 +24,10 @@ export function useCDIData() {
 
         // Buscar dados dos últimos 2 anos para garantir cobertura
         const endDate = new Date();
+        endDate.setHours(0, 0, 0, 0); // Ensure start of day
         const startDate = new Date();
         startDate.setFullYear(endDate.getFullYear() - 2);
+        startDate.setHours(0, 0, 0, 0);
 
         const formatDateForAPI = (date: Date) => {
           const day = date.getDate().toString().padStart(2, '0');
@@ -37,20 +39,29 @@ export function useCDIData() {
         const startDateStr = formatDateForAPI(startDate);
         const endDateStr = formatDateForAPI(endDate);
 
-        const response = await fetch(
-          `https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`
-        );
+        const cdiUrl = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`;
+        console.log('Fetching CDI from:', cdiUrl);
+
+        const response = await fetch(cdiUrl);
 
         if (!response.ok) {
           throw new Error(`Erro na API do Banco Central: ${response.status}`);
         }
 
-        const data: CDIDataPoint[] = await response.json();
-        console.log('Raw CDI data from API:', data);
+        const jsonData = await response.json();
+        console.log('Raw CDI data from API:', jsonData);
 
-        if (!data || data.length === 0) {
+        // Validate response is not an error object
+        if (jsonData.erro) {
+          console.error('CDI API returned error:', jsonData);
+          throw new Error('API do Banco Central retornou erro');
+        }
+
+        if (!Array.isArray(jsonData) || jsonData.length === 0) {
           throw new Error('Nenhum dado do CDI foi retornado pela API');
         }
+
+        const data: CDIDataPoint[] = jsonData;
 
         // Processar dados por competência (mês/ano)
         const monthlyData = new Map<string, { sum: number; count: number }>();
