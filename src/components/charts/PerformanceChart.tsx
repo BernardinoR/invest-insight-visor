@@ -1237,78 +1237,86 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
             const totalRenda12M = last12MonthsData.reduce((sum, item) => sum + (item.rendaGerada || 0), 0);
             
             return (
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-card border border-border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Crescimento médio</p>
-                      <p className="text-2xl font-semibold text-foreground">
-                        {averageGrowthPercentage >= 0 ? '+' : ''}{averageGrowthPercentage.toFixed(2)}%
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        por período
-                      </p>
+              <div className={`mt-6 grid grid-cols-1 ${showOnlyRendaGerada ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-4'} gap-4`}>
+                {!showOnlyRendaGerada && (
+                  <>
+                    <div className="bg-card border border-border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Crescimento médio</p>
+                          <p className="text-2xl font-semibold text-foreground">
+                            {averageGrowthPercentage >= 0 ? '+' : ''}{averageGrowthPercentage.toFixed(2)}%
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            por período
+                          </p>
+                        </div>
+                        <div className={`text-sm px-2 py-1 rounded ${
+                          averageGrowthPercentage >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                        }`}>
+                          {averageGrowthPercentage >= 0 ? '↑' : '↓'}
+                        </div>
+                      </div>
                     </div>
-                    <div className={`text-sm px-2 py-1 rounded ${
-                      averageGrowthPercentage >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
-                    }`}>
-                      {averageGrowthPercentage >= 0 ? '↑' : '↓'}
+                    
+                    <div className="bg-card border border-border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Crescimento total no período</p>
+                          <p className="text-2xl font-semibold text-foreground">
+                            {periodGrowthPercentage >= 0 ? '+' : ''}{periodGrowthPercentage.toFixed(2)}%
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            R$ {periodGrowth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                        <div className={`text-sm px-2 py-1 rounded ${
+                          periodGrowthPercentage >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                        }`}>
+                          {periodGrowthPercentage >= 0 ? '↑' : '↓'}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  </>
+                )}
                 
-                <div className="bg-card border border-border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Crescimento total no período</p>
-                      <p className="text-2xl font-semibold text-foreground">
-                        {periodGrowthPercentage >= 0 ? '+' : ''}{periodGrowthPercentage.toFixed(2)}%
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        R$ {periodGrowth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </p>
+                {showOnlyRendaGerada && (
+                  <>
+                    <div className="bg-card border border-border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Última renda gerada</p>
+                          <p className="text-2xl font-semibold text-foreground">
+                            R$ {lastRendaGerada.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {rendaPercentage.toFixed(2)}% do patrimônio
+                          </p>
+                        </div>
+                        <div className="text-sm px-2 py-1 rounded bg-[hsl(47_100%_65%)]/10" style={{ color: 'hsl(47 90% 40%)' }}>
+                          <Wallet className="h-4 w-4" />
+                        </div>
+                      </div>
                     </div>
-                    <div className={`text-sm px-2 py-1 rounded ${
-                      periodGrowthPercentage >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
-                    }`}>
-                      {periodGrowthPercentage >= 0 ? '↑' : '↓'}
+                    
+                    <div className="bg-card border border-border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Renda média (12M)</p>
+                          <p className="text-2xl font-semibold text-foreground">
+                            R$ {averageRenda12M.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Total: R$ {totalRenda12M.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                        <div className="text-sm px-2 py-1 rounded bg-[hsl(47_100%_65%)]/10" style={{ color: 'hsl(47 90% 40%)' }}>
+                          <Wallet className="h-4 w-4" />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-                
-                <div className="bg-card border border-border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Última renda gerada</p>
-                      <p className="text-2xl font-semibold text-foreground">
-                        R$ {lastRendaGerada.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {rendaPercentage.toFixed(2)}% do patrimônio
-                      </p>
-                    </div>
-                    <div className="text-sm px-2 py-1 rounded bg-[hsl(47_100%_65%)]/10" style={{ color: 'hsl(47 90% 40%)' }}>
-                      <Wallet className="h-4 w-4" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-card border border-border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Renda média (12M)</p>
-                      <p className="text-2xl font-semibold text-foreground">
-                        R$ {averageRenda12M.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Total: R$ {totalRenda12M.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </p>
-                    </div>
-                    <div className="text-sm px-2 py-1 rounded bg-[hsl(47_100%_65%)]/10" style={{ color: 'hsl(47 90% 40%)' }}>
-                      <Wallet className="h-4 w-4" />
-                    </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
             );
           })()
