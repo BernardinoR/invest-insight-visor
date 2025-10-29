@@ -1215,7 +1215,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
             );
           })()
         ) : viewMode === 'crescimento' ? (
-          // Modo "Crescimento" - crescimento médio e total
+          // Modo "Crescimento" - crescimento médio e total + renda gerada
           growthData.length > 0 && (() => {
             // Calcular crescimento percentual médio
             const averageGrowthPercentage = growthData.reduce((sum, item) => sum + item.growthPercentage, 0) / growthData.length;
@@ -1226,8 +1226,13 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
             const periodGrowth = lastPatrimonio - firstPatrimonio;
             const periodGrowthPercentage = firstPatrimonio > 0 ? (periodGrowth / firstPatrimonio) * 100 : 0;
             
+            // Última renda gerada
+            const lastRendaGerada = growthData[growthData.length - 1]?.rendaGerada || 0;
+            const lastPatrimonioInicial = growthData[growthData.length - 1]?.patrimonioInicial || 0;
+            const rendaPercentage = lastPatrimonioInicial > 0 ? (lastRendaGerada / lastPatrimonioInicial) * 100 : 0;
+            
             return (
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-card border border-border rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -1262,6 +1267,23 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                       periodGrowthPercentage >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
                     }`}>
                       {periodGrowthPercentage >= 0 ? '↑' : '↓'}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Última renda gerada</p>
+                      <p className="text-2xl font-semibold text-foreground">
+                        R$ {lastRendaGerada.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {rendaPercentage.toFixed(2)}% do patrimônio
+                      </p>
+                    </div>
+                    <div className="text-sm px-2 py-1 rounded bg-[hsl(47_100%_65%)]/10" style={{ color: 'hsl(47 90% 40%)' }}>
+                      <Wallet className="h-4 w-4" />
                     </div>
                   </div>
                 </div>
