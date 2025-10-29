@@ -290,7 +290,14 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
         const preFixedComponent = parseFloat(metaMatch[1]) / 100; // Convert to decimal (5% -> 0.05)
         // Mensalizar: (1 + preFixedComponent)^(1/12) - 1
         monthlyTargetRate = Math.pow(1 + preFixedComponent, 1/12) - 1;
+        console.log('Monthly target rate calculated:', { 
+          meta: clientTarget.meta, 
+          preFixedComponent, 
+          monthlyTargetRate 
+        });
       }
+    } else {
+      console.log('No clientTarget found for growth chart');
     }
     
     const result = [];
@@ -313,6 +320,16 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
       
       // Ajustar patrimonioBase para subtrair a renda gerada
       const patrimonioBaseAdjusted = Math.max(0, patrimonioInicial - rendaGerada);
+      
+      if (index === 0) {
+        console.log('First growth data point:', {
+          competencia: item.Competencia,
+          patrimonioInicial,
+          rendaGerada,
+          patrimonioBaseAdjusted,
+          monthlyTargetRate
+        });
+      }
       
       result.push({
         name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
