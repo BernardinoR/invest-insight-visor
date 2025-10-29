@@ -362,34 +362,35 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             <CardContent>
                <div className="text-2xl font-bold text-foreground">
                  {(() => {
-                   if (!hasData || consolidadoData.length === 0) return "--%";
+                   if (!hasData || filteredConsolidadoData.length === 0) return "--%";
                    
-                   // Get all competencias and sort them properly
-                   const allCompetencias = consolidadoData.map(item => item.Competencia).filter(Boolean);
-                   if (allCompetencias.length === 0) return "--%";
+                   // Use filtered range end date if available, otherwise get most recent from filtered data
+                   const targetCompetencia = filteredRange.fim || (() => {
+                     const allCompetencias = filteredConsolidadoData.map(item => item.Competencia).filter(Boolean);
+                     if (allCompetencias.length === 0) return null;
+                     
+                     return allCompetencias.sort((a, b) => {
+                       const [monthA, yearA] = a.split('/').map(Number);
+                       const [monthB, yearB] = b.split('/').map(Number);
+                       if (yearA !== yearB) return yearB - yearA;
+                       return monthB - monthA;
+                     })[0];
+                   })();
                    
-                   // Sort by competencia (MM/YYYY format) to get the most recent
-                   const sortedCompetencias = allCompetencias.sort((a, b) => {
-                     const [monthA, yearA] = a.split('/').map(Number);
-                     const [monthB, yearB] = b.split('/').map(Number);
-                     if (yearA !== yearB) return yearB - yearA;
-                     return monthB - monthA;
-                   });
+                   if (!targetCompetencia) return "--%";
                    
-                   const mostRecentCompetencia = sortedCompetencias[0];
-                   
-                   // Get all entries for the most recent competencia
-                   const mostRecentEntries = consolidadoData.filter(
-                     item => item.Competencia === mostRecentCompetencia
+                   // Get all entries for the target competencia
+                   const targetEntries = filteredConsolidadoData.filter(
+                     item => item.Competencia === targetCompetencia
                    );
                    
                    // Calculate weighted average rendimento
-                   const totalPatrimonioWeighted = mostRecentEntries.reduce((sum, entry) => 
+                   const totalPatrimonioWeighted = targetEntries.reduce((sum, entry) => 
                      sum + (entry["Patrimonio Final"] || 0), 0);
                    
                    if (totalPatrimonioWeighted === 0) return "--%";
                    
-                   const weightedRendimento = mostRecentEntries.reduce((sum, entry) => {
+                   const weightedRendimento = targetEntries.reduce((sum, entry) => {
                      const patrimonio = entry["Patrimonio Final"] || 0;
                      const rendimento = entry.Rendimento || 0;
                      return sum + (rendimento * patrimonio);
@@ -401,28 +402,31 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                </div>
                 <p className="text-xs text-success">
                   {(() => {
-                    if (!hasData) return "Aguardando dados";
+                    if (!hasData || filteredConsolidadoData.length === 0) return "Aguardando dados";
                     
-                    // Get the most recent competencia from consolidado data
-                    const mostRecentCompetencia = consolidadoData.length > 0 
-                      ? [...new Set(consolidadoData.map(item => item.Competencia))].sort((a, b) => {
-                          const [monthA, yearA] = a.split('/').map(Number);
-                          const [monthB, yearB] = b.split('/').map(Number);
-                          if (yearA !== yearB) return yearB - yearA;
-                          return monthB - monthA;
-                        })[0]
-                      : null;
+                    // Use filtered range end date if available, otherwise get most recent from filtered data
+                    const targetCompetencia = filteredRange.fim || (() => {
+                      const allCompetencias = filteredConsolidadoData.map(item => item.Competencia).filter(Boolean);
+                      if (allCompetencias.length === 0) return null;
+                      
+                      return allCompetencias.sort((a, b) => {
+                        const [monthA, yearA] = a.split('/').map(Number);
+                        const [monthB, yearB] = b.split('/').map(Number);
+                        if (yearA !== yearB) return yearB - yearA;
+                        return monthB - monthA;
+                      })[0];
+                    })();
                     
-                    if (!mostRecentCompetencia) return "vs Meta: --";
+                    if (!targetCompetencia) return "vs Meta: --";
                     
                     // Get the client target for this month
-                    const targetData = marketData.find(item => item.competencia === mostRecentCompetencia);
+                    const targetData = marketData.find(item => item.competencia === targetCompetencia);
                     
                     if (targetData && targetData.clientTarget !== 0) {
-                      // Calculate actual monthly return
-                      const mostRecentEntries = consolidadoData.filter(item => item.Competencia === mostRecentCompetencia);
-                      const totalPatrimonioWeighted = mostRecentEntries.reduce((sum, entry) => sum + (entry["Patrimonio Final"] || 0), 0);
-                      const weightedRendimento = mostRecentEntries.reduce((sum, entry) => {
+                      // Calculate actual monthly return from filtered data
+                      const targetEntries = filteredConsolidadoData.filter(item => item.Competencia === targetCompetencia);
+                      const totalPatrimonioWeighted = targetEntries.reduce((sum, entry) => sum + (entry["Patrimonio Final"] || 0), 0);
+                      const weightedRendimento = targetEntries.reduce((sum, entry) => {
                         const patrimonio = entry["Patrimonio Final"] || 0;
                         const rendimento = entry.Rendimento || 0;
                         return sum + (rendimento * patrimonio);
