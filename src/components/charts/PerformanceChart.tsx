@@ -40,6 +40,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   const [showCustomSelector, setShowCustomSelector] = useState(false);
   const [showIndicators, setShowIndicators] = useState(false);
   const [viewMode, setViewMode] = useState<'rentabilidade' | 'patrimonio' | 'crescimento'>('rentabilidade');
+  const [showOnlyRendaGerada, setShowOnlyRendaGerada] = useState(false);
   const [selectedIndicators, setSelectedIndicators] = useState({
     cdi: false,
     target: true,
@@ -645,6 +646,18 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
             )}
             
             <div className="flex items-center gap-1">
+            {viewMode === 'crescimento' && (
+              <Button
+                variant={showOnlyRendaGerada ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowOnlyRendaGerada(!showOnlyRendaGerada)}
+                className="gap-2 text-xs px-3 py-1 h-8 mr-2"
+              >
+                <Wallet className="h-4 w-4" />
+                {showOnlyRendaGerada ? "Ver Tudo" : "Renda Gerada"}
+              </Button>
+            )}
+            
             {periodButtons.map((button) => (
               <Button
                 key={button.id}
@@ -896,6 +909,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                   fill="url(#barRendaGerada)"
                   radius={[0, 0, 6, 6]}
                   maxBarSize={60}
+                  hide={showOnlyRendaGerada ? false : false}
                 />
                 <Bar 
                   dataKey="patrimonioBase" 
@@ -903,6 +917,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                   fill="url(#barBase)"
                   radius={[0, 0, 0, 0]}
                   maxBarSize={60}
+                  hide={showOnlyRendaGerada}
                 />
                 <Bar 
                   dataKey="growth" 
@@ -910,6 +925,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                   fill="url(#barPositive)"
                   radius={[6, 6, 0, 0]}
                   maxBarSize={60}
+                  hide={showOnlyRendaGerada}
                 />
                 <Bar 
                   dataKey="negativeGrowth" 
@@ -917,6 +933,7 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                   fill="url(#barNegative)"
                   radius={[0, 0, 6, 6]}
                   maxBarSize={60}
+                  hide={showOnlyRendaGerada}
                 />
               </BarChart>
             ) : viewMode === 'rentabilidade' ? (
