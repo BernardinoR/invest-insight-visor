@@ -557,8 +557,6 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           institutionCardData={institutionCardData}
           selectedInstitution={selectedInstitution}
           onInstitutionClick={(institution) => setSelectedInstitution(institution === selectedInstitution ? null : institution)}
-          marketData={marketData}
-          clientTarget={clientTarget}
           portfolioTableComponent={
             <PortfolioTable 
               selectedClient={selectedClient}

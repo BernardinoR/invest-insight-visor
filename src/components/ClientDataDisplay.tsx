@@ -53,11 +53,9 @@ interface ClientDataDisplayProps {
   };
   selectedInstitution?: string | null;
   onInstitutionClick?: (institution: string) => void;
-  marketData?: any;
-  clientTarget?: any;
 }
 
-export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientName, originalConsolidadoData, portfolioTableComponent, institutionCardData, selectedInstitution, onInstitutionClick, marketData, clientTarget }: ClientDataDisplayProps) {
+export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientName, originalConsolidadoData, portfolioTableComponent, institutionCardData, selectedInstitution, onInstitutionClick }: ClientDataDisplayProps) {
   if (!clientName) {
     return null;
   }
@@ -112,7 +110,7 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
     <div className="space-y-6 mb-8">
       {/* Performance Chart - positioned FIRST */}
       {filteredConsolidadoData.length > 0 && (
-        <PerformanceChart consolidadoData={consolidadoData} clientName={clientName} marketData={marketData} clientTarget={clientTarget} />
+        <PerformanceChart consolidadoData={consolidadoData} clientName={clientName} />
       )}
 
       {/* Consolidado Performance */}

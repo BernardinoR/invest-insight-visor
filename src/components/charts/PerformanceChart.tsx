@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, LabelList } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell } from 'recharts';
 import { TrendingUp, Calendar as CalendarIcon, Settings, ArrowLeftRight, Wallet, BarChart3 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
@@ -26,8 +26,6 @@ interface PerformanceChartProps {
     Competencia: string;
   }>;
   clientName?: string;
-  marketData?: any;
-  clientTarget?: any;
 }
 
 function decodeClientName(clientName?: string): string | undefined {
@@ -35,7 +33,7 @@ function decodeClientName(clientName?: string): string | undefined {
   return decodeURIComponent(clientName);
 }
 
-export function PerformanceChart({ consolidadoData, clientName, marketData: propMarketData, clientTarget: propClientTarget }: PerformanceChartProps) {
+export function PerformanceChart({ consolidadoData, clientName }: PerformanceChartProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'all' | 'custom'>('12months');
   const [customStartCompetencia, setCustomStartCompetencia] = useState<string>('');
   const [customEndCompetencia, setCustomEndCompetencia] = useState<string>('');
@@ -50,14 +48,8 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
   });
   
   const { cdiData, loading: cdiLoading, error: cdiError } = useCDIData();
-  
-  // Use props if provided, otherwise fetch from hook
   const decodedClientName = decodeClientName(clientName);
-  const hookData = useMarketIndicators(propMarketData || propClientTarget ? undefined : decodedClientName);
-  const marketData = propMarketData || hookData.marketData;
-  const clientTarget = propClientTarget || hookData.clientTarget;
-  const marketLoading = propMarketData ? false : hookData.loading;
-  const marketError = propMarketData ? null : hookData.error;
+  const { marketData, clientTarget, loading: marketLoading, error: marketError } = useMarketIndicators(decodedClientName);
   
   console.log('PerformanceChart - Debug data:', {
     clientName,
@@ -918,25 +910,7 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
                   radius={[0, 0, 6, 6]}
                   maxBarSize={60}
                   hide={showOnlyRendaGerada ? false : false}
-                >
-                  {showOnlyRendaGerada && (
-                    <LabelList
-                      dataKey="rendaGerada"
-                      position="top"
-                      formatter={(value: number) => {
-                        if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-                        if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
-                        return value.toFixed(0);
-                      }}
-                      style={{
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        fill: 'hsl(var(--foreground))'
-                      }}
-                      offset={8}
-                    />
-                  )}
-                </Bar>
+                />
                 <Bar 
                   dataKey="patrimonioBase" 
                   stackId="a"
@@ -1263,87 +1237,79 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
             const totalRenda12M = last12MonthsData.reduce((sum, item) => sum + (item.rendaGerada || 0), 0);
             
             return (
-              <>
-                {!showOnlyRendaGerada && (
-                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-card border border-border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Crescimento médio</p>
-                          <p className="text-2xl font-semibold text-foreground">
-                            {averageGrowthPercentage >= 0 ? '+' : ''}{averageGrowthPercentage.toFixed(2)}%
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            por período
-                          </p>
-                        </div>
-                        <div className={`text-sm px-2 py-1 rounded ${
-                          averageGrowthPercentage >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
-                        }`}>
-                          {averageGrowthPercentage >= 0 ? '↑' : '↓'}
-                        </div>
-                      </div>
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Crescimento médio</p>
+                      <p className="text-2xl font-semibold text-foreground">
+                        {averageGrowthPercentage >= 0 ? '+' : ''}{averageGrowthPercentage.toFixed(2)}%
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        por período
+                      </p>
                     </div>
-                    
-                    <div className="bg-card border border-border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Crescimento total no período</p>
-                          <p className="text-2xl font-semibold text-foreground">
-                            {periodGrowthPercentage >= 0 ? '+' : ''}{periodGrowthPercentage.toFixed(2)}%
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            R$ {periodGrowth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                        </div>
-                        <div className={`text-sm px-2 py-1 rounded ${
-                          periodGrowthPercentage >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
-                        }`}>
-                          {periodGrowthPercentage >= 0 ? '↑' : '↓'}
-                        </div>
-                      </div>
+                    <div className={`text-sm px-2 py-1 rounded ${
+                      averageGrowthPercentage >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                    }`}>
+                      {averageGrowthPercentage >= 0 ? '↑' : '↓'}
                     </div>
                   </div>
-                )}
+                </div>
                 
-                {showOnlyRendaGerada && (
-                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-card border border-border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Última renda gerada</p>
-                          <p className="text-2xl font-semibold text-foreground">
-                            R$ {lastRendaGerada.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {rendaPercentage.toFixed(2)}% do patrimônio
-                          </p>
-                        </div>
-                        <div className="text-sm px-2 py-1 rounded bg-[hsl(47_100%_65%)]/10" style={{ color: 'hsl(47 90% 40%)' }}>
-                          <Wallet className="h-4 w-4" />
-                        </div>
-                      </div>
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Crescimento total no período</p>
+                      <p className="text-2xl font-semibold text-foreground">
+                        {periodGrowthPercentage >= 0 ? '+' : ''}{periodGrowthPercentage.toFixed(2)}%
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        R$ {periodGrowth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
                     </div>
-                    
-                    <div className="bg-card border border-border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Renda média (12M)</p>
-                          <p className="text-2xl font-semibold text-foreground">
-                            R$ {averageRenda12M.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Total: R$ {totalRenda12M.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                        </div>
-                        <div className="text-sm px-2 py-1 rounded bg-[hsl(47_100%_65%)]/10" style={{ color: 'hsl(47 90% 40%)' }}>
-                          <Wallet className="h-4 w-4" />
-                        </div>
-                      </div>
+                    <div className={`text-sm px-2 py-1 rounded ${
+                      periodGrowthPercentage >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                    }`}>
+                      {periodGrowthPercentage >= 0 ? '↑' : '↓'}
                     </div>
                   </div>
-                )}
-              </>
+                </div>
+                
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Última renda gerada</p>
+                      <p className="text-2xl font-semibold text-foreground">
+                        R$ {lastRendaGerada.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {rendaPercentage.toFixed(2)}% do patrimônio
+                      </p>
+                    </div>
+                    <div className="text-sm px-2 py-1 rounded bg-[hsl(47_100%_65%)]/10" style={{ color: 'hsl(47 90% 40%)' }}>
+                      <Wallet className="h-4 w-4" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Renda média (12M)</p>
+                      <p className="text-2xl font-semibold text-foreground">
+                        R$ {averageRenda12M.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Total: R$ {totalRenda12M.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    <div className="text-sm px-2 py-1 rounded bg-[hsl(47_100%_65%)]/10" style={{ color: 'hsl(47 90% 40%)' }}>
+                      <Wallet className="h-4 w-4" />
+                    </div>
+                  </div>
+                </div>
+              </div>
             );
           })()
         ) : (
