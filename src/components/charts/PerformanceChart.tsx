@@ -281,6 +281,18 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
   const calculateGrowthData = (data: typeof filteredData) => {
     if (data.length === 0) return [];
     
+    // Calcular meta mensalizada do componente pré-fixado
+    let monthlyTargetRate = 0;
+    if (clientTarget?.meta) {
+      // Extrair o número da meta (exemplo: "IPCA+5%" -> 5)
+      const metaMatch = clientTarget.meta.match(/\+(\d+(?:\.\d+)?)/);
+      if (metaMatch) {
+        const preFixedComponent = parseFloat(metaMatch[1]) / 100; // Convert to decimal (5% -> 0.05)
+        // Mensalizar: (1 + preFixedComponent)^(1/12) - 1
+        monthlyTargetRate = Math.pow(1 + preFixedComponent, 1/12) - 1;
+      }
+    }
+    
     const result = [];
     
     data.forEach((item, index) => {
@@ -292,18 +304,26 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
       const movimentacao = item["Movimentação"] || 0;
       const ganhoFinanceiro = item["Ganho Financeiro"] || 0;
       
+      // Renda gerada = patrimônio do mês * meta mensalizada
+      const rendaGerada = patrimonioInicial * monthlyTargetRate;
+      
       // Total growth = movimentação + ganho financeiro = patrimônio final - patrimônio inicial
       const totalGrowth = patrimonioFinal - patrimonioInicial;
       const growthPercentage = patrimonioInicial > 0 ? (totalGrowth / patrimonioInicial) * 100 : 0;
       
+      // Ajustar patrimonioBase para subtrair a renda gerada
+      const patrimonioBaseAdjusted = Math.max(0, patrimonioInicial - rendaGerada);
+      
       result.push({
         name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,
-        patrimonioBase: patrimonioInicial,
+        rendaGerada: rendaGerada,
+        patrimonioBase: patrimonioBaseAdjusted,
         growth: totalGrowth >= 0 ? totalGrowth : 0, // Positive growth for stacking
         negativeGrowth: totalGrowth < 0 ? totalGrowth : 0, // Negative growth
         totalGrowth,
         growthPercentage,
         patrimonioFinal,
+        patrimonioInicial,
         movimentacao,
         ganhoFinanceiro,
         competencia: item.Competencia
@@ -683,6 +703,10 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                 barGap={8}
               >
                 <defs>
+                  <linearGradient id="barRendaGerada" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(47 100% 65%)" stopOpacity={0.7} />
+                    <stop offset="100%" stopColor="hsl(47 95% 55%)" stopOpacity={0.6} />
+                  </linearGradient>
                   <linearGradient id="barBase" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.45} />
                     <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
@@ -776,8 +800,14 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                         }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                             <span style={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))' }}>Patrimônio Inicial</span>
-                            <strong style={{ fontSize: '12px' }}>R$ {data.patrimonioBase.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                            <strong style={{ fontSize: '12px' }}>R$ {data.patrimonioInicial.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
                           </div>
+                          {data.rendaGerada > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                              <span style={{ fontSize: '11px', color: 'hsl(47 90% 45%)' }}>Renda Gerada</span>
+                              <strong style={{ fontSize: '12px', color: 'hsl(47 90% 40%)' }}>R$ {data.rendaGerada.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                            </div>
+                          )}
                         </div>
                         <div style={{ 
                           marginBottom: '10px',
@@ -844,10 +874,17 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                   cursor={{ fill: 'hsl(var(--primary) / 0.05)', radius: 4 }}
                 />
                 <Bar 
+                  dataKey="rendaGerada" 
+                  stackId="a"
+                  fill="url(#barRendaGerada)"
+                  radius={[0, 0, 6, 6]}
+                  maxBarSize={60}
+                />
+                <Bar 
                   dataKey="patrimonioBase" 
                   stackId="a"
                   fill="url(#barBase)"
-                  radius={[0, 0, 6, 6]}
+                  radius={[0, 0, 0, 0]}
                   maxBarSize={60}
                 />
                 <Bar 
