@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, LabelList } from 'recharts';
 import { TrendingUp, Calendar as CalendarIcon, Settings, ArrowLeftRight, Wallet, BarChart3 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
@@ -910,7 +910,25 @@ export function PerformanceChart({ consolidadoData, clientName }: PerformanceCha
                   radius={[0, 0, 6, 6]}
                   maxBarSize={60}
                   hide={showOnlyRendaGerada ? false : false}
-                />
+                >
+                  {showOnlyRendaGerada && (
+                    <LabelList
+                      dataKey="rendaGerada"
+                      position="top"
+                      formatter={(value: number) => {
+                        if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+                        if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
+                        return value.toFixed(0);
+                      }}
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        fill: 'hsl(var(--foreground))'
+                      }}
+                      offset={8}
+                    />
+                  )}
+                </Bar>
                 <Bar 
                   dataKey="patrimonioBase" 
                   stackId="a"
