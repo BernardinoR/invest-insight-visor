@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie, Area, AreaChart, ComposedChart, ReferenceLine } from 'recharts';
 import { useMemo, useState } from "react";
-import { TrendingDown, TrendingUp, Activity, AlertTriangle, Target, Calendar, Settings, Rocket, Check, X, TrendingUp as TrendingUpIcon, CheckCircle } from "lucide-react";
+import { TrendingDown, TrendingUp, Activity, AlertTriangle, Target, Calendar, Settings, Rocket, Check, X, TrendingUp as TrendingUpIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -1009,67 +1009,30 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
             </div>
           </div>
 
-          {/* Análise de Risco vs Retorno - Redesigned */}
-          <div className="mt-6 bg-gradient-to-br from-background via-primary/5 to-background border border-border/50 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-warning" />
-                <h4 className="text-sm font-semibold text-foreground">Análise de Risco vs Retorno</h4>
+          {/* Risk/Return Analysis - Full Width */}
+          <div className="mt-8 bg-gradient-to-br from-primary/5 via-transparent to-transparent border border-border/50 rounded-2xl p-6">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Análise de Risco vs Retorno
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex items-center justify-between p-4 bg-background/50 rounded-xl border border-border/30 hover:bg-background/70 transition-all">
+                <span className="text-sm text-muted-foreground">Retorno Médio Mensal</span>
+                <span className="text-2xl font-bold text-foreground">
+                  {riskMetrics.avgReturn.toFixed(2)}%
+                </span>
               </div>
-              <Badge variant="outline" className="text-xs">Período: {filteredConsolidatedData.length} meses</Badge>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Retorno Médio */}
-              <div className="relative overflow-hidden bg-background/50 border border-border/30 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                  <p className="text-xs text-muted-foreground font-medium">Retorno Médio</p>
-                </div>
-                <p className="text-2xl font-bold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
-                <p className="text-xs text-muted-foreground mt-1">ao mês</p>
+              <div className="flex items-center justify-between p-4 bg-background/50 rounded-xl border border-border/30 hover:bg-background/70 transition-all">
+                <span className="text-sm text-muted-foreground">Volatilidade</span>
+                <span className="text-2xl font-bold text-warning">
+                  {riskMetrics.volatility.toFixed(2)}%
+                </span>
               </div>
-              
-              {/* Volatilidade */}
-              <div className="relative overflow-hidden bg-background/50 border border-border/30 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Activity className="h-4 w-4 text-warning" />
-                  <p className="text-xs text-muted-foreground font-medium">Volatilidade</p>
-                </div>
-                <p className="text-2xl font-bold text-warning">{riskMetrics.volatility.toFixed(2)}%</p>
-                <p className="text-xs text-muted-foreground mt-1">desvio padrão</p>
-              </div>
-              
-              {/* Sharpe Ratio */}
-              <div className="relative overflow-hidden bg-background/50 border border-border/30 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <BarChart3 className="h-4 w-4 text-primary" />
-                  <p className="text-xs text-muted-foreground font-medium">Sharpe Ratio</p>
-                </div>
-                <p className="text-2xl font-bold text-foreground">{riskMetrics.sharpe.toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground mt-1">índice</p>
-              </div>
-              
-              {/* Max Drawdown */}
-              <div className="relative overflow-hidden bg-background/50 border border-border/30 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingDown className="h-4 w-4 text-destructive" />
-                  <p className="text-xs text-muted-foreground font-medium">Max Drawdown</p>
-                </div>
-                <p className="text-2xl font-bold text-destructive">
-                  {(() => {
-                    const returns = filteredConsolidatedData.map(d => d["Rentabilidade (%)"]);
-                    let maxDrawdown = 0;
-                    let peak = returns[0];
-                    for (let i = 1; i < returns.length; i++) {
-                      if (returns[i] > peak) peak = returns[i];
-                      const drawdown = peak - returns[i];
-                      if (drawdown > maxDrawdown) maxDrawdown = drawdown;
-                    }
-                    return maxDrawdown.toFixed(2);
-                  })()}%
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">pior queda</p>
+              <div className="flex items-center justify-between p-4 bg-background/50 rounded-xl border border-border/30 hover:bg-background/70 transition-all">
+                <span className="text-sm text-muted-foreground">Sharpe Ratio</span>
+                <span className="text-2xl font-bold text-foreground">
+                  {riskMetrics.sharpe.toFixed(2)}
+                </span>
               </div>
             </div>
           </div>
