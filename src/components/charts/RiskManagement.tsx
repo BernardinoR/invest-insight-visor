@@ -496,15 +496,99 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
     });
   }, [filteredConsolidatedData]);
 
-  // Dados para meses acima/abaixo da meta
+  // Dados para meses acima/abaixo da meta com meta mensal correta
   const targetComparisonData = useMemo(() => {
-    return filteredConsolidatedData.map(item => ({
-      competencia: item.Competencia,
-      retorno: item.Rendimento * 100,
-      meta: clientTarget * 100,
-      acimaMeta: item.Rendimento * 100 >= clientTarget * 100
-    }));
-  }, [filteredConsolidatedData, clientTarget]);
+    return filteredConsolidatedData.map(item => {
+      // Buscar a meta mensal correta para esta competência
+      const marketDataForCompetencia = marketData?.find(m => m.competencia === item.Competencia);
+      const monthlyTarget = marketDataForCompetencia?.clientTarget || clientTarget;
+      
+      return {
+        competencia: item.Competencia,
+        retorno: item.Rendimento * 100,
+        meta: monthlyTarget * 100, // Meta específica do mês
+        acimaMeta: item.Rendimento * 100 >= monthlyTarget * 100
+      };
+    });
+  }, [filteredConsolidatedData, clientTarget, marketData]);
+
+  // Métricas avançadas para insights analíticos
+  const advancedMetrics = useMemo(() => {
+    if (filteredConsolidatedData.length === 0) {
+      return {
+        longestPositiveStreak: 0,
+        longestAboveTargetStreak: 0,
+        last3MonthsHitRate: 0,
+        last6MonthsHitRate: 0,
+        targetDeviation: 0
+      };
+    }
+
+    // Calcular sequências
+    let currentPositiveStreak = 0;
+    let longestPositiveStreak = 0;
+    let currentAboveTargetStreak = 0;
+    let longestAboveTargetStreak = 0;
+
+    filteredConsolidatedData.forEach(item => {
+      const marketDataForCompetencia = marketData?.find(m => m.competencia === item.Competencia);
+      const monthlyTarget = marketDataForCompetencia?.clientTarget || clientTarget;
+
+      // Sequência positiva
+      if (item.Rendimento > 0) {
+        currentPositiveStreak++;
+        longestPositiveStreak = Math.max(longestPositiveStreak, currentPositiveStreak);
+      } else {
+        currentPositiveStreak = 0;
+      }
+
+      // Sequência acima da meta
+      if (item.Rendimento >= monthlyTarget) {
+        currentAboveTargetStreak++;
+        longestAboveTargetStreak = Math.max(longestAboveTargetStreak, currentAboveTargetStreak);
+      } else {
+        currentAboveTargetStreak = 0;
+      }
+    });
+
+    // Hit rate dos últimos 3 e 6 meses
+    const last3Months = filteredConsolidatedData.slice(-3);
+    const last6Months = filteredConsolidatedData.slice(-6);
+
+    const last3MonthsAboveTarget = last3Months.filter(item => {
+      const marketDataForCompetencia = marketData?.find(m => m.competencia === item.Competencia);
+      const monthlyTarget = marketDataForCompetencia?.clientTarget || clientTarget;
+      return item.Rendimento >= monthlyTarget;
+    }).length;
+
+    const last6MonthsAboveTarget = last6Months.filter(item => {
+      const marketDataForCompetencia = marketData?.find(m => m.competencia === item.Competencia);
+      const monthlyTarget = marketDataForCompetencia?.clientTarget || clientTarget;
+      return item.Rendimento >= monthlyTarget;
+    }).length;
+
+    const last3MonthsHitRate = last3Months.length > 0 ? (last3MonthsAboveTarget / last3Months.length) * 100 : 0;
+    const last6MonthsHitRate = last6Months.length > 0 ? (last6MonthsAboveTarget / last6Months.length) * 100 : 0;
+
+    // Desvio padrão em relação à meta
+    const deviations = filteredConsolidatedData.map(item => {
+      const marketDataForCompetencia = marketData?.find(m => m.competencia === item.Competencia);
+      const monthlyTarget = marketDataForCompetencia?.clientTarget || clientTarget;
+      return (item.Rendimento - monthlyTarget) * 100;
+    });
+
+    const avgDeviation = deviations.reduce((sum, d) => sum + d, 0) / deviations.length;
+    const varianceDeviation = deviations.reduce((sum, d) => sum + Math.pow(d - avgDeviation, 2), 0) / deviations.length;
+    const targetDeviation = Math.sqrt(varianceDeviation);
+
+    return {
+      longestPositiveStreak,
+      longestAboveTargetStreak,
+      last3MonthsHitRate,
+      last6MonthsHitRate,
+      targetDeviation
+    };
+  }, [filteredConsolidatedData, marketData, clientTarget]);
 
   // Cálculo de Drawdown com Pain Index baseado em retornos percentuais
   const drawdownAnalysis = useMemo(() => {
@@ -842,103 +926,205 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               </div>
             </div>
 
-            {/* Lado Direito - Gráfico de Comparação com Meta */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-foreground">Performance Mensal vs Meta</h3>
-                <div className="flex items-center gap-4 text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-gradient-to-r from-success to-success/80"></div>
-                    <span className="text-muted-foreground">Home Run</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-gradient-to-r from-primary to-primary/80"></div>
-                    <span className="text-muted-foreground">Acerto</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-gradient-to-r from-warning to-warning/80"></div>
-                    <span className="text-muted-foreground">Quase lá</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-gradient-to-r from-destructive to-destructive/80"></div>
-                    <span className="text-muted-foreground">Miss</span>
-                  </div>
+            {/* Lado Direito - Gráfico de Barras com Linha da Meta */}
+            <div className="bg-background/50 rounded-xl p-6 border border-border/30">
+              <h3 className="text-sm font-semibold text-foreground mb-4">Performance Mensal vs Meta</h3>
+              <ResponsiveContainer width="100%" height={500}>
+                <ComposedChart data={targetComparisonData.slice(-12)} margin={{ top: 20, right: 20, left: 0, bottom: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
+                  <XAxis 
+                    dataKey="competencia" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={11}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickFormatter={(value) => `${value.toFixed(1)}%`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '12px',
+                      padding: '12px'
+                    }}
+                    formatter={(value: any, name: string) => {
+                      if (name === 'retorno') return [`${value.toFixed(2)}%`, 'Retorno Real'];
+                      if (name === 'meta') return [`${value.toFixed(2)}%`, 'Meta'];
+                      return [value, name];
+                    }}
+                    labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600, marginBottom: '4px' }}
+                  />
+                  
+                  {/* Linha da Meta com marcadores */}
+                  <Line 
+                    type="monotone"
+                    dataKey="meta" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={3}
+                    strokeDasharray="5 5"
+                    dot={{ fill: 'hsl(var(--primary))', r: 5, strokeWidth: 2, stroke: 'hsl(var(--background))' }}
+                    activeDot={{ r: 7 }}
+                  />
+                  
+                  {/* Barras com cores dinâmicas */}
+                  <Bar 
+                    dataKey="retorno" 
+                    radius={[12, 12, 0, 0]}
+                    maxBarSize={60}
+                  >
+                    {targetComparisonData.slice(-12).map((entry, index) => {
+                      let color;
+                      
+                      // Buscar meta e volatilidade corretas para esta competência
+                      const marketDataForCompetencia = marketData?.find(m => m.competencia === entry.competencia);
+                      const monthlyTarget = (marketDataForCompetencia?.clientTarget || clientTarget) * 100;
+                      const volatility = riskMetrics.volatility;
+                      const homeRunThreshold = monthlyTarget + volatility;
+                      
+                      if (entry.retorno >= homeRunThreshold) {
+                        color = 'hsl(142, 71%, 45%)'; // Home Run - verde vibrante
+                      } else if (entry.retorno >= monthlyTarget) {
+                        color = 'hsl(215, 70%, 60%)'; // Acerto - azul
+                      } else if (entry.retorno > 0) {
+                        color = 'hsl(40, 85%, 55%)'; // Quase lá - amarelo/laranja
+                      } else {
+                        color = 'hsl(0, 70%, 60%)'; // Miss - vermelho
+                      }
+                      
+                      return (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={color}
+                        />
+                      );
+                    })}
+                  </Bar>
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Painel de Insights Analíticos */}
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Análise de Tendência */}
+            <div className="bg-card/30 border border-border/50 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                Tendência Recente
+              </h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Últimos 3 meses</span>
+                  <Badge variant={advancedMetrics.last3MonthsHitRate >= 70 ? "default" : advancedMetrics.last3MonthsHitRate >= 50 ? "secondary" : "destructive"}>
+                    {advancedMetrics.last3MonthsHitRate.toFixed(0)}%
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Últimos 6 meses</span>
+                  <Badge variant={advancedMetrics.last6MonthsHitRate >= 70 ? "default" : advancedMetrics.last6MonthsHitRate >= 50 ? "secondary" : "destructive"}>
+                    {advancedMetrics.last6MonthsHitRate.toFixed(0)}%
+                  </Badge>
+                </div>
+                <Progress value={advancedMetrics.last3MonthsHitRate} className="h-2" />
+              </div>
+            </div>
+
+            {/* Consistência de Performance */}
+            <div className="bg-card/30 border border-border/50 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <Activity className="h-4 w-4 text-success" />
+                Consistência
+              </h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Sequência positiva</span>
+                  <span className="text-sm font-bold text-foreground">
+                    {advancedMetrics.longestPositiveStreak} meses
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Acima da meta</span>
+                  <span className="text-sm font-bold text-success">
+                    {advancedMetrics.longestAboveTargetStreak} meses
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Desvio da meta</span>
+                  <span className="text-sm font-bold text-foreground">
+                    ±{advancedMetrics.targetDeviation.toFixed(2)}%
+                  </span>
                 </div>
               </div>
-              
-              <div className="h-[500px] bg-card/50 rounded-xl border border-border/50 p-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={targetComparisonData.slice(-12)} margin={{ top: 20, right: 20, left: 0, bottom: 60 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
-                    <XAxis 
-                      dataKey="competencia" 
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={11}
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                    />
-                    <YAxis 
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                      tickFormatter={(value) => `${value.toFixed(1)}%`}
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--background))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '12px',
-                        padding: '12px'
-                      }}
-                      formatter={(value: any) => [`${value.toFixed(2)}%`, 'Retorno']}
-                      labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600, marginBottom: '4px' }}
-                    />
-                    
-                    {/* Linha da Meta */}
-                    <ReferenceLine 
-                      y={clientTarget * 100} 
-                      stroke="hsl(var(--primary))" 
-                      strokeDasharray="8 4" 
-                      strokeWidth={3}
-                      label={{ 
-                        value: `Meta: ${(clientTarget * 100).toFixed(2)}%`, 
-                        position: 'insideTopRight',
-                        fill: 'hsl(var(--primary))',
-                        fontSize: 13,
-                        fontWeight: 700,
-                        offset: 10
-                      }}
-                    />
-                    
-                    <Bar 
-                      dataKey="retorno" 
-                      radius={[12, 12, 0, 0]}
-                      maxBarSize={60}
-                    >
-                      {targetComparisonData.slice(-12).map((entry, index) => {
-                        // Determinar cor baseada na categoria
-                        let color;
-                        if (entry.retorno >= entry.meta * 1.5) {
-                          color = 'hsl(142, 71%, 45%)'; // Home Run - verde
-                        } else if (entry.retorno >= entry.meta) {
-                          color = 'hsl(215, 70%, 60%)'; // Acerto - azul
-                        } else if (entry.retorno >= entry.meta * 0.5) {
-                          color = 'hsl(40, 85%, 55%)'; // Quase lá - amarelo
-                        } else {
-                          color = 'hsl(0, 70%, 60%)'; // Miss - vermelho
-                        }
-                        
-                        return (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={color}
-                          />
-                        );
-                      })}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+            </div>
+
+            {/* Análise de Risco/Retorno */}
+            <div className="bg-card/30 border border-border/50 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                Risco vs Retorno
+              </h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Retorno médio</span>
+                  <span className="text-sm font-bold text-foreground">
+                    {riskMetrics.avgReturn.toFixed(2)}%
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Volatilidade</span>
+                  <span className="text-sm font-bold text-warning">
+                    {riskMetrics.volatility.toFixed(2)}%
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Sharpe Ratio</span>
+                  <span className="text-sm font-bold text-foreground">
+                    {riskMetrics.sharpe.toFixed(2)}
+                  </span>
+                </div>
               </div>
+            </div>
+          </div>
+
+          {/* Heatmap de Performance */}
+          <div className="mt-6 bg-card/30 border border-border/50 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Calendário de Performance
+            </h4>
+            <div className="grid grid-cols-6 md:grid-cols-12 gap-1">
+              {targetComparisonData.map((item, index) => {
+                // Determinar cor baseada na categoria
+                let bgColor;
+                const marketDataForCompetencia = marketData?.find(m => m.competencia === item.competencia);
+                const monthlyTarget = (marketDataForCompetencia?.clientTarget || clientTarget) * 100;
+                const homeRunThreshold = monthlyTarget + riskMetrics.volatility;
+                
+                if (item.retorno >= homeRunThreshold) {
+                  bgColor = 'bg-success';
+                } else if (item.retorno >= monthlyTarget) {
+                  bgColor = 'bg-primary';
+                } else if (item.retorno > 0) {
+                  bgColor = 'bg-warning';
+                } else {
+                  bgColor = 'bg-destructive';
+                }
+                
+                return (
+                  <div
+                    key={index}
+                    className={`h-12 ${bgColor} rounded-md flex items-center justify-center text-xs font-medium text-white cursor-pointer hover:opacity-80 transition-opacity`}
+                    title={`${item.competencia}: ${item.retorno.toFixed(2)}%`}
+                  >
+                    {item.competencia.split('/')[0]}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </CardContent>
