@@ -1009,122 +1009,31 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
             </div>
           </div>
 
-          {/* Painel de Insights Analíticos */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Análise de Tendência */}
-            <div className="bg-card/30 border border-border/50 rounded-xl p-4">
-              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                Tendência Recente
-              </h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Últimos 3 meses</span>
-                  <Badge variant={advancedMetrics.last3MonthsHitRate >= 70 ? "default" : advancedMetrics.last3MonthsHitRate >= 50 ? "secondary" : "destructive"}>
-                    {advancedMetrics.last3MonthsHitRate.toFixed(0)}%
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Últimos 6 meses</span>
-                  <Badge variant={advancedMetrics.last6MonthsHitRate >= 70 ? "default" : advancedMetrics.last6MonthsHitRate >= 50 ? "secondary" : "destructive"}>
-                    {advancedMetrics.last6MonthsHitRate.toFixed(0)}%
-                  </Badge>
-                </div>
-                <Progress value={advancedMetrics.last3MonthsHitRate} className="h-2" />
-              </div>
-            </div>
-
-            {/* Consistência de Performance */}
-            <div className="bg-card/30 border border-border/50 rounded-xl p-4">
-              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <Activity className="h-4 w-4 text-success" />
-                Consistência
-              </h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Sequência positiva</span>
-                  <span className="text-sm font-bold text-foreground">
-                    {advancedMetrics.longestPositiveStreak} meses
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Acima da meta</span>
-                  <span className="text-sm font-bold text-success">
-                    {advancedMetrics.longestAboveTargetStreak} meses
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Desvio da meta</span>
-                  <span className="text-sm font-bold text-foreground">
-                    ±{advancedMetrics.targetDeviation.toFixed(2)}%
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Análise de Risco/Retorno */}
-            <div className="bg-card/30 border border-border/50 rounded-xl p-4">
-              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-warning" />
-                Risco vs Retorno
-              </h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Retorno médio</span>
-                  <span className="text-sm font-bold text-foreground">
-                    {riskMetrics.avgReturn.toFixed(2)}%
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Volatilidade</span>
-                  <span className="text-sm font-bold text-warning">
-                    {riskMetrics.volatility.toFixed(2)}%
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Sharpe Ratio</span>
-                  <span className="text-sm font-bold text-foreground">
-                    {riskMetrics.sharpe.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Heatmap de Performance */}
-          <div className="mt-6 bg-card/30 border border-border/50 rounded-xl p-4">
-            <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Calendário de Performance
+          {/* Risk/Return Analysis - Full Width */}
+          <div className="mt-8 bg-gradient-to-br from-primary/5 via-transparent to-transparent border border-border/50 rounded-2xl p-6">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Análise de Risco vs Retorno
             </h4>
-            <div className="grid grid-cols-6 md:grid-cols-12 gap-1">
-              {targetComparisonData.map((item, index) => {
-                // Determinar cor baseada na categoria
-                let bgColor;
-                const marketDataForCompetencia = marketData?.find(m => m.competencia === item.competencia);
-                const monthlyTarget = (marketDataForCompetencia?.clientTarget || clientTarget) * 100;
-                const homeRunThreshold = monthlyTarget + riskMetrics.volatility;
-                
-                if (item.retorno >= homeRunThreshold) {
-                  bgColor = 'bg-success';
-                } else if (item.retorno >= monthlyTarget) {
-                  bgColor = 'bg-primary';
-                } else if (item.retorno > 0) {
-                  bgColor = 'bg-warning';
-                } else {
-                  bgColor = 'bg-destructive';
-                }
-                
-                return (
-                  <div
-                    key={index}
-                    className={`h-12 ${bgColor} rounded-md flex items-center justify-center text-xs font-medium text-white cursor-pointer hover:opacity-80 transition-opacity`}
-                    title={`${item.competencia}: ${item.retorno.toFixed(2)}%`}
-                  >
-                    {item.competencia.split('/')[0]}
-                  </div>
-                );
-              })}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex items-center justify-between p-4 bg-background/50 rounded-xl border border-border/30 hover:bg-background/70 transition-all">
+                <span className="text-sm text-muted-foreground">Retorno Médio Mensal</span>
+                <span className="text-2xl font-bold text-foreground">
+                  {riskMetrics.avgReturn.toFixed(2)}%
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-background/50 rounded-xl border border-border/30 hover:bg-background/70 transition-all">
+                <span className="text-sm text-muted-foreground">Volatilidade</span>
+                <span className="text-2xl font-bold text-warning">
+                  {riskMetrics.volatility.toFixed(2)}%
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-background/50 rounded-xl border border-border/30 hover:bg-background/70 transition-all">
+                <span className="text-sm text-muted-foreground">Sharpe Ratio</span>
+                <span className="text-2xl font-bold text-foreground">
+                  {riskMetrics.sharpe.toFixed(2)}
+                </span>
+              </div>
             </div>
           </div>
         </CardContent>
