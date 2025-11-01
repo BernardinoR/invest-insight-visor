@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie, Area, AreaChart, ComposedChart, ReferenceLine } from 'recharts';
 import { useMemo, useState } from "react";
-import { TrendingDown, TrendingUp, Activity, AlertTriangle, Target, Calendar, Settings, Rocket, Check, X, TrendingUp as TrendingUpIcon, CheckCircle, BarChart3 } from "lucide-react";
+import { TrendingDown, TrendingUp, Activity, AlertTriangle, Target, Calendar, Settings, Rocket, Check, X, TrendingUp as TrendingUpIcon, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -715,16 +715,16 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
 
   return (
     <div className="space-y-6">
-      {/* Hit Rate Analysis - Redesigned Dashboard Layout */}
+      {/* Hit Rate Analysis - Novo Layout */}
       <Card className="bg-gradient-card border-border/50">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-foreground flex items-center gap-2">
                 <Target className="h-5 w-5" />
-                Hit Rate & Performance
+                Hit Rate Analysis
               </CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">Análise de performance vs meta</p>
+              <p className="text-sm text-muted-foreground mt-1">Performance vs Meta</p>
             </div>
             
             {/* Period Selection */}
@@ -792,87 +792,144 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Linha 1: Hero KPI + Chart Principal */}
-          <div className="grid grid-cols-1 lg:grid-cols-[35fr,65fr] gap-6">
-            {/* Hero KPI Card */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/80 to-primary/60 rounded-3xl p-8 shadow-2xl border border-primary/30">
-              {/* Background Pattern */}
-              <div className="absolute inset-0 opacity-10">
-                <div className="absolute inset-0" style={{
-                  backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)',
-                  backgroundSize: '30px 30px'
-                }}/>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr,1.5fr] gap-8">
+            {/* Lado Esquerdo - KPI e Métricas */}
+            <div className="space-y-6">
+              {/* KPI Principal */}
+              <div className="text-center bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-8">
+                <p className="text-xs text-muted-foreground mb-3 font-medium tracking-wider uppercase">Hit Rate Geral</p>
+                <p className="text-7xl font-bold text-foreground mb-3 tracking-tight">{riskMetrics.hitRate.hitRatePercent}%</p>
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">{riskMetrics.hitRate.homeRun + riskMetrics.hitRate.acerto}</span> de <span className="font-semibold text-foreground">{filteredConsolidatedData.length}</span> meses atingiram a meta
+                </p>
               </div>
-              
-              {/* Content */}
-              <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-6">
-                  <Target className="h-6 w-6 text-primary-foreground/80" />
-                  <Badge variant="secondary" className="bg-white/20 text-primary-foreground border-0">
-                    Geral
-                  </Badge>
+
+              {/* Métricas em Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-success/5 border border-success/10 rounded-xl p-4 hover:bg-success/8 transition-colors">
+                  <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Melhor mês</p>
+                  <p className="text-2xl font-bold text-success mb-1">+{riskMetrics.bestMonth.return.toFixed(2)}%</p>
+                  <p className="text-xs text-muted-foreground">{riskMetrics.bestMonth.competencia}</p>
                 </div>
                 
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-primary-foreground/70 font-medium mb-2">Hit Rate</p>
-                    <div className="flex items-baseline gap-3">
-                      <span className="text-6xl font-black text-primary-foreground tracking-tight">
-                        {riskMetrics.hitRate.hitRatePercent}
-                      </span>
-                      <span className="text-3xl font-bold text-primary-foreground/80">%</span>
+                <div className="bg-destructive/5 border border-destructive/10 rounded-xl p-4 hover:bg-destructive/8 transition-colors">
+                  <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Pior mês</p>
+                  <p className="text-2xl font-bold text-destructive mb-1">{riskMetrics.worstMonth.return.toFixed(2)}%</p>
+                  <p className="text-xs text-muted-foreground">{riskMetrics.worstMonth.competencia}</p>
+                </div>
+                
+                <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 hover:bg-primary/8 transition-colors">
+                  <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Consistência</p>
+                  <p className="text-2xl font-bold text-foreground mb-1">{riskMetrics.hitRate.positivePercent}%</p>
+                  <p className="text-xs text-muted-foreground">meses positivos</p>
+                </div>
+                
+                <div className="bg-success/5 border border-success/10 rounded-xl p-4 hover:bg-success/8 transition-colors">
+                  <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Acima da meta</p>
+                  <p className="text-2xl font-bold text-success mb-1">{riskMetrics.monthsAboveTarget}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {filteredConsolidatedData.length > 0 
+                      ? Math.round((riskMetrics.monthsAboveTarget / filteredConsolidatedData.length) * 100)
+                      : 0}% do período
+                  </p>
+                </div>
+              </div>
+
+              {/* Distribuição - Cards Compactos */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground mb-4">Distribuição de Performance</h3>
+                
+                {/* Home Run */}
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-success/10 to-transparent border border-success/20 rounded-xl hover:from-success/15 transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-success/20 p-2 rounded-lg">
+                      <Rocket className="h-4 w-4 text-success" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Home Run</p>
+                      <p className="text-xs text-muted-foreground">Acima da meta</p>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-2 pt-4 border-t border-primary-foreground/20">
-                    <CheckCircle className="h-5 w-5 text-primary-foreground/80" />
-                    <p className="text-primary-foreground/90 font-medium">
-                      <span className="text-xl font-bold">{riskMetrics.hitRate.homeRun + riskMetrics.hitRate.acerto}</span>
-                      {' '}de{' '}
-                      <span className="text-xl font-bold">{filteredConsolidatedData.length}</span>
-                      {' '}meses
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-success">{riskMetrics.hitRate.homeRun}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {filteredConsolidatedData.length > 0 
+                        ? Math.round((riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100)
+                        : 0}%
                     </p>
                   </div>
-                  
-                  {/* Progress Bar Visual */}
-                  <div className="w-full h-3 bg-primary-foreground/20 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-white to-primary-foreground transition-all duration-1000 ease-out rounded-full"
-                      style={{ width: `${riskMetrics.hitRate.hitRatePercent}%` }}
-                    />
+                </div>
+
+                {/* Acerto */}
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/10 to-transparent border border-primary/20 rounded-xl hover:from-primary/15 transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-primary/20 p-2 rounded-lg">
+                      <Check className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Acerto</p>
+                      <p className="text-xs text-muted-foreground">Dentro da meta</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-primary">{riskMetrics.hitRate.acerto}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {filteredConsolidatedData.length > 0 
+                        ? Math.round((riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100)
+                        : 0}%
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quase lá */}
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-warning/10 to-transparent border border-warning/20 rounded-xl hover:from-warning/15 transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-warning/20 p-2 rounded-lg">
+                      <TrendingUpIcon className="h-4 w-4 text-warning" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Quase lá</p>
+                      <p className="text-xs text-muted-foreground">Próximo da meta</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-warning">{riskMetrics.hitRate.quaseLa}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {filteredConsolidatedData.length > 0 
+                        ? Math.round((riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100)
+                        : 0}%
+                    </p>
+                  </div>
+                </div>
+
+                {/* Miss */}
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-destructive/10 to-transparent border border-destructive/20 rounded-xl hover:from-destructive/15 transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-destructive/20 p-2 rounded-lg">
+                      <X className="h-4 w-4 text-destructive" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Miss</p>
+                      <p className="text-xs text-muted-foreground">Abaixo da meta</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-destructive">{riskMetrics.hitRate.miss}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {filteredConsolidatedData.length > 0 
+                        ? Math.round((riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100)
+                        : 0}%
+                    </p>
                   </div>
                 </div>
               </div>
-              
-              {/* Decorative Element */}
-              <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
             </div>
 
-            {/* Chart Card */}
-            <div className="bg-gradient-to-br from-background via-muted/30 to-background rounded-2xl p-6 border border-border/50 shadow-lg">
-              {/* Header com Info */}
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-bold text-foreground">Performance Mensal</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Últimos 12 meses vs Meta</p>
-                </div>
-                
-                {/* Legend Inline */}
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-1 bg-primary rounded-full"></div>
-                    <span className="text-xs text-muted-foreground font-medium">Meta</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-success rounded"></div>
-                    <span className="text-xs text-muted-foreground font-medium">Resultado</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Gráfico Maior */}
-              <ResponsiveContainer width="100%" height={450}>
+            {/* Lado Direito - Gráfico de Barras com Linha da Meta */}
+            <div className="bg-background/50 rounded-xl p-6 border border-border/30">
+              <h3 className="text-sm font-semibold text-foreground mb-4">Performance Mensal vs Meta</h3>
+              <ResponsiveContainer width="100%" height={500}>
                 <ComposedChart data={targetComparisonData.slice(-12)} margin={{ top: 20, right: 20, left: 0, bottom: 60 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
                   <XAxis 
@@ -903,6 +960,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600, marginBottom: '4px' }}
                   />
                   
+                  {/* Linha da Meta com marcadores */}
                   <Line 
                     type="monotone"
                     dataKey="meta" 
@@ -913,258 +971,41 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     activeDot={{ r: 7 }}
                   />
                   
+                  {/* Barras com cores dinâmicas */}
                   <Bar 
                     dataKey="retorno" 
                     radius={[12, 12, 0, 0]}
                     maxBarSize={60}
                   >
                     {targetComparisonData.slice(-12).map((entry, index) => {
+                      let color;
+                      
+                      // Buscar meta e volatilidade corretas para esta competência
                       const marketDataForCompetencia = marketData?.find(m => m.competencia === entry.competencia);
                       const monthlyTarget = (marketDataForCompetencia?.clientTarget || clientTarget) * 100;
                       const volatility = riskMetrics.volatility;
                       const homeRunThreshold = monthlyTarget + volatility;
                       
-                      let color;
                       if (entry.retorno >= homeRunThreshold) {
-                        color = 'hsl(142, 71%, 45%)';
+                        color = 'hsl(142, 71%, 45%)'; // Home Run - verde vibrante
                       } else if (entry.retorno >= monthlyTarget) {
-                        color = 'hsl(215, 70%, 60%)';
+                        color = 'hsl(215, 70%, 60%)'; // Acerto - azul
                       } else if (entry.retorno > 0) {
-                        color = 'hsl(40, 85%, 55%)';
+                        color = 'hsl(40, 85%, 55%)'; // Quase lá - amarelo/laranja
                       } else {
-                        color = 'hsl(0, 70%, 60%)';
+                        color = 'hsl(0, 70%, 60%)'; // Miss - vermelho
                       }
                       
-                      return <Cell key={`cell-${index}`} fill={color} />;
+                      return (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={color}
+                        />
+                      );
                     })}
                   </Bar>
                 </ComposedChart>
               </ResponsiveContainer>
-              
-              {/* Mini Stats Grid - Abaixo do gráfico */}
-              <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-border/50">
-                <div className="text-center space-y-1">
-                  <div className="flex items-center justify-center gap-2">
-                    <TrendingUp className="h-3 w-3 text-primary" />
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Média</p>
-                  </div>
-                  <p className="text-2xl font-bold text-foreground">{riskMetrics.avgReturn.toFixed(2)}%</p>
-                </div>
-                
-                <div className="text-center space-y-1">
-                  <div className="flex items-center justify-center gap-2">
-                    <Activity className="h-3 w-3 text-muted-foreground" />
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Mediana</p>
-                  </div>
-                  <p className="text-2xl font-bold text-foreground">
-                    {(() => {
-                      const returns = filteredConsolidatedData.map(d => d.Rendimento * 100).sort((a, b) => a - b);
-                      const mid = Math.floor(returns.length / 2);
-                      return returns.length % 2 === 0 
-                        ? ((returns[mid - 1] + returns[mid]) / 2).toFixed(2)
-                        : returns[mid].toFixed(2);
-                    })()}%
-                  </p>
-                </div>
-                
-                <div className="text-center space-y-1">
-                  <div className="flex items-center justify-center gap-2">
-                    <AlertTriangle className="h-3 w-3 text-warning" />
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Desvio</p>
-                  </div>
-                  <p className="text-2xl font-bold text-warning">{riskMetrics.volatility.toFixed(2)}%</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Linha 2: Distribution Cards (4 cols) */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Home Run */}
-            <div className="group relative overflow-hidden bg-gradient-to-br from-success/10 via-success/5 to-transparent border-2 border-success/30 rounded-2xl p-5 hover:border-success/50 hover:shadow-lg hover:shadow-success/10 transition-all duration-300">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-success/10 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-success/20 transition-colors" />
-              
-              <div className="relative space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="p-3 bg-success/15 rounded-xl group-hover:bg-success/25 transition-colors">
-                    <Rocket className="h-5 w-5 text-success" />
-                  </div>
-                  <Badge variant="outline" className="border-success/30 text-success text-xs">
-                    {filteredConsolidatedData.length > 0 
-                      ? Math.round((riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100)
-                      : 0}%
-                  </Badge>
-                </div>
-                
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Home Run</p>
-                  <p className="text-4xl font-black text-success">{riskMetrics.hitRate.homeRun}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Excepcional</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Acerto */}
-            <div className="group relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-2 border-primary/30 rounded-2xl p-5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-primary/20 transition-colors" />
-              
-              <div className="relative space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="p-3 bg-primary/15 rounded-xl group-hover:bg-primary/25 transition-colors">
-                    <Check className="h-5 w-5 text-primary" />
-                  </div>
-                  <Badge variant="outline" className="border-primary/30 text-primary text-xs">
-                    {filteredConsolidatedData.length > 0 
-                      ? Math.round((riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100)
-                      : 0}%
-                  </Badge>
-                </div>
-                
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Acerto</p>
-                  <p className="text-4xl font-black text-primary">{riskMetrics.hitRate.acerto}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Na meta</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Quase lá */}
-            <div className="group relative overflow-hidden bg-gradient-to-br from-warning/10 via-warning/5 to-transparent border-2 border-warning/30 rounded-2xl p-5 hover:border-warning/50 hover:shadow-lg hover:shadow-warning/10 transition-all duration-300">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-warning/10 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-warning/20 transition-colors" />
-              
-              <div className="relative space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="p-3 bg-warning/15 rounded-xl group-hover:bg-warning/25 transition-colors">
-                    <TrendingUpIcon className="h-5 w-5 text-warning" />
-                  </div>
-                  <Badge variant="outline" className="border-warning/30 text-warning text-xs">
-                    {filteredConsolidatedData.length > 0 
-                      ? Math.round((riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100)
-                      : 0}%
-                  </Badge>
-                </div>
-                
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Quase lá</p>
-                  <p className="text-4xl font-black text-warning">{riskMetrics.hitRate.quaseLa}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Próximo</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Miss */}
-            <div className="group relative overflow-hidden bg-gradient-to-br from-destructive/10 via-destructive/5 to-transparent border-2 border-destructive/30 rounded-2xl p-5 hover:border-destructive/50 hover:shadow-lg hover:shadow-destructive/10 transition-all duration-300">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-destructive/10 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-destructive/20 transition-colors" />
-              
-              <div className="relative space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="p-3 bg-destructive/15 rounded-xl group-hover:bg-destructive/25 transition-colors">
-                    <X className="h-5 w-5 text-destructive" />
-                  </div>
-                  <Badge variant="outline" className="border-destructive/30 text-destructive text-xs">
-                    {filteredConsolidatedData.length > 0 
-                      ? Math.round((riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100)
-                      : 0}%
-                  </Badge>
-                </div>
-                
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Miss</p>
-                  <p className="text-4xl font-black text-destructive">{riskMetrics.hitRate.miss}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Abaixo</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Linha 3: Bottom Metrics (3 cols) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Best/Worst Combo Card */}
-            <div className="bg-gradient-to-br from-background to-muted/20 rounded-2xl p-5 border border-border/50">
-              <h4 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                Extremos
-              </h4>
-              
-              <div className="space-y-4">
-                {/* Best */}
-                <div className="flex items-center justify-between p-3 bg-success/5 rounded-xl border border-success/10">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Melhor mês</p>
-                    <p className="text-sm font-medium text-muted-foreground">{riskMetrics.bestMonth.competencia}</p>
-                  </div>
-                  <p className="text-2xl font-bold text-success">+{riskMetrics.bestMonth.return.toFixed(1)}%</p>
-                </div>
-                
-                {/* Worst */}
-                <div className="flex items-center justify-between p-3 bg-destructive/5 rounded-xl border border-destructive/10">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Pior mês</p>
-                    <p className="text-sm font-medium text-muted-foreground">{riskMetrics.worstMonth.competencia}</p>
-                  </div>
-                  <p className="text-2xl font-bold text-destructive">{riskMetrics.worstMonth.return.toFixed(1)}%</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Consistency Card */}
-            <div className="bg-gradient-to-br from-background to-muted/20 rounded-2xl p-5 border border-border/50">
-              <h4 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-                <Activity className="h-4 w-4 text-muted-foreground" />
-                Consistência
-              </h4>
-              
-              <div className="space-y-4">
-                <div className="text-center">
-                  <p className="text-5xl font-black text-foreground mb-2">{riskMetrics.hitRate.positivePercent}%</p>
-                  <p className="text-sm text-muted-foreground">Meses positivos</p>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 bg-primary/5 rounded-xl border border-primary/10">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-success" />
-                    <span className="text-sm text-muted-foreground">Acima da meta</span>
-                  </div>
-                  <span className="text-xl font-bold text-success">{riskMetrics.monthsAboveTarget}</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Risk Summary Card */}
-            <div className="bg-gradient-to-br from-background to-muted/20 rounded-2xl p-5 border border-border/50">
-              <h4 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                Risco
-              </h4>
-              
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Sharpe Ratio</span>
-                  <span className="text-lg font-bold text-foreground">{riskMetrics.sharpe.toFixed(2)}</span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Volatilidade</span>
-                  <span className="text-lg font-bold text-warning">{riskMetrics.volatility.toFixed(2)}%</span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Max Drawdown</span>
-                  <span className="text-lg font-bold text-destructive">
-                    {(() => {
-                      const returns = filteredConsolidatedData.map(d => d.Rendimento * 100);
-                      let maxDrawdown = 0;
-                      let peak = returns[0];
-                      for (let i = 1; i < returns.length; i++) {
-                        if (returns[i] > peak) peak = returns[i];
-                        const drawdown = peak - returns[i];
-                        if (drawdown > maxDrawdown) maxDrawdown = drawdown;
-                      }
-                      return maxDrawdown.toFixed(2);
-                    })()}%
-                  </span>
-                </div>
-              </div>
             </div>
           </div>
 
