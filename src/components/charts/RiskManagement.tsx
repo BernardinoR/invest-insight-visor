@@ -793,10 +793,10 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
           </div>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr,1.5fr] gap-8">
-            {/* Lado Esquerdo - KPI e Métricas */}
-            <div className="space-y-6">
-              {/* KPI Principal */}
+          <div className="space-y-6">
+            {/* Linha Superior - Hit Rate Geral + Distribuição de Performance */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Hit Rate Geral */}
               <div className="text-center bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-8">
                 <p className="text-xs text-muted-foreground mb-3 font-medium tracking-wider uppercase">Hit Rate Geral</p>
                 <p className="text-7xl font-bold text-foreground mb-3 tracking-tight">{riskMetrics.hitRate.hitRatePercent}%</p>
@@ -805,38 +805,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 </p>
               </div>
 
-              {/* Métricas em Grid */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-success/5 border border-success/10 rounded-xl p-4 hover:bg-success/8 transition-colors">
-                  <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Melhor mês</p>
-                  <p className="text-2xl font-bold text-success mb-1">+{riskMetrics.bestMonth.return.toFixed(2)}%</p>
-                  <p className="text-xs text-muted-foreground">{riskMetrics.bestMonth.competencia}</p>
-                </div>
-                
-                <div className="bg-destructive/5 border border-destructive/10 rounded-xl p-4 hover:bg-destructive/8 transition-colors">
-                  <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Pior mês</p>
-                  <p className="text-2xl font-bold text-destructive mb-1">{riskMetrics.worstMonth.return.toFixed(2)}%</p>
-                  <p className="text-xs text-muted-foreground">{riskMetrics.worstMonth.competencia}</p>
-                </div>
-                
-                <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 hover:bg-primary/8 transition-colors">
-                  <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Consistência</p>
-                  <p className="text-2xl font-bold text-foreground mb-1">{riskMetrics.hitRate.positivePercent}%</p>
-                  <p className="text-xs text-muted-foreground">meses positivos</p>
-                </div>
-                
-                <div className="bg-success/5 border border-success/10 rounded-xl p-4 hover:bg-success/8 transition-colors">
-                  <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Acima da meta</p>
-                  <p className="text-2xl font-bold text-success mb-1">{riskMetrics.monthsAboveTarget}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {filteredConsolidatedData.length > 0 
-                      ? Math.round((riskMetrics.monthsAboveTarget / filteredConsolidatedData.length) * 100)
-                      : 0}% do período
-                  </p>
-                </div>
-              </div>
-
-              {/* Distribuição - Cards Compactos */}
+              {/* Distribuição de Performance - Cards Compactos */}
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground mb-4">Distribuição de Performance</h3>
                 
@@ -926,7 +895,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               </div>
             </div>
 
-            {/* Lado Direito - Gráfico de Barras com Linha da Meta */}
+            {/* Gráfico Central - Performance Mensal */}
             <div className="bg-background/50 rounded-xl p-6 border border-border/30">
               <h3 className="text-sm font-semibold text-foreground mb-4">Performance Mensal vs Meta</h3>
               <ResponsiveContainer width="100%" height={500}>
@@ -1007,32 +976,35 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-          </div>
 
-          {/* Risk/Return Analysis - Full Width */}
-          <div className="mt-8 bg-gradient-to-br from-primary/5 via-transparent to-transparent border border-border/50 rounded-2xl p-6">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              Análise de Risco vs Retorno
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="flex items-center justify-between p-4 bg-background/50 rounded-xl border border-border/30 hover:bg-background/70 transition-all">
-                <span className="text-sm text-muted-foreground">Retorno Médio Mensal</span>
-                <span className="text-2xl font-bold text-foreground">
-                  {riskMetrics.avgReturn.toFixed(2)}%
-                </span>
+            {/* Bloco Inferior - Métricas em Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-success/5 border border-success/10 rounded-xl p-4 hover:bg-success/8 transition-colors">
+                <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Melhor mês</p>
+                <p className="text-2xl font-bold text-success mb-1">+{riskMetrics.bestMonth.return.toFixed(2)}%</p>
+                <p className="text-xs text-muted-foreground">{riskMetrics.bestMonth.competencia}</p>
               </div>
-              <div className="flex items-center justify-between p-4 bg-background/50 rounded-xl border border-border/30 hover:bg-background/70 transition-all">
-                <span className="text-sm text-muted-foreground">Volatilidade</span>
-                <span className="text-2xl font-bold text-warning">
-                  {riskMetrics.volatility.toFixed(2)}%
-                </span>
+              
+              <div className="bg-destructive/5 border border-destructive/10 rounded-xl p-4 hover:bg-destructive/8 transition-colors">
+                <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Pior mês</p>
+                <p className="text-2xl font-bold text-destructive mb-1">{riskMetrics.worstMonth.return.toFixed(2)}%</p>
+                <p className="text-xs text-muted-foreground">{riskMetrics.worstMonth.competencia}</p>
               </div>
-              <div className="flex items-center justify-between p-4 bg-background/50 rounded-xl border border-border/30 hover:bg-background/70 transition-all">
-                <span className="text-sm text-muted-foreground">Sharpe Ratio</span>
-                <span className="text-2xl font-bold text-foreground">
-                  {riskMetrics.sharpe.toFixed(2)}
-                </span>
+              
+              <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 hover:bg-primary/8 transition-colors">
+                <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Consistência</p>
+                <p className="text-2xl font-bold text-foreground mb-1">{riskMetrics.hitRate.positivePercent}%</p>
+                <p className="text-xs text-muted-foreground">meses positivos</p>
+              </div>
+              
+              <div className="bg-success/5 border border-success/10 rounded-xl p-4 hover:bg-success/8 transition-colors">
+                <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Acima da meta</p>
+                <p className="text-2xl font-bold text-success mb-1">{riskMetrics.monthsAboveTarget}</p>
+                <p className="text-xs text-muted-foreground">
+                  {filteredConsolidatedData.length > 0 
+                    ? Math.round((riskMetrics.monthsAboveTarget / filteredConsolidatedData.length) * 100)
+                    : 0}% do período
+                </p>
               </div>
             </div>
           </div>
