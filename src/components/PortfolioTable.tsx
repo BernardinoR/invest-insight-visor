@@ -64,7 +64,6 @@ interface ConsolidadoDataWithReturns extends ConsolidadoData {
 
 export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange, onYearTotalsChange, selectedInstitution, onInstitutionClick, showInstitutionCard = true, onInstitutionCardRender }: PortfolioTableProps) {
   const [consolidadoData, setConsolidadoData] = useState<ConsolidadoData[]>([]);
-  const [dadosData, setDadosData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set(['2025'])); // Start with 2025 expanded
   const [availableYears, setAvailableYears] = useState<string[]>([]);
@@ -506,37 +505,12 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     fetchConsolidadoData();
   }, [selectedClient]);
 
-  // Fetch DadosPerformance data for institution calculations
-  useEffect(() => {
-    const fetchDadosData = async () => {
-      if (!selectedClient) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('DadosPerformance')
-          .select('*')
-          .eq('Nome', selectedClient);
-        
-        if (error) {
-          console.error('Error fetching DadosPerformance:', error);
-          return;
-        }
-        
-        setDadosData(data || []);
-      } catch (err) {
-        console.error('Error in DadosPerformance fetch:', err);
-      }
-    };
-
-    fetchDadosData();
-  }, [selectedClient]);
-
-  // Calculate institution summary from DadosPerformance - only most recent competencia
+  // Calculate institution summary from rawData - only most recent competencia
   const institutionSummary = (() => {
-    if (!dadosData || dadosData.length === 0) return [];
+    if (!rawData || rawData.length === 0) return [];
     
-    // Find the most recent competencia from DadosPerformance
-    const sortedByDate = [...dadosData].sort((a, b) => {
+    // Find the most recent competencia
+    const sortedByDate = [...rawData].sort((a, b) => {
       const [monthA, yearA] = a.Competencia.split('/');
       const [monthB, yearB] = b.Competencia.split('/');
       const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
@@ -547,34 +521,28 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     const mostRecentCompetencia = sortedByDate[0].Competencia;
     
     // Filter only data from most recent competencia
-    const mostRecentData = dadosData.filter(item => item.Competencia === mostRecentCompetencia);
+    const mostRecentData = rawData.filter(item => item.Competencia === mostRecentCompetencia);
     
-    // Group by institution and sum Posicao (not Patrimonio Final)
+    // Group by institution for the most recent competencia only
     const byInstitution = mostRecentData.reduce((acc, item) => {
       const institution = item.Instituicao || "Sem Instituição";
       if (!acc[institution]) {
         acc[institution] = {
           patrimonio: 0,
           rendimentoSum: 0,
-          posicaoSum: 0,
-          assetCount: 0
+          patrimonioCount: 0
         };
       }
-      const posicao = item.Posicao || 0;
-      const rendimento = item.Rendimento || 0;
-      
-      acc[institution].patrimonio += posicao; // Sum of positions
-      acc[institution].rendimentoSum += rendimento * posicao;
-      acc[institution].posicaoSum += posicao;
-      acc[institution].assetCount += 1; // Count unique assets
+      acc[institution].patrimonio += item["Patrimonio Final"] || 0;
+      acc[institution].rendimentoSum += (item.Rendimento || 0) * (item["Patrimonio Final"] || 0);
+      acc[institution].patrimonioCount += item["Patrimonio Final"] || 0;
       return acc;
-    }, {} as Record<string, { patrimonio: number; rendimentoSum: number; posicaoSum: number; assetCount: number }>);
+    }, {} as Record<string, { patrimonio: number; rendimentoSum: number; patrimonioCount: number }>);
     
-    return Object.entries(byInstitution).map(([institution, data]: [string, any]) => ({
+    return Object.entries(byInstitution).map(([institution, data]) => ({
       institution,
       patrimonio: data.patrimonio,
-      rendimento: data.posicaoSum > 0 ? data.rendimentoSum / data.posicaoSum : 0,
-      assetCount: data.assetCount
+      rendimento: data.patrimonioCount > 0 ? data.rendimentoSum / data.patrimonioCount : 0
     })).sort((a, b) => b.patrimonio - a.patrimonio); // Sort by patrimonio descending
   })();
   
