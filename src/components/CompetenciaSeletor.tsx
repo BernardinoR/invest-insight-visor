@@ -37,8 +37,13 @@ export function CompetenciaSeletor({ selectedClient, onFilterChange }: Competenc
           .sort((a, b) => {
             const [monthA, yearA] = a.split('/');
             const [monthB, yearB] = b.split('/');
-            const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-            const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+            
+            // Tratar anos de 2 dígitos corretamente (ex: 25 -> 2025)
+            const fullYearA = parseInt(yearA) < 100 ? 2000 + parseInt(yearA) : parseInt(yearA);
+            const fullYearB = parseInt(yearB) < 100 ? 2000 + parseInt(yearB) : parseInt(yearB);
+            
+            const dateA = new Date(fullYearA, parseInt(monthA) - 1);
+            const dateB = new Date(fullYearB, parseInt(monthB) - 1);
             return dateA.getTime() - dateB.getTime();
           });
 
