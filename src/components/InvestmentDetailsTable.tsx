@@ -343,6 +343,13 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
   };
 
   const filteredDadosData = getMostRecentData(dadosData);
+  
+  console.log('InvestmentDetailsTable - Dados mais recentes:', {
+    totalRecords: filteredDadosData.length,
+    uniqueAssets: new Set(filteredDadosData.map(item => item.Ativo)).size,
+    competencia: filteredDadosData[0]?.Competencia,
+    sample: filteredDadosData.slice(0, 5).map(d => ({ ativo: d.Ativo, classe: d["Classe do ativo"], posicao: d.Posicao }))
+  });
 
   // Group investments by grouped asset class and calculate totals using filtered data
   const strategyData = filteredDadosData.reduce((acc, investment) => {
@@ -364,6 +371,15 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     acc[groupedStrategy].count = acc[groupedStrategy].assets.size;
     return acc;
   }, {} as Record<string, { name: string; value: number; count: number; totalReturn: number; avgReturnMonth: number; assets: Set<string> }>);
+
+  console.log('InvestmentDetailsTable - Estratégias agrupadas:', 
+    Object.entries(strategyData).map(([key, value]) => ({
+      estrategia: key,
+      ativos: value.count,
+      ativosLista: Array.from(value.assets),
+      valor: value.value
+    }))
+  );
 
   const totalPatrimonio = Object.values(strategyData).reduce((sum, item) => sum + item.value, 0);
 
