@@ -468,12 +468,13 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                      return filteredDadosData.length;
                    }
                    
-                   // Filter data for the final competencia and count unique assets
-                   const assetsInFinalCompetencia = filteredDadosData.filter(
-                     item => item.Competencia === finalCompetencia
-                   );
-                   
-                   return assetsInFinalCompetencia.length;
+                    // Filter data for the final competencia and count UNIQUE assets
+                    const assetsInFinalCompetencia = filteredDadosData.filter(
+                      item => item.Competencia === finalCompetencia
+                    );
+                    
+                    // Count unique assets, not total records
+                    return new Set(assetsInFinalCompetencia.map(item => item.Ativo)).size;
                  })()}
                </div>
               <p className="text-xs text-muted-foreground">

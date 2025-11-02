@@ -123,7 +123,10 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
   // Calculate number of assets per competencia
   const assetsData = allCompetencias.map(competencia => {
     const competenciaData = dadosData.filter(item => item.Competencia === competencia);
+    // Count unique assets (not just records)
     const uniqueAssets = new Set(competenciaData.map(item => item.Ativo)).size;
+    
+    console.log(`Competencia ${competencia}: ${competenciaData.length} registros, ${uniqueAssets} ativos únicos`);
 
     return {
       competencia,
