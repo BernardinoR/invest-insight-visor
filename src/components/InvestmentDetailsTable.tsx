@@ -328,7 +328,9 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     // Convert competencia string to date for proper comparison
     const competenciaToDate = (competencia: string) => {
       const [month, year] = competencia.split('/');
-      return new Date(parseInt(year), parseInt(month) - 1);
+      // Create date with full year (2025, not 25)
+      const fullYear = parseInt(year) < 100 ? 2000 + parseInt(year) : parseInt(year);
+      return new Date(fullYear, parseInt(month) - 1);
     };
     
     // Find the most recent competencia using date comparison
