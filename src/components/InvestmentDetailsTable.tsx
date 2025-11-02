@@ -35,6 +35,7 @@ interface InvestmentDetailsTableProps {
     Posicao: number;
     Rendimento: number;
     Competencia: string;
+    Ativo: string;
     Nome?: string;
   }>;
   selectedClient: string;
@@ -354,13 +355,15 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
         value: 0, 
         count: 0,
         totalReturn: 0,
-        avgReturnMonth: 0
+        avgReturnMonth: 0,
+        assets: new Set<string>()
       };
     }
     acc[groupedStrategy].value += Number(investment.Posicao) || 0;
-    acc[groupedStrategy].count += 1;
+    acc[groupedStrategy].assets.add(investment.Ativo);
+    acc[groupedStrategy].count = acc[groupedStrategy].assets.size;
     return acc;
-  }, {} as Record<string, { name: string; value: number; count: number; totalReturn: number; avgReturnMonth: number }>);
+  }, {} as Record<string, { name: string; value: number; count: number; totalReturn: number; avgReturnMonth: number; assets: Set<string> }>);
 
   const totalPatrimonio = Object.values(strategyData).reduce((sum, item) => sum + item.value, 0);
 
