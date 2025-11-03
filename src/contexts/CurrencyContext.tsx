@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { usePTAXData } from '@/hooks/usePTAXData';
 
 type Currency = 'BRL' | 'USD';
@@ -16,71 +16,62 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined
 
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currency, setCurrency] = useState<Currency>('BRL');
+  const [conversionCache, setConversionCache] = useState<Map<string, number>>(new Map());
   const { ptaxData, getCotacaoByCompetencia } = usePTAXData();
 
-  // Debug: Log currency changes
+  // Clear cache when currency changes
   useEffect(() => {
-    console.log('💱 Currency changed to:', currency);
-    console.log('📊 PTAX data available:', ptaxData.length, 'months');
-  }, [currency, ptaxData]);
+    setConversionCache(new Map());
+  }, [currency]);
 
-  const getCompetenciaAnterior = (competencia: string): string => {
+  const getCompetenciaAnterior = useCallback((competencia: string): string => {
     const [mes, ano] = competencia.split('/').map(Number);
     if (mes === 1) {
       return `12/${ano - 1}`;
     }
     const mesAnterior = mes - 1;
     return `${String(mesAnterior).padStart(2, '0')}/${ano}`;
-  };
+  }, []);
 
-  const convertValue = (value: number, competencia: string, originalCurrency: 'BRL' | 'USD'): number => {
-    const cotacao = getCotacaoByCompetencia(competencia);
-    
-    console.log('🔄 convertValue called:', {
-      value,
-      competencia,
-      originalCurrency,
-      currentCurrency: currency,
-      cotacao,
-      ptaxDataLength: ptaxData.length,
-      availableCompetencias: ptaxData.map(d => d.competencia).slice(0, 5)
-    });
-    
-    if (!cotacao) {
-      console.error(`❌ PTAX não encontrada para ${competencia}, mantendo valor original`, {
-        requestedCompetencia: competencia,
-        availableCompetencias: ptaxData.map(d => d.competencia)
-      });
-      return value;
-    }
-
+  const convertValue = useCallback((value: number, competencia: string, originalCurrency: 'BRL' | 'USD'): number => {
     // Se moeda original = moeda de exibição, não converter
     if (originalCurrency === currency) {
-      console.log(`✅ No conversion needed (${originalCurrency} = ${currency})`);
       return value;
     }
+
+    // Check cache
+    const cacheKey = `${value}_${competencia}_${originalCurrency}_${currency}`;
+    if (conversionCache.has(cacheKey)) {
+      return conversionCache.get(cacheKey)!;
+    }
+
+    const cotacao = getCotacaoByCompetencia(competencia);
+    
+    if (!cotacao) {
+      return value;
+    }
+
+    let converted = value;
 
     // BRL → USD: dividir pelo PTAX
     if (originalCurrency === 'BRL' && currency === 'USD') {
-      const converted = value / cotacao;
-      console.log(`💵 BRL → USD: ${value} / ${cotacao} = ${converted}`);
-      return converted;
+      converted = value / cotacao;
     }
 
     // USD → BRL: multiplicar pelo PTAX
     if (originalCurrency === 'USD' && currency === 'BRL') {
-      const converted = value * cotacao;
-      console.log(`💰 USD → BRL: ${value} * ${cotacao} = ${converted}`);
-      return converted;
+      converted = value * cotacao;
     }
 
-    return value;
-  };
+    // Store in cache
+    conversionCache.set(cacheKey, converted);
 
-  const adjustReturnWithFX = (returnPercent: number, competencia: string, originalCurrency: 'BRL' | 'USD'): number => {
+    return converted;
+  }, [currency, getCotacaoByCompetencia, conversionCache]);
+
+  const adjustReturnWithFX = useCallback((returnPercent: number, competencia: string, originalCurrency: 'BRL' | 'USD'): number => {
     // Se moeda original = moeda de exibição, não ajustar
     if (originalCurrency === currency) {
-      console.log(`✅ No return adjustment needed (${originalCurrency} = ${currency})`);
       return returnPercent;
     }
 
@@ -88,18 +79,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const cotacaoAtual = getCotacaoByCompetencia(competencia);
     const cotacaoAnterior = getCotacaoByCompetencia(competenciaAnterior);
 
-    console.log('📈 adjustReturnWithFX:', {
-      returnPercent,
-      competencia,
-      competenciaAnterior,
-      originalCurrency,
-      currentCurrency: currency,
-      cotacaoAtual,
-      cotacaoAnterior
-    });
-
     if (!cotacaoAtual || !cotacaoAnterior) {
-      console.warn(`⚠️ Não foi possível ajustar rendimento para ${competencia}, mantendo valor original`);
       return returnPercent;
     }
 
@@ -108,44 +88,40 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // USD → BRL: Adicionar efeito cambial
     if (originalCurrency === 'USD' && currency === 'BRL') {
-      // Rendimento em BRL = (1 + rend_USD) * (1 + var_FX) - 1
-      const adjusted = (1 + returnPercent) * (1 + fxVariation) - 1;
-      console.log(`📊 USD → BRL return: ${returnPercent} + FX ${fxVariation} = ${adjusted}`);
-      return adjusted;
+      return (1 + returnPercent) * (1 + fxVariation) - 1;
     }
 
     // BRL → USD: Remover efeito cambial
     if (originalCurrency === 'BRL' && currency === 'USD') {
-      // Rendimento em USD = (1 + rend_BRL) / (1 + var_FX) - 1
-      const adjusted = ((1 + returnPercent) / (1 + fxVariation)) - 1;
-      console.log(`📊 BRL → USD return: ${returnPercent} - FX ${fxVariation} = ${adjusted}`);
-      return adjusted;
+      return ((1 + returnPercent) / (1 + fxVariation)) - 1;
     }
 
     return returnPercent;
-  };
+  }, [currency, getCotacaoByCompetencia, getCompetenciaAnterior]);
 
-  const formatCurrency = (value: number): string => {
+  const formatCurrency = useCallback((value: number): string => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: currency === 'BRL' ? 'BRL' : 'USD',
       minimumFractionDigits: 2
     }).format(value);
-  };
+  }, [currency]);
 
-  const getCurrencySymbol = (): string => {
+  const getCurrencySymbol = useCallback((): string => {
     return currency === 'BRL' ? 'R$' : '$';
-  };
+  }, [currency]);
+
+  const contextValue = useMemo(() => ({
+    currency,
+    setCurrency,
+    convertValue,
+    adjustReturnWithFX,
+    formatCurrency,
+    getCurrencySymbol
+  }), [currency, convertValue, adjustReturnWithFX, formatCurrency, getCurrencySymbol]);
 
   return (
-    <CurrencyContext.Provider value={{
-      currency,
-      setCurrency,
-      convertValue,
-      adjustReturnWithFX,
-      formatCurrency,
-      getCurrencySymbol
-    }}>
+    <CurrencyContext.Provider value={contextValue}>
       {children}
     </CurrencyContext.Provider>
   );

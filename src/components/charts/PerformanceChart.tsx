@@ -67,16 +67,6 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
   const clientTarget = propClientTarget || hookData.clientTarget;
   const marketLoading = propMarketData ? false : hookData.loading;
   const marketError = propMarketData ? null : hookData.error;
-  
-  console.log('PerformanceChart - Debug data:', {
-    clientName,
-    decodedClientName,
-    clientTarget,
-    marketLoading,
-    marketError
-  });
-  
-  console.log('Debug clientTarget:', clientTarget, 'marketLoading:', marketLoading);
 
   // Consolidate data by competencia (sum patrimônio, weighted average rendimento)
   const consolidateByCompetencia = (data: typeof consolidadoData) => {
@@ -307,17 +297,9 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
       // Extrair o número da meta (exemplo: "IPCA+5%" -> 5)
       const metaMatch = clientTarget.meta.match(/\+(\d+(?:\.\d+)?)/);
       if (metaMatch) {
-        const preFixedComponent = parseFloat(metaMatch[1]) / 100; // Convert to decimal (5% -> 0.05)
-        // Mensalizar: (1 + preFixedComponent)^(1/12) - 1
+      const preFixedComponent = parseFloat(metaMatch[1]) / 100;
         monthlyTargetRate = Math.pow(1 + preFixedComponent, 1/12) - 1;
-        console.log('Monthly target rate calculated:', { 
-          meta: clientTarget.meta, 
-          preFixedComponent, 
-          monthlyTargetRate 
-        });
       }
-    } else {
-      console.log('No clientTarget found for growth chart');
     }
     
     const result = [];
@@ -338,18 +320,7 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
       const totalGrowth = patrimonioFinal - patrimonioInicial;
       const growthPercentage = patrimonioInicial > 0 ? (totalGrowth / patrimonioInicial) * 100 : 0;
       
-      // Ajustar patrimonioBase para subtrair a renda gerada
       const patrimonioBaseAdjusted = Math.max(0, patrimonioInicial - rendaGerada);
-      
-      if (index === 0) {
-        console.log('First growth data point:', {
-          competencia: item.Competencia,
-          patrimonioInicial,
-          rendaGerada,
-          patrimonioBaseAdjusted,
-          monthlyTargetRate
-        });
-      }
       
       result.push({
         name: `${competenciaDate.toLocaleDateString('pt-BR', { month: '2-digit' })}/${competenciaDate.toLocaleDateString('pt-BR', { year: '2-digit' })}`,

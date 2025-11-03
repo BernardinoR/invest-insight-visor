@@ -44,16 +44,6 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const [diversificationDialogOpen, setDiversificationDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'performance' | 'risk' | 'policy'>('performance');
 
-  // Debug: Log currency and data changes
-  useEffect(() => {
-    console.log('🏦 InvestmentDashboard - Currency/Data Update:', {
-      currency,
-      totalPatrimonio,
-      consolidadoDataLength: consolidadoData.length,
-      dadosDataLength: dadosData.length
-    });
-  }, [currency, totalPatrimonio, consolidadoData.length, dadosData.length]);
-
   // Helper function to convert competencia string to comparable date
   const competenciaToDate = (competencia: string) => {
     const [month, year] = competencia.split('/');
@@ -64,18 +54,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
   // Auto-initialize filteredRange when dadosData is loaded
   useEffect(() => {
-    console.log('=== 🎯 InvestmentDashboard State Debug ===');
-    console.log('1. selectedClient:', `"${selectedClient}"`);
-    console.log('2. dadosData.length:', dadosData.length);
-    console.log('3. consolidadoData.length:', consolidadoData.length);
-    console.log('4. loading:', loading);
-    console.log('5. error:', error);
-    console.log('6. hasData:', hasData);
-    console.log('7. filteredRange:', filteredRange);
-    
     if (dadosData.length > 0 && !filteredRange.inicio && !filteredRange.fim) {
-      console.log('8. Auto-initializing filteredRange...');
-      // Get unique competencias and sort them
       const uniqueCompetencias = Array.from(new Set(dadosData.map(item => item.Competencia)))
         .sort((a, b) => {
           const [monthA, yearA] = a.split('/');
@@ -88,102 +67,18 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
         });
       
       if (uniqueCompetencias.length > 0) {
-        console.log('9. Auto-initializing filteredRange:', {
-          inicio: uniqueCompetencias[0],
-          fim: uniqueCompetencias[uniqueCompetencias.length - 1],
-          totalCompetencias: uniqueCompetencias.length,
-          allCompetencias: uniqueCompetencias
-        });
         setFilteredRange({
           inicio: uniqueCompetencias[0],
           fim: uniqueCompetencias[uniqueCompetencias.length - 1]
         });
       }
-    } else if (dadosData.length === 0) {
-      console.log('⚠️ dadosData is EMPTY in InvestmentDashboard!');
     }
-    console.log('=== 🎯 End State Debug ===\n');
-  }, [dadosData, consolidadoData, loading, error, hasData, filteredRange.inicio, filteredRange.fim, selectedClient]);
+  }, [dadosData.length]);
 
   // Filter data based on selected competencia range and institution
-  const getFilteredDadosData = (data: typeof dadosData) => {
-    console.log('\n=== 🔍 DEBUG FILTRO DETALHADO getFilteredDadosData ===');
-    console.log('📥 Input data.length:', data.length);
-    console.log('📅 filteredRange:', filteredRange);
-    console.log('🏦 selectedInstitution:', selectedInstitution);
-    
-    // Log unique competencias in input data
-    const inputCompetencias = [...new Set(data.map(i => i.Competencia))].sort();
-    console.log('📊 Input competencias:', inputCompetencias);
-    
-    // Count records per competencia BEFORE filtering
-    const beforeFilterCounts: Record<string, number> = {};
-    data.forEach(item => {
-      beforeFilterCounts[item.Competencia] = (beforeFilterCounts[item.Competencia] || 0) + 1;
-    });
-    console.log('📈 Records per competencia BEFORE filter:', beforeFilterCounts);
-    
+  const getFilteredDadosData = useCallback((data: typeof dadosData) => {
     let filtered = data;
     
-    // Apply date filter ONLY if both inicio and fim are set
-    if (filteredRange.inicio && filteredRange.fim) {
-      const startDate = competenciaToDate(filteredRange.inicio);
-      const endDate = competenciaToDate(filteredRange.fim);
-      
-      console.log('🗓️ Date range:', { 
-        inicio: filteredRange.inicio, 
-        fim: filteredRange.fim,
-        startDate: startDate.toISOString(), 
-        endDate: endDate.toISOString()
-      });
-      
-      // Test date conversion for key competencias
-      console.log('🧪 Test date conversions:');
-      ['05/2025', '08/2025', '07/2025', '06/2024'].forEach(comp => {
-        const testDate = competenciaToDate(comp);
-        const passes = testDate >= startDate && testDate <= endDate;
-        console.log(`  ${comp} -> ${testDate.toISOString()} | Passes filter: ${passes}`);
-      });
-      
-      const beforeDateFilter = filtered.length;
-      filtered = filtered.filter(item => {
-        const itemDate = competenciaToDate(item.Competencia);
-        const passes = itemDate >= startDate && itemDate <= endDate;
-        return passes;
-      });
-      
-      console.log(`📊 After date filter: ${filtered.length} (was ${beforeDateFilter})`);
-      
-      // Count records per competencia AFTER date filtering
-      const afterDateFilterCounts: Record<string, number> = {};
-      filtered.forEach(item => {
-        afterDateFilterCounts[item.Competencia] = (afterDateFilterCounts[item.Competencia] || 0) + 1;
-      });
-      console.log('📉 Records per competencia AFTER date filter:', afterDateFilterCounts);
-      
-      const afterCompetencias = [...new Set(filtered.map(i => i.Competencia))].sort();
-      console.log('📅 Competencias after date filter:', afterCompetencias);
-    } else {
-      console.log('⚠️ filteredRange not fully set, returning all data');
-    }
-    
-    // Apply institution filter
-    if (selectedInstitution) {
-      const beforeInst = filtered.length;
-      filtered = filtered.filter(item => item.Instituicao === selectedInstitution);
-      console.log(`🏦 Institution filter: ${beforeInst} -> ${filtered.length}`);
-    }
-    
-    console.log('✅ Final filtered data:', filtered.length);
-    console.log('=== 🔍 END DEBUG FILTRO ===\n');
-    
-    return filtered;
-  };
-
-  const getFilteredConsolidadoData = (data: typeof consolidadoData) => {
-    let filtered = data;
-    
-    // Apply date filter
     if (filteredRange.inicio && filteredRange.fim) {
       const startDate = competenciaToDate(filteredRange.inicio);
       const endDate = competenciaToDate(filteredRange.fim);
@@ -194,25 +89,41 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       });
     }
     
-    // Apply institution filter
     if (selectedInstitution) {
       filtered = filtered.filter(item => item.Instituicao === selectedInstitution);
     }
     
     return filtered;
-  };
+  }, [filteredRange.inicio, filteredRange.fim, selectedInstitution]);
 
-  const filteredDadosData = getFilteredDadosData(dadosData);
-  const filteredConsolidadoData = getFilteredConsolidadoData(consolidadoData);
+  const getFilteredConsolidadoData = useCallback((data: typeof consolidadoData) => {
+    let filtered = data;
+    
+    if (filteredRange.inicio && filteredRange.fim) {
+      const startDate = competenciaToDate(filteredRange.inicio);
+      const endDate = competenciaToDate(filteredRange.fim);
+      
+      filtered = filtered.filter(item => {
+        const itemDate = competenciaToDate(item.Competencia);
+        return itemDate >= startDate && itemDate <= endDate;
+      });
+    }
+    
+    if (selectedInstitution) {
+      filtered = filtered.filter(item => item.Instituicao === selectedInstitution);
+    }
+    
+    return filtered;
+  }, [filteredRange.inicio, filteredRange.fim, selectedInstitution]);
+
+  const filteredDadosData = useMemo(() => getFilteredDadosData(dadosData), [dadosData, getFilteredDadosData]);
+  const filteredConsolidadoData = useMemo(() => getFilteredConsolidadoData(consolidadoData), [consolidadoData, getFilteredConsolidadoData]);
 
   const handleFilterChange = useCallback((inicioCompetencia: string, fimCompetencia: string) => {
-    console.log('Filter changed:', { inicioCompetencia, fimCompetencia });
     setFilteredRange({ inicio: inicioCompetencia, fim: fimCompetencia });
   }, []);
 
   const handleYearTotalsChange = useCallback((totals: { totalPatrimonio: number; totalRendimento: number } | null) => {
-    console.log('=== YEAR TOTALS RECEIVED IN DASHBOARD ===');
-    console.log('Year totals received:', totals);
     setYearTotals(totals);
   }, []);
 
@@ -281,26 +192,20 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   // Calculate patrimônio from the final competencia selected - sum across all institutions
   const getPatrimonioFromFinalCompetencia = () => {
     if (!filteredRange.fim || filteredConsolidadoData.length === 0) {
-      console.log('📊 Using totalPatrimonio (no filtered data):', totalPatrimonio);
-      return totalPatrimonio; // fallback to original
+      return totalPatrimonio;
     }
     
-    // Find all entries with the final competencia and sum their patrimônio CONVERTENDO pela moeda
     const finalCompetenciaEntries = filteredConsolidadoData.filter(
       item => item.Competencia === filteredRange.fim
     );
-    
-    console.log('💼 Calculating patrimonio for', filteredRange.fim, '- Entries:', finalCompetenciaEntries.length);
     
     const sumPatrimonio = finalCompetenciaEntries.reduce((sum, entry) => {
       const valor = entry["Patrimonio Final"] || 0;
       const moedaOriginal = entry.Moeda === 'Dolar' ? 'USD' : 'BRL';
       const valorConvertido = convertValue(valor, entry.Competencia, moedaOriginal);
-      console.log(`  - ${entry.Instituicao}: ${valor} (${moedaOriginal}) → ${valorConvertido} (${currency})`);
       return sum + valorConvertido;
     }, 0);
     
-    console.log('💰 Total patrimonio after conversion:', sumPatrimonio);
     return sumPatrimonio > 0 ? sumPatrimonio : totalPatrimonio;
   };
 
@@ -380,17 +285,6 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       const valor = Number(entry["Patrimonio Final"]) || 0;
       return sum + valor;
     }, 0);
-    
-    console.log('Patrimônio Growth Calculation:', {
-      targetCompetencia,
-      previousCompetencia,
-      currentPatrimonio,
-      previousPatrimonio,
-      currentMonthEntriesCount: currentMonthEntries.length,
-      previousMonthEntriesCount: previousMonthEntries.length,
-      selectedInstitution,
-      allCompetencias
-    });
     
     if (previousPatrimonio === 0) {
       return { growth: 0, hasData: false, previousPatrimonio: 0 };
