@@ -13,6 +13,7 @@ interface ConsolidadoPerformance {
   Rendimento: number;
   Nome: string;
   Instituicao: string;
+  Moeda: string;
 }
 
 interface DadosPerformance {
@@ -28,6 +29,7 @@ interface DadosPerformance {
   "Classe do ativo": string;
   Nome: string;
   Instituicao: string;
+  Moeda: string;
 }
 
 export function useClientData(clientName: string) {
@@ -156,7 +158,7 @@ export function useClientData(clientName: string) {
 
   // Get the most recent competencia data
   const getMostRecentData = () => {
-    if (consolidadoData.length === 0) return { patrimonio: 0, rendimento: 0 };
+    if (consolidadoData.length === 0) return { patrimonio: 0, rendimento: 0, moeda: 'Real' };
     
     // Find the most recent competencia
     const mostRecentEntry = consolidadoData.reduce((latest, current) => {
@@ -165,11 +167,12 @@ export function useClientData(clientName: string) {
     
     return {
       patrimonio: mostRecentEntry["Patrimonio Final"] || 0,
-      rendimento: mostRecentEntry.Rendimento || 0
+      rendimento: mostRecentEntry.Rendimento || 0,
+      moeda: mostRecentEntry.Moeda || 'Real'
     };
   };
 
-  const { patrimonio: totalPatrimonio, rendimento: totalRendimento } = getMostRecentData();
+  const { patrimonio: totalPatrimonio, rendimento: totalRendimento, moeda: moedaOriginal } = getMostRecentData();
 
   return {
     consolidadoData,
@@ -178,6 +181,7 @@ export function useClientData(clientName: string) {
     error,
     totalPatrimonio,
     totalRendimento,
+    moedaOriginal,
     hasData: consolidadoData.length > 0 || dadosData.length > 0
   };
 }

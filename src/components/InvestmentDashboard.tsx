@@ -25,6 +25,7 @@ import { MaturityDialog } from "@/components/MaturityDialog";
 import { DiversificationDialog } from "@/components/DiversificationDialog";
 import { RiskManagement } from "@/components/charts/RiskManagement";
 import { InvestmentPolicyCompliance } from "@/components/charts/InvestmentPolicyCompliance";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface InvestmentDashboardProps {
   selectedClient: string;
@@ -33,6 +34,7 @@ interface InvestmentDashboardProps {
 export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps) {
   const { consolidadoData, dadosData, loading, error, totalPatrimonio, totalRendimento, hasData } = useClientData(selectedClient);
   const { marketData, clientTarget } = useMarketIndicators(selectedClient);
+  const { currency, convertValue, adjustReturnWithFX, getCurrencySymbol, formatCurrency } = useCurrency();
   const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
   const [filteredRange, setFilteredRange] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
   const [yearTotals, setYearTotals] = useState<{ totalPatrimonio: number; totalRendimento: number } | null>(null);
@@ -235,9 +237,12 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       return totalRendimento;
     }
     
-    // Calculate weighted average using patrimônio as weight
+    // Calculate weighted average using patrimônio CONVERTIDO as weight e AJUSTANDO rendimento
     const totalPatrimonioWeighted = finalCompetenciaEntries.reduce((sum, entry) => {
-      return sum + (entry["Patrimonio Final"] || 0);
+      const valor = entry["Patrimonio Final"] || 0;
+      const moedaOriginal = entry.Moeda === 'Dolar' ? 'USD' : 'BRL';
+      const valorConvertido = convertValue(valor, entry.Competencia, moedaOriginal);
+      return sum + valorConvertido;
     }, 0);
     
     if (totalPatrimonioWeighted === 0) {
@@ -245,9 +250,17 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     }
     
     const weightedRendimento = finalCompetenciaEntries.reduce((sum, entry) => {
-      const patrimonio = entry["Patrimonio Final"] || 0;
+      const valor = entry["Patrimonio Final"] || 0;
       const rendimento = entry.Rendimento || 0;
-      return sum + (rendimento * patrimonio);
+      const moedaOriginal = entry.Moeda === 'Dolar' ? 'USD' : 'BRL';
+      
+      // Converter patrimônio
+      const valorConvertido = convertValue(valor, entry.Competencia, moedaOriginal);
+      
+      // Ajustar rendimento com FX
+      const rendimentoAjustado = adjustReturnWithFX(rendimento, entry.Competencia, moedaOriginal);
+      
+      return sum + (rendimentoAjustado * valorConvertido);
     }, 0);
     
     return weightedRendimento / totalPatrimonioWeighted;
@@ -261,13 +274,16 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       return totalPatrimonio; // fallback to original
     }
     
-    // Find all entries with the final competencia and sum their patrimônio
+    // Find all entries with the final competencia and sum their patrimônio CONVERTENDO pela moeda
     const finalCompetenciaEntries = filteredConsolidadoData.filter(
       item => item.Competencia === filteredRange.fim
     );
     
     const sumPatrimonio = finalCompetenciaEntries.reduce((sum, entry) => {
-      return sum + (entry["Patrimonio Final"] || 0);
+      const valor = entry["Patrimonio Final"] || 0;
+      const moedaOriginal = entry.Moeda === 'Dolar' ? 'USD' : 'BRL';
+      const valorConvertido = convertValue(valor, entry.Competencia, moedaOriginal);
+      return sum + valorConvertido;
     }, 0);
     
     return sumPatrimonio > 0 ? sumPatrimonio : totalPatrimonio;
@@ -440,7 +456,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             </CardHeader>
             <CardContent>
                <div className="text-2xl font-bold text-foreground">
-                 {hasData ? `R$ ${displayPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : "R$ --"}
+                 {hasData ? formatCurrency(displayPatrimonio) : `${getCurrencySymbol()} --`}
                </div>
                <p className={`text-xs ${patrimonioGrowth.hasData && patrimonioGrowth.growth >= 0 ? "text-success" : patrimonioGrowth.hasData ? "text-destructive" : "text-muted-foreground"}`}>
                  {patrimonioGrowth.hasData 
