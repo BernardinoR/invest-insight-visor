@@ -403,6 +403,8 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
       
       // Try to find exact firstMarketPoint, fallback to first available in period
       let firstMarketPoint = marketData.find(m => m.competencia === firstCompetencia);
+      let adjustedFirstCompetencia = firstCompetencia;
+      
       if (!firstMarketPoint && marketData.length > 0) {
         // Sort marketData and use the first one available
         const sortedMarketData = [...marketData].sort((a, b) => {
@@ -412,56 +414,50 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
                  new Date(parseInt(yearB), parseInt(monthB) - 1).getTime();
         });
         firstMarketPoint = sortedMarketData[0];
-        console.log(`Using fallback firstMarketPoint: ${firstMarketPoint.competencia} instead of ${firstCompetencia}`);
+        adjustedFirstCompetencia = firstMarketPoint.competencia;
+        console.log(`Using fallback: Portfolio starts at ${firstCompetencia}, but market data only available from ${adjustedFirstCompetencia}`);
       }
       
       const currentMarketPoint = marketData.find(m => m.competencia === currentCompetencia);
       
-      if (currentMarketPoint && firstMarketPoint && clientTarget) {
-        // Use clientTarget to calculate target performance based on IPCA + target percentage
-        if (currentCompetencia === firstCompetencia) {
-          // For first month, use the monthly target value (not accumulated)
-          // This is the clientTarget field which contains the monthly target return
-          targetRetorno = currentMarketPoint.clientTarget * 100;
-        } else {
-          // Compose monthly targets from first to current period
-          const periodMonths = marketData
-            .filter(m => {
-              const [month, year] = m.competencia.split('/');
-              const [firstMonth, firstYear] = firstCompetencia.split('/');
-              const [currentMonth, currentYear] = currentCompetencia.split('/');
-              
-              const mDate = new Date(parseInt(year), parseInt(month) - 1);
-              const firstDate = new Date(parseInt(firstYear), parseInt(firstMonth) - 1);
-              const currentDate = new Date(parseInt(currentYear), parseInt(currentMonth) - 1);
-              
-              return mDate >= firstDate && mDate <= currentDate;
-            })
-            .sort((a, b) => {
-              const [monthA, yearA] = a.competencia.split('/');
-              const [monthB, yearB] = b.competencia.split('/');
-              const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-              const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
-              return dateA.getTime() - dateB.getTime();
-            });
-          
-          let composedTarget = 0;
-          periodMonths.forEach(month => {
-            if (month.clientTarget !== 0) {
-              composedTarget = (1 + composedTarget) * (1 + month.clientTarget) - 1;
-            }
-          });
-          
-          targetRetorno = composedTarget * 100;
-        }
+      // Only calculate indicators if current competencia >= adjusted first competencia
+      const [currentMonth, currentYear] = currentCompetencia.split('/');
+      const [adjustedMonth, adjustedYear] = adjustedFirstCompetencia.split('/');
+      const currentDate = new Date(parseInt(currentYear), parseInt(currentMonth) - 1);
+      const adjustedDate = new Date(parseInt(adjustedYear), parseInt(adjustedMonth) - 1);
+      
+      if (currentDate >= adjustedDate && currentMarketPoint && firstMarketPoint && clientTarget) {
+        const currentAccumulated = currentMarketPoint.accumulatedClientTarget || 0;
+        const firstAccumulated = firstMarketPoint.accumulatedClientTarget || 0;
         
         console.log('Target calculation:', {
           currentCompetencia,
-          firstCompetencia,
-          clientTargetValue: clientTarget?.targetValue || 0,
-          currentAccumulated: currentMarketPoint.accumulatedClientTarget,
-          firstAccumulated: firstMarketPoint.accumulatedClientTarget,
-          targetRetorno
+          firstCompetencia: adjustedFirstCompetencia,
+          clientTargetValue: clientTarget.targetValue,
+          currentAccumulated,
+          firstAccumulated,
+          targetRetorno: (((currentAccumulated - firstAccumulated) / (1 + firstAccumulated)) * 100).toFixed(2)
+        });
+        
+        targetRetorno = (((currentAccumulated - firstAccumulated) / (1 + firstAccumulated)) * 100).toFixed(2);
+      }
+      
+      if (currentDate >= adjustedDate && currentMarketPoint && firstMarketPoint) {
+        console.log('Market data processing:', {
+          firstCompetencia: adjustedFirstCompetencia,
+          currentCompetencia,
+          firstMarketPoint,
+          currentMarketPoint,
+          marketDataLength: marketData.length
+        });
+        
+        const currentIpcaAccumulated = currentMarketPoint.accumulatedIpca || 0;
+        const firstIpcaAccumulated = firstMarketPoint.accumulatedIpca || 0;
+        
+        ipcaRetorno = (((currentIpcaAccumulated - firstIpcaAccumulated) / (1 + firstIpcaAccumulated)) * 100).toFixed(2);
+        
+        console.log('Calculated market returns:', {
+          ipcaRetorno
         });
       }
       
