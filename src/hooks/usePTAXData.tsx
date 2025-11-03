@@ -7,7 +7,7 @@ interface PTAXData {
   data: string; // Data da cotação
 }
 
-// Fallback PTAX data for recent months (when API doesn't have data)
+// Fallback PTAX data for months when API fails (only real past data)
 const FALLBACK_PTAX: PTAXData[] = [
   { competencia: "01/2024", cotacao: 4.95, data: "2024-01-31" },
   { competencia: "02/2024", cotacao: 4.98, data: "2024-02-29" },
@@ -21,15 +21,6 @@ const FALLBACK_PTAX: PTAXData[] = [
   { competencia: "10/2024", cotacao: 5.73, data: "2024-10-31" },
   { competencia: "11/2024", cotacao: 5.80, data: "2024-11-30" },
   { competencia: "12/2024", cotacao: 6.10, data: "2024-12-31" },
-  { competencia: "01/2025", cotacao: 5.95, data: "2025-01-31" },
-  { competencia: "02/2025", cotacao: 5.75, data: "2025-02-28" },
-  { competencia: "03/2025", cotacao: 5.70, data: "2025-03-31" },
-  { competencia: "04/2025", cotacao: 5.68, data: "2025-04-30" },
-  { competencia: "05/2025", cotacao: 5.65, data: "2025-05-31" },
-  { competencia: "06/2025", cotacao: 5.62, data: "2025-06-30" },
-  { competencia: "07/2025", cotacao: 5.60, data: "2025-07-31" },
-  { competencia: "08/2025", cotacao: 5.58, data: "2025-08-31" },
-  { competencia: "09/2025", cotacao: 5.55, data: "2025-09-30" },
 ];
 
 export function usePTAXData() {
@@ -38,7 +29,14 @@ export function usePTAXData() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('🚀 usePTAXData initialized with fallback:', FALLBACK_PTAX.length, 'months');
+    const today = new Date();
+    const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
+    const currentYear = today.getFullYear();
+    console.log('🚀 usePTAXData initialized', {
+      currentDate: `${currentMonth}/${currentYear}`,
+      fallbackMonths: FALLBACK_PTAX.length,
+      fallbackRange: `${FALLBACK_PTAX[0]?.competencia} - ${FALLBACK_PTAX[FALLBACK_PTAX.length - 1]?.competencia}`
+    });
     fetchPTAXData();
   }, []);
 
@@ -130,16 +128,25 @@ export function usePTAXData() {
   };
 
   const getCotacaoByCompetencia = (competencia: string): number | null => {
+    const lastFiveMonths = ptaxData
+      .sort((a, b) => {
+        const [mesA, anoA] = a.competencia.split('/').map(Number);
+        const [mesB, anoB] = b.competencia.split('/').map(Number);
+        return new Date(anoB, mesB - 1).getTime() - new Date(anoA, mesA - 1).getTime();
+      })
+      .slice(0, 5)
+      .map(d => d.competencia);
+
     console.log('🔍 getCotacaoByCompetencia:', {
       requested: competencia,
       availableCount: ptaxData.length,
-      availableCompetencias: ptaxData.map(d => d.competencia).slice(0, 10)
+      lastFiveMonths
     });
 
     // Try exact match first
     const found = ptaxData.find(item => item.competencia === competencia);
     if (found) {
-      console.log(`✅ PTAX found for ${competencia}: ${found.cotacao}`);
+      console.log(`✅ PTAX exact match for ${competencia}: ${found.cotacao}`);
       return found.cotacao;
     }
 
@@ -162,7 +169,7 @@ export function usePTAXData() {
     });
 
     if (nearest) {
-      console.log(`⚠️ PTAX not found for ${competencia}, using nearest: ${nearest.competencia} = ${nearest.cotacao}`);
+      console.log(`⚠️ PTAX not found for ${competencia}, using nearest previous: ${nearest.competencia} = ${nearest.cotacao}`);
       return nearest.cotacao;
     }
 
