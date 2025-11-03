@@ -932,9 +932,21 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       
                       // Get only assets from the most recent competencia for monthly return calculation
                       const lastMonthAssets = allStrategyData.filter(item => item.Competencia === mostRecentCompetencia);
-                      const lastMonthTotalPosition = lastMonthAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
-                      const lastMonthTotalReturn = lastMonthAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
-                      const monthReturn = lastMonthTotalPosition > 0 ? (lastMonthTotalReturn / lastMonthTotalPosition) : 0;
+                      
+                      // Calculate weighted return with FX adjustments
+                      const lastMonthWeightedReturn = lastMonthAssets.reduce((sum, asset) => {
+                        const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                        const posicaoConvertida = convertValue(asset.Posicao || 0, mostRecentCompetencia, moedaOriginal);
+                        const rendimentoAjustado = adjustReturnWithFX(asset.Rendimento || 0, mostRecentCompetencia, moedaOriginal);
+                        return sum + (rendimentoAjustado * posicaoConvertida);
+                      }, 0);
+                      
+                      const lastMonthTotalPosition = lastMonthAssets.reduce((sum, asset) => {
+                        const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                        return sum + convertValue(asset.Posicao || 0, mostRecentCompetencia, moedaOriginal);
+                      }, 0);
+                      
+                      const monthReturn = lastMonthTotalPosition > 0 ? (lastMonthWeightedReturn / lastMonthTotalPosition) : 0;
                       
                       // Group by competencia for year and inception calculations
                       const competenciaGroups = allStrategyData.reduce((acc, item) => {
@@ -955,18 +967,40 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       
                       const yearReturns = yearCompetenciasInFilter.map(competencia => {
                         const competenciaAssets = competenciaGroups[competencia];
-                        const totalPosition = competenciaAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
-                        const totalReturn = competenciaAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
-                        return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
+                        
+                        const weightedReturn = competenciaAssets.reduce((sum, asset) => {
+                          const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                          const posicaoConvertida = convertValue(asset.Posicao || 0, competencia, moedaOriginal);
+                          const rendimentoAjustado = adjustReturnWithFX(asset.Rendimento || 0, competencia, moedaOriginal);
+                          return sum + (rendimentoAjustado * posicaoConvertida);
+                        }, 0);
+                        
+                        const totalPosition = competenciaAssets.reduce((sum, asset) => {
+                          const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                          return sum + convertValue(asset.Posicao || 0, competencia, moedaOriginal);
+                        }, 0);
+                        
+                        return totalPosition > 0 ? (weightedReturn / totalPosition) : 0;
                       });
                       const yearReturn = calculateCompoundReturn(yearReturns);
                       
                       // Inception return: compound return for all competencias in filter
                       const monthlyReturns = sortedCompetencias.map(competencia => {
                         const competenciaAssets = competenciaGroups[competencia];
-                        const totalPosition = competenciaAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
-                        const totalReturn = competenciaAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
-                        return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
+                        
+                        const weightedReturn = competenciaAssets.reduce((sum, asset) => {
+                          const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                          const posicaoConvertida = convertValue(asset.Posicao || 0, competencia, moedaOriginal);
+                          const rendimentoAjustado = adjustReturnWithFX(asset.Rendimento || 0, competencia, moedaOriginal);
+                          return sum + (rendimentoAjustado * posicaoConvertida);
+                        }, 0);
+                        
+                        const totalPosition = competenciaAssets.reduce((sum, asset) => {
+                          const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                          return sum + convertValue(asset.Posicao || 0, competencia, moedaOriginal);
+                        }, 0);
+                        
+                        return totalPosition > 0 ? (weightedReturn / totalPosition) : 0;
                       });
                       const inceptionReturn = calculateCompoundReturn(monthlyReturns);
                       
@@ -1005,7 +1039,12 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       
                       // Get data from the most recent competencia for "Mês"
                       const lastMonthData = allAssetData.find(item => item.Competencia === mostRecentCompetencia);
-                      const monthReturn = lastMonthData ? lastMonthData.Rendimento : 0;
+                      if (!lastMonthData) {
+                        return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
+                      }
+                      
+                      const moedaOriginal = lastMonthData.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                      const monthReturn = adjustReturnWithFX(lastMonthData.Rendimento || 0, mostRecentCompetencia, moedaOriginal);
                       
                        const sortedCompetencias = [...new Set(allAssetData.map(item => item.Competencia))].sort();
                        
@@ -1017,14 +1056,20 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                        
                        const yearReturns = yearCompetenciasInFilter.map(competencia => {
                          const assetData = allAssetData.find(item => item.Competencia === competencia);
-                         return assetData ? assetData.Rendimento : 0;
+                         if (!assetData) return 0;
+                         
+                         const moedaOriginal = assetData.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                         return adjustReturnWithFX(assetData.Rendimento || 0, competencia, moedaOriginal);
                        });
                        const yearReturn = calculateCompoundReturn(yearReturns);
                        
                        // Inception return: compound return for all competencias in filter
                        const monthlyReturns = sortedCompetencias.map(competencia => {
                          const assetData = allAssetData.find(item => item.Competencia === competencia);
-                         return assetData ? assetData.Rendimento : 0;
+                         if (!assetData) return 0;
+                         
+                         const moedaOriginal = assetData.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                         return adjustReturnWithFX(assetData.Rendimento || 0, competencia, moedaOriginal);
                        });
                        const inceptionReturn = calculateCompoundReturn(monthlyReturns);
                        
@@ -1033,7 +1078,11 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
                     // Calculate totals for each strategy
                     const strategyTotals = Object.entries(groupedData).map(([strategy, assets]) => {
-                      const totalPosition = assets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
+                      const totalPosition = assets.reduce((sum, asset) => {
+                        const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                        const posicaoConvertida = convertValue(asset.Posicao || 0, asset.Competencia, moedaOriginal);
+                        return sum + posicaoConvertida;
+                      }, 0);
                       const returns = calculateStrategyReturns(strategy);
                       
                       return {
@@ -1089,7 +1138,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                   <div className="flex items-center gap-4">
                                     <div className="text-right">
                                       <div className="text-sm text-muted-foreground">Saldo</div>
-                                      <div className="font-semibold text-foreground">R$ {totalPosition.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                      <div className="font-semibold text-foreground">{formatCurrency(totalPosition)}</div>
                                     </div>
                                      <div className="text-right">
                                        <div className="text-sm text-muted-foreground">Rentabilidade</div>
@@ -1129,7 +1178,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                 <div className="grid grid-cols-9 gap-4 p-3 border-b border-border/30 bg-muted/30 text-sm font-semibold">
                                   <div className="text-foreground">{strategy}</div>
                                   <div className="text-center text-foreground">{percentage.toFixed(2)}%</div>
-                                  <div className="text-center text-foreground">{totalPosition.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                  <div className="text-center text-foreground">{formatCurrency(totalPosition)}</div>
                                   <div className="text-center">
                                     <div className="text-xs text-muted-foreground">Rent.</div>
                                     <div className={`font-medium ${monthReturn >= 0 ? "text-success" : "text-destructive"}`}>
@@ -1211,7 +1260,13 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                         <div className="text-center text-foreground text-xs">
                                           {displayPatrimonio > 0 ? `${((item.Posicao / displayPatrimonio) * 100).toFixed(2)}%` : "-"}
                                         </div>
-                                        <div className="text-center text-foreground">{item.Posicao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                        <div className="text-center text-foreground">
+                                          {(() => {
+                                            const moedaOriginal = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                                            const posicaoConvertida = convertValue(item.Posicao || 0, item.Competencia, moedaOriginal);
+                                            return formatCurrency(posicaoConvertida);
+                                          })()}
+                                        </div>
                                         <div className="text-center">
                                           <div className={`font-medium ${assetReturns.monthReturn >= 0 ? "text-success" : "text-destructive"}`}>
                                             {assetReturns.monthReturn >= 0 ? "+" : ""}{(assetReturns.monthReturn * 100).toFixed(2)}%
