@@ -247,6 +247,7 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
     if (data.length === 0) return [];
     
     const result = [];
+    let cumulativeMovimentacao = 0;
     
     // Add zero point one month before the first competencia
     const [firstMonth, firstYear] = data[0].Competencia.split('/');
@@ -269,17 +270,9 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
       const [month, year] = item.Competencia.split('/');
       const competenciaDate = new Date(parseInt(year), parseInt(month) - 1, 1);
       
-      // Patrimônio Aplicado = Patrimônio Final do mês anterior + Movimentação atual
-      let patrimonioAplicado;
-      if (index === 0) {
-        // Primeiro mês: Patrimônio Inicial + Movimentação
-        patrimonioAplicado = (data[0]["Patrimonio Inicial"] || 0) + (item["Movimentação"] || 0);
-      } else {
-        // Demais meses: Patrimônio Final anterior + Movimentação atual
-        const previousPatrimonioFinal = data[index - 1]["Patrimonio Final"] || 0;
-        patrimonioAplicado = previousPatrimonioFinal + (item["Movimentação"] || 0);
-      }
-      
+      // Patrimônio Aplicado = Patrimônio Inicial + acumulação de todas as movimentações
+      cumulativeMovimentacao += item["Movimentação"] || 0;
+      const patrimonioAplicado = initialPatrimonio + cumulativeMovimentacao;
       const patrimonioAtual = item["Patrimonio Final"] || 0;
       
       result.push({
