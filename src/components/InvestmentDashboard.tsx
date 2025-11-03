@@ -45,7 +45,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   // Helper function to convert competencia string to comparable date
   const competenciaToDate = (competencia: string) => {
     const [month, year] = competencia.split('/');
-    return new Date(parseInt(year), parseInt(month) - 1);
+    // Tratar anos de 2 dígitos corretamente (ex: 25 -> 2025)
+    const fullYear = parseInt(year) < 100 ? 2000 + parseInt(year) : parseInt(year);
+    return new Date(fullYear, parseInt(month) - 1);
   };
 
   // Filter data based on selected competencia range and institution
