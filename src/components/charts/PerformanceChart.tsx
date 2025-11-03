@@ -89,27 +89,50 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
       }
       
       const consolidated = competenciaMap.get(competencia);
-      consolidated["Patrimonio Final"] += item["Patrimonio Final"] || 0;
-      consolidated["Patrimonio Inicial"] += item["Patrimonio Inicial"] || 0;
-      consolidated["Movimentação"] += item["Movimentação"] || 0;
-      consolidated["Ganho Financeiro"] += item["Ganho Financeiro"] || 0;
-      consolidated.Impostos += item.Impostos || 0;
       
-      // For weighted average rendimento - with FX adjustment
+      // Convert values to BRL before consolidating
       const moedaOriginal = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
-      const patrimonioConvertido = convertValue(
-        item["Patrimonio Final"] || 0, 
-        item.Competencia, 
+      const patrimonioFinalConvertido = convertValue(
+        item["Patrimonio Final"] || 0,
+        item.Competencia,
         moedaOriginal
       );
+      const patrimonioInicialConvertido = convertValue(
+        item["Patrimonio Inicial"] || 0,
+        item.Competencia,
+        moedaOriginal
+      );
+      const movimentacaoConvertida = convertValue(
+        item["Movimentação"] || 0,
+        item.Competencia,
+        moedaOriginal
+      );
+      const ganhoFinanceiroConvertido = convertValue(
+        item["Ganho Financeiro"] || 0,
+        item.Competencia,
+        moedaOriginal
+      );
+      const impostosConvertidos = convertValue(
+        item.Impostos || 0,
+        item.Competencia,
+        moedaOriginal
+      );
+      
+      consolidated["Patrimonio Final"] += patrimonioFinalConvertido;
+      consolidated["Patrimonio Inicial"] += patrimonioInicialConvertido;
+      consolidated["Movimentação"] += movimentacaoConvertida;
+      consolidated["Ganho Financeiro"] += ganhoFinanceiroConvertido;
+      consolidated.Impostos += impostosConvertidos;
+      
+      // For weighted average rendimento - with FX adjustment
       const rendimentoAjustado = adjustReturnWithFX(
         item.Rendimento || 0, 
         item.Competencia, 
         moedaOriginal
       );
       
-      consolidated.rendimentoSum += rendimentoAjustado * patrimonioConvertido;
-      consolidated.patrimonioForWeightedAvg += patrimonioConvertido;
+      consolidated.rendimentoSum += rendimentoAjustado * patrimonioFinalConvertido;
+      consolidated.patrimonioForWeightedAvg += patrimonioFinalConvertido;
     });
     
     // Calculate weighted average rendimento and convert to final format
