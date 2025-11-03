@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   Table,
   TableBody,
@@ -31,14 +32,7 @@ export function InstitutionAllocationCard({
   selectedInstitution,
   onInstitutionClick 
 }: InstitutionAllocationCardProps) {
-  
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 2
-    }).format(value || 0);
-  };
+  const { formatCurrency } = useCurrency();
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -47,7 +41,7 @@ export function InstitutionAllocationCard({
         <div className="bg-card border border-border rounded-lg p-3 shadow-elegant-md backdrop-blur-sm">
           <p className="text-foreground font-semibold">{data.institution}</p>
           <p className="text-primary text-sm">
-            R$ {data.patrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {formatCurrency(data.patrimonio)}
           </p>
           <p className="text-muted-foreground text-xs">
             {data.percentage.toFixed(2)}% do patrimônio
@@ -177,7 +171,7 @@ export function InstitutionAllocationCard({
                   Patrimônio Bruto
                 </div>
                 <div className="text-xl font-semibold text-foreground">
-                  {totalPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {formatCurrency(totalPatrimonio)}
                 </div>
               </div>
             </div>

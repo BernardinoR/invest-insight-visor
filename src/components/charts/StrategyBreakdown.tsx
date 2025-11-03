@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const COLORS = [
   'hsl(210 16% 82%)', // Light blue-gray
@@ -24,10 +25,13 @@ interface StrategyBreakdownProps {
     Posicao: number;
     Rendimento: number;
     Competencia: string;
+    Moeda: string;
   }>;
 }
 
 export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
+  const { convertValue, adjustReturnWithFX, formatCurrency } = useCurrency();
+  
   // Filter to get only the most recent competencia within the filtered period (same logic as consolidated performance)
   const getMostRecentData = (data: typeof dadosData) => {
     if (data.length === 0) return [];
@@ -114,8 +118,22 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
         totalReturn: 0
       };
     }
-    acc[groupedStrategy].value += Number(investment.Posicao) || 0;
-    acc[groupedStrategy].totalReturn += (Number(investment.Rendimento) || 0) * (Number(investment.Posicao) || 0);
+    
+    // Converter valores antes de agregar
+    const moedaOriginal = investment.Moeda === 'Dolar' ? 'USD' : 'BRL';
+    const posicaoConvertida = convertValue(
+      Number(investment.Posicao) || 0, 
+      investment.Competencia, 
+      moedaOriginal
+    );
+    const rendimentoAjustado = adjustReturnWithFX(
+      Number(investment.Rendimento) || 0, 
+      investment.Competencia, 
+      moedaOriginal
+    );
+    
+    acc[groupedStrategy].value += posicaoConvertida;
+    acc[groupedStrategy].totalReturn += rendimentoAjustado * posicaoConvertida;
     acc[groupedStrategy].count += 1;
     return acc;
   }, {} as Record<string, { name: string; value: number; count: number; totalReturn: number }>);
@@ -169,7 +187,7 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
         <div className="bg-card border border-border rounded-lg p-3 shadow-elegant-md backdrop-blur-sm">
           <p className="text-foreground font-semibold">{data.name}</p>
           <p className="text-primary text-sm">
-            R$ {data.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {formatCurrency(data.value)}
           </p>
           <p className="text-muted-foreground text-xs">
             {data.percentage.toFixed(2)}% do patrimônio
@@ -208,7 +226,7 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
                   {item.percentage.toFixed(2)}%
                 </div>
                 <div className="text-right text-foreground">
-                  {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {formatCurrency(item.value)}
                 </div>
               </div>
             ))}
@@ -259,7 +277,7 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
                     Patrimônio Bruto
                   </div>
                   <div className="text-lg font-bold text-foreground text-center">
-                    {totalPatrimonio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    {formatCurrency(totalPatrimonio)}
                   </div>
                 </div>
               </div>
