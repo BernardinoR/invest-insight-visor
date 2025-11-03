@@ -415,119 +415,58 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
       // Market indicators - only show if data exists
       let ipcaRetorno = null;
       
-      // Try to find exact zeroMarketPoint (for zero reference), fallback to first available in period
-      let zeroMarketPoint = marketData.find(m => m.competencia === zeroCompetencia);
-      if (!zeroMarketPoint && marketData.length > 0) {
-        // If zero point not found, find the most recent point before or on zeroCompetencia
-        const zeroDate = competenciaToDate(zeroCompetencia);
-        
-        const validPoints = marketData
-          .filter(m => {
-            const mDate = competenciaToDate(m.competencia);
-            return mDate <= zeroDate;
-          })
-          .sort((a, b) => {
-            const dateA = competenciaToDate(a.competencia);
-            const dateB = competenciaToDate(b.competencia);
-            return dateB.getTime() - dateA.getTime(); // Most recent first
+      const currentMarketPoint = marketData.find(m => m.competencia === currentCompetencia);
+      
+      // Para Target: calcular a partir de firstCompetencia
+      if (currentMarketPoint && firstCompetencia && clientTarget) {
+        if (currentCompetencia === firstCompetencia) {
+          // Primeira competência real: retornar apenas o valor mensal
+          targetRetorno = currentMarketPoint.clientTarget * 100;
+        } else {
+          // Competências posteriores: acumular desde firstCompetencia
+          const periodMonths = marketData
+            .filter(m => {
+              const mDate = competenciaToDate(m.competencia);
+              const startDate = competenciaToDate(firstCompetencia);
+              const currentDate = competenciaToDate(currentCompetencia);
+              return mDate >= startDate && mDate <= currentDate;
+            })
+            .sort((a, b) => competenciaToDate(a.competencia).getTime() - competenciaToDate(b.competencia).getTime());
+          
+          let composedTarget = 0;
+          periodMonths.forEach(month => {
+            if (month.clientTarget !== 0) {
+              composedTarget = (1 + composedTarget) * (1 + month.clientTarget) - 1;
+            }
           });
-        
-        zeroMarketPoint = validPoints[0]; // Most recent point before zeroDate
-        if (zeroMarketPoint) {
-          console.log(`zeroMarketPoint fallback: requested ${zeroCompetencia}, using ${zeroMarketPoint.competencia}`);
+          
+          targetRetorno = composedTarget * 100;
         }
       }
       
-      const currentMarketPoint = marketData.find(m => m.competencia === currentCompetencia);
-      
-      if (currentMarketPoint && zeroMarketPoint && clientTarget) {
-        // Use clientTarget to calculate target performance based on IPCA + target percentage
-        // Compose monthly targets from zero point to current period
-        const periodMonths = marketData
-          .filter(m => {
-            const [month, year] = m.competencia.split('/');
-            const [zeroMonth, zeroYear] = zeroCompetencia.split('/');
-            const [currentMonth, currentYear] = currentCompetencia.split('/');
-            
-            const mDate = new Date(parseInt(year), parseInt(month) - 1);
-            const zeroDate = new Date(parseInt(zeroYear), parseInt(zeroMonth) - 1);
-            const currentDate = new Date(parseInt(currentYear), parseInt(currentMonth) - 1);
-            
-            // Include all months AFTER zero point up to and including current
-            return mDate > zeroDate && mDate <= currentDate;
-          })
-          .sort((a, b) => {
-            const [monthA, yearA] = a.competencia.split('/');
-            const [monthB, yearB] = b.competencia.split('/');
-            const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-            const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
-            return dateA.getTime() - dateB.getTime();
+      // Para IPCA: calcular a partir de firstCompetencia
+      if (currentMarketPoint && firstCompetencia) {
+        if (currentCompetencia === firstCompetencia) {
+          // Primeira competência real: retornar apenas o valor mensal
+          ipcaRetorno = currentMarketPoint.ipca * 100;
+        } else {
+          // Competências posteriores: acumular desde firstCompetencia
+          const periodMonths = marketData
+            .filter(m => {
+              const mDate = competenciaToDate(m.competencia);
+              const startDate = competenciaToDate(firstCompetencia);
+              const currentDate = competenciaToDate(currentCompetencia);
+              return mDate >= startDate && mDate <= currentDate;
+            })
+            .sort((a, b) => competenciaToDate(a.competencia).getTime() - competenciaToDate(b.competencia).getTime());
+          
+          let accumulatedIPCA = 1;
+          periodMonths.forEach(month => {
+            accumulatedIPCA *= (1 + month.ipca);
           });
-        
-        let composedTarget = 0;
-        periodMonths.forEach(month => {
-          if (month.clientTarget !== 0) {
-            composedTarget = (1 + composedTarget) * (1 + month.clientTarget) - 1;
-          }
-        });
-        
-        targetRetorno = composedTarget * 100;
-        
-        console.log('Target calculation:', {
-          currentCompetencia,
-          zeroCompetencia,
-          periodMonths: periodMonths.map(m => m.competencia),
-          clientTargetValue: clientTarget?.targetValue || 0,
-          targetRetorno
-        });
-      }
-      
-      console.log('Market data processing:', {
-        zeroCompetencia,
-        currentCompetencia,
-        zeroMarketPoint,
-        currentMarketPoint,
-        marketDataLength: marketData.length
-      });
-      
-      if (currentMarketPoint && zeroMarketPoint) {
-        // Para IPCA, usar composição mensal a partir do marco zero
-        // Filtrar todos os meses APÓS zeroCompetencia até currentCompetencia
-        const periodMonths = marketData
-          .filter(m => {
-            const [month, year] = m.competencia.split('/');
-            const [zeroMonth, zeroYear] = zeroCompetencia.split('/');
-            const [currentMonth, currentYear] = currentCompetencia.split('/');
-            
-            const mDate = new Date(parseInt(year), parseInt(month) - 1);
-            const zeroDate = new Date(parseInt(zeroYear), parseInt(zeroMonth) - 1);
-            const currentDate = new Date(parseInt(currentYear), parseInt(currentMonth) - 1);
-            
-            // Include all months AFTER zero point up to and including current
-            return mDate > zeroDate && mDate <= currentDate;
-          })
-          .sort((a, b) => {
-            const [monthA, yearA] = a.competencia.split('/');
-            const [monthB, yearB] = b.competencia.split('/');
-            const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-            const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
-            return dateA.getTime() - dateB.getTime();
-          });
-        
-        let accumulatedIPCA = 1;
-        periodMonths.forEach(month => {
-          accumulatedIPCA *= (1 + month.ipca);
-        });
-        ipcaRetorno = (accumulatedIPCA - 1) * 100;
-        
-        console.log('Calculated market returns:', {
-          zeroCompetencia,
-          currentCompetencia,
-          periodMonths: periodMonths.map(m => m.competencia),
-          ipcaRetorno
-        });
-      } else {
-        console.log('No market data found for competencias');
+          
+          ipcaRetorno = (accumulatedIPCA - 1) * 100;
+        }
       }
       
       return {
