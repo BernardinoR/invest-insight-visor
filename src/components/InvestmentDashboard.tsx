@@ -44,6 +44,10 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const [diversificationDialogOpen, setDiversificationDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'performance' | 'risk' | 'policy'>('performance');
 
+  const handleInstitutionCardRender = useCallback((card: any) => {
+    setInstitutionCardData(card);
+  }, []);
+
   // Helper function to convert competencia string to comparable date
   const competenciaToDate = (competencia: string) => {
     const [month, year] = competencia.split('/');
@@ -630,7 +634,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
               selectedInstitution={selectedInstitution}
               onInstitutionClick={(institution) => setSelectedInstitution(institution === selectedInstitution ? null : institution)}
               showInstitutionCard={false}
-              onInstitutionCardRender={setInstitutionCardData}
+              onInstitutionCardRender={handleInstitutionCardRender}
             />
           }
         />

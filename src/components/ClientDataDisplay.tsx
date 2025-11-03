@@ -257,12 +257,22 @@ export const ClientDataDisplay = React.memo(({ consolidadoData, dadosData, loadi
     </div>
   );
 }, (prevProps, nextProps) => {
+  // Comparar institutionCardData profundamente
+  const institutionDataEqual = 
+    prevProps.institutionCardData?.institutionData?.length === 
+    nextProps.institutionCardData?.institutionData?.length &&
+    prevProps.institutionCardData?.totalPatrimonio === 
+    nextProps.institutionCardData?.totalPatrimonio;
+
   return (
     prevProps.loading === nextProps.loading &&
     prevProps.clientName === nextProps.clientName &&
     prevProps.consolidadoData.length === nextProps.consolidadoData.length &&
     prevProps.dadosData.length === nextProps.dadosData.length &&
-    prevProps.selectedInstitution === nextProps.selectedInstitution
+    prevProps.selectedInstitution === nextProps.selectedInstitution &&
+    prevProps.marketData?.length === nextProps.marketData?.length &&
+    prevProps.clientTarget?.targetValue === nextProps.clientTarget?.targetValue &&
+    institutionDataEqual
   );
 });
 

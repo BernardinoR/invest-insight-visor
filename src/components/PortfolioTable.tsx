@@ -74,7 +74,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   const { marketData, clientTarget } = useMarketIndicators(selectedClient);
   
   // Get currency conversion functions
-  const { convertValue, convertValuesBatch, adjustReturnWithFX, formatCurrency: currencyFormat } = useCurrency();
+  const { convertValue, convertValuesBatch, adjustReturnWithFX, formatCurrency: currencyFormat, currency } = useCurrency();
 
   // Function to calculate compound return over multiple months
   const calculateCompoundReturn = (monthlyReturns: number[]): number => {
@@ -583,7 +583,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
       patrimonio: data.patrimonio,
       rendimento: data.patrimonioCount > 0 ? data.rendimentoSum / data.patrimonioCount : 0
     })).sort((a, b) => b.patrimonio - a.patrimonio);
-  }, [rawData, convertValue, adjustReturnWithFX]);
+  }, [rawData, convertValue, adjustReturnWithFX, currency]);
   
   const totalInstitutionsPatrimonio = institutionSummary.reduce((sum, item) => sum + item.patrimonio, 0);
 
@@ -599,11 +599,13 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     'hsl(210 18% 84%)',  // Cinza claro
   ];
 
-  const institutionChartData = institutionSummary.map((item, index) => ({
-    ...item,
-    percentage: (item.patrimonio / totalInstitutionsPatrimonio) * 100,
-    color: INSTITUTION_COLORS[index % INSTITUTION_COLORS.length]
-  }));
+  const institutionChartData = useMemo(() => 
+    institutionSummary.map((item, index) => ({
+      ...item,
+      percentage: (item.patrimonio / totalInstitutionsPatrimonio) * 100,
+      color: INSTITUTION_COLORS[index % INSTITUTION_COLORS.length]
+    }))
+  , [institutionSummary, totalInstitutionsPatrimonio]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -624,17 +626,17 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   };
 
   // Export institution card data for parent to render
-  const institutionCardData = {
+  const institutionCardData = useMemo(() => ({
     institutionData: institutionChartData,
     totalPatrimonio: totalInstitutionsPatrimonio
-  };
+  }), [institutionChartData, totalInstitutionsPatrimonio]);
 
   // Pass institution card to parent if callback provided
   useEffect(() => {
     if (onInstitutionCardRender && !showInstitutionCard) {
       onInstitutionCardRender(institutionCardData);
     }
-  }, [institutionChartData, totalInstitutionsPatrimonio, onInstitutionCardRender, showInstitutionCard]);
+  }, [institutionCardData, onInstitutionCardRender, showInstitutionCard]);
 
   return (
     <>
