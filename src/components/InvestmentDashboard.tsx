@@ -52,6 +52,11 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
   // Filter data based on selected competencia range and institution
   const getFilteredDadosData = (data: typeof dadosData) => {
+    console.log('=== DEBUG FILTRO getFilteredDadosData ===');
+    console.log('filteredRange:', filteredRange);
+    console.log('selectedInstitution:', selectedInstitution);
+    console.log('Input data.length:', data.length);
+    
     let filtered = data;
     
     // Apply date filter
@@ -59,17 +64,25 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       const startDate = competenciaToDate(filteredRange.inicio);
       const endDate = competenciaToDate(filteredRange.fim);
       
+      console.log('startDate:', startDate);
+      console.log('endDate:', endDate);
+      
       filtered = filtered.filter(item => {
         const itemDate = competenciaToDate(item.Competencia);
         return itemDate >= startDate && itemDate <= endDate;
       });
+      
+      console.log('After date filter:', filtered.length);
+      console.log('Competencias after date filter:', [...new Set(filtered.map(i => i.Competencia))]);
     }
     
     // Apply institution filter
     if (selectedInstitution) {
       filtered = filtered.filter(item => item.Instituicao === selectedInstitution);
+      console.log('After institution filter:', filtered.length);
     }
     
+    console.log('Final filtered data:', filtered.length);
     return filtered;
   };
 
@@ -462,11 +475,17 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
             <CardContent>
                <div className="text-2xl font-bold text-foreground">
                  {(() => {
+                   console.log('=== DEBUG DIVERSIFICATION CARD ===');
+                   console.log('hasData:', hasData);
+                   console.log('filteredDadosData.length:', filteredDadosData.length);
+                   console.log('filteredRange.fim:', filteredRange.fim);
+                   
                    if (!hasData || filteredDadosData.length === 0) return "--";
                    
                    // Count unique assets for the selected competencia range
                    const finalCompetencia = filteredRange.fim;
                    if (!finalCompetencia) {
+                     console.log('No finalCompetencia, using filteredDadosData.length');
                      return filteredDadosData.length;
                    }
                    
@@ -475,8 +494,15 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       item => item.Competencia === finalCompetencia
                     );
                     
+                    console.log('finalCompetencia:', finalCompetencia);
+                    console.log('assetsInFinalCompetencia.length:', assetsInFinalCompetencia.length);
+                    console.log('Sample assets:', assetsInFinalCompetencia.slice(0, 5).map(a => a.Ativo));
+                    
                     // Count unique assets, not total records
-                    return new Set(assetsInFinalCompetencia.map(item => item.Ativo)).size;
+                    const uniqueCount = new Set(assetsInFinalCompetencia.map(item => item.Ativo)).size;
+                    console.log('Unique assets count:', uniqueCount);
+                    
+                    return uniqueCount;
                  })()}
                </div>
               <p className="text-xs text-muted-foreground">

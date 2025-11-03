@@ -74,6 +74,13 @@ export function useClientData(clientName: string) {
         throw new Error(dadosError.message);
       }
 
+      console.log('=== DEBUG FETCH (useClientData) ===');
+      console.log('Client Name:', clientName);
+      console.log('dadosData fetched:', dadosData?.length);
+      console.log('Competencias únicas:', [...new Set(dadosData?.map(d => d.Competencia))]);
+      console.log('05/2025 records:', dadosData?.filter(d => d.Competencia === '05/2025').length);
+      console.log('Sample 05/2025 data:', dadosData?.filter(d => d.Competencia === '05/2025').slice(0, 3));
+
       setConsolidadoData(consolidadoData || []);
       setDadosData(dadosData || []);
 
