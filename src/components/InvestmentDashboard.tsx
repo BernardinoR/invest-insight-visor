@@ -31,7 +31,7 @@ interface InvestmentDashboardProps {
 }
 
 export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps) {
-  const { consolidadoData, dadosData, loading, totalPatrimonio, totalRendimento, hasData } = useClientData(selectedClient);
+  const { consolidadoData, dadosData, loading, error, totalPatrimonio, totalRendimento, hasData } = useClientData(selectedClient);
   const { marketData, clientTarget } = useMarketIndicators(selectedClient);
   const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
   const [filteredRange, setFilteredRange] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
