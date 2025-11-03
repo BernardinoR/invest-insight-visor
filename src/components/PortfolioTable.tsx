@@ -20,6 +20,7 @@ import { ChevronDown, ChevronUp, Trophy, Filter } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMarketIndicators } from "@/hooks/useMarketIndicators";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface InstitutionCardData {
   institutionData: Array<{
@@ -54,6 +55,7 @@ interface ConsolidadoData {
   "Competencia": string;
   "Instituicao"?: string;
   "Nome"?: string;
+  "Moeda"?: string;
 }
 
 interface ConsolidadoDataWithReturns extends ConsolidadoData {
@@ -70,6 +72,9 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   
   // Get market indicators including client target
   const { marketData, clientTarget } = useMarketIndicators(selectedClient);
+  
+  // Get currency conversion functions
+  const { convertValue, adjustReturnWithFX, formatCurrency: currencyFormat } = useCurrency();
 
   // Function to calculate compound return over multiple months
   const calculateCompoundReturn = (monthlyReturns: number[]): number => {
@@ -506,7 +511,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   }, [selectedClient]);
 
   // Calculate institution summary from rawData - only most recent competencia
-  const institutionSummary = (() => {
+  const institutionSummary = useMemo(() => {
     if (!rawData || rawData.length === 0) return [];
     
     // Find the most recent competencia
@@ -533,9 +538,27 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
           patrimonioCount: 0
         };
       }
-      acc[institution].patrimonio += item["Patrimonio Final"] || 0;
-      acc[institution].rendimentoSum += (item.Rendimento || 0) * (item["Patrimonio Final"] || 0);
-      acc[institution].patrimonioCount += item["Patrimonio Final"] || 0;
+      
+      // Convert patrimônio considering original currency
+      const patrimonioOriginal = item["Patrimonio Final"] || 0;
+      const moedaOriginal = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
+      const patrimonioConvertido = convertValue(patrimonioOriginal, item.Competencia, moedaOriginal);
+      
+      // Adjust rendimento considering FX variation
+      const rendimentoOriginal = item.Rendimento || 0;
+      const rendimentoAjustado = adjustReturnWithFX(rendimentoOriginal, item.Competencia, moedaOriginal);
+      
+      console.log(`📊 PortfolioTable - ${institution} (${item.Competencia}):`, {
+        patrimonioOriginal,
+        moedaOriginal,
+        patrimonioConvertido,
+        rendimentoOriginal,
+        rendimentoAjustado
+      });
+      
+      acc[institution].patrimonio += patrimonioConvertido;
+      acc[institution].rendimentoSum += rendimentoAjustado * patrimonioConvertido;
+      acc[institution].patrimonioCount += patrimonioConvertido;
       return acc;
     }, {} as Record<string, { patrimonio: number; rendimentoSum: number; patrimonioCount: number }>);
     
@@ -543,8 +566,8 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
       institution,
       patrimonio: data.patrimonio,
       rendimento: data.patrimonioCount > 0 ? data.rendimentoSum / data.patrimonioCount : 0
-    })).sort((a, b) => b.patrimonio - a.patrimonio); // Sort by patrimonio descending
-  })();
+    })).sort((a, b) => b.patrimonio - a.patrimonio);
+  }, [rawData, convertValue, adjustReturnWithFX]);
   
   const totalInstitutionsPatrimonio = institutionSummary.reduce((sum, item) => sum + item.patrimonio, 0);
 

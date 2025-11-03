@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCDIData } from "@/hooks/useCDIData";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const COLORS = [
   'hsl(210 16% 82%)', // Light blue-gray
@@ -37,6 +38,7 @@ interface InvestmentDetailsTableProps {
     Competencia: string;
     Ativo: string;
     Nome?: string;
+    Moeda?: string;
   }>;
   selectedClient: string;
   filteredRange?: { inicio: string; fim: string };
@@ -47,6 +49,9 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
   const [accumulatedReturnsData, setAccumulatedReturnsData] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const { cdiData } = useCDIData();
+  
+  // Get currency conversion functions
+  const { convertValue, adjustReturnWithFX } = useCurrency();
 
   // Function to group strategy names according to original specification
   const groupStrategy = (strategy: string): string => {
@@ -105,6 +110,7 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     Competencia: string;
     Nome?: string;
     Posicao: number;
+    Moeda?: string;
   }>, strategy: string) => {
     if (filteredData.length === 0) return 0;
 
@@ -124,8 +130,15 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
       let totalWeightedReturn = 0;
       
       items.forEach(item => {
-        const position = Number(item.Posicao) || 0;
-        const monthlyReturn = Number(item.Rendimento) || 0;
+        // Convert position considering original currency
+        const positionOriginal = Number(item.Posicao) || 0;
+        const moedaOriginal = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
+        const position = convertValue(positionOriginal, item.Competencia, moedaOriginal);
+        
+        // Adjust return considering FX variation
+        const monthlyReturnOriginal = Number(item.Rendimento) || 0;
+        const monthlyReturn = adjustReturnWithFX(monthlyReturnOriginal, item.Competencia, moedaOriginal);
+        
         totalPosition += position;
         totalWeightedReturn += monthlyReturn * position;
       });
@@ -368,7 +381,13 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
         assets: new Set<string>()
       };
     }
-    acc[groupedStrategy].value += Number(investment.Posicao) || 0;
+    
+    // Convert position considering original currency
+    const posicaoOriginal = Number(investment.Posicao) || 0;
+    const moedaOriginal = investment.Moeda === 'Dolar' ? 'USD' : 'BRL';
+    const posicaoConvertida = convertValue(posicaoOriginal, investment.Competencia, moedaOriginal);
+    
+    acc[groupedStrategy].value += posicaoConvertida;
     acc[groupedStrategy].assets.add(investment.Ativo);
     acc[groupedStrategy].count = acc[groupedStrategy].assets.size;
     return acc;
