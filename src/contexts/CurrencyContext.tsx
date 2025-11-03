@@ -42,11 +42,15 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       originalCurrency,
       currentCurrency: currency,
       cotacao,
-      ptaxDataLength: ptaxData.length
+      ptaxDataLength: ptaxData.length,
+      availableCompetencias: ptaxData.map(d => d.competencia).slice(0, 5)
     });
     
     if (!cotacao) {
-      console.warn(`⚠️ PTAX não encontrada para ${competencia}, mantendo valor original`);
+      console.error(`❌ PTAX não encontrada para ${competencia}, mantendo valor original`, {
+        requestedCompetencia: competencia,
+        availableCompetencias: ptaxData.map(d => d.competencia)
+      });
       return value;
     }
 
