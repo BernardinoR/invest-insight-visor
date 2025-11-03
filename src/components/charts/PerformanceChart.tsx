@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useCDIData } from "@/hooks/useCDIData";
 import { useMarketIndicators } from "@/hooks/useMarketIndicators";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface PerformanceChartProps {
   consolidadoData: Array<{
@@ -24,6 +25,7 @@ interface PerformanceChartProps {
     Rendimento: number;
     Impostos: number;
     Competencia: string;
+    Moeda?: string;
   }>;
   clientName?: string;
   marketData?: any;
@@ -42,6 +44,7 @@ const competenciaToDate = (competencia: string): Date => {
 };
 
 export function PerformanceChart({ consolidadoData, clientName, marketData: propMarketData, clientTarget: propClientTarget }: PerformanceChartProps) {
+  const { convertValue, adjustReturnWithFX } = useCurrency();
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'all' | 'custom'>('12months');
   const [customStartCompetencia, setCustomStartCompetencia] = useState<string>('');
   const [customEndCompetencia, setCustomEndCompetencia] = useState<string>('');
@@ -102,11 +105,21 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
       consolidated["Ganho Financeiro"] += item["Ganho Financeiro"] || 0;
       consolidated.Impostos += item.Impostos || 0;
       
-      // For weighted average rendimento
-      const patrimonio = item["Patrimonio Final"] || 0;
-      const rendimento = item.Rendimento || 0;
-      consolidated.rendimentoSum += rendimento * patrimonio;
-      consolidated.patrimonioForWeightedAvg += patrimonio;
+      // For weighted average rendimento - with FX adjustment
+      const moedaOriginal = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
+      const patrimonioConvertido = convertValue(
+        item["Patrimonio Final"] || 0, 
+        item.Competencia, 
+        moedaOriginal
+      );
+      const rendimentoAjustado = adjustReturnWithFX(
+        item.Rendimento || 0, 
+        item.Competencia, 
+        moedaOriginal
+      );
+      
+      consolidated.rendimentoSum += rendimentoAjustado * patrimonioConvertido;
+      consolidated.patrimonioForWeightedAvg += patrimonioConvertido;
     });
     
     // Calculate weighted average rendimento and convert to final format
