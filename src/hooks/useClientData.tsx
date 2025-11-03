@@ -123,6 +123,19 @@ export function useClientData(clientName: string) {
       console.log('15. Setting state with fetched data...');
       setConsolidadoData(consolidadoData || []);
       setDadosData(dadosData || []);
+      
+      // DETAILED LOG: Verify raw data after setting state
+      if (dadosData) {
+        const agosto2025Records = dadosData.filter(d => d.Competencia === '08/2025');
+        console.log('🔎 RAW DATA CHECK - agosto/2025 records:', agosto2025Records.length);
+        if (agosto2025Records.length > 0) {
+          console.log('🔎 Sample agosto/2025 records:', agosto2025Records.slice(0, 3));
+        }
+        
+        const maio2025RecordsCheck = dadosData.filter(d => d.Competencia === '05/2025');
+        console.log('🔎 RAW DATA CHECK - maio/2025 records:', maio2025RecordsCheck.length);
+      }
+      
       console.log('16. State updated successfully');
 
     } catch (err) {

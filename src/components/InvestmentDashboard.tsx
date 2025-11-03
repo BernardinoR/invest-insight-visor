@@ -95,10 +95,21 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
   // Filter data based on selected competencia range and institution
   const getFilteredDadosData = (data: typeof dadosData) => {
-    console.log('=== DEBUG FILTRO getFilteredDadosData ===');
-    console.log('filteredRange:', filteredRange);
-    console.log('selectedInstitution:', selectedInstitution);
-    console.log('Input data.length:', data.length);
+    console.log('\n=== 🔍 DEBUG FILTRO DETALHADO getFilteredDadosData ===');
+    console.log('📥 Input data.length:', data.length);
+    console.log('📅 filteredRange:', filteredRange);
+    console.log('🏦 selectedInstitution:', selectedInstitution);
+    
+    // Log unique competencias in input data
+    const inputCompetencias = [...new Set(data.map(i => i.Competencia))].sort();
+    console.log('📊 Input competencias:', inputCompetencias);
+    
+    // Count records per competencia BEFORE filtering
+    const beforeFilterCounts: Record<string, number> = {};
+    data.forEach(item => {
+      beforeFilterCounts[item.Competencia] = (beforeFilterCounts[item.Competencia] || 0) + 1;
+    });
+    console.log('📈 Records per competencia BEFORE filter:', beforeFilterCounts);
     
     let filtered = data;
     
@@ -107,27 +118,53 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       const startDate = competenciaToDate(filteredRange.inicio);
       const endDate = competenciaToDate(filteredRange.fim);
       
-      console.log('startDate:', startDate);
-      console.log('endDate:', endDate);
-      
-      filtered = filtered.filter(item => {
-        const itemDate = competenciaToDate(item.Competencia);
-        return itemDate >= startDate && itemDate <= endDate;
+      console.log('🗓️ Date range:', { 
+        inicio: filteredRange.inicio, 
+        fim: filteredRange.fim,
+        startDate: startDate.toISOString(), 
+        endDate: endDate.toISOString()
       });
       
-      console.log('After date filter:', filtered.length);
-      console.log('Competencias after date filter:', [...new Set(filtered.map(i => i.Competencia))]);
+      // Test date conversion for key competencias
+      console.log('🧪 Test date conversions:');
+      ['05/2025', '08/2025', '07/2025', '06/2024'].forEach(comp => {
+        const testDate = competenciaToDate(comp);
+        const passes = testDate >= startDate && testDate <= endDate;
+        console.log(`  ${comp} -> ${testDate.toISOString()} | Passes filter: ${passes}`);
+      });
+      
+      const beforeDateFilter = filtered.length;
+      filtered = filtered.filter(item => {
+        const itemDate = competenciaToDate(item.Competencia);
+        const passes = itemDate >= startDate && itemDate <= endDate;
+        return passes;
+      });
+      
+      console.log(`📊 After date filter: ${filtered.length} (was ${beforeDateFilter})`);
+      
+      // Count records per competencia AFTER date filtering
+      const afterDateFilterCounts: Record<string, number> = {};
+      filtered.forEach(item => {
+        afterDateFilterCounts[item.Competencia] = (afterDateFilterCounts[item.Competencia] || 0) + 1;
+      });
+      console.log('📉 Records per competencia AFTER date filter:', afterDateFilterCounts);
+      
+      const afterCompetencias = [...new Set(filtered.map(i => i.Competencia))].sort();
+      console.log('📅 Competencias after date filter:', afterCompetencias);
     } else {
       console.log('⚠️ filteredRange not fully set, returning all data');
     }
     
     // Apply institution filter
     if (selectedInstitution) {
+      const beforeInst = filtered.length;
       filtered = filtered.filter(item => item.Instituicao === selectedInstitution);
-      console.log('After institution filter:', filtered.length);
+      console.log(`🏦 Institution filter: ${beforeInst} -> ${filtered.length}`);
     }
     
-    console.log('Final filtered data:', filtered.length);
+    console.log('✅ Final filtered data:', filtered.length);
+    console.log('=== 🔍 END DEBUG FILTRO ===\n');
+    
     return filtered;
   };
 
