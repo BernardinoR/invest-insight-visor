@@ -30,7 +30,7 @@ export function useMarketIndicators(clientName?: string) {
     try {
       const endDate = new Date();
       const startDate = new Date();
-      startDate.setFullYear(startDate.getFullYear() - 2); // Last 2 years
+      startDate.setFullYear(startDate.getFullYear() - 5); // Last 5 years
 
       const formatDate = (date: Date) => {
         return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
