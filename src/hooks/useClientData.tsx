@@ -67,7 +67,8 @@ export function useClientData(clientName: string) {
         .from('ConsolidadoPerformance')
         .select('*')
         .eq('Nome', clientName)
-        .order('Data', { ascending: true });
+        .order('Data', { ascending: true })
+        .limit(20000);
 
       console.log('6. ConsolidadoPerformance response:', {
         dataLength: consolidadoData?.length,
@@ -87,7 +88,8 @@ export function useClientData(clientName: string) {
         .from('DadosPerformance')
         .select('*')
         .eq('Nome', clientName)
-        .order('Data', { ascending: true });
+        .order('Data', { ascending: true })
+        .limit(20000);
 
       console.log('8. DadosPerformance response:', {
         dataLength: dadosData?.length,
