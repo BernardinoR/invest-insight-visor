@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Database, TrendingUp, Calendar, Target } from "lucide-react";
 import { PerformanceChart } from "./charts/PerformanceChart";
 import { InstitutionAllocationCard } from "./InstitutionAllocationCard";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface ConsolidadoPerformance {
   id: number;
@@ -17,6 +18,7 @@ interface ConsolidadoPerformance {
   Rendimento: number;
   Nome: string;
   Instituicao: string;
+  Moeda?: string;
 }
 
 interface DadosPerformance {
@@ -58,6 +60,8 @@ interface ClientDataDisplayProps {
 }
 
 export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientName, originalConsolidadoData, portfolioTableComponent, institutionCardData, selectedInstitution, onInstitutionClick, marketData, clientTarget }: ClientDataDisplayProps) {
+  const { convertValue, adjustReturnWithFX, formatCurrency } = useCurrency();
+  
   if (!clientName) {
     return null;
   }
@@ -141,33 +145,69 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredConsolidadoData.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">
-                      {item.Instituicao}
-                    </TableCell>
-                    <TableCell>
-                      R$ {item["Patrimonio Inicial"].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell className={item["Movimentação"] >= 0 ? "text-success" : "text-destructive"}>
-                      R$ {item["Movimentação"].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell className={item.Impostos >= 0 ? "text-muted-foreground" : "text-destructive"}>
-                      R$ {item.Impostos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell className={item["Ganho Financeiro"] >= 0 ? "text-success" : "text-destructive"}>
-                      R$ {item["Ganho Financeiro"].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell className="font-semibold">
-                      R$ {item["Patrimonio Final"].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={item.Rendimento >= 0 ? "default" : "destructive"}>
-                        {(item.Rendimento * 100).toFixed(2)}%
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredConsolidadoData.map((item) => {
+                  const moedaOriginal = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                  
+                  const patrimonioInicial = convertValue(
+                    item["Patrimonio Inicial"], 
+                    item.Competencia, 
+                    moedaOriginal
+                  );
+                  const movimentacao = convertValue(
+                    item["Movimentação"], 
+                    item.Competencia, 
+                    moedaOriginal
+                  );
+                  const impostos = convertValue(
+                    item.Impostos, 
+                    item.Competencia, 
+                    moedaOriginal
+                  );
+                  const ganhoFinanceiro = convertValue(
+                    item["Ganho Financeiro"], 
+                    item.Competencia, 
+                    moedaOriginal
+                  );
+                  const patrimonioFinal = convertValue(
+                    item["Patrimonio Final"], 
+                    item.Competencia, 
+                    moedaOriginal
+                  );
+                  
+                  const rendimentoAjustado = adjustReturnWithFX(
+                    item.Rendimento, 
+                    item.Competencia, 
+                    moedaOriginal
+                  );
+                  
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">
+                        {item.Instituicao}
+                      </TableCell>
+                      <TableCell>
+                        {formatCurrency(patrimonioInicial)}
+                      </TableCell>
+                      <TableCell className={movimentacao >= 0 ? "text-success" : "text-destructive"}>
+                        {formatCurrency(movimentacao)}
+                      </TableCell>
+                      <TableCell className={impostos >= 0 ? "text-muted-foreground" : "text-destructive"}>
+                        {formatCurrency(impostos)}
+                      </TableCell>
+                      <TableCell className={ganhoFinanceiro >= 0 ? "text-success" : "text-destructive"}>
+                        {formatCurrency(ganhoFinanceiro)}
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        {formatCurrency(patrimonioFinal)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={rendimentoAjustado >= 0 ? "default" : "destructive"}>
+                          {(rendimentoAjustado * 100).toFixed(2)}%
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>
