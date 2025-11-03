@@ -33,11 +33,12 @@ const FALLBACK_PTAX: PTAXData[] = [
 ];
 
 export function usePTAXData() {
-  const [ptaxData, setPtaxData] = useState<PTAXData[]>([]);
+  const [ptaxData, setPtaxData] = useState<PTAXData[]>(FALLBACK_PTAX);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('🚀 usePTAXData initialized with fallback:', FALLBACK_PTAX.length, 'months');
     fetchPTAXData();
   }, []);
 
@@ -120,6 +121,9 @@ export function usePTAXData() {
     } catch (err) {
       console.error('Error fetching PTAX data:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
+      // Use fallback data if API fails
+      console.log('⚠️ Using FALLBACK_PTAX data due to API error');
+      setPtaxData(FALLBACK_PTAX);
     } finally {
       setLoading(false);
     }
