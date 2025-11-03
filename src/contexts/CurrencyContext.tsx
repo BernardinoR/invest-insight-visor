@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { usePTAXData } from '@/hooks/usePTAXData';
 
 type Currency = 'BRL' | 'USD';
@@ -7,6 +7,7 @@ interface CurrencyContextType {
   currency: Currency;
   setCurrency: (currency: Currency) => void;
   convertValue: (value: number, competencia: string, originalCurrency: 'BRL' | 'USD') => number;
+  convertValuesBatch: (values: Array<{ value: number; competencia: string; originalCurrency: 'BRL' | 'USD' }>) => number[];
   adjustReturnWithFX: (returnPercent: number, competencia: string, originalCurrency: 'BRL' | 'USD') => number;
   formatCurrency: (value: number) => string;
   getCurrencySymbol: () => string;
@@ -16,12 +17,12 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined
 
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currency, setCurrency] = useState<Currency>('BRL');
-  const [conversionCache, setConversionCache] = useState<Map<string, number>>(new Map());
+  const conversionCacheRef = useRef<Map<string, number>>(new Map());
   const { ptaxData, getCotacaoByCompetencia } = usePTAXData();
 
   // Clear cache when currency changes
   useEffect(() => {
-    setConversionCache(new Map());
+    conversionCacheRef.current.clear();
   }, [currency]);
 
   const getCompetenciaAnterior = useCallback((competencia: string): string => {
@@ -34,15 +35,15 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const convertValue = useCallback((value: number, competencia: string, originalCurrency: 'BRL' | 'USD'): number => {
-    // Se moeda original = moeda de exibição, não converter
     if (originalCurrency === currency) {
       return value;
     }
 
-    // Check cache
     const cacheKey = `${value}_${competencia}_${originalCurrency}_${currency}`;
-    if (conversionCache.has(cacheKey)) {
-      return conversionCache.get(cacheKey)!;
+    const cache = conversionCacheRef.current;
+    
+    if (cache.has(cacheKey)) {
+      return cache.get(cacheKey)!;
     }
 
     const cotacao = getCotacaoByCompetencia(competencia);
@@ -53,21 +54,26 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     let converted = value;
 
-    // BRL → USD: dividir pelo PTAX
     if (originalCurrency === 'BRL' && currency === 'USD') {
       converted = value / cotacao;
     }
 
-    // USD → BRL: multiplicar pelo PTAX
     if (originalCurrency === 'USD' && currency === 'BRL') {
       converted = value * cotacao;
     }
 
-    // Store in cache
-    conversionCache.set(cacheKey, converted);
+    cache.set(cacheKey, converted);
 
     return converted;
-  }, [currency, getCotacaoByCompetencia, conversionCache]);
+  }, [currency, getCotacaoByCompetencia]);
+
+  const convertValuesBatch = useCallback((
+    values: Array<{ value: number; competencia: string; originalCurrency: 'BRL' | 'USD' }>
+  ): number[] => {
+    return values.map(({ value, competencia, originalCurrency }) => 
+      convertValue(value, competencia, originalCurrency)
+    );
+  }, [convertValue]);
 
   const adjustReturnWithFX = useCallback((returnPercent: number, competencia: string, originalCurrency: 'BRL' | 'USD'): number => {
     // Se moeda original = moeda de exibição, não ajustar
@@ -115,10 +121,11 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     currency,
     setCurrency,
     convertValue,
+    convertValuesBatch,
     adjustReturnWithFX,
     formatCurrency,
     getCurrencySymbol
-  }), [currency, convertValue, adjustReturnWithFX, formatCurrency, getCurrencySymbol]);
+  }), [currency, convertValue, convertValuesBatch, adjustReturnWithFX, formatCurrency, getCurrencySymbol]);
 
   return (
     <CurrencyContext.Provider value={contextValue}>

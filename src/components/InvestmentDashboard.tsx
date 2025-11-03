@@ -53,27 +53,33 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   };
 
   // Auto-initialize filteredRange when dadosData is loaded
-  useEffect(() => {
-    if (dadosData.length > 0 && !filteredRange.inicio && !filteredRange.fim) {
-      const uniqueCompetencias = Array.from(new Set(dadosData.map(item => item.Competencia)))
-        .sort((a, b) => {
-          const [monthA, yearA] = a.split('/');
-          const [monthB, yearB] = b.split('/');
-          const fullYearA = parseInt(yearA) < 100 ? 2000 + parseInt(yearA) : parseInt(yearA);
-          const fullYearB = parseInt(yearB) < 100 ? 2000 + parseInt(yearB) : parseInt(yearB);
-          const dateA = new Date(fullYearA, parseInt(monthA) - 1);
-          const dateB = new Date(fullYearB, parseInt(monthB) - 1);
-          return dateA.getTime() - dateB.getTime();
-        });
-      
-      if (uniqueCompetencias.length > 0) {
-        setFilteredRange({
-          inicio: uniqueCompetencias[0],
-          fim: uniqueCompetencias[uniqueCompetencias.length - 1]
-        });
-      }
-    }
+  const uniqueCompetencias = useMemo(() => {
+    if (dadosData.length === 0) return [];
+    return Array.from(new Set(dadosData.map(item => item.Competencia)))
+      .sort((a, b) => {
+        const [monthA, yearA] = a.split('/');
+        const [monthB, yearB] = b.split('/');
+        const fullYearA = parseInt(yearA) < 100 ? 2000 + parseInt(yearA) : parseInt(yearA);
+        const fullYearB = parseInt(yearB) < 100 ? 2000 + parseInt(yearB) : parseInt(yearB);
+        const dateA = new Date(fullYearA, parseInt(monthA) - 1);
+        const dateB = new Date(fullYearB, parseInt(monthB) - 1);
+        return dateA.getTime() - dateB.getTime();
+      });
   }, [dadosData.length]);
+
+  const uniqueInstitutions = useMemo(() => {
+    if (consolidadoData.length === 0) return [];
+    return Array.from(new Set(consolidadoData.map(item => item.Instituicao)));
+  }, [consolidadoData.length]);
+
+  useEffect(() => {
+    if (uniqueCompetencias.length > 0 && !filteredRange.inicio && !filteredRange.fim) {
+      setFilteredRange({
+        inicio: uniqueCompetencias[0],
+        fim: uniqueCompetencias[uniqueCompetencias.length - 1]
+      });
+    }
+  }, [uniqueCompetencias.length]);
 
   // Filter data based on selected competencia range and institution
   const getFilteredDadosData = useCallback((data: typeof dadosData) => {

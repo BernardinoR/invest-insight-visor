@@ -1,10 +1,12 @@
+import React, { lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Database, TrendingUp, Calendar, Target } from "lucide-react";
-import { PerformanceChart } from "./charts/PerformanceChart";
 import { InstitutionAllocationCard } from "./InstitutionAllocationCard";
 import { useCurrency } from "@/contexts/CurrencyContext";
+
+const PerformanceChart = lazy(() => import('./charts/PerformanceChart').then(m => ({ default: m.PerformanceChart })));
 
 interface ConsolidadoPerformance {
   id: number;
@@ -59,7 +61,7 @@ interface ClientDataDisplayProps {
   clientTarget?: any;
 }
 
-export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientName, originalConsolidadoData, portfolioTableComponent, institutionCardData, selectedInstitution, onInstitutionClick, marketData, clientTarget }: ClientDataDisplayProps) {
+export const ClientDataDisplay = React.memo(({ consolidadoData, dadosData, loading, clientName, originalConsolidadoData, portfolioTableComponent, institutionCardData, selectedInstitution, onInstitutionClick, marketData, clientTarget }: ClientDataDisplayProps) => {
   const { convertValue, adjustReturnWithFX, formatCurrency } = useCurrency();
   
   if (!clientName) {
@@ -116,7 +118,13 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
     <div className="space-y-6 mb-8">
       {/* Performance Chart - positioned FIRST */}
       {filteredConsolidadoData.length > 0 && (
-        <PerformanceChart consolidadoData={consolidadoData} clientName={clientName} marketData={marketData} clientTarget={clientTarget} />
+        <Suspense fallback={
+          <Card className="bg-gradient-card border-border/50 shadow-elegant-md h-96 flex items-center justify-center">
+            <div className="animate-pulse text-muted-foreground">Carregando gráfico...</div>
+          </Card>
+        }>
+          <PerformanceChart consolidadoData={consolidadoData} clientName={clientName} marketData={marketData} clientTarget={clientTarget} />
+        </Suspense>
       )}
 
       {/* Consolidado Performance */}
@@ -248,4 +256,14 @@ export function ClientDataDisplay({ consolidadoData, dadosData, loading, clientN
       )}
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.loading === nextProps.loading &&
+    prevProps.clientName === nextProps.clientName &&
+    prevProps.consolidadoData.length === nextProps.consolidadoData.length &&
+    prevProps.dadosData.length === nextProps.dadosData.length &&
+    prevProps.selectedInstitution === nextProps.selectedInstitution
+  );
+});
+
+ClientDataDisplay.displayName = 'ClientDataDisplay';

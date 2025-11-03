@@ -74,7 +74,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   const { marketData, clientTarget } = useMarketIndicators(selectedClient);
   
   // Get currency conversion functions
-  const { convertValue, adjustReturnWithFX, formatCurrency: currencyFormat } = useCurrency();
+  const { convertValue, convertValuesBatch, adjustReturnWithFX, formatCurrency: currencyFormat } = useCurrency();
 
   // Function to calculate compound return over multiple months
   const calculateCompoundReturn = (monthlyReturns: number[]): number => {
@@ -120,16 +120,33 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   const consolidateByCompetencia = (data: ConsolidadoData[]): ConsolidadoDataWithReturns[] => {
     const competenciaMap = new Map();
     
-    data.forEach(item => {
+    // Preparar dados para conversão em lote
+    const conversionBatch = data.flatMap(item => {
+      const moedaOriginal: 'BRL' | 'USD' = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
+      return [
+        { value: item["Patrimonio Inicial"] || 0, competencia: item.Competencia, originalCurrency: moedaOriginal },
+        { value: item["Movimentação"] || 0, competencia: item.Competencia, originalCurrency: moedaOriginal },
+        { value: item.Impostos || 0, competencia: item.Competencia, originalCurrency: moedaOriginal },
+        { value: item["Ganho Financeiro"] || 0, competencia: item.Competencia, originalCurrency: moedaOriginal },
+        { value: item["Patrimonio Final"] || 0, competencia: item.Competencia, originalCurrency: moedaOriginal }
+      ];
+    });
+    
+    // Converter tudo de uma vez
+    const convertedValues = convertValuesBatch(conversionBatch);
+    
+    // Processar valores já convertidos
+    data.forEach((item, index) => {
       const competencia = item.Competencia;
-      const moedaOriginal = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
+      const baseIndex = index * 5;
       
-      // CONVERT VALUES BEFORE SUMMING
-      const patrimonioInicial = convertValue(item["Patrimonio Inicial"] || 0, competencia, moedaOriginal);
-      const movimentacao = convertValue(item["Movimentação"] || 0, competencia, moedaOriginal);
-      const impostos = convertValue(item.Impostos || 0, competencia, moedaOriginal);
-      const ganhoFinanceiro = convertValue(item["Ganho Financeiro"] || 0, competencia, moedaOriginal);
-      const patrimonioFinal = convertValue(item["Patrimonio Final"] || 0, competencia, moedaOriginal);
+      const patrimonioInicial = convertedValues[baseIndex];
+      const movimentacao = convertedValues[baseIndex + 1];
+      const impostos = convertedValues[baseIndex + 2];
+      const ganhoFinanceiro = convertedValues[baseIndex + 3];
+      const patrimonioFinal = convertedValues[baseIndex + 4];
+      
+      const moedaOriginal = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
       const rendimentoAjustado = adjustReturnWithFX(item.Rendimento || 0, competencia, moedaOriginal);
       
       if (!competenciaMap.has(competencia)) {
@@ -147,14 +164,11 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
       }
       
       const consolidated = competenciaMap.get(competencia);
-      // Sum ALREADY CONVERTED values
       consolidated["Patrimonio Inicial"] += patrimonioInicial;
       consolidated["Movimentação"] += movimentacao;
       consolidated["Impostos"] += impostos;
       consolidated["Ganho Financeiro"] += ganhoFinanceiro;
       consolidated["Patrimonio Final"] += patrimonioFinal;
-      
-      // Weighted average using ADJUSTED rendimento and CONVERTED patrimonio
       consolidated.rendimentoSum += rendimentoAjustado * patrimonioFinal;
       consolidated.patrimonioForWeightedAvg += patrimonioFinal;
     });
