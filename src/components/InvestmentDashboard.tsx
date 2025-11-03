@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,35 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     return new Date(fullYear, parseInt(month) - 1);
   };
 
+  // Auto-initialize filteredRange when dadosData is loaded
+  useEffect(() => {
+    if (dadosData.length > 0 && !filteredRange.inicio && !filteredRange.fim) {
+      // Get unique competencias and sort them
+      const uniqueCompetencias = Array.from(new Set(dadosData.map(item => item.Competencia)))
+        .sort((a, b) => {
+          const [monthA, yearA] = a.split('/');
+          const [monthB, yearB] = b.split('/');
+          const fullYearA = parseInt(yearA) < 100 ? 2000 + parseInt(yearA) : parseInt(yearA);
+          const fullYearB = parseInt(yearB) < 100 ? 2000 + parseInt(yearB) : parseInt(yearB);
+          const dateA = new Date(fullYearA, parseInt(monthA) - 1);
+          const dateB = new Date(fullYearB, parseInt(monthB) - 1);
+          return dateA.getTime() - dateB.getTime();
+        });
+      
+      if (uniqueCompetencias.length > 0) {
+        console.log('Auto-initializing filteredRange:', {
+          inicio: uniqueCompetencias[0],
+          fim: uniqueCompetencias[uniqueCompetencias.length - 1],
+          totalCompetencias: uniqueCompetencias.length
+        });
+        setFilteredRange({
+          inicio: uniqueCompetencias[0],
+          fim: uniqueCompetencias[uniqueCompetencias.length - 1]
+        });
+      }
+    }
+  }, [dadosData, filteredRange.inicio, filteredRange.fim]);
+
   // Filter data based on selected competencia range and institution
   const getFilteredDadosData = (data: typeof dadosData) => {
     console.log('=== DEBUG FILTRO getFilteredDadosData ===');
@@ -59,7 +88,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     
     let filtered = data;
     
-    // Apply date filter
+    // Apply date filter ONLY if both inicio and fim are set
     if (filteredRange.inicio && filteredRange.fim) {
       const startDate = competenciaToDate(filteredRange.inicio);
       const endDate = competenciaToDate(filteredRange.fim);
@@ -74,6 +103,8 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       
       console.log('After date filter:', filtered.length);
       console.log('Competencias after date filter:', [...new Set(filtered.map(i => i.Competencia))]);
+    } else {
+      console.log('⚠️ filteredRange not fully set, returning all data');
     }
     
     // Apply institution filter
