@@ -52,7 +52,17 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
   // Auto-initialize filteredRange when dadosData is loaded
   useEffect(() => {
+    console.log('=== 🎯 InvestmentDashboard State Debug ===');
+    console.log('1. selectedClient:', `"${selectedClient}"`);
+    console.log('2. dadosData.length:', dadosData.length);
+    console.log('3. consolidadoData.length:', consolidadoData.length);
+    console.log('4. loading:', loading);
+    console.log('5. error:', error);
+    console.log('6. hasData:', hasData);
+    console.log('7. filteredRange:', filteredRange);
+    
     if (dadosData.length > 0 && !filteredRange.inicio && !filteredRange.fim) {
+      console.log('8. Auto-initializing filteredRange...');
       // Get unique competencias and sort them
       const uniqueCompetencias = Array.from(new Set(dadosData.map(item => item.Competencia)))
         .sort((a, b) => {
@@ -66,18 +76,22 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
         });
       
       if (uniqueCompetencias.length > 0) {
-        console.log('Auto-initializing filteredRange:', {
+        console.log('9. Auto-initializing filteredRange:', {
           inicio: uniqueCompetencias[0],
           fim: uniqueCompetencias[uniqueCompetencias.length - 1],
-          totalCompetencias: uniqueCompetencias.length
+          totalCompetencias: uniqueCompetencias.length,
+          allCompetencias: uniqueCompetencias
         });
         setFilteredRange({
           inicio: uniqueCompetencias[0],
           fim: uniqueCompetencias[uniqueCompetencias.length - 1]
         });
       }
+    } else if (dadosData.length === 0) {
+      console.log('⚠️ dadosData is EMPTY in InvestmentDashboard!');
     }
-  }, [dadosData, filteredRange.inicio, filteredRange.fim]);
+    console.log('=== 🎯 End State Debug ===\n');
+  }, [dadosData, consolidadoData, loading, error, hasData, filteredRange.inicio, filteredRange.fim, selectedClient]);
 
   // Filter data based on selected competencia range and institution
   const getFilteredDadosData = (data: typeof dadosData) => {
