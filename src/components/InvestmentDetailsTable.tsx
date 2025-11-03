@@ -458,8 +458,18 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     
     // Get only assets from the most recent competencia for monthly return calculation
     const lastMonthAssets = allStrategyData.filter(item => item.Competencia === mostRecentCompetencia);
-    const lastMonthTotalPosition = lastMonthAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
-    const lastMonthTotalReturn = lastMonthAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
+    let lastMonthTotalPosition = 0;
+    let lastMonthTotalReturn = 0;
+
+    lastMonthAssets.forEach(asset => {
+      const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+      const positionConverted = convertValue(asset.Posicao || 0, asset.Competencia, moedaOriginal);
+      const returnAdjusted = adjustReturnWithFX(asset.Rendimento || 0, asset.Competencia, moedaOriginal);
+      
+      lastMonthTotalPosition += positionConverted;
+      lastMonthTotalReturn += returnAdjusted * positionConverted;
+    });
+
     const monthReturn = lastMonthTotalPosition > 0 ? (lastMonthTotalReturn / lastMonthTotalPosition) : 0;
     
     // Group by competencia for year and inception calculations
@@ -481,8 +491,18 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     
     const yearReturns = yearCompetenciasInFilter.map(competencia => {
       const competenciaAssets = competenciaGroups[competencia];
-      const totalPosition = competenciaAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
-      const totalReturn = competenciaAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
+      let totalPosition = 0;
+      let totalReturn = 0;
+      
+      competenciaAssets.forEach(asset => {
+        const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+        const positionConverted = convertValue(asset.Posicao || 0, asset.Competencia, moedaOriginal);
+        const returnAdjusted = adjustReturnWithFX(asset.Rendimento || 0, asset.Competencia, moedaOriginal);
+        
+        totalPosition += positionConverted;
+        totalReturn += returnAdjusted * positionConverted;
+      });
+      
       return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
     });
     const yearReturn = calculateCompoundReturn(yearReturns);
@@ -490,8 +510,18 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     // Inception return: compound return for all competencias
     const monthlyReturns = sortedCompetencias.map(competencia => {
       const competenciaAssets = competenciaGroups[competencia];
-      const totalPosition = competenciaAssets.reduce((sum, asset) => sum + (asset.Posicao || 0), 0);
-      const totalReturn = competenciaAssets.reduce((sum, asset) => sum + ((asset.Rendimento || 0) * (asset.Posicao || 0)), 0);
+      let totalPosition = 0;
+      let totalReturn = 0;
+      
+      competenciaAssets.forEach(asset => {
+        const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+        const positionConverted = convertValue(asset.Posicao || 0, asset.Competencia, moedaOriginal);
+        const returnAdjusted = adjustReturnWithFX(asset.Rendimento || 0, asset.Competencia, moedaOriginal);
+        
+        totalPosition += positionConverted;
+        totalReturn += returnAdjusted * positionConverted;
+      });
+      
       return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
     });
     const inceptionReturn = calculateCompoundReturn(monthlyReturns);
