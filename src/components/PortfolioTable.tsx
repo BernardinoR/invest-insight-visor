@@ -29,6 +29,8 @@ interface InstitutionCardData {
     rendimento: number;
     percentage: number;
     color: string;
+    nomeConta?: string;
+    moedaOrigem?: string;
   }>;
   totalPatrimonio: number;
 }
@@ -56,6 +58,7 @@ interface ConsolidadoData {
   "Instituicao"?: string;
   "Nome"?: string;
   "Moeda"?: string;
+  "nomeConta"?: string;
 }
 
 interface ConsolidadoDataWithReturns extends ConsolidadoData {
@@ -551,7 +554,9 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
         acc[institution] = {
           patrimonio: 0,
           rendimentoSum: 0,
-          patrimonioCount: 0
+          patrimonioCount: 0,
+          nomeConta: item.nomeConta || null,
+          moedaOrigem: item.Moeda || null
         };
       }
       
@@ -576,12 +581,14 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
       acc[institution].rendimentoSum += rendimentoAjustado * patrimonioConvertido;
       acc[institution].patrimonioCount += patrimonioConvertido;
       return acc;
-    }, {} as Record<string, { patrimonio: number; rendimentoSum: number; patrimonioCount: number }>);
+    }, {} as Record<string, { patrimonio: number; rendimentoSum: number; patrimonioCount: number; nomeConta: string | null; moedaOrigem: string | null }>);
     
     return Object.entries(byInstitution).map(([institution, data]) => ({
       institution,
       patrimonio: data.patrimonio,
-      rendimento: data.patrimonioCount > 0 ? data.rendimentoSum / data.patrimonioCount : 0
+      rendimento: data.patrimonioCount > 0 ? data.rendimentoSum / data.patrimonioCount : 0,
+      nomeConta: data.nomeConta || undefined,
+      moedaOrigem: data.moedaOrigem || undefined
     })).sort((a, b) => b.patrimonio - a.patrimonio);
   }, [rawData, convertValue, adjustReturnWithFX, currency]);
   

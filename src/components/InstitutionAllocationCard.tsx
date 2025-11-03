@@ -17,6 +17,8 @@ interface InstitutionData {
   rendimento: number;
   percentage: number;
   color: string;
+  nomeConta?: string;
+  moedaOrigem?: string;
 }
 
 interface InstitutionAllocationCardProps {
@@ -69,6 +71,8 @@ export function InstitutionAllocationCard({
               <TableHeader>
                 <TableRow className="border-border/50">
                   <TableHead className="text-muted-foreground">Instituição</TableHead>
+                  <TableHead className="text-muted-foreground">Nome da Conta</TableHead>
+                  <TableHead className="text-muted-foreground text-center">Moeda Origem</TableHead>
                   <TableHead className="text-muted-foreground text-right">Patrimônio</TableHead>
                   <TableHead className="text-muted-foreground text-right hidden sm:table-cell">% Alocação</TableHead>
                   <TableHead className="text-muted-foreground text-center w-16"></TableHead>
@@ -93,6 +97,26 @@ export function InstitutionAllocationCard({
                         style={{ backgroundColor: item.color }}
                       ></div>
                       <span className="font-medium text-foreground">{item.institution}</span>
+                    </TableCell>
+                    <TableCell 
+                      className="text-muted-foreground cursor-pointer"
+                      onClick={() => onInstitutionClick?.(item.institution)}
+                    >
+                      {item.nomeConta || ''}
+                    </TableCell>
+                    <TableCell 
+                      className="text-center cursor-pointer"
+                      onClick={() => onInstitutionClick?.(item.institution)}
+                    >
+                      {item.moedaOrigem === 'Dolar' ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                          USD
+                        </span>
+                      ) : item.moedaOrigem === 'Real' ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                          BRL
+                        </span>
+                      ) : ''}
                     </TableCell>
                     <TableCell 
                       className="text-right text-foreground cursor-pointer"
