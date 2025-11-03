@@ -512,20 +512,36 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                      item => item.Competencia === targetCompetencia
                    );
                    
-                   // Calculate weighted average rendimento
-                   const totalPatrimonioWeighted = targetEntries.reduce((sum, entry) => 
-                     sum + (entry["Patrimonio Final"] || 0), 0);
-                   
-                   if (totalPatrimonioWeighted === 0) return "--%";
-                   
-                   const weightedRendimento = targetEntries.reduce((sum, entry) => {
-                     const patrimonio = entry["Patrimonio Final"] || 0;
-                     const rendimento = entry.Rendimento || 0;
-                     return sum + (rendimento * patrimonio);
-                   }, 0);
-                   
-                   const avgRendimento = weightedRendimento / totalPatrimonioWeighted;
-                   return `${(avgRendimento * 100).toFixed(2)}%`;
+                    // Calculate weighted average rendimento with FX adjustment
+                    const totalPatrimonioWeighted = targetEntries.reduce((sum, entry) => {
+                      const moedaOriginal = entry.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                      const patrimonioConvertido = convertValue(
+                        entry["Patrimonio Final"] || 0, 
+                        targetCompetencia, 
+                        moedaOriginal
+                      );
+                      return sum + patrimonioConvertido;
+                    }, 0);
+                    
+                    if (totalPatrimonioWeighted === 0) return "--%";
+                    
+                    const weightedRendimento = targetEntries.reduce((sum, entry) => {
+                      const moedaOriginal = entry.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                      const patrimonioConvertido = convertValue(
+                        entry["Patrimonio Final"] || 0, 
+                        targetCompetencia, 
+                        moedaOriginal
+                      );
+                      const rendimentoAjustado = adjustReturnWithFX(
+                        entry.Rendimento || 0, 
+                        targetCompetencia, 
+                        moedaOriginal
+                      );
+                      return sum + (rendimentoAjustado * patrimonioConvertido);
+                    }, 0);
+                    
+                    const avgRendimento = weightedRendimento / totalPatrimonioWeighted;
+                    return `${(avgRendimento * 100).toFixed(2)}%`;
                  })()}
                </div>
                 <p className="text-xs text-success">
