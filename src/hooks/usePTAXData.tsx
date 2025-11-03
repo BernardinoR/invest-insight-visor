@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import React from "react";
 
 interface PTAXData {
   competencia: string; // "MM/YYYY"

@@ -5,11 +5,17 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 export function CurrencyToggle() {
   const { currency, setCurrency } = useCurrency();
   
+  const handleToggle = () => {
+    const newCurrency = currency === 'BRL' ? 'USD' : 'BRL';
+    console.log('🔘 Currency toggle clicked:', currency, '→', newCurrency);
+    setCurrency(newCurrency);
+  };
+  
   return (
     <Button
       variant="outline"
       size="sm"
-      onClick={() => setCurrency(currency === 'BRL' ? 'USD' : 'BRL')}
+      onClick={handleToggle}
       className="bg-card/50 border-primary/20 hover:bg-primary/10 gap-2"
     >
       <DollarSign className="h-4 w-4" />

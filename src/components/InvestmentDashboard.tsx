@@ -44,6 +44,16 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const [diversificationDialogOpen, setDiversificationDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'performance' | 'risk' | 'policy'>('performance');
 
+  // Debug: Log currency and data changes
+  useEffect(() => {
+    console.log('🏦 InvestmentDashboard - Currency/Data Update:', {
+      currency,
+      totalPatrimonio,
+      consolidadoDataLength: consolidadoData.length,
+      dadosDataLength: dadosData.length
+    });
+  }, [currency, totalPatrimonio, consolidadoData.length, dadosData.length]);
+
   // Helper function to convert competencia string to comparable date
   const competenciaToDate = (competencia: string) => {
     const [month, year] = competencia.split('/');
@@ -271,6 +281,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   // Calculate patrimônio from the final competencia selected - sum across all institutions
   const getPatrimonioFromFinalCompetencia = () => {
     if (!filteredRange.fim || filteredConsolidadoData.length === 0) {
+      console.log('📊 Using totalPatrimonio (no filtered data):', totalPatrimonio);
       return totalPatrimonio; // fallback to original
     }
     
@@ -279,13 +290,17 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       item => item.Competencia === filteredRange.fim
     );
     
+    console.log('💼 Calculating patrimonio for', filteredRange.fim, '- Entries:', finalCompetenciaEntries.length);
+    
     const sumPatrimonio = finalCompetenciaEntries.reduce((sum, entry) => {
       const valor = entry["Patrimonio Final"] || 0;
       const moedaOriginal = entry.Moeda === 'Dolar' ? 'USD' : 'BRL';
       const valorConvertido = convertValue(valor, entry.Competencia, moedaOriginal);
+      console.log(`  - ${entry.Instituicao}: ${valor} (${moedaOriginal}) → ${valorConvertido} (${currency})`);
       return sum + valorConvertido;
     }, 0);
     
+    console.log('💰 Total patrimonio after conversion:', sumPatrimonio);
     return sumPatrimonio > 0 ? sumPatrimonio : totalPatrimonio;
   };
 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { usePTAXData } from '@/hooks/usePTAXData';
 
 type Currency = 'BRL' | 'USD';
@@ -18,6 +18,12 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [currency, setCurrency] = useState<Currency>('BRL');
   const { ptaxData, getCotacaoByCompetencia } = usePTAXData();
 
+  // Debug: Log currency changes
+  useEffect(() => {
+    console.log('💱 Currency changed to:', currency);
+    console.log('📊 PTAX data available:', ptaxData.length, 'months');
+  }, [currency, ptaxData]);
+
   const getCompetenciaAnterior = (competencia: string): string => {
     const [mes, ano] = competencia.split('/').map(Number);
     if (mes === 1) {
@@ -30,24 +36,38 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const convertValue = (value: number, competencia: string, originalCurrency: 'BRL' | 'USD'): number => {
     const cotacao = getCotacaoByCompetencia(competencia);
     
+    console.log('🔄 convertValue called:', {
+      value,
+      competencia,
+      originalCurrency,
+      currentCurrency: currency,
+      cotacao,
+      ptaxDataLength: ptaxData.length
+    });
+    
     if (!cotacao) {
-      console.warn(`PTAX não encontrada para ${competencia}, mantendo valor original`);
+      console.warn(`⚠️ PTAX não encontrada para ${competencia}, mantendo valor original`);
       return value;
     }
 
     // Se moeda original = moeda de exibição, não converter
     if (originalCurrency === currency) {
+      console.log(`✅ No conversion needed (${originalCurrency} = ${currency})`);
       return value;
     }
 
     // BRL → USD: dividir pelo PTAX
     if (originalCurrency === 'BRL' && currency === 'USD') {
-      return value / cotacao;
+      const converted = value / cotacao;
+      console.log(`💵 BRL → USD: ${value} / ${cotacao} = ${converted}`);
+      return converted;
     }
 
     // USD → BRL: multiplicar pelo PTAX
     if (originalCurrency === 'USD' && currency === 'BRL') {
-      return value * cotacao;
+      const converted = value * cotacao;
+      console.log(`💰 USD → BRL: ${value} * ${cotacao} = ${converted}`);
+      return converted;
     }
 
     return value;
@@ -56,6 +76,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const adjustReturnWithFX = (returnPercent: number, competencia: string, originalCurrency: 'BRL' | 'USD'): number => {
     // Se moeda original = moeda de exibição, não ajustar
     if (originalCurrency === currency) {
+      console.log(`✅ No return adjustment needed (${originalCurrency} = ${currency})`);
       return returnPercent;
     }
 
@@ -63,8 +84,18 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const cotacaoAtual = getCotacaoByCompetencia(competencia);
     const cotacaoAnterior = getCotacaoByCompetencia(competenciaAnterior);
 
+    console.log('📈 adjustReturnWithFX:', {
+      returnPercent,
+      competencia,
+      competenciaAnterior,
+      originalCurrency,
+      currentCurrency: currency,
+      cotacaoAtual,
+      cotacaoAnterior
+    });
+
     if (!cotacaoAtual || !cotacaoAnterior) {
-      console.warn(`Não foi possível ajustar rendimento para ${competencia}, mantendo valor original`);
+      console.warn(`⚠️ Não foi possível ajustar rendimento para ${competencia}, mantendo valor original`);
       return returnPercent;
     }
 
@@ -74,13 +105,17 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // USD → BRL: Adicionar efeito cambial
     if (originalCurrency === 'USD' && currency === 'BRL') {
       // Rendimento em BRL = (1 + rend_USD) * (1 + var_FX) - 1
-      return (1 + returnPercent) * (1 + fxVariation) - 1;
+      const adjusted = (1 + returnPercent) * (1 + fxVariation) - 1;
+      console.log(`📊 USD → BRL return: ${returnPercent} + FX ${fxVariation} = ${adjusted}`);
+      return adjusted;
     }
 
     // BRL → USD: Remover efeito cambial
     if (originalCurrency === 'BRL' && currency === 'USD') {
       // Rendimento em USD = (1 + rend_BRL) / (1 + var_FX) - 1
-      return ((1 + returnPercent) / (1 + fxVariation)) - 1;
+      const adjusted = ((1 + returnPercent) / (1 + fxVariation)) - 1;
+      console.log(`📊 BRL → USD return: ${returnPercent} - FX ${fxVariation} = ${adjusted}`);
+      return adjusted;
     }
 
     return returnPercent;
