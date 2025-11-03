@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import DataManagement from "./pages/DataManagement";
@@ -19,20 +20,22 @@ const App = () => (
       enableSystem={false}
       disableTransitionOnChange={false}
     >
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/dashboard/:clientName" element={<Dashboard />} />
-            <Route path="/client/:clientName" element={<Dashboard />} />
-            <Route path="/data-management/:clientName" element={<DataManagement />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <CurrencyProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/dashboard/:clientName" element={<Dashboard />} />
+              <Route path="/client/:clientName" element={<Dashboard />} />
+              <Route path="/data-management/:clientName" element={<DataManagement />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </CurrencyProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
