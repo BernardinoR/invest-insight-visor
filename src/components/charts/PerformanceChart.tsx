@@ -401,7 +401,20 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
       // Market indicators - only show if data exists
       let ipcaRetorno = null;
       
-      const firstMarketPoint = marketData.find(m => m.competencia === firstCompetencia);
+      // Try to find exact firstMarketPoint, fallback to first available in period
+      let firstMarketPoint = marketData.find(m => m.competencia === firstCompetencia);
+      if (!firstMarketPoint && marketData.length > 0) {
+        // Sort marketData and use the first one available
+        const sortedMarketData = [...marketData].sort((a, b) => {
+          const [monthA, yearA] = a.competencia.split('/');
+          const [monthB, yearB] = b.competencia.split('/');
+          return new Date(parseInt(yearA), parseInt(monthA) - 1).getTime() - 
+                 new Date(parseInt(yearB), parseInt(monthB) - 1).getTime();
+        });
+        firstMarketPoint = sortedMarketData[0];
+        console.log(`Using fallback firstMarketPoint: ${firstMarketPoint.competencia} instead of ${firstCompetencia}`);
+      }
+      
       const currentMarketPoint = marketData.find(m => m.competencia === currentCompetencia);
       
       if (currentMarketPoint && firstMarketPoint && clientTarget) {
