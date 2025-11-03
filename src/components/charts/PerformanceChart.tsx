@@ -35,6 +35,12 @@ function decodeClientName(clientName?: string): string | undefined {
   return decodeURIComponent(clientName);
 }
 
+// Helper function to convert competencia to Date
+const competenciaToDate = (competencia: string): Date => {
+  const [month, year] = competencia.split('/').map(Number);
+  return new Date(year, month - 1); // month-1 because Date uses 0-11 for months
+};
+
 export function PerformanceChart({ consolidadoData, clientName, marketData: propMarketData, clientTarget: propClientTarget }: PerformanceChartProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'all' | 'custom'>('12months');
   const [customStartCompetencia, setCustomStartCompetencia] = useState<string>('');
@@ -116,13 +122,11 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
     }));
   };
 
-  // Consolidate and sort data by competencia date
+  // Consolidate and sort data by competencia date using helper function
   const consolidatedData = consolidateByCompetencia(consolidadoData);
   const sortedData = [...consolidatedData].sort((a, b) => {
-    const [monthA, yearA] = a.Competencia.split('/');
-    const [monthB, yearB] = b.Competencia.split('/');
-    const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-    const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+    const dateA = competenciaToDate(a.Competencia);
+    const dateB = competenciaToDate(b.Competencia);
     return dateA.getTime() - dateB.getTime();
   });
 
@@ -130,10 +134,8 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
   const availableCompetencias = useMemo(() => {
     return [...new Set(consolidatedData.map(item => item.Competencia))]
       .sort((a, b) => {
-        const [monthA, yearA] = a.split('/');
-        const [monthB, yearB] = b.split('/');
-        const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-        const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+        const dateA = competenciaToDate(a);
+        const dateB = competenciaToDate(b);
         return dateA.getTime() - dateB.getTime();
       });
   }, [consolidatedData]);
@@ -179,13 +181,9 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
       case 'custom':
         if (customStartCompetencia && customEndCompetencia) {
           filteredData = sortedData.filter(item => {
-            const [itemMonth, itemYear] = item.Competencia.split('/');
-            const [startMonth, startYear] = customStartCompetencia.split('/');
-            const [endMonth, endYear] = customEndCompetencia.split('/');
-            
-            const itemDate = new Date(parseInt(itemYear), parseInt(itemMonth) - 1);
-            const startDate = new Date(parseInt(startYear), parseInt(startMonth) - 1);
-            const endDate = new Date(parseInt(endYear), parseInt(endMonth) - 1);
+            const itemDate = competenciaToDate(item.Competencia);
+            const startDate = competenciaToDate(customStartCompetencia);
+            const endDate = competenciaToDate(customEndCompetencia);
             
             return itemDate >= startDate && itemDate <= endDate;
           });
@@ -373,7 +371,22 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
       };
     } else {
       const firstCompetencia = chartData[1]?.competencia;
-      const zeroCompetencia = chartData[0]?.competencia; // Marco zero - mês anterior
+      
+      // Calculate zero competencia properly - one month before firstCompetencia
+      let zeroCompetencia: string;
+      if (firstCompetencia) {
+        const [firstMonth, firstYear] = firstCompetencia.split('/').map(Number);
+        let zeroMonth = firstMonth - 1;
+        let zeroYear = firstYear;
+        if (zeroMonth === 0) {
+          zeroMonth = 12;
+          zeroYear -= 1;
+        }
+        zeroCompetencia = `${String(zeroMonth).padStart(2, '0')}/${zeroYear}`;
+      } else {
+        zeroCompetencia = chartData[0]?.competencia; // Fallback
+      }
+      
       const currentCompetencia = point.competencia;
       
       // CDI data - composição mensal correta
@@ -406,24 +419,23 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
       let zeroMarketPoint = marketData.find(m => m.competencia === zeroCompetencia);
       if (!zeroMarketPoint && marketData.length > 0) {
         // If zero point not found, find the most recent point before or on zeroCompetencia
-        const [zeroMonth, zeroYear] = zeroCompetencia.split('/');
-        const zeroDate = new Date(parseInt(zeroYear), parseInt(zeroMonth) - 1);
+        const zeroDate = competenciaToDate(zeroCompetencia);
         
         const validPoints = marketData
           .filter(m => {
-            const [mMonth, mYear] = m.competencia.split('/');
-            const mDate = new Date(parseInt(mYear), parseInt(mMonth) - 1);
+            const mDate = competenciaToDate(m.competencia);
             return mDate <= zeroDate;
           })
           .sort((a, b) => {
-            const [monthA, yearA] = a.competencia.split('/');
-            const [monthB, yearB] = b.competencia.split('/');
-            return new Date(parseInt(yearB), parseInt(monthB) - 1).getTime() - 
-                   new Date(parseInt(yearA), parseInt(monthA) - 1).getTime();
+            const dateA = competenciaToDate(a.competencia);
+            const dateB = competenciaToDate(b.competencia);
+            return dateB.getTime() - dateA.getTime(); // Most recent first
           });
         
         zeroMarketPoint = validPoints[0]; // Most recent point before zeroDate
-        console.log(`Using fallback zeroMarketPoint: ${zeroMarketPoint?.competencia || 'none'} instead of ${zeroCompetencia}`);
+        if (zeroMarketPoint) {
+          console.log(`zeroMarketPoint fallback: requested ${zeroCompetencia}, using ${zeroMarketPoint.competencia}`);
+        }
       }
       
       const currentMarketPoint = marketData.find(m => m.competencia === currentCompetencia);
