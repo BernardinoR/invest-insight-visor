@@ -23,8 +23,10 @@ export type Database = {
           id: number
           Impostos: number | null
           Instituicao: string | null
+          Moeda: string | null
           Movimentação: number | null
           Nome: string | null
+          nomeConta: string | null
           "Patrimonio Final": number | null
           "Patrimonio Inicial": number | null
           Rendimento: number | null
@@ -37,8 +39,10 @@ export type Database = {
           id?: number
           Impostos?: number | null
           Instituicao?: string | null
+          Moeda?: string | null
           Movimentação?: number | null
           Nome?: string | null
+          nomeConta?: string | null
           "Patrimonio Final"?: number | null
           "Patrimonio Inicial"?: number | null
           Rendimento?: number | null
@@ -51,8 +55,10 @@ export type Database = {
           id?: number
           Impostos?: number | null
           Instituicao?: string | null
+          Moeda?: string | null
           Movimentação?: number | null
           Nome?: string | null
+          nomeConta?: string | null
           "Patrimonio Final"?: number | null
           "Patrimonio Inicial"?: number | null
           Rendimento?: number | null
@@ -69,7 +75,9 @@ export type Database = {
           Emissor: string | null
           id: number
           Instituicao: string | null
+          Moeda: string | null
           Nome: string | null
+          nomeConta: string | null
           Posicao: number | null
           Rendimento: number | null
           Taxa: string | null
@@ -84,7 +92,9 @@ export type Database = {
           Emissor?: string | null
           id?: number
           Instituicao?: string | null
+          Moeda?: string | null
           Nome?: string | null
+          nomeConta?: string | null
           Posicao?: number | null
           Rendimento?: number | null
           Taxa?: string | null
@@ -99,7 +109,9 @@ export type Database = {
           Emissor?: string | null
           id?: number
           Instituicao?: string | null
+          Moeda?: string | null
           Nome?: string | null
+          nomeConta?: string | null
           Posicao?: number | null
           Rendimento?: number | null
           Taxa?: string | null
@@ -149,6 +161,33 @@ export type Database = {
           nome?: string | null
           tipo?: Database["public"]["Enums"]["tipo"] | null
           valor?: number | null
+        }
+        Relationships: []
+      }
+      institutions: {
+        Row: {
+          created_at: string
+          default_currency: string | null
+          id: string
+          name: string
+          requires_additional_file: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_currency?: string | null
+          id?: string
+          name: string
+          requires_additional_file?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_currency?: string | null
+          id?: string
+          name?: string
+          requires_additional_file?: boolean | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -391,68 +430,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      binary_quantize: {
-        Args: { "": string } | { "": unknown }
-        Returns: unknown
-      }
       get_unique_clients: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           Cliente: string
           "Meta de Retorno": string
         }[]
-      }
-      halfvec_avg: {
-        Args: { "": number[] }
-        Returns: unknown
-      }
-      halfvec_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      halfvec_send: {
-        Args: { "": unknown }
-        Returns: string
-      }
-      halfvec_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
-      }
-      hnsw_bit_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnsw_halfvec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnsw_sparsevec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnswhandler: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflat_bit_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflat_halfvec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflathandler: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      l2_norm: {
-        Args: { "": unknown } | { "": unknown }
-        Returns: number
-      }
-      l2_normalize: {
-        Args: { "": string } | { "": unknown } | { "": unknown }
-        Returns: unknown
       }
       match_documents: {
         Args: { filter?: Json; match_count?: number; query_embedding: string }
@@ -462,42 +445,6 @@ export type Database = {
           metadata: Json
           similarity: number
         }[]
-      }
-      sparsevec_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      sparsevec_send: {
-        Args: { "": unknown }
-        Returns: string
-      }
-      sparsevec_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
-      }
-      vector_avg: {
-        Args: { "": number[] }
-        Returns: string
-      }
-      vector_dims: {
-        Args: { "": string } | { "": unknown }
-        Returns: number
-      }
-      vector_norm: {
-        Args: { "": string }
-        Returns: number
-      }
-      vector_out: {
-        Args: { "": string }
-        Returns: unknown
-      }
-      vector_send: {
-        Args: { "": string }
-        Returns: string
-      }
-      vector_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
       }
     }
     Enums: {
