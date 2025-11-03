@@ -547,11 +547,17 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     // Filter only data from most recent competencia
     const mostRecentData = rawData.filter(item => item.Competencia === mostRecentCompetencia);
     
-    // Group by institution for the most recent competencia only
+    // Group by institution + account for the most recent competencia only
     const byInstitution = mostRecentData.reduce((acc, item) => {
       const institution = item.Instituicao || "Sem Instituição";
-      if (!acc[institution]) {
-        acc[institution] = {
+      // Create unique key: "Institution|AccountName" or just "Institution"
+      const groupKey = item.nomeConta 
+        ? `${institution}|${item.nomeConta}` 
+        : institution;
+      
+      if (!acc[groupKey]) {
+        acc[groupKey] = {
+          institution: institution,
           patrimonio: 0,
           rendimentoSum: 0,
           patrimonioCount: 0,
@@ -569,7 +575,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
       const rendimentoOriginal = item.Rendimento || 0;
       const rendimentoAjustado = adjustReturnWithFX(rendimentoOriginal, item.Competencia, moedaOriginal);
       
-      console.log(`📊 PortfolioTable - ${institution} (${item.Competencia}):`, {
+      console.log(`📊 PortfolioTable - ${institution} ${item.nomeConta || ''} (${item.Competencia}):`, {
         patrimonioOriginal,
         moedaOriginal,
         patrimonioConvertido,
@@ -577,14 +583,14 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
         rendimentoAjustado
       });
       
-      acc[institution].patrimonio += patrimonioConvertido;
-      acc[institution].rendimentoSum += rendimentoAjustado * patrimonioConvertido;
-      acc[institution].patrimonioCount += patrimonioConvertido;
+      acc[groupKey].patrimonio += patrimonioConvertido;
+      acc[groupKey].rendimentoSum += rendimentoAjustado * patrimonioConvertido;
+      acc[groupKey].patrimonioCount += patrimonioConvertido;
       return acc;
-    }, {} as Record<string, { patrimonio: number; rendimentoSum: number; patrimonioCount: number; nomeConta: string | null; moedaOrigem: string | null }>);
+    }, {} as Record<string, { institution: string; patrimonio: number; rendimentoSum: number; patrimonioCount: number; nomeConta: string | null; moedaOrigem: string | null }>);
     
-    return Object.entries(byInstitution).map(([institution, data]) => ({
-      institution,
+    return Object.entries(byInstitution).map(([key, data]) => ({
+      institution: data.institution,
       patrimonio: data.patrimonio,
       rendimento: data.patrimonioCount > 0 ? data.rendimentoSum / data.patrimonioCount : 0,
       nomeConta: data.nomeConta || undefined,
