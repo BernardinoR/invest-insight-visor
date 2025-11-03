@@ -122,6 +122,16 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     
     data.forEach(item => {
       const competencia = item.Competencia;
+      const moedaOriginal = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
+      
+      // CONVERT VALUES BEFORE SUMMING
+      const patrimonioInicial = convertValue(item["Patrimonio Inicial"] || 0, competencia, moedaOriginal);
+      const movimentacao = convertValue(item["Movimentação"] || 0, competencia, moedaOriginal);
+      const impostos = convertValue(item.Impostos || 0, competencia, moedaOriginal);
+      const ganhoFinanceiro = convertValue(item["Ganho Financeiro"] || 0, competencia, moedaOriginal);
+      const patrimonioFinal = convertValue(item["Patrimonio Final"] || 0, competencia, moedaOriginal);
+      const rendimentoAjustado = adjustReturnWithFX(item.Rendimento || 0, competencia, moedaOriginal);
+      
       if (!competenciaMap.has(competencia)) {
         competenciaMap.set(competencia, {
           id: item.id,
@@ -137,17 +147,16 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
       }
       
       const consolidated = competenciaMap.get(competencia);
-      consolidated["Patrimonio Inicial"] += item["Patrimonio Inicial"] || 0;
-      consolidated["Movimentação"] += item["Movimentação"] || 0;
-      consolidated["Impostos"] += item.Impostos || 0;
-      consolidated["Ganho Financeiro"] += item["Ganho Financeiro"] || 0;
-      consolidated["Patrimonio Final"] += item["Patrimonio Final"] || 0;
+      // Sum ALREADY CONVERTED values
+      consolidated["Patrimonio Inicial"] += patrimonioInicial;
+      consolidated["Movimentação"] += movimentacao;
+      consolidated["Impostos"] += impostos;
+      consolidated["Ganho Financeiro"] += ganhoFinanceiro;
+      consolidated["Patrimonio Final"] += patrimonioFinal;
       
-      // For weighted average rendimento
-      const patrimonio = item["Patrimonio Final"] || 0;
-      const rendimento = item.Rendimento || 0;
-      consolidated.rendimentoSum += rendimento * patrimonio;
-      consolidated.patrimonioForWeightedAvg += patrimonio;
+      // Weighted average using ADJUSTED rendimento and CONVERTED patrimonio
+      consolidated.rendimentoSum += rendimentoAjustado * patrimonioFinal;
+      consolidated.patrimonioForWeightedAvg += patrimonioFinal;
     });
     
     // Calculate weighted average rendimento and multi-month returns
@@ -439,13 +448,6 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     }
   }, [totalTotals, totalReturn, onYearTotalsChange]);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 2
-    }).format(value || 0);
-  };
 
   const formatPercentage = (value: number) => {
     const percentage = (value * 100).toFixed(2);
@@ -686,19 +688,19 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                           {yearSummary.year}
                         </TableCell>
                         <TableCell className="font-medium text-foreground">
-                          {formatCurrency(yearSummary.totals["Patrimonio Inicial"])}
+                          {currencyFormat(yearSummary.totals["Patrimonio Inicial"])}
                         </TableCell>
                         <TableCell className="text-destructive font-medium">
-                          {formatCurrency(yearSummary.totals["Movimentação"])}
+                          {currencyFormat(yearSummary.totals["Movimentação"])}
                         </TableCell>
                         <TableCell className="text-destructive font-medium">
-                          {formatCurrency(yearSummary.totals.Impostos)}
+                          {currencyFormat(yearSummary.totals.Impostos)}
                         </TableCell>
                         <TableCell className="font-medium text-foreground">
-                          {formatCurrency(yearSummary.totals["Patrimonio Final"])}
+                          {currencyFormat(yearSummary.totals["Patrimonio Final"])}
                         </TableCell>
                         <TableCell className="text-success font-medium">
-                          {formatCurrency(yearSummary.totals["Ganho Financeiro"])}
+                          {currencyFormat(yearSummary.totals["Ganho Financeiro"])}
                         </TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-sm font-medium ${
@@ -745,19 +747,19 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                               {monthName}
                             </TableCell>
                             <TableCell className="font-medium text-foreground">
-                              {formatCurrency(item["Patrimonio Inicial"])}
+                              {currencyFormat(item["Patrimonio Inicial"])}
                             </TableCell>
                             <TableCell className="text-destructive font-medium">
-                              {formatCurrency(item["Movimentação"])}
+                              {currencyFormat(item["Movimentação"])}
                             </TableCell>
                             <TableCell className="text-destructive font-medium">
-                              {formatCurrency(item.Impostos)}
+                              {currencyFormat(item.Impostos)}
                             </TableCell>
                             <TableCell className="font-medium text-foreground">
-                              {formatCurrency(item["Patrimonio Final"])}
+                              {currencyFormat(item["Patrimonio Final"])}
                             </TableCell>
                             <TableCell className="text-success font-medium">
-                              {formatCurrency(item["Ganho Financeiro"])}
+                              {currencyFormat(item["Ganho Financeiro"])}
                             </TableCell>
                             <TableCell>
                               <span className={`px-2 py-1 rounded-full text-sm font-medium ${
@@ -794,19 +796,19 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
                       Total
                     </TableCell>
                     <TableCell className="font-bold text-foreground">
-                      {formatCurrency(totalTotals["Patrimonio Inicial"])}
+                      {currencyFormat(totalTotals["Patrimonio Inicial"])}
                     </TableCell>
                     <TableCell className="text-destructive font-bold">
-                      {formatCurrency(totalTotals["Movimentação"])}
+                      {currencyFormat(totalTotals["Movimentação"])}
                     </TableCell>
                     <TableCell className="text-destructive font-bold">
-                      {formatCurrency(totalTotals.Impostos)}
+                      {currencyFormat(totalTotals.Impostos)}
                     </TableCell>
                     <TableCell className="font-bold text-foreground">
-                      {formatCurrency(totalTotals["Patrimonio Final"])}
+                      {currencyFormat(totalTotals["Patrimonio Final"])}
                     </TableCell>
                     <TableCell className="text-success font-bold">
-                      {formatCurrency(totalTotals["Ganho Financeiro"])}
+                      {currencyFormat(totalTotals["Ganho Financeiro"])}
                     </TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-sm font-bold ${
