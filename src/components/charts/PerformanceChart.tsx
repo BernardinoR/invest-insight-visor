@@ -436,10 +436,10 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
           clientTargetValue: clientTarget.targetValue,
           currentAccumulated,
           firstAccumulated,
-          targetRetorno: (((currentAccumulated - firstAccumulated) / (1 + firstAccumulated)) * 100).toFixed(2)
+          targetRetorno: ((currentAccumulated - firstAccumulated) / (1 + firstAccumulated)) * 100
         });
         
-        targetRetorno = (((currentAccumulated - firstAccumulated) / (1 + firstAccumulated)) * 100).toFixed(2);
+        targetRetorno = ((currentAccumulated - firstAccumulated) / (1 + firstAccumulated)) * 100;
       }
       
       if (currentDate >= adjustedDate && currentMarketPoint && firstMarketPoint) {
@@ -454,7 +454,7 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
         const currentIpcaAccumulated = currentMarketPoint.accumulatedIpca || 0;
         const firstIpcaAccumulated = firstMarketPoint.accumulatedIpca || 0;
         
-        ipcaRetorno = (((currentIpcaAccumulated - firstIpcaAccumulated) / (1 + firstIpcaAccumulated)) * 100).toFixed(2);
+        ipcaRetorno = ((currentIpcaAccumulated - firstIpcaAccumulated) / (1 + firstIpcaAccumulated)) * 100;
         
         console.log('Calculated market returns:', {
           ipcaRetorno
