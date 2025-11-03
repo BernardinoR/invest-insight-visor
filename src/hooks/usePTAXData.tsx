@@ -7,24 +7,9 @@ interface PTAXData {
   data: string; // Data da cotação
 }
 
-// Fallback PTAX data for months when API fails (only real past data)
-const FALLBACK_PTAX: PTAXData[] = [
-  { competencia: "01/2024", cotacao: 4.95, data: "2024-01-31" },
-  { competencia: "02/2024", cotacao: 4.98, data: "2024-02-29" },
-  { competencia: "03/2024", cotacao: 5.02, data: "2024-03-31" },
-  { competencia: "04/2024", cotacao: 5.10, data: "2024-04-30" },
-  { competencia: "05/2024", cotacao: 5.15, data: "2024-05-31" },
-  { competencia: "06/2024", cotacao: 5.50, data: "2024-06-30" },
-  { competencia: "07/2024", cotacao: 5.58, data: "2024-07-31" },
-  { competencia: "08/2024", cotacao: 5.62, data: "2024-08-31" },
-  { competencia: "09/2024", cotacao: 5.45, data: "2024-09-30" },
-  { competencia: "10/2024", cotacao: 5.73, data: "2024-10-31" },
-  { competencia: "11/2024", cotacao: 5.80, data: "2024-11-30" },
-  { competencia: "12/2024", cotacao: 6.10, data: "2024-12-31" },
-];
 
 export function usePTAXData() {
-  const [ptaxData, setPtaxData] = useState<PTAXData[]>(FALLBACK_PTAX);
+  const [ptaxData, setPtaxData] = useState<PTAXData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,8 +19,7 @@ export function usePTAXData() {
     const currentYear = today.getFullYear();
     console.log('🚀 usePTAXData initialized', {
       currentDate: `${currentMonth}/${currentYear}`,
-      fallbackMonths: FALLBACK_PTAX.length,
-      fallbackRange: `${FALLBACK_PTAX[0]?.competencia} - ${FALLBACK_PTAX[FALLBACK_PTAX.length - 1]?.competencia}`
+      fetchingFrom: 'Banco Central API only'
     });
     fetchPTAXData();
   }, []);
@@ -106,22 +90,14 @@ export function usePTAXData() {
 
       console.log('PTAX data processed:', ptaxArray.length, 'months');
       console.log('Sample PTAX data:', ptaxArray.slice(0, 5));
+      console.log('📊 PTAX data from API:', ptaxArray.length, 'total months');
 
-      // Merge with fallback data (prioritize API data over fallback)
-      const apiCompetencias = new Set(ptaxArray.map(item => item.competencia));
-      const fallbackToAdd = FALLBACK_PTAX.filter(fb => !apiCompetencias.has(fb.competencia));
-      
-      const mergedData = [...ptaxArray, ...fallbackToAdd];
-      console.log('📊 PTAX merged with fallback:', mergedData.length, 'total months');
-      console.log('📋 Fallback data added:', fallbackToAdd.length, 'months');
-
-      setPtaxData(mergedData);
+      setPtaxData(ptaxArray);
     } catch (err) {
-      console.error('Error fetching PTAX data:', err);
+      console.error('❌ Error fetching PTAX data:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
-      // Use fallback data if API fails
-      console.log('⚠️ Using FALLBACK_PTAX data due to API error');
-      setPtaxData(FALLBACK_PTAX);
+      // Se a API falhar, deixar vazio e mostrar erro para o usuário
+      setPtaxData([]);
     } finally {
       setLoading(false);
     }
