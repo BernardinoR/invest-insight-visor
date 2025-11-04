@@ -50,6 +50,7 @@ interface ConsolidadoData {
   "Data": string;
   "Nome": string;
   "Instituicao": string;
+  "Moeda": string;
 }
 
 interface DadosData {
@@ -704,9 +705,10 @@ export default function DataManagement() {
                              }}
                            />
                          </TableHead>
-                         <TableHead>Competência</TableHead>
-                         <TableHead>Instituição</TableHead>
-                         <TableHead>Patrimônio Inicial</TableHead>
+                          <TableHead>Competência</TableHead>
+                          <TableHead>Instituição</TableHead>
+                          <TableHead>Moeda</TableHead>
+                          <TableHead>Patrimônio Inicial</TableHead>
                          <TableHead>Movimentação</TableHead>
                          <TableHead>Impostos</TableHead>
                          <TableHead>Ganho Financeiro</TableHead>
@@ -718,15 +720,15 @@ export default function DataManagement() {
                     <TableBody>
                       {loading ? (
                         <TableRow>
-                          <TableCell colSpan={10} className="text-center">
-                            Carregando...
-                          </TableCell>
+                           <TableCell colSpan={11} className="text-center">
+                             Carregando...
+                           </TableCell>
                         </TableRow>
                        ) : filteredConsolidadoData.length === 0 ? (
                          <TableRow>
-                           <TableCell colSpan={10} className="text-center">
-                             Nenhum dado encontrado
-                           </TableCell>
+                            <TableCell colSpan={11} className="text-center">
+                              Nenhum dado encontrado
+                            </TableCell>
                          </TableRow>
                        ) : (
                          filteredConsolidadoData.map((item) => (
@@ -737,9 +739,10 @@ export default function DataManagement() {
                                  onCheckedChange={() => toggleItemSelection(item.id)}
                                />
                              </TableCell>
-                             <TableCell>{item.Competencia}</TableCell>
-                             <TableCell>{item.Instituicao}</TableCell>
-                             <TableCell>{formatCurrency(item["Patrimonio Inicial"])}</TableCell>
+                              <TableCell>{item.Competencia}</TableCell>
+                              <TableCell>{item.Instituicao}</TableCell>
+                              <TableCell>{item.Moeda || '-'}</TableCell>
+                              <TableCell>{formatCurrency(item["Patrimonio Inicial"])}</TableCell>
                              <TableCell>{formatCurrency(item["Movimentação"])}</TableCell>
                              <TableCell>{formatCurrency(item.Impostos)}</TableCell>
                              <TableCell>{formatCurrency(item["Ganho Financeiro"])}</TableCell>
@@ -970,6 +973,22 @@ export default function DataManagement() {
                         onChange={(e) => setEditingItem({...editingItem, Instituicao: e.target.value})}
                       />
                     </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="moeda">Moeda</Label>
+                    <Select
+                      value={editingItem.Moeda || 'Real'}
+                      onValueChange={(value) => setEditingItem({...editingItem, Moeda: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a moeda" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Real">Real (BRL)</SelectItem>
+                        <SelectItem value="Dolar">Dólar (USD)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
