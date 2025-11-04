@@ -66,6 +66,7 @@ interface DadosData {
   "Data": string;
   "Nome": string;
   "Instituicao": string;
+  "Moeda": string;
 }
 
 export default function DataManagement() {
@@ -864,6 +865,7 @@ export default function DataManagement() {
                           </TableHead>
                           <TableHead>Competência</TableHead>
                           <TableHead>Instituição</TableHead>
+                          <TableHead>Moeda</TableHead>
                           <TableHead>Ativo</TableHead>
                           <TableHead>Emissor</TableHead>
                           <TableHead>Classe</TableHead>
@@ -877,13 +879,13 @@ export default function DataManagement() {
                       <TableBody>
                         {loading ? (
                           <TableRow>
-                            <TableCell colSpan={11} className="text-center">
+                            <TableCell colSpan={12} className="text-center">
                               Carregando...
                             </TableCell>
                           </TableRow>
                         ) : filteredDadosData.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={11} className="text-center">
+                            <TableCell colSpan={12} className="text-center">
                               Nenhum dado encontrado
                             </TableCell>
                           </TableRow>
@@ -898,6 +900,7 @@ export default function DataManagement() {
                               </TableCell>
                               <TableCell>{item.Competencia}</TableCell>
                               <TableCell>{item.Instituicao}</TableCell>
+                              <TableCell>{item.Moeda || '-'}</TableCell>
                               <TableCell>{item.Ativo}</TableCell>
                               <TableCell>{item.Emissor}</TableCell>
                               <TableCell>{item["Classe do ativo"]}</TableCell>
@@ -1141,6 +1144,22 @@ export default function DataManagement() {
                         onChange={(e) => setEditingItem({...editingItem, Instituicao: e.target.value})}
                       />
                     </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="moeda">Moeda</Label>
+                    <Select
+                      value={editingItem.Moeda || 'Real'}
+                      onValueChange={(value) => setEditingItem({...editingItem, Moeda: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a moeda" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Real">Real (BRL)</SelectItem>
+                        <SelectItem value="Dolar">Dólar (USD)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
