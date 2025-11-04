@@ -51,6 +51,7 @@ interface ConsolidadoData {
   "Nome": string;
   "Instituicao": string;
   "Moeda": string;
+  "nomeConta": string;
 }
 
 interface DadosData {
@@ -67,6 +68,7 @@ interface DadosData {
   "Nome": string;
   "Instituicao": string;
   "Moeda": string;
+  "nomeConta": string;
 }
 
 export default function DataManagement() {
@@ -708,6 +710,7 @@ export default function DataManagement() {
                          </TableHead>
                           <TableHead>Competência</TableHead>
                           <TableHead>Instituição</TableHead>
+                          <TableHead>Nome da Conta</TableHead>
                           <TableHead>Moeda</TableHead>
                           <TableHead>Patrimônio Inicial</TableHead>
                          <TableHead>Movimentação</TableHead>
@@ -721,13 +724,13 @@ export default function DataManagement() {
                     <TableBody>
                       {loading ? (
                         <TableRow>
-                           <TableCell colSpan={11} className="text-center">
+                           <TableCell colSpan={12} className="text-center">
                              Carregando...
                            </TableCell>
                         </TableRow>
                        ) : filteredConsolidadoData.length === 0 ? (
                          <TableRow>
-                            <TableCell colSpan={11} className="text-center">
+                            <TableCell colSpan={12} className="text-center">
                               Nenhum dado encontrado
                             </TableCell>
                          </TableRow>
@@ -742,6 +745,7 @@ export default function DataManagement() {
                              </TableCell>
                               <TableCell>{item.Competencia}</TableCell>
                               <TableCell>{item.Instituicao}</TableCell>
+                              <TableCell>{item.nomeConta || '-'}</TableCell>
                               <TableCell>{item.Moeda || '-'}</TableCell>
                               <TableCell>{formatCurrency(item["Patrimonio Inicial"])}</TableCell>
                              <TableCell>{formatCurrency(item["Movimentação"])}</TableCell>
@@ -865,6 +869,7 @@ export default function DataManagement() {
                           </TableHead>
                           <TableHead>Competência</TableHead>
                           <TableHead>Instituição</TableHead>
+                          <TableHead>Nome da Conta</TableHead>
                           <TableHead>Moeda</TableHead>
                           <TableHead>Ativo</TableHead>
                           <TableHead>Emissor</TableHead>
@@ -879,13 +884,13 @@ export default function DataManagement() {
                       <TableBody>
                         {loading ? (
                           <TableRow>
-                            <TableCell colSpan={12} className="text-center">
+                            <TableCell colSpan={13} className="text-center">
                               Carregando...
                             </TableCell>
                           </TableRow>
                         ) : filteredDadosData.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={12} className="text-center">
+                            <TableCell colSpan={13} className="text-center">
                               Nenhum dado encontrado
                             </TableCell>
                           </TableRow>
@@ -900,6 +905,7 @@ export default function DataManagement() {
                               </TableCell>
                               <TableCell>{item.Competencia}</TableCell>
                               <TableCell>{item.Instituicao}</TableCell>
+                              <TableCell>{item.nomeConta || '-'}</TableCell>
                               <TableCell>{item.Moeda || '-'}</TableCell>
                               <TableCell>{item.Ativo}</TableCell>
                               <TableCell>{item.Emissor}</TableCell>
@@ -974,6 +980,15 @@ export default function DataManagement() {
                         id="instituicao"
                         value={editingItem.Instituicao || ''}
                         onChange={(e) => setEditingItem({...editingItem, Instituicao: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="nomeConta">Nome da Conta</Label>
+                      <Input
+                        id="nomeConta"
+                        value={editingItem.nomeConta || ''}
+                        onChange={(e) => setEditingItem({...editingItem, nomeConta: e.target.value})}
+                        placeholder="Opcional"
                       />
                     </div>
                   </div>
@@ -1142,6 +1157,15 @@ export default function DataManagement() {
                         id="instituicao"
                         value={editingItem.Instituicao || ''}
                         onChange={(e) => setEditingItem({...editingItem, Instituicao: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="nomeConta">Nome da Conta</Label>
+                      <Input
+                        id="nomeConta"
+                        value={editingItem.nomeConta || ''}
+                        onChange={(e) => setEditingItem({...editingItem, nomeConta: e.target.value})}
+                        placeholder="Opcional"
                       />
                     </div>
                   </div>
