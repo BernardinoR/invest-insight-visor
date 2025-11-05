@@ -49,6 +49,25 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     setInstitutionCardData(card);
   }, []);
 
+  const handleToggleInstitution = useCallback((institution: string) => {
+    setSelectedInstitutions(prev => 
+      prev.includes(institution)
+        ? prev.filter(i => i !== institution)
+        : [...prev, institution]
+    );
+  }, []);
+
+  const handleToggleAccount = useCallback((account: string) => {
+    setSelectedAccount(prev => prev === account ? null : account);
+    // Clear institution selection when selecting an account
+    setSelectedInstitutions([]);
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setSelectedInstitutions([]);
+    setSelectedAccount(null);
+  }, []);
+
   // Helper function to convert competencia string to comparable date
   const competenciaToDate = (competencia: string) => {
     const [month, year] = competencia.split('/');
@@ -647,10 +666,10 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           institutionCardData={institutionCardData}
           selectedInstitutions={selectedInstitutions}
           selectedAccount={selectedAccount}
-          onInstitutionsChange={setSelectedInstitutions}
-          onAccountChange={setSelectedAccount}
-          institutions={uniqueInstitutions}
-          accounts={uniqueAccounts}
+          onToggleInstitution={handleToggleInstitution}
+          onToggleAccount={handleToggleAccount}
+          onClearFilters={handleClearFilters}
+          totalPatrimonio={displayPatrimonio}
           marketData={marketData}
           clientTarget={clientTarget}
           portfolioTableComponent={

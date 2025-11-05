@@ -26,15 +26,34 @@ interface InstitutionAllocationCardProps {
   totalPatrimonio: number;
   selectedInstitutions?: string[];
   selectedAccount?: string | null;
+  onToggleInstitution?: (institution: string) => void;
+  onToggleAccount?: (account: string) => void;
 }
 
 export function InstitutionAllocationCard({ 
   institutionData, 
   totalPatrimonio, 
   selectedInstitutions = [],
-  selectedAccount 
+  selectedAccount,
+  onToggleInstitution,
+  onToggleAccount
 }: InstitutionAllocationCardProps) {
   const { formatCurrency } = useCurrency();
+
+  const handleRowClick = (institution: string, account?: string) => {
+    if (account && onToggleAccount) {
+      onToggleAccount(account);
+    } else if (onToggleInstitution) {
+      onToggleInstitution(institution);
+    }
+  };
+
+  const isRowSelected = (item: InstitutionData) => {
+    if (item.nomeConta && selectedAccount === item.nomeConta) {
+      return true;
+    }
+    return selectedInstitutions.includes(item.institution);
+  };
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -86,12 +105,12 @@ export function InstitutionAllocationCard({
               <TableBody>
                 {institutionData.map((item, index) => (
                   <TableRow 
-                    key={index} 
-                    className={`border-border/50 transition-colors ${
-                      (selectedInstitutions.includes(item.institution) || 
-                       (selectedAccount && item.nomeConta === selectedAccount))
-                        ? 'bg-primary/10' 
-                        : 'hover:bg-muted/20'
+                    key={index}
+                    onClick={() => handleRowClick(item.institution, item.nomeConta)}
+                    className={`border-border/50 transition-all cursor-pointer ${
+                      isRowSelected(item)
+                        ? 'bg-primary/10 hover:bg-primary/15' 
+                        : 'hover:bg-muted/30'
                     }`}
                   >
                     <TableCell 

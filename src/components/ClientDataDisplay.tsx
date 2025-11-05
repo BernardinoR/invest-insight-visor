@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Database, TrendingUp, Calendar, Target } from "lucide-react";
 import { InstitutionAllocationCard } from "./InstitutionAllocationCard";
-import { InstitutionFilters } from "./InstitutionFilters";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 const PerformanceChart = lazy(() => import('./charts/PerformanceChart').then(m => ({ default: m.PerformanceChart })));
@@ -60,15 +59,31 @@ interface ClientDataDisplayProps {
   };
   selectedInstitutions?: string[];
   selectedAccount?: string | null;
-  onInstitutionsChange?: (institutions: string[]) => void;
-  onAccountChange?: (account: string | null) => void;
-  institutions?: string[];
-  accounts?: string[];
+  onToggleInstitution?: (institution: string) => void;
+  onToggleAccount?: (account: string) => void;
+  onClearFilters?: () => void;
+  totalPatrimonio?: number;
   marketData?: any;
   clientTarget?: any;
 }
 
-export const ClientDataDisplay = React.memo(({ consolidadoData, dadosData, loading, clientName, originalConsolidadoData, portfolioTableComponent, institutionCardData, selectedInstitutions, selectedAccount, onInstitutionsChange, onAccountChange, institutions, accounts, marketData, clientTarget }: ClientDataDisplayProps) => {
+export const ClientDataDisplay = React.memo(({ 
+  consolidadoData, 
+  dadosData, 
+  loading, 
+  clientName, 
+  originalConsolidadoData, 
+  portfolioTableComponent, 
+  institutionCardData, 
+  selectedInstitutions = [],
+  selectedAccount = null,
+  onToggleInstitution,
+  onToggleAccount,
+  onClearFilters,
+  totalPatrimonio = 0,
+  marketData, 
+  clientTarget 
+}: ClientDataDisplayProps) => {
   const { convertValue, adjustReturnWithFX, formatCurrency } = useCurrency();
   
   if (!clientName) {
@@ -236,26 +251,32 @@ export const ClientDataDisplay = React.memo(({ consolidadoData, dadosData, loadi
         </div>
       )}
 
-      {/* Alocação por Instituição */}
-      {institutionCardData && institutions && accounts && (
-        <>
-          <div className="flex justify-end mb-4">
-            <InstitutionFilters
-              institutions={institutions}
-              accounts={accounts}
-              selectedInstitutions={selectedInstitutions || []}
-              selectedAccount={selectedAccount || null}
-              onInstitutionsChange={onInstitutionsChange || (() => {})}
-              onAccountChange={onAccountChange || (() => {})}
-            />
-          </div>
+      {/* Institution allocation with inline filters */}
+      {institutionCardData && (
+        <div className="space-y-4">
+          {(selectedInstitutions.length > 0 || selectedAccount) && (
+            <div className="flex items-center gap-2">
+              <div className="text-sm text-muted-foreground">
+                Filtros ativos: {selectedInstitutions.length + (selectedAccount ? 1 : 0)}
+              </div>
+              <button
+                onClick={onClearFilters}
+                className="text-sm text-primary hover:text-primary/80 underline"
+              >
+                Limpar filtros
+              </button>
+            </div>
+          )}
+          
           <InstitutionAllocationCard
             institutionData={institutionCardData.institutionData}
-            totalPatrimonio={institutionCardData.totalPatrimonio}
+            totalPatrimonio={totalPatrimonio}
             selectedInstitutions={selectedInstitutions}
             selectedAccount={selectedAccount}
+            onToggleInstitution={onToggleInstitution}
+            onToggleAccount={onToggleAccount}
           />
-        </>
+        </div>
       )}
 
       {consolidadoData.length === 0 && dadosData.length === 0 && (
