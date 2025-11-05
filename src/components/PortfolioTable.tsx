@@ -89,7 +89,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   const { marketData, clientTarget } = useMarketIndicators(selectedClient);
   
   // Get currency conversion functions
-  const { convertValue, convertValuesBatch, adjustReturnWithFX, formatCurrency: currencyFormat, currency } = useCurrency();
+  const { convertValue, convertValuesBatch, adjustReturnWithFX, formatCurrency: currencyFormat, currency, getCompetenciaAnterior } = useCurrency();
 
   // Function to calculate compound return over multiple months
   const calculateCompoundReturn = (monthlyReturns: number[]): number => {
@@ -138,8 +138,9 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     // Preparar dados para conversão em lote
     const conversionBatch = data.flatMap(item => {
       const moedaOriginal: 'BRL' | 'USD' = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
+      const competenciaAnterior = getCompetenciaAnterior(item.Competencia);
       return [
-        { value: item["Patrimonio Inicial"] || 0, competencia: item.Competencia, originalCurrency: moedaOriginal },
+        { value: item["Patrimonio Inicial"] || 0, competencia: competenciaAnterior, originalCurrency: moedaOriginal },
         { value: item["Movimentação"] || 0, competencia: item.Competencia, originalCurrency: moedaOriginal },
         { value: item.Impostos || 0, competencia: item.Competencia, originalCurrency: moedaOriginal },
         { value: item["Ganho Financeiro"] || 0, competencia: item.Competencia, originalCurrency: moedaOriginal },

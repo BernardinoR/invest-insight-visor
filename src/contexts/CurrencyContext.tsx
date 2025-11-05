@@ -11,6 +11,7 @@ interface CurrencyContextType {
   adjustReturnWithFX: (returnPercent: number, competencia: string, originalCurrency: 'BRL' | 'USD') => number;
   formatCurrency: (value: number) => string;
   getCurrencySymbol: () => string;
+  getCompetenciaAnterior: (competencia: string) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -124,8 +125,9 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     convertValuesBatch,
     adjustReturnWithFX,
     formatCurrency,
-    getCurrencySymbol
-  }), [currency, convertValue, convertValuesBatch, adjustReturnWithFX, formatCurrency, getCurrencySymbol]);
+    getCurrencySymbol,
+    getCompetenciaAnterior
+  }), [currency, convertValue, convertValuesBatch, adjustReturnWithFX, formatCurrency, getCurrencySymbol, getCompetenciaAnterior]);
 
   return (
     <CurrencyContext.Provider value={contextValue}>
