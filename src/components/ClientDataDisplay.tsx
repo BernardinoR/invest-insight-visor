@@ -48,14 +48,26 @@ interface ClientDataDisplayProps {
   originalConsolidadoData?: ConsolidadoPerformance[]; // Original unfiltered data for latest month display
   portfolioTableComponent?: React.ReactNode; // Portfolio Table to be inserted
   institutionCardData?: {
-    institutionData: Array<{
+    allInstitutionData: Array<{
       institution: string;
       patrimonio: number;
       rendimento: number;
       percentage: number;
       color: string;
+      nomeConta?: string;
+      moedaOrigem?: string;
+    }>;
+    filteredInstitutionData: Array<{
+      institution: string;
+      patrimonio: number;
+      rendimento: number;
+      percentage: number;
+      color: string;
+      nomeConta?: string;
+      moedaOrigem?: string;
     }>;
     totalPatrimonio: number;
+    filteredTotalPatrimonio: number;
   };
   selectedInstitutions?: string[];
   selectedAccount?: string | null;
@@ -269,8 +281,10 @@ export const ClientDataDisplay = React.memo(({
           )}
           
           <InstitutionAllocationCard
-            institutionData={institutionCardData.institutionData}
-            totalPatrimonio={totalPatrimonio}
+            allInstitutionData={institutionCardData.allInstitutionData}
+            filteredInstitutionData={institutionCardData.filteredInstitutionData}
+            totalPatrimonio={institutionCardData.totalPatrimonio}
+            filteredTotalPatrimonio={institutionCardData.filteredTotalPatrimonio}
             selectedInstitutions={selectedInstitutions}
             selectedAccount={selectedAccount}
             onToggleInstitution={onToggleInstitution}
@@ -299,10 +313,14 @@ export const ClientDataDisplay = React.memo(({
 }, (prevProps, nextProps) => {
   // Comparar institutionCardData profundamente
   const institutionDataEqual = 
-    prevProps.institutionCardData?.institutionData?.length === 
-    nextProps.institutionCardData?.institutionData?.length &&
+    prevProps.institutionCardData?.allInstitutionData?.length === 
+    nextProps.institutionCardData?.allInstitutionData?.length &&
+    prevProps.institutionCardData?.filteredInstitutionData?.length === 
+    nextProps.institutionCardData?.filteredInstitutionData?.length &&
     prevProps.institutionCardData?.totalPatrimonio === 
-    nextProps.institutionCardData?.totalPatrimonio;
+    nextProps.institutionCardData?.totalPatrimonio &&
+    prevProps.institutionCardData?.filteredTotalPatrimonio === 
+    nextProps.institutionCardData?.filteredTotalPatrimonio;
 
   return (
     prevProps.loading === nextProps.loading &&

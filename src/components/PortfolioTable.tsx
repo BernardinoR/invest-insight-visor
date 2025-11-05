@@ -23,7 +23,16 @@ import { useMarketIndicators } from "@/hooks/useMarketIndicators";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface InstitutionCardData {
-  institutionData: Array<{
+  allInstitutionData: Array<{
+    institution: string;
+    patrimonio: number;
+    rendimento: number;
+    percentage: number;
+    color: string;
+    nomeConta?: string;
+    moedaOrigem?: string;
+  }>;
+  filteredInstitutionData: Array<{
     institution: string;
     patrimonio: number;
     rendimento: number;
@@ -33,6 +42,7 @@ interface InstitutionCardData {
     moedaOrigem?: string;
   }>;
   totalPatrimonio: number;
+  filteredTotalPatrimonio: number;
 }
 
 interface PortfolioTableProps {
@@ -614,13 +624,37 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     'hsl(210 18% 84%)',  // Cinza claro
   ];
 
-  const institutionChartData = useMemo(() => 
+  // All institution data (unfiltered)
+  const allInstitutionChartData = useMemo(() => 
     institutionSummary.map((item, index) => ({
       ...item,
       percentage: (item.patrimonio / totalInstitutionsPatrimonio) * 100,
       color: INSTITUTION_COLORS[index % INSTITUTION_COLORS.length]
     }))
   , [institutionSummary, totalInstitutionsPatrimonio]);
+
+  // Filtered institution data based on selected institutions and account
+  const filteredInstitutionChartData = useMemo(() => {
+    let filtered = allInstitutionChartData;
+    
+    if (selectedInstitutions.length > 0) {
+      filtered = filtered.filter(item => 
+        selectedInstitutions.includes(item.institution)
+      );
+    }
+    
+    if (selectedAccount) {
+      filtered = filtered.filter(item => 
+        item.nomeConta === selectedAccount
+      );
+    }
+    
+    return filtered;
+  }, [allInstitutionChartData, selectedInstitutions, selectedAccount]);
+
+  const filteredTotalPatrimonio = useMemo(() => 
+    filteredInstitutionChartData.reduce((sum, item) => sum + item.patrimonio, 0)
+  , [filteredInstitutionChartData]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -642,9 +676,11 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
 
   // Export institution card data for parent to render
   const institutionCardData = useMemo(() => ({
-    institutionData: institutionChartData,
-    totalPatrimonio: totalInstitutionsPatrimonio
-  }), [institutionChartData, totalInstitutionsPatrimonio]);
+    allInstitutionData: allInstitutionChartData,
+    filteredInstitutionData: filteredInstitutionChartData,
+    totalPatrimonio: totalInstitutionsPatrimonio,
+    filteredTotalPatrimonio: filteredTotalPatrimonio
+  }), [allInstitutionChartData, filteredInstitutionChartData, totalInstitutionsPatrimonio, filteredTotalPatrimonio]);
 
   // Pass institution card to parent if callback provided
   useEffect(() => {

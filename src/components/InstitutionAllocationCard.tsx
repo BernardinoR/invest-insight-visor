@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Filter } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface InstitutionData {
   institution: string;
@@ -22,8 +22,10 @@ interface InstitutionData {
 }
 
 interface InstitutionAllocationCardProps {
-  institutionData: InstitutionData[];
+  allInstitutionData: InstitutionData[];
+  filteredInstitutionData: InstitutionData[];
   totalPatrimonio: number;
+  filteredTotalPatrimonio: number;
   selectedInstitutions?: string[];
   selectedAccount?: string | null;
   onToggleInstitution?: (institution: string) => void;
@@ -31,8 +33,10 @@ interface InstitutionAllocationCardProps {
 }
 
 export function InstitutionAllocationCard({ 
-  institutionData, 
+  allInstitutionData,
+  filteredInstitutionData,
   totalPatrimonio, 
+  filteredTotalPatrimonio,
   selectedInstitutions = [],
   selectedAccount,
   onToggleInstitution,
@@ -40,7 +44,7 @@ export function InstitutionAllocationCard({
 }: InstitutionAllocationCardProps) {
   const { formatCurrency } = useCurrency();
 
-  const handleRowClick = (institution: string, account?: string) => {
+  const handleCheckboxChange = (institution: string, account?: string) => {
     if (account && onToggleAccount) {
       onToggleAccount(account);
     } else if (onToggleInstitution) {
@@ -73,7 +77,7 @@ export function InstitutionAllocationCard({
     return null;
   };
 
-  if (institutionData.length === 0) return null;
+  if (allInstitutionData.length === 0) return null;
 
   return (
     <Card className="relative bg-gradient-card border-border/50 shadow-elegant-md mb-8 overflow-visible">
@@ -94,25 +98,31 @@ export function InstitutionAllocationCard({
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50">
+                  <TableHead className="text-muted-foreground w-12"></TableHead>
                   <TableHead className="text-muted-foreground">Instituição</TableHead>
                   <TableHead className="text-muted-foreground">Nome da Conta</TableHead>
                   <TableHead className="text-muted-foreground text-center">Moeda Origem</TableHead>
                   <TableHead className="text-muted-foreground text-right">Patrimônio</TableHead>
                   <TableHead className="text-muted-foreground text-right hidden sm:table-cell">% Alocação</TableHead>
-                  <TableHead className="text-muted-foreground text-center w-16"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {institutionData.map((item, index) => (
+                {allInstitutionData.map((item, index) => (
                   <TableRow 
                     key={index}
-                    onClick={() => handleRowClick(item.institution, item.nomeConta)}
-                    className={`border-border/50 transition-all cursor-pointer ${
+                    className={`border-border/50 transition-all ${
                       isRowSelected(item)
-                        ? 'bg-primary/10 hover:bg-primary/15' 
-                        : 'hover:bg-muted/30'
+                        ? 'bg-primary/10' 
+                        : ''
                     }`}
                   >
+                    <TableCell className="w-12">
+                      <Checkbox
+                        checked={isRowSelected(item)}
+                        onCheckedChange={() => handleCheckboxChange(item.institution, item.nomeConta)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </TableCell>
                     <TableCell 
                       className="flex items-center gap-2"
                     >
@@ -153,7 +163,6 @@ export function InstitutionAllocationCard({
                         : '0.00%'
                       }
                     </TableCell>
-                    <TableCell className="text-center"></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -169,7 +178,7 @@ export function InstitutionAllocationCard({
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie
-                  data={institutionData}
+                  data={filteredInstitutionData}
                   cx="50%"
                   cy="50%"
                   innerRadius={75}
@@ -181,7 +190,7 @@ export function InstitutionAllocationCard({
                   animationBegin={0}
                   animationDuration={800}
                 >
-                  {institutionData.map((entry, index) => (
+                  {filteredInstitutionData.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
                       fill={entry.color}
@@ -200,7 +209,7 @@ export function InstitutionAllocationCard({
                   Patrimônio Bruto
                 </div>
                 <div className="text-xl font-semibold text-foreground">
-                  {formatCurrency(totalPatrimonio)}
+                  {formatCurrency(filteredTotalPatrimonio)}
                 </div>
               </div>
             </div>
