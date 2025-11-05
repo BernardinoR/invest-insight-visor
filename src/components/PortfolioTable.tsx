@@ -40,8 +40,10 @@ interface PortfolioTableProps {
   filteredConsolidadoData?: ConsolidadoData[];
   filteredRange?: { inicio: string; fim: string };
   onYearTotalsChange?: (totals: { totalPatrimonio: number; totalRendimento: number } | null) => void;
-  selectedInstitution?: string | null;
-  onInstitutionClick?: (institution: string) => void;
+  selectedInstitutions?: string[];
+  selectedAccount?: string | null;
+  onInstitutionsChange?: (institutions: string[]) => void;
+  onAccountChange?: (account: string | null) => void;
   showInstitutionCard?: boolean; // Control whether to show institution card here
   onInstitutionCardRender?: (card: InstitutionCardData) => void; // Callback to pass the institution card data to parent
 }
@@ -67,7 +69,7 @@ interface ConsolidadoDataWithReturns extends ConsolidadoData {
   return12Months?: number;
 }
 
-export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange, onYearTotalsChange, selectedInstitution, onInstitutionClick, showInstitutionCard = true, onInstitutionCardRender }: PortfolioTableProps) {
+export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange, onYearTotalsChange, selectedInstitutions = [], selectedAccount, onInstitutionsChange, onAccountChange, showInstitutionCard = true, onInstitutionCardRender }: PortfolioTableProps) {
   const [consolidadoData, setConsolidadoData] = useState<ConsolidadoData[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set(['2025'])); // Start with 2025 expanded

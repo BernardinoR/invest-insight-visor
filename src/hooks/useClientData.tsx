@@ -14,6 +14,7 @@ interface ConsolidadoPerformance {
   Nome: string;
   Instituicao: string;
   Moeda: string;
+  nomeConta?: string;
 }
 
 interface DadosPerformance {
@@ -30,6 +31,7 @@ interface DadosPerformance {
   Nome: string;
   Instituicao: string;
   Moeda: string;
+  nomeConta?: string;
 }
 
 export function useClientData(clientName: string) {

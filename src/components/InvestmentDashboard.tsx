@@ -38,7 +38,8 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
   const [filteredRange, setFilteredRange] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
   const [yearTotals, setYearTotals] = useState<{ totalPatrimonio: number; totalRendimento: number } | null>(null);
-  const [selectedInstitution, setSelectedInstitution] = useState<string | null>(null);
+  const [selectedInstitutions, setSelectedInstitutions] = useState<string[]>([]);
+  const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
   const [institutionCardData, setInstitutionCardData] = useState<any>(null);
   const [maturityDialogOpen, setMaturityDialogOpen] = useState(false);
   const [diversificationDialogOpen, setDiversificationDialogOpen] = useState(false);
@@ -76,6 +77,17 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     return Array.from(new Set(consolidadoData.map(item => item.Instituicao)));
   }, [consolidadoData.length]);
 
+  const uniqueAccounts = useMemo(() => {
+    if (consolidadoData.length === 0) return [];
+    return Array.from(
+      new Set(
+        consolidadoData
+          .map(item => item.nomeConta)
+          .filter((account): account is string => Boolean(account))
+      )
+    );
+  }, [consolidadoData.length]);
+
   useEffect(() => {
     if (uniqueCompetencias.length > 0 && !filteredRange.inicio && !filteredRange.fim) {
       setFilteredRange({
@@ -99,12 +111,16 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       });
     }
     
-    if (selectedInstitution) {
-      filtered = filtered.filter(item => item.Instituicao === selectedInstitution);
+    if (selectedInstitutions.length > 0) {
+      filtered = filtered.filter(item => selectedInstitutions.includes(item.Instituicao || ''));
+    }
+    
+    if (selectedAccount) {
+      filtered = filtered.filter(item => item.nomeConta === selectedAccount);
     }
     
     return filtered;
-  }, [filteredRange.inicio, filteredRange.fim, selectedInstitution]);
+  }, [filteredRange.inicio, filteredRange.fim, selectedInstitutions, selectedAccount]);
 
   const getFilteredConsolidadoData = useCallback((data: typeof consolidadoData) => {
     let filtered = data;
@@ -119,12 +135,16 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       });
     }
     
-    if (selectedInstitution) {
-      filtered = filtered.filter(item => item.Instituicao === selectedInstitution);
+    if (selectedInstitutions.length > 0) {
+      filtered = filtered.filter(item => selectedInstitutions.includes(item.Instituicao || ''));
+    }
+    
+    if (selectedAccount) {
+      filtered = filtered.filter(item => item.nomeConta === selectedAccount);
     }
     
     return filtered;
-  }, [filteredRange.inicio, filteredRange.fim, selectedInstitution]);
+  }, [filteredRange.inicio, filteredRange.fim, selectedInstitutions, selectedAccount]);
 
   const filteredDadosData = useMemo(() => getFilteredDadosData(dadosData), [dadosData, getFilteredDadosData]);
   const filteredConsolidadoData = useMemo(() => getFilteredConsolidadoData(consolidadoData), [consolidadoData, getFilteredConsolidadoData]);
@@ -259,10 +279,14 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       return { growth: 0, hasData: false, previousPatrimonio: 0 };
     }
 
-    // Apply institution filter if one is selected (to match displayPatrimonio calculation)
-    const dataToUse = selectedInstitution 
-      ? consolidadoData.filter(item => item.Instituicao === selectedInstitution)
-      : consolidadoData;
+    // Apply institution filters if any are selected (to match displayPatrimonio calculation)
+    let dataToUse = consolidadoData;
+    if (selectedInstitutions.length > 0) {
+      dataToUse = dataToUse.filter(item => selectedInstitutions.includes(item.Instituicao || ''));
+    }
+    if (selectedAccount) {
+      dataToUse = dataToUse.filter(item => item.nomeConta === selectedAccount);
+    }
 
     // Get all unique competencias and sort them CORRECTLY by date
     const allCompetencias = [...new Set(dataToUse.map(item => item.Competencia))].sort((a, b) => {
@@ -621,8 +645,12 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           clientName={selectedClient}
           originalConsolidadoData={consolidadoData}
           institutionCardData={institutionCardData}
-          selectedInstitution={selectedInstitution}
-          onInstitutionClick={(institution) => setSelectedInstitution(institution === selectedInstitution ? null : institution)}
+          selectedInstitutions={selectedInstitutions}
+          selectedAccount={selectedAccount}
+          onInstitutionsChange={setSelectedInstitutions}
+          onAccountChange={setSelectedAccount}
+          institutions={uniqueInstitutions}
+          accounts={uniqueAccounts}
           marketData={marketData}
           clientTarget={clientTarget}
           portfolioTableComponent={
@@ -631,8 +659,10 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
               onYearTotalsChange={handleYearTotalsChange}
               filteredConsolidadoData={filteredConsolidadoData}
               filteredRange={filteredRange}
-              selectedInstitution={selectedInstitution}
-              onInstitutionClick={(institution) => setSelectedInstitution(institution === selectedInstitution ? null : institution)}
+              selectedInstitutions={selectedInstitutions}
+              selectedAccount={selectedAccount}
+              onInstitutionsChange={setSelectedInstitutions}
+              onAccountChange={setSelectedAccount}
               showInstitutionCard={false}
               onInstitutionCardRender={handleInstitutionCardRender}
             />

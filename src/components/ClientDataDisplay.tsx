@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Database, TrendingUp, Calendar, Target } from "lucide-react";
 import { InstitutionAllocationCard } from "./InstitutionAllocationCard";
+import { InstitutionFilters } from "./InstitutionFilters";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 const PerformanceChart = lazy(() => import('./charts/PerformanceChart').then(m => ({ default: m.PerformanceChart })));
@@ -21,6 +22,7 @@ interface ConsolidadoPerformance {
   Nome: string;
   Instituicao: string;
   Moeda?: string;
+  nomeConta?: string;
 }
 
 interface DadosPerformance {
@@ -36,6 +38,7 @@ interface DadosPerformance {
   "Classe do ativo": string;
   Nome: string;
   Instituicao: string;
+  nomeConta?: string;
 }
 
 interface ClientDataDisplayProps {
@@ -55,13 +58,17 @@ interface ClientDataDisplayProps {
     }>;
     totalPatrimonio: number;
   };
-  selectedInstitution?: string | null;
-  onInstitutionClick?: (institution: string) => void;
+  selectedInstitutions?: string[];
+  selectedAccount?: string | null;
+  onInstitutionsChange?: (institutions: string[]) => void;
+  onAccountChange?: (account: string | null) => void;
+  institutions?: string[];
+  accounts?: string[];
   marketData?: any;
   clientTarget?: any;
 }
 
-export const ClientDataDisplay = React.memo(({ consolidadoData, dadosData, loading, clientName, originalConsolidadoData, portfolioTableComponent, institutionCardData, selectedInstitution, onInstitutionClick, marketData, clientTarget }: ClientDataDisplayProps) => {
+export const ClientDataDisplay = React.memo(({ consolidadoData, dadosData, loading, clientName, originalConsolidadoData, portfolioTableComponent, institutionCardData, selectedInstitutions, selectedAccount, onInstitutionsChange, onAccountChange, institutions, accounts, marketData, clientTarget }: ClientDataDisplayProps) => {
   const { convertValue, adjustReturnWithFX, formatCurrency } = useCurrency();
   
   if (!clientName) {
@@ -230,13 +237,25 @@ export const ClientDataDisplay = React.memo(({ consolidadoData, dadosData, loadi
       )}
 
       {/* Alocação por Instituição */}
-      {institutionCardData && (
-        <InstitutionAllocationCard
-          institutionData={institutionCardData.institutionData}
-          totalPatrimonio={institutionCardData.totalPatrimonio}
-          selectedInstitution={selectedInstitution}
-          onInstitutionClick={onInstitutionClick}
-        />
+      {institutionCardData && institutions && accounts && (
+        <>
+          <div className="flex justify-end mb-4">
+            <InstitutionFilters
+              institutions={institutions}
+              accounts={accounts}
+              selectedInstitutions={selectedInstitutions || []}
+              selectedAccount={selectedAccount || null}
+              onInstitutionsChange={onInstitutionsChange || (() => {})}
+              onAccountChange={onAccountChange || (() => {})}
+            />
+          </div>
+          <InstitutionAllocationCard
+            institutionData={institutionCardData.institutionData}
+            totalPatrimonio={institutionCardData.totalPatrimonio}
+            selectedInstitutions={selectedInstitutions}
+            selectedAccount={selectedAccount}
+          />
+        </>
       )}
 
       {consolidadoData.length === 0 && dadosData.length === 0 && (
@@ -269,7 +288,8 @@ export const ClientDataDisplay = React.memo(({ consolidadoData, dadosData, loadi
     prevProps.clientName === nextProps.clientName &&
     prevProps.consolidadoData.length === nextProps.consolidadoData.length &&
     prevProps.dadosData.length === nextProps.dadosData.length &&
-    prevProps.selectedInstitution === nextProps.selectedInstitution &&
+    prevProps.selectedInstitutions?.length === nextProps.selectedInstitutions?.length &&
+    prevProps.selectedAccount === nextProps.selectedAccount &&
     prevProps.marketData?.length === nextProps.marketData?.length &&
     prevProps.clientTarget?.targetValue === nextProps.clientTarget?.targetValue &&
     institutionDataEqual
