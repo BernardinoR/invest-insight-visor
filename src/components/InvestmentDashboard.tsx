@@ -114,7 +114,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     }
   }, [uniqueCompetencias.length]);
 
-  // Filter data based on selected competencia range only
+  // Filter data based on selected competencia range and institution/account selection
   const getFilteredDadosData = useCallback((data: typeof dadosData) => {
     let filtered = data;
     
@@ -128,10 +128,16 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       });
     }
     
-    // Institution filtering is handled in PortfolioTable for chart only
+    // Filter by selected institutions/accounts
+    if (selectedRows.length > 0) {
+      filtered = filtered.filter(item => {
+        const rowId = createRowId(item.Instituicao || '', item.nomeConta);
+        return selectedRows.includes(rowId);
+      });
+    }
     
     return filtered;
-  }, [filteredRange.inicio, filteredRange.fim]);
+  }, [filteredRange.inicio, filteredRange.fim, selectedRows]);
 
   const getFilteredConsolidadoData = useCallback((data: typeof consolidadoData) => {
     let filtered = data;
@@ -146,10 +152,16 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       });
     }
     
-    // Institution filtering is handled in PortfolioTable for chart only
+    // Filter by selected institutions/accounts
+    if (selectedRows.length > 0) {
+      filtered = filtered.filter(item => {
+        const rowId = createRowId(item.Instituicao || '', item.nomeConta);
+        return selectedRows.includes(rowId);
+      });
+    }
     
     return filtered;
-  }, [filteredRange.inicio, filteredRange.fim]);
+  }, [filteredRange.inicio, filteredRange.fim, selectedRows]);
 
   const filteredDadosData = useMemo(() => getFilteredDadosData(dadosData), [dadosData, getFilteredDadosData]);
   const filteredConsolidadoData = useMemo(() => getFilteredConsolidadoData(consolidadoData), [consolidadoData, getFilteredConsolidadoData]);
@@ -168,8 +180,17 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       return totalRendimento;
     }
     
-    // Find the most recent competencia from all data (not filtered)
-    const allCompetencias = consolidadoData.map(item => item.Competencia).filter(Boolean);
+    // Apply institution filter
+    let dataToUse = consolidadoData;
+    if (selectedRows.length > 0) {
+      dataToUse = dataToUse.filter(item => {
+        const rowId = createRowId(item.Instituicao || '', item.nomeConta);
+        return selectedRows.includes(rowId);
+      });
+    }
+    
+    // Find the most recent competencia from filtered data
+    const allCompetencias = dataToUse.map(item => item.Competencia).filter(Boolean);
     if (allCompetencias.length === 0) {
       return totalRendimento;
     }
@@ -185,7 +206,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     const mostRecentCompetencia = sortedCompetencias[0];
     
     // Find all entries with the most recent competencia
-    const finalCompetenciaEntries = consolidadoData.filter(
+    const finalCompetenciaEntries = dataToUse.filter(
       item => item.Competencia === mostRecentCompetencia
     );
     
@@ -230,7 +251,16 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       return totalPatrimonio;
     }
     
-    const finalCompetenciaEntries = filteredConsolidadoData.filter(
+    // Apply institution filter
+    let dataToUse = filteredConsolidadoData;
+    if (selectedRows.length > 0) {
+      dataToUse = dataToUse.filter(item => {
+        const rowId = createRowId(item.Instituicao || '', item.nomeConta);
+        return selectedRows.includes(rowId);
+      });
+    }
+    
+    const finalCompetenciaEntries = dataToUse.filter(
       item => item.Competencia === filteredRange.fim
     );
     
