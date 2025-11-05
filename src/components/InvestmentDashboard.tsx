@@ -165,6 +165,23 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
   const filteredDadosData = useMemo(() => getFilteredDadosData(dadosData), [dadosData, getFilteredDadosData]);
   const filteredConsolidadoData = useMemo(() => getFilteredConsolidadoData(consolidadoData), [consolidadoData, getFilteredConsolidadoData]);
+  
+  // Data filtered ONLY by date (for institution list - should always show all institutions)
+  const consolidadoDataForInstitutionList = useMemo(() => {
+    let filtered = consolidadoData;
+    
+    if (filteredRange.inicio && filteredRange.fim) {
+      const startDate = competenciaToDate(filteredRange.inicio);
+      const endDate = competenciaToDate(filteredRange.fim);
+      
+      filtered = filtered.filter(item => {
+        const itemDate = competenciaToDate(item.Competencia);
+        return itemDate >= startDate && itemDate <= endDate;
+      });
+    }
+    
+    return filtered;
+  }, [consolidadoData, filteredRange.inicio, filteredRange.fim]);
 
   const handleFilterChange = useCallback((inicioCompetencia: string, fimCompetencia: string) => {
     setFilteredRange({ inicio: inicioCompetencia, fim: fimCompetencia });
@@ -696,6 +713,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
               onRowsChange={setSelectedRows}
               showInstitutionCard={false}
               onInstitutionCardRender={handleInstitutionCardRender}
+              unfilteredByInstitution={consolidadoDataForInstitutionList}
             />
           }
         />

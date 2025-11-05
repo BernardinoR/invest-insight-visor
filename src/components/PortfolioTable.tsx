@@ -54,6 +54,7 @@ interface PortfolioTableProps {
   onRowsChange?: (rows: string[]) => void;
   showInstitutionCard?: boolean; // Control whether to show institution card here
   onInstitutionCardRender?: (card: InstitutionCardData) => void; // Callback to pass the institution card data to parent
+  unfilteredByInstitution?: ConsolidadoData[]; // Data filtered by date only (not by institution) - for institution list
 }
 
 interface ConsolidadoData {
@@ -78,7 +79,7 @@ interface ConsolidadoDataWithReturns extends ConsolidadoData {
 }
 
 // Portfolio Table Component - Updated to use selectedRows for filtering
-export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange, onYearTotalsChange, selectedRows = [], onRowsChange, showInstitutionCard = true, onInstitutionCardRender }: PortfolioTableProps) {
+export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange, onYearTotalsChange, selectedRows = [], onRowsChange, showInstitutionCard = true, onInstitutionCardRender, unfilteredByInstitution }: PortfolioTableProps) {
   const [consolidadoData, setConsolidadoData] = useState<ConsolidadoData[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set(['2025'])); // Start with 2025 expanded
@@ -540,12 +541,13 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     fetchConsolidadoData();
   }, [selectedClient]);
 
-  // Calculate institution summary from rawData - only most recent competencia
+  // Calculate institution summary from unfilteredByInstitution (or fallback to rawData) - only most recent competencia
   const institutionSummary = useMemo(() => {
-    if (!rawData || rawData.length === 0) return [];
+    const dataToUse = unfilteredByInstitution || rawData;
+    if (!dataToUse || dataToUse.length === 0) return [];
     
     // Find the most recent competencia
-    const sortedByDate = [...rawData].sort((a, b) => {
+    const sortedByDate = [...dataToUse].sort((a, b) => {
       const [monthA, yearA] = a.Competencia.split('/');
       const [monthB, yearB] = b.Competencia.split('/');
       const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
@@ -556,7 +558,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     const mostRecentCompetencia = sortedByDate[0].Competencia;
     
     // Filter only data from most recent competencia
-    const mostRecentData = rawData.filter(item => item.Competencia === mostRecentCompetencia);
+    const mostRecentData = dataToUse.filter(item => item.Competencia === mostRecentCompetencia);
     
     // Group by institution + account for the most recent competencia only
     const byInstitution = mostRecentData.reduce((acc, item) => {
@@ -607,7 +609,7 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
       nomeConta: data.nomeConta || undefined,
       moedaOrigem: data.moedaOrigem || undefined
     })).sort((a, b) => b.patrimonio - a.patrimonio);
-  }, [rawData, convertValue, adjustReturnWithFX, currency]);
+  }, [unfilteredByInstitution, rawData, convertValue, adjustReturnWithFX, currency]);
   
   const totalInstitutionsPatrimonio = institutionSummary.reduce((sum, item) => sum + item.patrimonio, 0);
 
