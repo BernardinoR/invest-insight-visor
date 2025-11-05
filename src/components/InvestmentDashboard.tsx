@@ -26,6 +26,7 @@ import { DiversificationDialog } from "@/components/DiversificationDialog";
 import { RiskManagement } from "@/components/charts/RiskManagement";
 import { InvestmentPolicyCompliance } from "@/components/charts/InvestmentPolicyCompliance";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { CurrencyToggle } from "@/components/CurrencyToggle";
 
 interface InvestmentDashboardProps {
   selectedClient: string;
@@ -415,24 +416,29 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
         {/* Portfolio Overview */}
         <div className="mb-8">
-          <div 
-            onClick={() => {
-              if (viewMode === 'performance') setViewMode('risk');
-              else if (viewMode === 'risk') setViewMode('policy');
-              else setViewMode('performance');
-            }}
-            className="cursor-pointer hover:opacity-80 transition-opacity inline-block"
-          >
-            <h2 className="text-3xl font-bold text-foreground mb-2">
-              {viewMode === 'performance' ? 'Portfolio Performance' : 
-               viewMode === 'risk' ? 'Gestão de Riscos' : 'Política de Investimentos'}
-            </h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <div 
+                onClick={() => {
+                  if (viewMode === 'performance') setViewMode('risk');
+                  else if (viewMode === 'risk') setViewMode('policy');
+                  else setViewMode('performance');
+                }}
+                className="cursor-pointer hover:opacity-80 transition-opacity inline-block"
+              >
+                <h2 className="text-3xl font-bold text-foreground mb-2">
+                  {viewMode === 'performance' ? 'Portfolio Performance' : 
+                   viewMode === 'risk' ? 'Gestão de Riscos' : 'Política de Investimentos'}
+                </h2>
+              </div>
+              <p className="text-muted-foreground">
+                {selectedClient || "Selecione um cliente para visualizar os dados"}
+                {selectedClient && hasData && " - Dados carregados"}
+                {selectedClient && !hasData && loading && " - Carregando..."}
+              </p>
+            </div>
+            <CurrencyToggle />
           </div>
-          <p className="text-muted-foreground">
-            {selectedClient || "Selecione um cliente para visualizar os dados"}
-            {selectedClient && hasData && " - Dados carregados"}
-            {selectedClient && !hasData && loading && " - Carregando..."}
-          </p>
         </div>
 
         {/* Competencia Seletor */}

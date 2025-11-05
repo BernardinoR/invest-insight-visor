@@ -3,7 +3,6 @@ import { InvestmentDashboard } from "@/components/InvestmentDashboard";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { CurrencyToggle } from "@/components/CurrencyToggle";
 
 export default function Dashboard() {
   const { clientName } = useParams<{ clientName: string }>();
@@ -70,7 +69,6 @@ export default function Dashboard() {
             )}
           </div>
           <div className="flex gap-2">
-            <CurrencyToggle />
             <ThemeToggle />
           </div>
         </div>

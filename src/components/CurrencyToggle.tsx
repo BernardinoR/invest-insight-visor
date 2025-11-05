@@ -14,12 +14,12 @@ export function CurrencyToggle() {
   return (
     <Button
       variant="outline"
-      size="sm"
+      size="default"
       onClick={handleToggle}
       className="bg-card/50 border-primary/20 hover:bg-primary/10 gap-2"
     >
-      <DollarSign className="h-4 w-4" />
-      <span className="text-xs font-semibold">
+      <DollarSign className="h-5 w-5" />
+      <span className="text-sm font-semibold">
         {currency}
       </span>
     </Button>
