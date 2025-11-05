@@ -43,6 +43,14 @@ export function InstitutionAllocationCard({
   onToggleAccount
 }: InstitutionAllocationCardProps) {
   const { formatCurrency } = useCurrency();
+  
+  console.log('🎨 InstitutionAllocationCard - Props recebidas:', {
+    allCount: allInstitutionData.length,
+    filteredCount: filteredInstitutionData.length,
+    totalGeral: totalPatrimonio,
+    totalFiltrado: filteredTotalPatrimonio,
+    selectedInstitutions
+  });
 
   const handleCheckboxChange = (institution: string, account?: string) => {
     if (account && onToggleAccount) {

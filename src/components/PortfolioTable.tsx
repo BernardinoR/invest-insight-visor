@@ -637,24 +637,48 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   const filteredInstitutionChartData = useMemo(() => {
     let filtered = allInstitutionChartData;
     
+    console.log('🔍 PortfolioTable - ANTES do filtro:', {
+      allInstitutionCount: allInstitutionChartData.length,
+      selectedInstitutions,
+      selectedAccount
+    });
+    
     if (selectedInstitutions.length > 0) {
       filtered = filtered.filter(item => 
         selectedInstitutions.includes(item.institution)
       );
+      console.log('🔍 PortfolioTable - DEPOIS filtro instituição:', {
+        filteredCount: filtered.length,
+        institutions: filtered.map(f => f.institution)
+      });
     }
     
     if (selectedAccount) {
       filtered = filtered.filter(item => 
         item.nomeConta === selectedAccount
       );
+      console.log('🔍 PortfolioTable - DEPOIS filtro conta:', {
+        filteredCount: filtered.length,
+        account: selectedAccount
+      });
     }
+    
+    console.log('🔍 PortfolioTable - RESULTADO FINAL:', {
+      filteredCount: filtered.length,
+      items: filtered.map(f => ({ inst: f.institution, valor: f.patrimonio }))
+    });
     
     return filtered;
   }, [allInstitutionChartData, selectedInstitutions, selectedAccount]);
 
-  const filteredTotalPatrimonio = useMemo(() => 
-    filteredInstitutionChartData.reduce((sum, item) => sum + item.patrimonio, 0)
-  , [filteredInstitutionChartData]);
+  const filteredTotalPatrimonio = useMemo(() => {
+    const total = filteredInstitutionChartData.reduce((sum, item) => sum + item.patrimonio, 0);
+    console.log('💰 PortfolioTable - Total filtrado calculado:', {
+      total,
+      itemCount: filteredInstitutionChartData.length
+    });
+    return total;
+  }, [filteredInstitutionChartData]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -675,19 +699,30 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
   };
 
   // Export institution card data for parent to render
-  const institutionCardData = useMemo(() => ({
-    allInstitutionData: allInstitutionChartData,
-    filteredInstitutionData: filteredInstitutionChartData,
-    totalPatrimonio: totalInstitutionsPatrimonio,
-    filteredTotalPatrimonio: filteredTotalPatrimonio
-  }), [allInstitutionChartData, filteredInstitutionChartData, totalInstitutionsPatrimonio, filteredTotalPatrimonio]);
+  const institutionCardData = useMemo(() => {
+    const data = {
+      allInstitutionData: allInstitutionChartData,
+      filteredInstitutionData: filteredInstitutionChartData,
+      totalPatrimonio: totalInstitutionsPatrimonio,
+      filteredTotalPatrimonio: filteredTotalPatrimonio
+    };
+    
+    console.log('📦 PortfolioTable - institutionCardData criado:', {
+      allCount: data.allInstitutionData.length,
+      filteredCount: data.filteredInstitutionData.length,
+      totalGeral: data.totalPatrimonio,
+      totalFiltrado: data.filteredTotalPatrimonio
+    });
+    
+    return data;
+  }, [allInstitutionChartData, filteredInstitutionChartData, totalInstitutionsPatrimonio, filteredTotalPatrimonio]);
 
   // Pass institution card to parent if callback provided
   useEffect(() => {
-    if (onInstitutionCardRender && !showInstitutionCard) {
+    if (onInstitutionCardRender) {
       onInstitutionCardRender(institutionCardData);
     }
-  }, [institutionCardData, onInstitutionCardRender, showInstitutionCard]);
+  }, [institutionCardData, onInstitutionCardRender]);
 
   return (
     <>

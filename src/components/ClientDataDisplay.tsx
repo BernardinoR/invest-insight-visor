@@ -266,6 +266,16 @@ export const ClientDataDisplay = React.memo(({
       {/* Institution allocation with inline filters */}
       {institutionCardData && (
         <div className="space-y-4">
+          {(() => {
+            console.log('📊 ClientDataDisplay - Renderizando InstitutionAllocationCard:', {
+              allCount: institutionCardData.allInstitutionData.length,
+              filteredCount: institutionCardData.filteredInstitutionData.length,
+              totalGeral: institutionCardData.totalPatrimonio,
+              totalFiltrado: institutionCardData.filteredTotalPatrimonio
+            });
+            return null;
+          })()}
+          
           {(selectedInstitutions.length > 0 || selectedAccount) && (
             <div className="flex items-center gap-2">
               <div className="text-sm text-muted-foreground">
