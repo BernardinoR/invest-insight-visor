@@ -26,10 +26,8 @@ interface InstitutionAllocationCardProps {
   filteredInstitutionData: InstitutionData[];
   totalPatrimonio: number;
   filteredTotalPatrimonio: number;
-  selectedInstitutions?: string[];
-  selectedAccount?: string | null;
-  onToggleInstitution?: (institution: string) => void;
-  onToggleAccount?: (account: string) => void;
+  selectedRows?: string[];
+  onToggleRow?: (institution: string, account?: string) => void;
 }
 
 export function InstitutionAllocationCard({ 
@@ -37,10 +35,8 @@ export function InstitutionAllocationCard({
   filteredInstitutionData,
   totalPatrimonio, 
   filteredTotalPatrimonio,
-  selectedInstitutions = [],
-  selectedAccount,
-  onToggleInstitution,
-  onToggleAccount
+  selectedRows = [],
+  onToggleRow
 }: InstitutionAllocationCardProps) {
   const { formatCurrency } = useCurrency();
   
@@ -49,22 +45,23 @@ export function InstitutionAllocationCard({
     filteredCount: filteredInstitutionData.length,
     totalGeral: totalPatrimonio,
     totalFiltrado: filteredTotalPatrimonio,
-    selectedInstitutions
+    selectedRows
   });
 
+  // Helper to create unique row identifier
+  const createRowId = (institution: string, account?: string) => {
+    return account ? `${institution}|${account}` : institution;
+  };
+
   const handleCheckboxChange = (institution: string, account?: string) => {
-    if (account && onToggleAccount) {
-      onToggleAccount(account);
-    } else if (onToggleInstitution) {
-      onToggleInstitution(institution);
+    if (onToggleRow) {
+      onToggleRow(institution, account);
     }
   };
 
   const isRowSelected = (item: InstitutionData) => {
-    if (item.nomeConta && selectedAccount === item.nomeConta) {
-      return true;
-    }
-    return selectedInstitutions.includes(item.institution);
+    const rowId = createRowId(item.institution, item.nomeConta);
+    return selectedRows.includes(rowId);
   };
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -90,18 +87,13 @@ export function InstitutionAllocationCard({
   return (
     <Card className="relative bg-gradient-card border-border/50 shadow-elegant-md mb-8 overflow-visible">
       <CardContent className="pb-4 pt-6">
-        {(selectedInstitutions.length > 0 || selectedAccount) && (
+        {selectedRows.length > 0 && (
           <div className="mb-4 text-sm text-primary font-medium flex flex-wrap gap-2">
-            {selectedInstitutions.length > 0 && (
-              <span>Instituições: {selectedInstitutions.join(', ')}</span>
-            )}
-            {selectedAccount && (
-              <span>Conta: {selectedAccount}</span>
-            )}
+            <span>{selectedRows.length} linha(s) selecionada(s)</span>
           </div>
         )}
         {/* Table - takes full width on mobile, left side on desktop */}
-        <div className={(selectedInstitutions.length > 0 || selectedAccount) ? "w-full" : "w-full lg:pr-96"}>
+        <div className={selectedRows.length > 0 ? "w-full" : "w-full lg:pr-96"}>
           <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
             <Table>
               <TableHeader>
@@ -180,7 +172,7 @@ export function InstitutionAllocationCard({
 
         {/* Pie Chart - centered on mobile, absolutely positioned on desktop */}
         <div className={`mt-6 flex flex-col items-center justify-center ${
-          (selectedInstitutions.length > 0 || selectedAccount) ? "lg:mt-6" : "lg:mt-0 lg:absolute lg:top-6 lg:right-8 lg:w-80"
+          selectedRows.length > 0 ? "lg:mt-6" : "lg:mt-0 lg:absolute lg:top-6 lg:right-8 lg:w-80"
         }`}>
           <div className="relative w-full max-w-[320px] sm:max-w-[360px] lg:max-w-[280px]">
             <ResponsiveContainer width="100%" height={280}>

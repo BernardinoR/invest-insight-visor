@@ -50,10 +50,8 @@ interface PortfolioTableProps {
   filteredConsolidadoData?: ConsolidadoData[];
   filteredRange?: { inicio: string; fim: string };
   onYearTotalsChange?: (totals: { totalPatrimonio: number; totalRendimento: number } | null) => void;
-  selectedInstitutions?: string[];
-  selectedAccount?: string | null;
-  onInstitutionsChange?: (institutions: string[]) => void;
-  onAccountChange?: (account: string | null) => void;
+  selectedRows?: string[];
+  onRowsChange?: (rows: string[]) => void;
   showInstitutionCard?: boolean; // Control whether to show institution card here
   onInstitutionCardRender?: (card: InstitutionCardData) => void; // Callback to pass the institution card data to parent
 }
@@ -79,7 +77,7 @@ interface ConsolidadoDataWithReturns extends ConsolidadoData {
   return12Months?: number;
 }
 
-export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange, onYearTotalsChange, selectedInstitutions = [], selectedAccount, onInstitutionsChange, onAccountChange, showInstitutionCard = true, onInstitutionCardRender }: PortfolioTableProps) {
+export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange, onYearTotalsChange, selectedRows = [], onRowsChange, showInstitutionCard = true, onInstitutionCardRender }: PortfolioTableProps) {
   const [consolidadoData, setConsolidadoData] = useState<ConsolidadoData[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set(['2025'])); // Start with 2025 expanded
@@ -633,43 +631,38 @@ export function PortfolioTable({ selectedClient, filteredConsolidadoData, filter
     }))
   , [institutionSummary, totalInstitutionsPatrimonio]);
 
-  // Filtered institution data based on selected institutions and account
+  // Helper to create unique row identifier
+  const createRowId = (institution: string, account?: string) => {
+    return account ? `${institution}|${account}` : institution;
+  };
+
+  // Filtered institution data based on selected rows
   const filteredInstitutionChartData = useMemo(() => {
     let filtered = allInstitutionChartData;
     
     console.log('🔍 PortfolioTable - ANTES do filtro:', {
       allInstitutionCount: allInstitutionChartData.length,
-      selectedInstitutions,
-      selectedAccount
+      selectedRows
     });
     
-    if (selectedInstitutions.length > 0) {
-      filtered = filtered.filter(item => 
-        selectedInstitutions.includes(item.institution)
-      );
-      console.log('🔍 PortfolioTable - DEPOIS filtro instituição:', {
-        filteredCount: filtered.length,
-        institutions: filtered.map(f => f.institution)
+    if (selectedRows.length > 0) {
+      filtered = filtered.filter(item => {
+        const rowId = createRowId(item.institution, item.nomeConta);
+        return selectedRows.includes(rowId);
       });
-    }
-    
-    if (selectedAccount) {
-      filtered = filtered.filter(item => 
-        item.nomeConta === selectedAccount
-      );
-      console.log('🔍 PortfolioTable - DEPOIS filtro conta:', {
+      console.log('🔍 PortfolioTable - DEPOIS filtro:', {
         filteredCount: filtered.length,
-        account: selectedAccount
+        rows: filtered.map(f => ({ inst: f.institution, conta: f.nomeConta, valor: f.patrimonio }))
       });
     }
     
     console.log('🔍 PortfolioTable - RESULTADO FINAL:', {
       filteredCount: filtered.length,
-      items: filtered.map(f => ({ inst: f.institution, valor: f.patrimonio }))
+      items: filtered.map(f => ({ inst: f.institution, conta: f.nomeConta, valor: f.patrimonio }))
     });
     
     return filtered;
-  }, [allInstitutionChartData, selectedInstitutions, selectedAccount]);
+  }, [allInstitutionChartData, selectedRows]);
 
   const filteredTotalPatrimonio = useMemo(() => {
     const total = filteredInstitutionChartData.reduce((sum, item) => sum + item.patrimonio, 0);

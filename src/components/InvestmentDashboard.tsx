@@ -38,8 +38,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
   const [filteredRange, setFilteredRange] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
   const [yearTotals, setYearTotals] = useState<{ totalPatrimonio: number; totalRendimento: number } | null>(null);
-  const [selectedInstitutions, setSelectedInstitutions] = useState<string[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [institutionCardData, setInstitutionCardData] = useState<any>(null);
   const [maturityDialogOpen, setMaturityDialogOpen] = useState(false);
   const [diversificationDialogOpen, setDiversificationDialogOpen] = useState(false);
@@ -49,23 +48,22 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     setInstitutionCardData(card);
   }, []);
 
-  const handleToggleInstitution = useCallback((institution: string) => {
-    setSelectedInstitutions(prev => 
-      prev.includes(institution)
-        ? prev.filter(i => i !== institution)
-        : [...prev, institution]
+  // Helper to create unique row identifier
+  const createRowId = (institution: string, account?: string) => {
+    return account ? `${institution}|${account}` : institution;
+  };
+
+  const handleToggleRow = useCallback((institution: string, account?: string) => {
+    const rowId = createRowId(institution, account);
+    setSelectedRows(prev => 
+      prev.includes(rowId)
+        ? prev.filter(id => id !== rowId)
+        : [...prev, rowId]
     );
   }, []);
 
-  const handleToggleAccount = useCallback((account: string) => {
-    setSelectedAccount(prev => prev === account ? null : account);
-    // Clear institution selection when selecting an account
-    setSelectedInstitutions([]);
-  }, []);
-
   const handleClearFilters = useCallback(() => {
-    setSelectedInstitutions([]);
-    setSelectedAccount(null);
+    setSelectedRows([]);
   }, []);
 
   // Helper function to convert competencia string to comparable date
@@ -286,13 +284,13 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       return { growth: 0, hasData: false, previousPatrimonio: 0 };
     }
 
-    // Apply institution filters if any are selected (to match displayPatrimonio calculation)
+    // Apply row filters if any are selected (to match displayPatrimonio calculation)
     let dataToUse = consolidadoData;
-    if (selectedInstitutions.length > 0) {
-      dataToUse = dataToUse.filter(item => selectedInstitutions.includes(item.Instituicao || ''));
-    }
-    if (selectedAccount) {
-      dataToUse = dataToUse.filter(item => item.nomeConta === selectedAccount);
+    if (selectedRows.length > 0) {
+      dataToUse = dataToUse.filter(item => {
+        const rowId = createRowId(item.Instituicao || '', item.nomeConta);
+        return selectedRows.includes(rowId);
+      });
     }
 
     // Get all unique competencias and sort them CORRECTLY by date
@@ -652,10 +650,8 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
           clientName={selectedClient}
           originalConsolidadoData={consolidadoData}
           institutionCardData={institutionCardData}
-          selectedInstitutions={selectedInstitutions}
-          selectedAccount={selectedAccount}
-          onToggleInstitution={handleToggleInstitution}
-          onToggleAccount={handleToggleAccount}
+          selectedRows={selectedRows}
+          onToggleRow={handleToggleRow}
           onClearFilters={handleClearFilters}
           totalPatrimonio={displayPatrimonio}
           marketData={marketData}
@@ -666,10 +662,8 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
               onYearTotalsChange={handleYearTotalsChange}
               filteredConsolidadoData={filteredConsolidadoData}
               filteredRange={filteredRange}
-              selectedInstitutions={selectedInstitutions}
-              selectedAccount={selectedAccount}
-              onInstitutionsChange={setSelectedInstitutions}
-              onAccountChange={setSelectedAccount}
+              selectedRows={selectedRows}
+              onRowsChange={setSelectedRows}
               showInstitutionCard={false}
               onInstitutionCardRender={handleInstitutionCardRender}
             />

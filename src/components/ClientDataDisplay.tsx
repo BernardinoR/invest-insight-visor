@@ -69,10 +69,8 @@ interface ClientDataDisplayProps {
     totalPatrimonio: number;
     filteredTotalPatrimonio: number;
   };
-  selectedInstitutions?: string[];
-  selectedAccount?: string | null;
-  onToggleInstitution?: (institution: string) => void;
-  onToggleAccount?: (account: string) => void;
+  selectedRows?: string[];
+  onToggleRow?: (institution: string, account?: string) => void;
   onClearFilters?: () => void;
   totalPatrimonio?: number;
   marketData?: any;
@@ -87,10 +85,8 @@ export const ClientDataDisplay = React.memo(({
   originalConsolidadoData, 
   portfolioTableComponent, 
   institutionCardData, 
-  selectedInstitutions = [],
-  selectedAccount = null,
-  onToggleInstitution,
-  onToggleAccount,
+  selectedRows = [],
+  onToggleRow,
   onClearFilters,
   totalPatrimonio = 0,
   marketData, 
@@ -276,10 +272,10 @@ export const ClientDataDisplay = React.memo(({
             return null;
           })()}
           
-          {(selectedInstitutions.length > 0 || selectedAccount) && (
+          {selectedRows.length > 0 && (
             <div className="flex items-center gap-2">
               <div className="text-sm text-muted-foreground">
-                Filtros ativos: {selectedInstitutions.length + (selectedAccount ? 1 : 0)}
+                Filtros ativos: {selectedRows.length}
               </div>
               <button
                 onClick={onClearFilters}
@@ -295,10 +291,8 @@ export const ClientDataDisplay = React.memo(({
             filteredInstitutionData={institutionCardData.filteredInstitutionData}
             totalPatrimonio={institutionCardData.totalPatrimonio}
             filteredTotalPatrimonio={institutionCardData.filteredTotalPatrimonio}
-            selectedInstitutions={selectedInstitutions}
-            selectedAccount={selectedAccount}
-            onToggleInstitution={onToggleInstitution}
-            onToggleAccount={onToggleAccount}
+            selectedRows={selectedRows}
+            onToggleRow={onToggleRow}
           />
         </div>
       )}
@@ -337,8 +331,7 @@ export const ClientDataDisplay = React.memo(({
     prevProps.clientName === nextProps.clientName &&
     prevProps.consolidadoData.length === nextProps.consolidadoData.length &&
     prevProps.dadosData.length === nextProps.dadosData.length &&
-    prevProps.selectedInstitutions?.length === nextProps.selectedInstitutions?.length &&
-    prevProps.selectedAccount === nextProps.selectedAccount &&
+    prevProps.selectedRows?.length === nextProps.selectedRows?.length &&
     prevProps.marketData?.length === nextProps.marketData?.length &&
     prevProps.clientTarget?.targetValue === nextProps.clientTarget?.targetValue &&
     institutionDataEqual
