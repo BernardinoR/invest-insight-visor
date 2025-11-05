@@ -1113,7 +1113,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                             <CollapsibleContent className="animate-accordion-down">
                               <div className="border-t border-border/50 bg-muted/10">
                                 {/* Table Header */}
-                                <div className="grid grid-cols-10 gap-4 p-3 border-b border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground">
+                                <div className="grid grid-cols-11 gap-4 p-3 border-b border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground">
                                   <div></div>
                                   <div className="text-center">Alocação / Qtd.</div>
                                   <div className="text-center">Saldo Bruto</div>
@@ -1122,12 +1122,13 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                   <div className="text-center">Início</div>
                                   <div className="text-center">Emissor</div>
                                   <div className="text-center">Instituição</div>
+                                  <div className="text-center">Nome da Conta</div>
                                   <div className="text-center">Vencimento</div>
                                   <div className="text-center">Moeda Origem</div>
                                 </div>
                                 
                                 {/* Strategy Summary Row */}
-                                <div className="grid grid-cols-10 gap-4 p-3 border-b border-border/30 bg-muted/30 text-sm font-semibold">
+                                <div className="grid grid-cols-11 gap-4 p-3 border-b border-border/30 bg-muted/30 text-sm font-semibold">
                                   <div className="text-foreground">{strategy}</div>
                                   <div className="text-center text-foreground">{percentage.toFixed(2)}%</div>
                                   <div className="text-center text-foreground">{formatCurrency(totalPosition)}</div>
@@ -1153,10 +1154,11 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                   <div className="text-center text-foreground">-</div>
                                   <div className="text-center text-foreground">-</div>
                                   <div className="text-center text-foreground">-</div>
+                                  <div className="text-center text-foreground">-</div>
                                 </div>
 
                                 {/* Benchmark Row */}
-                                <div className="grid grid-cols-10 gap-4 p-3 border-b border-border/30 bg-muted/10 text-sm">
+                                <div className="grid grid-cols-11 gap-4 p-3 border-b border-border/30 bg-muted/10 text-sm">
                                   <div className="text-muted-foreground">
                                     {(() => {
                                       switch (strategy) {
@@ -1200,6 +1202,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                   <div className="text-center text-muted-foreground">-</div>
                                   <div className="text-center text-muted-foreground">-</div>
                                   <div className="text-center text-muted-foreground">-</div>
+                                  <div className="text-center text-muted-foreground">-</div>
                                 </div>
 
                                  {/* Individual Assets */}
@@ -1207,7 +1210,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                    const assetReturns = calculateAssetReturns(item.Ativo);
                                    return (
                                    <div key={item.id}>
-                                      <div className="grid grid-cols-10 gap-4 p-3 hover:bg-muted/20 transition-colors text-sm">
+                                      <div className="grid grid-cols-11 gap-4 p-3 hover:bg-muted/20 transition-colors text-sm">
                                         <div>
                                           <div className="font-medium text-foreground text-xs">{item.Ativo}</div>
                                         </div>
@@ -1241,6 +1244,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                         </div>
                                        <div className="text-center text-foreground text-xs">{item.Emissor || "-"}</div>
                                        <div className="text-center text-foreground text-xs">{item.Instituicao || "-"}</div>
+                                       <div className="text-center text-foreground text-xs">{item.nomeConta || "-"}</div>
                                        <div className="text-center text-foreground text-xs">
                                          {item.Vencimento ? new Date(item.Vencimento).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "-"}
                                        </div>
