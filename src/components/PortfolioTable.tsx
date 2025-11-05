@@ -77,6 +77,7 @@ interface ConsolidadoDataWithReturns extends ConsolidadoData {
   return12Months?: number;
 }
 
+// Portfolio Table Component - Updated to use selectedRows for filtering
 export function PortfolioTable({ selectedClient, filteredConsolidadoData, filteredRange, onYearTotalsChange, selectedRows = [], onRowsChange, showInstitutionCard = true, onInstitutionCardRender }: PortfolioTableProps) {
   const [consolidadoData, setConsolidadoData] = useState<ConsolidadoData[]>([]);
   const [loading, setLoading] = useState(false);
