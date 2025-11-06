@@ -455,6 +455,10 @@ export default function DataManagement() {
     }).format(value || 0);
   };
 
+  const formatPercentage = (value: number) => {
+    return ((value || 0) * 100).toFixed(2).replace('.', ',') + '%';
+  };
+
   // Filter data by selected filters
   let filteredConsolidadoData = consolidadoData;
   if (selectedCompetencias.length > 0) {
@@ -762,7 +766,7 @@ export default function DataManagement() {
                              <TableCell>{formatCurrency(item.Impostos)}</TableCell>
                              <TableCell>{formatCurrency(item["Ganho Financeiro"])}</TableCell>
                              <TableCell>{formatCurrency(item["Patrimonio Final"])}</TableCell>
-                              <TableCell>{((item.Rendimento || 0) * 100).toString().replace('.', ',')}%</TableCell>
+                             <TableCell>{formatPercentage(item.Rendimento)}</TableCell>
                              <TableCell>
                                <div className="flex gap-2">
                                  <Button
@@ -923,7 +927,7 @@ export default function DataManagement() {
                               <TableCell>{formatCurrency(item.Posicao)}</TableCell>
                               <TableCell>{item.Taxa}</TableCell>
                               <TableCell>{item.Vencimento}</TableCell>
-                              <TableCell>{((item.Rendimento || 0) * 100).toString().replace('.', ',')}%</TableCell>
+                              <TableCell>{formatPercentage(item.Rendimento)}</TableCell>
                               <TableCell>
                                 <div className="flex gap-2">
                                   <Button
