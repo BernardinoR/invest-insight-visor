@@ -7,6 +7,8 @@ import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, Ch
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCDIData } from '@/hooks/useCDIData';
+import { usePTAXData } from '@/hooks/usePTAXData';
 import {
   Table,
   TableBody,
@@ -75,6 +77,8 @@ export default function DataManagement() {
   const { clientName } = useParams<{ clientName: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { cdiData } = useCDIData();
+  const { getCotacaoByCompetencia } = usePTAXData();
   
   const decodedClientName = clientName ? decodeURIComponent(clientName) : "";
   
@@ -89,6 +93,15 @@ export default function DataManagement() {
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
   const [bulkEditData, setBulkEditData] = useState<any>({});
+  
+  // Calculator dialog state
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const [calculatorMode, setCalculatorMode] = useState<'auto' | 'manual'>('auto');
+  const [manualCalcData, setManualCalcData] = useState({
+    competencia: '',
+    indexador: 'CDI',
+    percentual: 100
+  });
   
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set([
@@ -242,38 +255,174 @@ export default function DataManagement() {
 
   const fetchData = async () => {
     if (!decodedClientName) return;
-    
-    setLoading(true);
+
     try {
-      // Fetch consolidated data
-      const { data: consolidadoResponse, error: consolidadoError } = await supabase
-        .from('ConsolidadoPerformance')
-        .select('*')
-        .eq('Nome', decodedClientName)
-        .order('Competencia', { ascending: false });
+      setLoading(true);
+      
+      const [consolidadoResponse, dadosResponse] = await Promise.all([
+        supabase
+          .from('Dados_consolidados_performances' as any)
+          .select('*')
+          .eq('nomeCliente', decodedClientName)
+          .order('Competencia', { ascending: false }),
+        supabase
+          .from('Dados_performance_detalhe' as any)
+          .select('*')
+          .eq('nomeCliente', decodedClientName)
+          .order('Competencia', { ascending: false })
+      ]);
 
-      if (consolidadoError) throw consolidadoError;
+      if (consolidadoResponse.error) throw consolidadoResponse.error;
+      if (dadosResponse.error) throw dadosResponse.error;
 
-      // Fetch detailed data
-      const { data: dadosResponse, error: dadosError } = await supabase
-        .from('DadosPerformance')
-        .select('*')
-        .eq('Nome', decodedClientName)
-        .order('Competencia', { ascending: false });
-
-      if (dadosError) throw dadosError;
-
-      setConsolidadoData(consolidadoResponse || []);
-      setDadosData(dadosResponse || []);
+      setConsolidadoData((consolidadoResponse.data || []) as any[]);
+      setDadosData((dadosResponse.data || []) as any[]);
     } catch (error) {
-      console.error('Erro ao buscar dados:', error);
+      console.error('Error fetching data:', error);
       toast({
         title: "Erro",
-        description: "Erro ao carregar dados do cliente",
+        description: "Erro ao carregar dados",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Função para calcular rentabilidade ponderada automaticamente
+  const calculateWeightedReturn = () => {
+    const selectedConsolidados = consolidadoData.filter(item => selectedItems.has(item.id));
+    
+    if (selectedConsolidados.length === 0) {
+      toast({
+        title: "Aviso",
+        description: "Nenhum registro selecionado",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    let totalPosicao = 0;
+    let weightedRendimento = 0;
+
+    selectedConsolidados.forEach(consolidado => {
+      const matchingDetalhados = dadosData.filter(dado => 
+        dado.Competencia === consolidado.Competencia &&
+        dado.Instituicao === consolidado.Instituicao &&
+        dado.nomeConta === consolidado.nomeConta
+      );
+
+      matchingDetalhados.forEach(detalhado => {
+        const posicao = detalhado.Posicao || 0;
+        const rendimento = detalhado.Rendimento || 0;
+        
+        totalPosicao += posicao;
+        weightedRendimento += posicao * rendimento;
+      });
+    });
+
+    if (totalPosicao === 0) {
+      toast({
+        title: "Aviso",
+        description: "Nenhum ativo detalhado encontrado para os registros selecionados",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    const rendimentoPonderado = weightedRendimento / totalPosicao;
+    
+    toast({
+      title: "Cálculo Realizado",
+      description: `Rentabilidade ponderada: ${(rendimentoPonderado * 100).toFixed(4)}%`,
+    });
+
+    return rendimentoPonderado;
+  };
+
+  // Função para calcular rentabilidade baseada em indexador
+  const calculateManualReturn = () => {
+    const { competencia, indexador, percentual } = manualCalcData;
+
+    if (!competencia) {
+      toast({
+        title: "Erro",
+        description: "Por favor, informe a competência",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    const competenciaRegex = /^\d{2}\/\d{4}$/;
+    if (!competenciaRegex.test(competencia)) {
+      toast({
+        title: "Erro",
+        description: "Competência deve estar no formato MM/YYYY",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    let baseReturn = 0;
+
+    if (indexador === 'CDI') {
+      const cdiRecord = cdiData.find(record => record.competencia === competencia);
+      
+      if (!cdiRecord) {
+        toast({
+          title: "Erro",
+          description: `Dados do CDI não encontrados para ${competencia}`,
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      baseReturn = cdiRecord.cdiRate;
+      const rendimentoFinal = baseReturn * (percentual / 100);
+
+      toast({
+        title: "Cálculo Realizado",
+        description: `${percentual}% do ${indexador} em ${competencia}: ${(rendimentoFinal * 100).toFixed(4)}%`,
+      });
+
+      return rendimentoFinal;
+      
+    } else if (indexador === 'IPCA') {
+      toast({
+        title: "Aviso",
+        description: "Cálculo baseado em IPCA ainda não implementado. Use CDI ou Pré-fixado.",
+        variant: "destructive",
+      });
+      return null;
+      
+    } else if (indexador === 'PRE') {
+      const taxaAnual = percentual / 100;
+      const taxaMensal = Math.pow(1 + taxaAnual, 1/12) - 1;
+      
+      toast({
+        title: "Cálculo Realizado",
+        description: `Pré-fixado ${percentual}% a.a. = ${(taxaMensal * 100).toFixed(4)}% no mês`,
+      });
+      
+      return taxaMensal;
+    }
+
+    return null;
+  };
+
+  // Função para confirmar e aplicar o cálculo ao campo Rendimento
+  const handleCalculatorConfirm = () => {
+    let calculatedReturn: number | null = null;
+
+    if (calculatorMode === 'auto') {
+      calculatedReturn = calculateWeightedReturn();
+    } else {
+      calculatedReturn = calculateManualReturn();
+    }
+
+    if (calculatedReturn !== null) {
+      setBulkEditData({...bulkEditData, Rendimento: calculatedReturn});
+      setIsCalculatorOpen(false);
     }
   };
 
@@ -2082,6 +2231,14 @@ export default function DataManagement() {
                       />
                       <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsCalculatorOpen(true)}
+                      className="mt-2 w-full"
+                    >
+                      Calcular
+                    </Button>
                   </div>
                 </div>
               </>
@@ -2179,6 +2336,124 @@ export default function DataManagement() {
               <Button onClick={handleBulkSave}>
                 <Save className="mr-2 h-4 w-4" />
                 Salvar Alterações
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Calculator Dialog */}
+      <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Calcular Rendimento</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Seleção do modo */}
+            <div className="flex gap-2">
+              <Button
+                variant={calculatorMode === 'auto' ? 'default' : 'outline'}
+                onClick={() => setCalculatorMode('auto')}
+                className="flex-1"
+              >
+                Automático
+              </Button>
+              <Button
+                variant={calculatorMode === 'manual' ? 'default' : 'outline'}
+                onClick={() => setCalculatorMode('manual')}
+                className="flex-1"
+              >
+                Manual
+              </Button>
+            </div>
+
+            {/* Modo Automático */}
+            {calculatorMode === 'auto' && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Calcula a rentabilidade ponderada dos ativos detalhados vinculados aos registros selecionados.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  <strong>Critério:</strong> Mesma Competência, Instituição e Nome da Conta.
+                </p>
+                <div className="bg-muted p-3 rounded-md">
+                  <p className="text-sm font-medium">Registros selecionados: {selectedItems.size}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Modo Manual */}
+            {calculatorMode === 'manual' && (
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="calc-competencia">Competência</Label>
+                  <Input
+                    id="calc-competencia"
+                    value={manualCalcData.competencia}
+                    onChange={(e) => {
+                      let value = e.target.value.replace(/\D/g, '');
+                      if (value.length >= 2) {
+                        value = value.substring(0, 2) + '/' + value.substring(2, 6);
+                      }
+                      setManualCalcData({...manualCalcData, competencia: value});
+                    }}
+                    placeholder="MM/YYYY"
+                    maxLength={7}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="calc-indexador">Indexador</Label>
+                  <Select 
+                    value={manualCalcData.indexador} 
+                    onValueChange={(value) => setManualCalcData({...manualCalcData, indexador: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CDI">CDI</SelectItem>
+                      <SelectItem value="IPCA">IPCA</SelectItem>
+                      <SelectItem value="PRE">Pré-fixado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="calc-percentual">
+                    {manualCalcData.indexador === 'PRE' ? 'Taxa Anual (%)' : `Percentual do ${manualCalcData.indexador} (%)`}
+                  </Label>
+                  <Input
+                    id="calc-percentual"
+                    type="number"
+                    step="0.01"
+                    value={manualCalcData.percentual}
+                    onChange={(e) => setManualCalcData({...manualCalcData, percentual: parseFloat(e.target.value) || 0})}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {manualCalcData.indexador === 'PRE' 
+                      ? 'Ex: 12 para 12% ao ano'
+                      : `Ex: 80 para 80% do ${manualCalcData.indexador}`}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Botões de ação */}
+            <div className="flex gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setIsCalculatorOpen(false)}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCalculatorConfirm}
+                className="flex-1"
+              >
+                Confirmar
               </Button>
             </div>
           </div>
