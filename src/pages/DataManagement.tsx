@@ -2303,7 +2303,7 @@ export default function DataManagement() {
                   <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-12">
+                          <TableHead className="w-12 whitespace-nowrap">
                             <Checkbox
                               checked={selectedItems.size === filteredDadosData.length && filteredDadosData.length > 0}
                               onCheckedChange={(checked) => {
@@ -2317,7 +2317,7 @@ export default function DataManagement() {
                         </TableHead>
                         {visibleColumnsDetalhados.has('Competência') && (
                           <TableHead 
-                            className={isColumnSortableDetalhados('Competência') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            className={`whitespace-nowrap ${isColumnSortableDetalhados('Competência') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
                             onClick={() => isColumnSortableDetalhados('Competência') && handleColumnHeaderClickDetalhados('Competência')}
                           >
                             <div className="flex items-center">
@@ -2328,7 +2328,7 @@ export default function DataManagement() {
                         )}
                         {visibleColumnsDetalhados.has('Instituição') && (
                           <TableHead 
-                            className={isColumnSortableDetalhados('Instituição') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            className={`whitespace-nowrap ${isColumnSortableDetalhados('Instituição') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
                             onClick={() => isColumnSortableDetalhados('Instituição') && handleColumnHeaderClickDetalhados('Instituição')}
                           >
                             <div className="flex items-center">
@@ -2339,7 +2339,7 @@ export default function DataManagement() {
                         )}
                         {visibleColumnsDetalhados.has('Nome da Conta') && (
                           <TableHead 
-                            className={isColumnSortableDetalhados('Nome da Conta') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            className={`whitespace-nowrap ${isColumnSortableDetalhados('Nome da Conta') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
                             onClick={() => isColumnSortableDetalhados('Nome da Conta') && handleColumnHeaderClickDetalhados('Nome da Conta')}
                           >
                             <div className="flex items-center">
@@ -2350,7 +2350,7 @@ export default function DataManagement() {
                         )}
                         {visibleColumnsDetalhados.has('Moeda') && (
                           <TableHead 
-                            className={isColumnSortableDetalhados('Moeda') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            className={`whitespace-nowrap ${isColumnSortableDetalhados('Moeda') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
                             onClick={() => isColumnSortableDetalhados('Moeda') && handleColumnHeaderClickDetalhados('Moeda')}
                           >
                             <div className="flex items-center">
@@ -2361,7 +2361,7 @@ export default function DataManagement() {
                         )}
                         {visibleColumnsDetalhados.has('Ativo') && (
                           <TableHead 
-                            className={isColumnSortableDetalhados('Ativo') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            className={`whitespace-nowrap ${isColumnSortableDetalhados('Ativo') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
                             onClick={() => isColumnSortableDetalhados('Ativo') && handleColumnHeaderClickDetalhados('Ativo')}
                           >
                             <div className="flex items-center">
@@ -2372,7 +2372,7 @@ export default function DataManagement() {
                         )}
                         {visibleColumnsDetalhados.has('Emissor') && (
                           <TableHead 
-                            className={isColumnSortableDetalhados('Emissor') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            className={`whitespace-nowrap ${isColumnSortableDetalhados('Emissor') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
                             onClick={() => isColumnSortableDetalhados('Emissor') && handleColumnHeaderClickDetalhados('Emissor')}
                           >
                             <div className="flex items-center">
@@ -2383,7 +2383,7 @@ export default function DataManagement() {
                         )}
                         {visibleColumnsDetalhados.has('Classe') && (
                           <TableHead 
-                            className={isColumnSortableDetalhados('Classe') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            className={`whitespace-nowrap ${isColumnSortableDetalhados('Classe') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
                             onClick={() => isColumnSortableDetalhados('Classe') && handleColumnHeaderClickDetalhados('Classe')}
                           >
                             <div className="flex items-center">
@@ -2394,7 +2394,7 @@ export default function DataManagement() {
                         )}
                         {visibleColumnsDetalhados.has('Posição') && (
                           <TableHead 
-                            className={isColumnSortableDetalhados('Posição') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            className={`whitespace-nowrap ${isColumnSortableDetalhados('Posição') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
                             onClick={() => isColumnSortableDetalhados('Posição') && handleColumnHeaderClickDetalhados('Posição')}
                           >
                             <div className="flex items-center">
@@ -2405,7 +2405,7 @@ export default function DataManagement() {
                         )}
                         {visibleColumnsDetalhados.has('Taxa') && (
                           <TableHead 
-                            className={isColumnSortableDetalhados('Taxa') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            className={`whitespace-nowrap ${isColumnSortableDetalhados('Taxa') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
                             onClick={() => isColumnSortableDetalhados('Taxa') && handleColumnHeaderClickDetalhados('Taxa')}
                           >
                             <div className="flex items-center">
@@ -2416,7 +2416,7 @@ export default function DataManagement() {
                         )}
                         {visibleColumnsDetalhados.has('Vencimento') && (
                           <TableHead 
-                            className={isColumnSortableDetalhados('Vencimento') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            className={`whitespace-nowrap ${isColumnSortableDetalhados('Vencimento') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
                             onClick={() => isColumnSortableDetalhados('Vencimento') && handleColumnHeaderClickDetalhados('Vencimento')}
                           >
                             <div className="flex items-center">
@@ -2427,7 +2427,7 @@ export default function DataManagement() {
                         )}
                         {visibleColumnsDetalhados.has('Rendimento %') && (
                           <TableHead 
-                            className={isColumnSortableDetalhados('Rendimento %') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            className={`whitespace-nowrap ${isColumnSortableDetalhados('Rendimento %') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
                             onClick={() => isColumnSortableDetalhados('Rendimento %') && handleColumnHeaderClickDetalhados('Rendimento %')}
                           >
                             <div className="flex items-center">
@@ -2437,7 +2437,7 @@ export default function DataManagement() {
                           </TableHead>
                         )}
                         {visibleColumnsDetalhados.has('Ações') && (
-                          <TableHead>Ações</TableHead>
+                          <TableHead className="whitespace-nowrap">Ações</TableHead>
                         )}
                         </TableRow>
                       </TableHeader>
