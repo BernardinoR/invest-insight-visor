@@ -63,18 +63,18 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
   // Helper function to generate grid template columns based on visible columns
   const getGridTemplateColumns = () => {
-    const columns = ['minmax(200px, 1fr)']; // Ativo - flexível com mínimo de 200px
+    const columns = ['minmax(180px, 1fr)']; // Ativo - flexível com mínimo de 180px
     
-    if (visibleColumns.alocacao) columns.push('120px');      // Alocação % - fixo
-    if (visibleColumns.saldoBruto) columns.push('140px');    // Saldo Bruto - fixo
-    if (visibleColumns.mes) columns.push('80px');            // Mês % - fixo
-    if (visibleColumns.ano) columns.push('80px');            // Ano % - fixo
-    if (visibleColumns.inicio) columns.push('80px');         // Início % - fixo
-    if (visibleColumns.emissor) columns.push('150px');       // Emissor - fixo
-    if (visibleColumns.instituicao) columns.push('140px');   // Instituição - fixo
-    if (visibleColumns.nomeConta) columns.push('150px');     // Nome da Conta - fixo
-    if (visibleColumns.vencimento) columns.push('100px');    // Vencimento - fixo
-    if (visibleColumns.moedaOrigem) columns.push('100px');   // Moeda - fixo
+    if (visibleColumns.alocacao) columns.push('110px');      // Alocação % - fixo
+    if (visibleColumns.saldoBruto) columns.push('130px');    // Saldo Bruto - fixo
+    if (visibleColumns.mes) columns.push('75px');            // Mês % - fixo
+    if (visibleColumns.ano) columns.push('75px');            // Ano % - fixo
+    if (visibleColumns.inicio) columns.push('75px');         // Início % - fixo
+    if (visibleColumns.emissor) columns.push('140px');       // Emissor - fixo
+    if (visibleColumns.instituicao) columns.push('130px');   // Instituição - fixo
+    if (visibleColumns.nomeConta) columns.push('140px');     // Nome da Conta - fixo
+    if (visibleColumns.vencimento) columns.push('95px');     // Vencimento - fixo
+    if (visibleColumns.moedaOrigem) columns.push('90px');    // Moeda - fixo
     
     return columns.join(' ');
   };
@@ -1294,8 +1294,11 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                             {/* Assets List */}
                             <CollapsibleContent className="animate-accordion-down">
                               <div className="border-t border-border/50 bg-muted/10">
-                                {/* Table Header */}
-                                <div className={`grid gap-4 p-3 border-b border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground`} style={{ gridTemplateColumns: getGridTemplateColumns() }}>
+                                {/* Scroll Container */}
+                                <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+                                  <div className="min-w-max">
+                                    {/* Table Header */}
+                                    <div className={`grid gap-4 p-3 border-b border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground`} style={{ gridTemplateColumns: getGridTemplateColumns() }}>
                                   <div className="text-left">Ativo</div>
                                   {visibleColumns.alocacao && <div className="text-right">Alocação / Qtd.</div>}
                                   {visibleColumns.saldoBruto && <div className="text-right">Saldo Bruto</div>}
@@ -1446,9 +1449,11 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                        <div className="border-b border-border/20"></div>
                                      )}
                                    </div>
-                                   );
+                                     );
                   })}
-               </div>
+                                  </div> {/* Fecha min-w-max */}
+                                </div> {/* Fecha overflow-x-auto */}
+               </div> {/* Fecha bg-muted/10 */}
              </CollapsibleContent>
            </div>
          </Collapsible>
