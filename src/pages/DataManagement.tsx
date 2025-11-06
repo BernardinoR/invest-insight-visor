@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -89,6 +89,39 @@ export default function DataManagement() {
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
   const [bulkEditData, setBulkEditData] = useState<any>({});
+  
+  // Column visibility state
+  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set([
+    'Competência',
+    'Instituição',
+    'Nome da Conta',
+    'Moeda',
+    'Patrimônio Final',
+    'Rendimento %',
+    'Verificação',
+    'Ações'
+  ]));
+
+  // Todas as colunas disponíveis
+  const availableColumns = [
+    'Competência',
+    'Instituição',
+    'Nome da Conta',
+    'Moeda',
+    'Patrimônio Inicial',
+    'Movimentação',
+    'Impostos',
+    'Ganho Financeiro',
+    'Patrimônio Final',
+    'Rendimento %',
+    'Verificação',
+    'Ações'
+  ];
+
+  // Helper function to get visible columns count
+  const getVisibleColumnsCount = () => {
+    return visibleColumns.size + 1; // +1 para o checkbox
+  };
   
   // Get unique values for filtering
   const competencias = [...new Set([
@@ -793,15 +826,69 @@ export default function DataManagement() {
                 </div>
                 <div className="flex items-center gap-2">
                   {activeTab === 'consolidado' && (
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={selectAllVisibleItems}
-                      className="h-8"
-                    >
-                      <CheckSquare className="mr-1 h-3 w-3" />
-                      Selecionar Todos
-                    </Button>
+                    <>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-8">
+                            <ChevronDown className="mr-2 h-4 w-4" />
+                            Colunas
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64" align="end">
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-sm mb-3">Selecionar Colunas</h4>
+                            <div className="space-y-2 max-h-80 overflow-y-auto">
+                              {availableColumns.map(column => (
+                                <div key={column} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`column-${column}`}
+                                    checked={visibleColumns.has(column)}
+                                    onCheckedChange={(checked) => {
+                                      const newVisible = new Set(visibleColumns);
+                                      if (checked) {
+                                        newVisible.add(column);
+                                      } else {
+                                        // Sempre manter pelo menos Ações visível
+                                        if (column !== 'Ações') {
+                                          newVisible.delete(column);
+                                        }
+                                      }
+                                      setVisibleColumns(newVisible);
+                                    }}
+                                    disabled={column === 'Ações'} // Ações sempre visível
+                                  />
+                                  <label
+                                    htmlFor={`column-${column}`}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                  >
+                                    {column}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="pt-2 border-t">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => setVisibleColumns(new Set(availableColumns))}
+                              >
+                                Selecionar Todas
+                              </Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={selectAllVisibleItems}
+                        className="h-8"
+                      >
+                        <CheckSquare className="mr-1 h-3 w-3" />
+                        Selecionar Todos
+                      </Button>
+                    </>
                   )}
                   <Button onClick={() => handleCreate('consolidado')}>
                     <Plus className="mr-2 h-4 w-4" />
@@ -810,7 +897,7 @@ export default function DataManagement() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-md border">
                   <Table>
                      <TableHeader>
                        <TableRow>
@@ -826,30 +913,30 @@ export default function DataManagement() {
                              }}
                            />
                          </TableHead>
-                          <TableHead>Competência</TableHead>
-                          <TableHead>Instituição</TableHead>
-                          <TableHead>Nome da Conta</TableHead>
-                          <TableHead>Moeda</TableHead>
-                          <TableHead>Patrimônio Inicial</TableHead>
-                         <TableHead>Movimentação</TableHead>
-                         <TableHead>Impostos</TableHead>
-                         <TableHead>Ganho Financeiro</TableHead>
-                          <TableHead>Patrimônio Final</TableHead>
-                         <TableHead>Rendimento %</TableHead>
-                         <TableHead className="text-center">Verificação</TableHead>
-                         <TableHead>Ações</TableHead>
+                         {visibleColumns.has('Competência') && <TableHead className="w-24">Competência</TableHead>}
+                         {visibleColumns.has('Instituição') && <TableHead className="w-28">Instituição</TableHead>}
+                         {visibleColumns.has('Nome da Conta') && <TableHead className="w-32">Nome da Conta</TableHead>}
+                         {visibleColumns.has('Moeda') && <TableHead className="w-20">Moeda</TableHead>}
+                         {visibleColumns.has('Patrimônio Inicial') && <TableHead className="text-right w-32">Patrim. Inicial</TableHead>}
+                         {visibleColumns.has('Movimentação') && <TableHead className="text-right w-28">Movimentação</TableHead>}
+                         {visibleColumns.has('Impostos') && <TableHead className="text-right w-24">Impostos</TableHead>}
+                         {visibleColumns.has('Ganho Financeiro') && <TableHead className="text-right w-28">Ganho Financ.</TableHead>}
+                         {visibleColumns.has('Patrimônio Final') && <TableHead className="text-right w-32">Patrim. Final</TableHead>}
+                         {visibleColumns.has('Rendimento %') && <TableHead className="text-right w-24">Rend. %</TableHead>}
+                         {visibleColumns.has('Verificação') && <TableHead className="text-center w-20">Verif.</TableHead>}
+                         {visibleColumns.has('Ações') && <TableHead className="w-36">Ações</TableHead>}
                        </TableRow>
                      </TableHeader>
                     <TableBody>
                        {loading ? (
                          <TableRow>
-                           <TableCell colSpan={13} className="text-center">
+                           <TableCell colSpan={getVisibleColumnsCount()} className="text-center">
                              Carregando...
                            </TableCell>
                          </TableRow>
                         ) : filteredConsolidadoData.length === 0 ? (
                          <TableRow>
-                            <TableCell colSpan={13} className="text-center">
+                            <TableCell colSpan={getVisibleColumnsCount()} className="text-center">
                               Nenhum dado encontrado
                             </TableCell>
                          </TableRow>
@@ -862,121 +949,144 @@ export default function DataManagement() {
                                  onCheckedChange={() => toggleItemSelection(item.id)}
                                />
                              </TableCell>
-                              <TableCell>{item.Competencia}</TableCell>
-                              <TableCell>{item.Instituicao}</TableCell>
-                              <TableCell>{item.nomeConta || '-'}</TableCell>
-                              <TableCell>{item.Moeda || '-'}</TableCell>
-                              <TableCell>{formatCurrency(item["Patrimonio Inicial"])}</TableCell>
-                             <TableCell>{formatCurrency(item["Movimentação"])}</TableCell>
-                             <TableCell>{formatCurrency(item.Impostos)}</TableCell>
-                             <TableCell>{formatCurrency(item["Ganho Financeiro"])}</TableCell>
-                              <TableCell>{formatCurrency(item["Patrimonio Final"])}</TableCell>
-                             <TableCell>{formatPercentage(item.Rendimento)}</TableCell>
-                             <TableCell className="text-center">
-                               {(() => {
-                                 const verification = verifyIntegrity(
-                                   item.Competencia,
-                                   item.Instituicao,
-                                   item.nomeConta,
-                                   item["Patrimonio Final"]
-                                 );
-                                 
-                                 return (
-                                   <Popover>
-                                     <PopoverTrigger asChild>
-                                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                         {verification.status === 'match' && (
-                                           <CheckCircle2 className="h-5 w-5 text-green-500" />
-                                         )}
-                                         {verification.status === 'tolerance' && (
-                                           <AlertCircle className="h-5 w-5 text-yellow-500" />
-                                         )}
-                                         {verification.status === 'mismatch' && (
-                                           <XCircle className="h-5 w-5 text-red-500" />
-                                         )}
-                                         {verification.status === 'no-data' && (
-                                           <Info className="h-5 w-5 text-blue-500" />
-                                         )}
-                                       </Button>
-                                     </PopoverTrigger>
-                                     <PopoverContent className="w-80">
-                                       <div className="space-y-2">
-                                         <h4 className="font-medium text-sm">Verificação de Integridade</h4>
-                                         <div className="text-sm space-y-1">
-                                           <div className="flex justify-between">
-                                             <span className="text-muted-foreground">Patrimônio Final:</span>
-                                             <span className="font-medium">{formatCurrency(verification.consolidatedValue)}</span>
-                                           </div>
-                                           <div className="flex justify-between">
-                                             <span className="text-muted-foreground">Soma Detalhada:</span>
-                                             <span className="font-medium">{formatCurrency(verification.detailedSum)}</span>
-                                           </div>
-                                           <div className="flex justify-between">
-                                             <span className="text-muted-foreground">Diferença:</span>
-                                             <span className={`font-medium ${
-                                               verification.status === 'mismatch' ? 'text-red-500' : 
-                                               verification.status === 'tolerance' ? 'text-yellow-500' : 
-                                               'text-green-500'
-                                             }`}>
-                                               {formatCurrency(verification.difference)}
-                                             </span>
-                                           </div>
-                                           <div className="flex justify-between">
-                                             <span className="text-muted-foreground">Registros Detalhados:</span>
-                                             <span className="font-medium">{verification.detailedCount}</span>
-                                           </div>
+                             {visibleColumns.has('Competência') && <TableCell>{item.Competencia}</TableCell>}
+                             {visibleColumns.has('Instituição') && <TableCell>{item.Instituicao}</TableCell>}
+                             {visibleColumns.has('Nome da Conta') && <TableCell>{item.nomeConta || '-'}</TableCell>}
+                             {visibleColumns.has('Moeda') && <TableCell>{item.Moeda || '-'}</TableCell>}
+                             {visibleColumns.has('Patrimônio Inicial') && <TableCell className="text-right">{formatCurrency(item["Patrimonio Inicial"])}</TableCell>}
+                             {visibleColumns.has('Movimentação') && <TableCell className="text-right">{formatCurrency(item["Movimentação"])}</TableCell>}
+                             {visibleColumns.has('Impostos') && <TableCell className="text-right">{formatCurrency(item.Impostos)}</TableCell>}
+                             {visibleColumns.has('Ganho Financeiro') && <TableCell className="text-right">{formatCurrency(item["Ganho Financeiro"])}</TableCell>}
+                             {visibleColumns.has('Patrimônio Final') && <TableCell className="text-right">{formatCurrency(item["Patrimonio Final"])}</TableCell>}
+                             {visibleColumns.has('Rendimento %') && <TableCell className="text-right">{formatPercentage(item.Rendimento)}</TableCell>}
+                             {visibleColumns.has('Verificação') && (
+                               <TableCell className="text-center">
+                                 {(() => {
+                                   const verification = verifyIntegrity(
+                                     item.Competencia,
+                                     item.Instituicao,
+                                     item.nomeConta,
+                                     item["Patrimonio Final"]
+                                   );
+                                   
+                                   return (
+                                     <Popover>
+                                       <PopoverTrigger asChild>
+                                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                           {verification.status === 'match' && (
+                                             <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                           )}
+                                           {verification.status === 'tolerance' && (
+                                             <AlertCircle className="h-5 w-5 text-yellow-500" />
+                                           )}
                                            {verification.status === 'mismatch' && (
-                                             <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/20 rounded text-xs text-red-700 dark:text-red-400">
-                                               ⚠️ Diferença significativa detectada. Verifique os dados detalhados.
-                                             </div>
+                                             <XCircle className="h-5 w-5 text-red-500" />
                                            )}
                                            {verification.status === 'no-data' && (
-                                             <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-xs text-blue-700 dark:text-blue-400">
-                                               ℹ️ Nenhum dado detalhado encontrado para esta combinação.
-                                             </div>
+                                             <Info className="h-5 w-5 text-blue-500" />
                                            )}
+                                         </Button>
+                                       </PopoverTrigger>
+                                       <PopoverContent className="w-80">
+                                         <div className="space-y-2">
+                                           <h4 className="font-medium text-sm">Verificação de Integridade</h4>
+                                           <div className="text-sm space-y-1">
+                                             <div className="flex justify-between">
+                                               <span className="text-muted-foreground">Patrimônio Final:</span>
+                                               <span className="font-medium">{formatCurrency(verification.consolidatedValue)}</span>
+                                             </div>
+                                             <div className="flex justify-between">
+                                               <span className="text-muted-foreground">Soma Detalhada:</span>
+                                               <span className="font-medium">{formatCurrency(verification.detailedSum)}</span>
+                                             </div>
+                                             <div className="flex justify-between">
+                                               <span className="text-muted-foreground">Diferença:</span>
+                                               <span className={`font-medium ${
+                                                 verification.status === 'mismatch' ? 'text-red-500' : 
+                                                 verification.status === 'tolerance' ? 'text-yellow-500' : 
+                                                 'text-green-500'
+                                               }`}>
+                                                 {formatCurrency(verification.difference)}
+                                               </span>
+                                             </div>
+                                             <div className="flex justify-between">
+                                               <span className="text-muted-foreground">Registros Detalhados:</span>
+                                               <span className="font-medium">{verification.detailedCount}</span>
+                                             </div>
+                                             {verification.status === 'mismatch' && (
+                                               <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/20 rounded text-xs text-red-700 dark:text-red-400">
+                                                 ⚠️ Diferença significativa detectada. Verifique os dados detalhados.
+                                               </div>
+                                             )}
+                                             {verification.status === 'no-data' && (
+                                               <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-xs text-blue-700 dark:text-blue-400">
+                                                 ℹ️ Nenhum dado detalhado encontrado para esta combinação.
+                                               </div>
+                                             )}
+                                           </div>
                                          </div>
-                                       </div>
-                                     </PopoverContent>
-                                   </Popover>
-                                 );
-                               })()}
-                             </TableCell>
-                             <TableCell>
-                               <div className="flex gap-2">
-                                 <Button
-                                   variant="outline"
-                                   size="sm"
-                                   onClick={() => handleEdit(item, 'consolidado')}
-                                 >
-                                   <Edit className="h-4 w-4" />
-                                 </Button>
-                                 <Button
-                                   variant="outline"
-                                   size="sm"
-                                   onClick={() => handleDelete(item.id, 'consolidado')}
-                                 >
-                                   <Trash2 className="h-4 w-4" />
-                                 </Button>
-                                 <Button
-                                   variant="outline"
-                                   size="sm"
-                                   onClick={() => {
-                                     setActiveTab('detalhados');
-                                     setSelectedCompetencias([item.Competencia]);
-                                     setSelectedInstituicoes([item.Instituicao]);
-                                     setTimeout(() => {
-                                       document.querySelector('[value="detalhados"]')?.scrollIntoView({ 
-                                         behavior: 'smooth' 
-                                       });
-                                     }, 100);
-                                   }}
-                                   title="Ver dados detalhados"
-                                 >
-                                   <ExternalLink className="h-4 w-4" />
-                                 </Button>
-                               </div>
-                             </TableCell>
+                                       </PopoverContent>
+                                     </Popover>
+                                   );
+                                 })()}
+                               </TableCell>
+                             )}
+                             {visibleColumns.has('Ações') && (
+                               <TableCell>
+                                 <div className="flex items-center gap-1">
+                                   {(() => {
+                                     const verification = verifyIntegrity(
+                                       item.Competencia,
+                                       item.Instituicao,
+                                       item.nomeConta,
+                                       item["Patrimonio Final"]
+                                     );
+                                     
+                                     return (
+                                       <Button
+                                         variant="ghost"
+                                         size="sm"
+                                         className="h-8 px-2 hover:bg-primary/10 text-primary"
+                                         onClick={() => {
+                                           setActiveTab('detalhados');
+                                           setSelectedCompetencias([item.Competencia]);
+                                           setSelectedInstituicoes([item.Instituicao]);
+                                           setTimeout(() => {
+                                             document.querySelector('[value="detalhados"]')?.scrollIntoView({ 
+                                               behavior: 'smooth' 
+                                             });
+                                           }, 100);
+                                         }}
+                                         title={`Ver ${verification.detailedCount || 0} ativos detalhados`}
+                                       >
+                                         <ArrowRight className="h-4 w-4" />
+                                         <span className="ml-1 text-xs font-medium">{verification.detailedCount || 0}</span>
+                                       </Button>
+                                     );
+                                   })()}
+                                   
+                                   <Button
+                                     variant="ghost"
+                                     size="sm"
+                                     className="h-8 w-8 p-0"
+                                     onClick={() => handleEdit(item, 'consolidado')}
+                                     title="Editar"
+                                   >
+                                     <Edit className="h-4 w-4" />
+                                   </Button>
+                                   
+                                   <Button
+                                     variant="ghost"
+                                     size="sm"
+                                     className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                     onClick={() => handleDelete(item.id, 'consolidado')}
+                                     title="Excluir"
+                                   >
+                                     <Trash2 className="h-4 w-4" />
+                                   </Button>
+                                 </div>
+                               </TableCell>
+                             )}
                            </TableRow>
                          ))
                       )}
