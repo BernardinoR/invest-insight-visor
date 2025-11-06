@@ -86,9 +86,9 @@ export function InstitutionAllocationCard({
 
   return (
     <Card className="relative bg-gradient-card border-border/50 shadow-elegant-md mb-8 overflow-hidden">
-      <CardContent className="pb-4 pt-6 lg:pr-6">
+      <CardContent className="pb-4 pt-6 lg:pr-6 lg:min-h-[350px]">
         {/* Table - takes full width on mobile, left side on desktop */}
-        <div className="w-full lg:pr-[400px]">
+        <div className="w-full lg:pr-[420px]">
           <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
             <Table>
               <TableHeader>
@@ -166,9 +166,9 @@ export function InstitutionAllocationCard({
         </div>
 
         {/* Pie Chart - centered on mobile, absolutely positioned on desktop */}
-        <div className="mt-6 flex flex-col items-center justify-center lg:mt-0 lg:absolute lg:top-6 lg:right-6 lg:w-[360px]">
-          <div className="relative w-full max-w-[300px] sm:max-w-[320px] lg:max-w-[340px]">
-            <ResponsiveContainer width="100%" height={300}>
+        <div className="mt-6 flex flex-col items-center justify-center lg:mt-0 lg:absolute lg:top-1/2 lg:-translate-y-1/2 lg:right-6 lg:w-[380px]">
+          <div className="relative w-full max-w-[300px] sm:max-w-[340px] lg:max-w-[360px]">
+            <ResponsiveContainer width="100%" height={320}>
               <PieChart>
                 <Pie
                   data={filteredInstitutionData}
