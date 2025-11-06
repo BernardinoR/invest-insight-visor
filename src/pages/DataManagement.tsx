@@ -164,6 +164,103 @@ export default function DataManagement() {
   const [activeFilters, setActiveFilters] = useState<Filter[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
 
+  // Mapeamento de colunas para campos do banco - Dados Consolidados
+  const getFieldKeyFromColumn = (column: string): string | null => {
+    const mapping: { [key: string]: string } = {
+      'Competência': 'Competencia',
+      'Instituição': 'Instituicao',
+      'Nome da Conta': 'nomeConta',
+      'Moeda': 'Moeda',
+      'Patrimônio Inicial': 'Patrimonio Inicial',
+      'Movimentação': 'Movimentação',
+      'Impostos': 'Impostos',
+      'Ganho Financeiro': 'Ganho Financeiro',
+      'Patrimônio Final': 'Patrimonio Final',
+      'Rendimento %': 'Rendimento',
+    };
+    return mapping[column] || null;
+  };
+
+  // Função para lidar com clique no header
+  const handleColumnHeaderClick = (column: string) => {
+    const fieldKey = getFieldKeyFromColumn(column);
+    if (!fieldKey) return;
+    
+    if (!sortConfig || sortConfig.field !== fieldKey) {
+      setSortConfig({ field: fieldKey, direction: 'asc' });
+    } else if (sortConfig.direction === 'asc') {
+      setSortConfig({ field: fieldKey, direction: 'desc' });
+    } else {
+      setSortConfig(null);
+    }
+  };
+
+  // Função para obter o ícone de ordenação
+  const getSortIcon = (column: string) => {
+    const fieldKey = getFieldKeyFromColumn(column);
+    if (!fieldKey || !sortConfig || sortConfig.field !== fieldKey) return null;
+    
+    return sortConfig.direction === 'asc' ? (
+      <ArrowUp className="ml-1 h-3 w-3 inline-block" />
+    ) : (
+      <ArrowDown className="ml-1 h-3 w-3 inline-block" />
+    );
+  };
+
+  // Função para verificar se a coluna é ordenável
+  const isColumnSortable = (column: string): boolean => {
+    return getFieldKeyFromColumn(column) !== null;
+  };
+
+  // Mapeamento de colunas para campos do banco - Dados Detalhados
+  const getFieldKeyFromColumnDetalhados = (column: string): string | null => {
+    const mapping: { [key: string]: string } = {
+      'Competência': 'Competencia',
+      'Instituição': 'Instituicao',
+      'Nome da Conta': 'nomeConta',
+      'Moeda': 'Moeda',
+      'Ativo': 'Ativo',
+      'Emissor': 'Emissor',
+      'Classe': 'Classe do ativo',
+      'Posição': 'Posicao',
+      'Taxa': 'Taxa',
+      'Vencimento': 'Vencimento',
+      'Rendimento %': 'Rendimento',
+    };
+    return mapping[column] || null;
+  };
+
+  // Função para lidar com clique no header - Dados Detalhados
+  const handleColumnHeaderClickDetalhados = (column: string) => {
+    const fieldKey = getFieldKeyFromColumnDetalhados(column);
+    if (!fieldKey) return;
+    
+    if (!sortConfig || sortConfig.field !== fieldKey) {
+      setSortConfig({ field: fieldKey, direction: 'asc' });
+    } else if (sortConfig.direction === 'asc') {
+      setSortConfig({ field: fieldKey, direction: 'desc' });
+    } else {
+      setSortConfig(null);
+    }
+  };
+
+  // Função para obter o ícone de ordenação - Dados Detalhados
+  const getSortIconDetalhados = (column: string) => {
+    const fieldKey = getFieldKeyFromColumnDetalhados(column);
+    if (!fieldKey || !sortConfig || sortConfig.field !== fieldKey) return null;
+    
+    return sortConfig.direction === 'asc' ? (
+      <ArrowUp className="ml-1 h-3 w-3 inline-block" />
+    ) : (
+      <ArrowDown className="ml-1 h-3 w-3 inline-block" />
+    );
+  };
+
+  // Função para verificar se a coluna é ordenável - Dados Detalhados
+  const isColumnSortableDetalhados = (column: string): boolean => {
+    return getFieldKeyFromColumnDetalhados(column) !== null;
+  };
+
   const handleAddFilter = (filter: Filter) => {
     setActiveFilters([...activeFilters, filter]);
   };
@@ -1594,7 +1691,6 @@ export default function DataManagement() {
                 {/* Barra de Ferramentas */}
                 <div className="flex items-center gap-2 mb-3">
                   <FilterBuilder onAddFilter={handleAddFilter} />
-                  <SortButton sortConfig={sortConfig} onSort={setSortConfig} />
                   
                   <div className="flex-1" />
                   
@@ -1704,18 +1800,126 @@ export default function DataManagement() {
                              }}
                            />
                          </TableHead>
-                         {visibleColumns.has('Competência') && <TableHead className="w-24">Competência</TableHead>}
-                         {visibleColumns.has('Instituição') && <TableHead className="w-28">Instituição</TableHead>}
-                         {visibleColumns.has('Nome da Conta') && <TableHead className="w-32">Nome da Conta</TableHead>}
-                         {visibleColumns.has('Moeda') && <TableHead className="w-20">Moeda</TableHead>}
-                         {visibleColumns.has('Patrimônio Inicial') && <TableHead className="text-right w-32">Patrim. Inicial</TableHead>}
-                         {visibleColumns.has('Movimentação') && <TableHead className="text-right w-28">Movimentação</TableHead>}
-                         {visibleColumns.has('Impostos') && <TableHead className="text-right w-24">Impostos</TableHead>}
-                         {visibleColumns.has('Ganho Financeiro') && <TableHead className="text-right w-28">Ganho Financ.</TableHead>}
-                         {visibleColumns.has('Patrimônio Final') && <TableHead className="text-right w-32">Patrim. Final</TableHead>}
-                         {visibleColumns.has('Rendimento %') && <TableHead className="text-right w-24">Rend. %</TableHead>}
-                         {visibleColumns.has('Verificação') && <TableHead className="text-center w-20">Verif.</TableHead>}
-                         {visibleColumns.has('Ações') && <TableHead className="w-36">Ações</TableHead>}
+                         {visibleColumns.has('Competência') && (
+                           <TableHead 
+                             className={`w-24 ${isColumnSortable('Competência') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
+                             onClick={() => isColumnSortable('Competência') && handleColumnHeaderClick('Competência')}
+                           >
+                             <div className="flex items-center">
+                               Competência
+                               {getSortIcon('Competência')}
+                             </div>
+                           </TableHead>
+                         )}
+                         {visibleColumns.has('Instituição') && (
+                           <TableHead 
+                             className={`w-28 ${isColumnSortable('Instituição') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
+                             onClick={() => isColumnSortable('Instituição') && handleColumnHeaderClick('Instituição')}
+                           >
+                             <div className="flex items-center">
+                               Instituição
+                               {getSortIcon('Instituição')}
+                             </div>
+                           </TableHead>
+                         )}
+                         {visibleColumns.has('Nome da Conta') && (
+                           <TableHead 
+                             className={`w-32 ${isColumnSortable('Nome da Conta') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
+                             onClick={() => isColumnSortable('Nome da Conta') && handleColumnHeaderClick('Nome da Conta')}
+                           >
+                             <div className="flex items-center">
+                               Nome da Conta
+                               {getSortIcon('Nome da Conta')}
+                             </div>
+                           </TableHead>
+                         )}
+                         {visibleColumns.has('Moeda') && (
+                           <TableHead 
+                             className={`w-20 ${isColumnSortable('Moeda') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
+                             onClick={() => isColumnSortable('Moeda') && handleColumnHeaderClick('Moeda')}
+                           >
+                             <div className="flex items-center">
+                               Moeda
+                               {getSortIcon('Moeda')}
+                             </div>
+                           </TableHead>
+                         )}
+                         {visibleColumns.has('Patrimônio Inicial') && (
+                           <TableHead 
+                             className={`text-right w-32 ${isColumnSortable('Patrimônio Inicial') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
+                             onClick={() => isColumnSortable('Patrimônio Inicial') && handleColumnHeaderClick('Patrimônio Inicial')}
+                           >
+                             <div className="flex items-center justify-end">
+                               Patrim. Inicial
+                               {getSortIcon('Patrimônio Inicial')}
+                             </div>
+                           </TableHead>
+                         )}
+                         {visibleColumns.has('Movimentação') && (
+                           <TableHead 
+                             className={`text-right w-28 ${isColumnSortable('Movimentação') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
+                             onClick={() => isColumnSortable('Movimentação') && handleColumnHeaderClick('Movimentação')}
+                           >
+                             <div className="flex items-center justify-end">
+                               Movimentação
+                               {getSortIcon('Movimentação')}
+                             </div>
+                           </TableHead>
+                         )}
+                         {visibleColumns.has('Impostos') && (
+                           <TableHead 
+                             className={`text-right w-24 ${isColumnSortable('Impostos') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
+                             onClick={() => isColumnSortable('Impostos') && handleColumnHeaderClick('Impostos')}
+                           >
+                             <div className="flex items-center justify-end">
+                               Impostos
+                               {getSortIcon('Impostos')}
+                             </div>
+                           </TableHead>
+                         )}
+                         {visibleColumns.has('Ganho Financeiro') && (
+                           <TableHead 
+                             className={`text-right w-28 ${isColumnSortable('Ganho Financeiro') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
+                             onClick={() => isColumnSortable('Ganho Financeiro') && handleColumnHeaderClick('Ganho Financeiro')}
+                           >
+                             <div className="flex items-center justify-end">
+                               Ganho Financ.
+                               {getSortIcon('Ganho Financeiro')}
+                             </div>
+                           </TableHead>
+                         )}
+                         {visibleColumns.has('Patrimônio Final') && (
+                           <TableHead 
+                             className={`text-right w-32 ${isColumnSortable('Patrimônio Final') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
+                             onClick={() => isColumnSortable('Patrimônio Final') && handleColumnHeaderClick('Patrimônio Final')}
+                           >
+                             <div className="flex items-center justify-end">
+                               Patrim. Final
+                               {getSortIcon('Patrimônio Final')}
+                             </div>
+                           </TableHead>
+                         )}
+                         {visibleColumns.has('Rendimento %') && (
+                           <TableHead 
+                             className={`text-right w-24 ${isColumnSortable('Rendimento %') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
+                             onClick={() => isColumnSortable('Rendimento %') && handleColumnHeaderClick('Rendimento %')}
+                           >
+                             <div className="flex items-center justify-end">
+                               Rend. %
+                               {getSortIcon('Rendimento %')}
+                             </div>
+                           </TableHead>
+                         )}
+                         {visibleColumns.has('Verificação') && (
+                           <TableHead className="text-center w-20">
+                             Verif.
+                           </TableHead>
+                         )}
+                         {visibleColumns.has('Ações') && (
+                           <TableHead className="w-36">
+                             Ações
+                           </TableHead>
+                         )}
                        </TableRow>
                      </TableHeader>
                     <TableBody>
@@ -1972,20 +2176,108 @@ export default function DataManagement() {
                                   clearSelection();
                                 }
                               }}
-                            />
-                          </TableHead>
-                          <TableHead>Competência</TableHead>
-                          <TableHead>Instituição</TableHead>
-                          <TableHead>Nome da Conta</TableHead>
-                          <TableHead>Moeda</TableHead>
-                          <TableHead>Ativo</TableHead>
-                          <TableHead>Emissor</TableHead>
-                          <TableHead>Classe</TableHead>
-                          <TableHead>Posição</TableHead>
-                          <TableHead>Taxa</TableHead>
-                          <TableHead>Vencimento</TableHead>
-                          <TableHead>Rendimento %</TableHead>
-                          <TableHead>Ações</TableHead>
+                          />
+                        </TableHead>
+                        <TableHead 
+                          className={isColumnSortableDetalhados('Competência') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                          onClick={() => isColumnSortableDetalhados('Competência') && handleColumnHeaderClickDetalhados('Competência')}
+                        >
+                          <div className="flex items-center">
+                            Competência
+                            {getSortIconDetalhados('Competência')}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className={isColumnSortableDetalhados('Instituição') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                          onClick={() => isColumnSortableDetalhados('Instituição') && handleColumnHeaderClickDetalhados('Instituição')}
+                        >
+                          <div className="flex items-center">
+                            Instituição
+                            {getSortIconDetalhados('Instituição')}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className={isColumnSortableDetalhados('Nome da Conta') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                          onClick={() => isColumnSortableDetalhados('Nome da Conta') && handleColumnHeaderClickDetalhados('Nome da Conta')}
+                        >
+                          <div className="flex items-center">
+                            Nome da Conta
+                            {getSortIconDetalhados('Nome da Conta')}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className={isColumnSortableDetalhados('Moeda') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                          onClick={() => isColumnSortableDetalhados('Moeda') && handleColumnHeaderClickDetalhados('Moeda')}
+                        >
+                          <div className="flex items-center">
+                            Moeda
+                            {getSortIconDetalhados('Moeda')}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className={isColumnSortableDetalhados('Ativo') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                          onClick={() => isColumnSortableDetalhados('Ativo') && handleColumnHeaderClickDetalhados('Ativo')}
+                        >
+                          <div className="flex items-center">
+                            Ativo
+                            {getSortIconDetalhados('Ativo')}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className={isColumnSortableDetalhados('Emissor') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                          onClick={() => isColumnSortableDetalhados('Emissor') && handleColumnHeaderClickDetalhados('Emissor')}
+                        >
+                          <div className="flex items-center">
+                            Emissor
+                            {getSortIconDetalhados('Emissor')}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className={isColumnSortableDetalhados('Classe') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                          onClick={() => isColumnSortableDetalhados('Classe') && handleColumnHeaderClickDetalhados('Classe')}
+                        >
+                          <div className="flex items-center">
+                            Classe
+                            {getSortIconDetalhados('Classe')}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className={isColumnSortableDetalhados('Posição') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                          onClick={() => isColumnSortableDetalhados('Posição') && handleColumnHeaderClickDetalhados('Posição')}
+                        >
+                          <div className="flex items-center">
+                            Posição
+                            {getSortIconDetalhados('Posição')}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className={isColumnSortableDetalhados('Taxa') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                          onClick={() => isColumnSortableDetalhados('Taxa') && handleColumnHeaderClickDetalhados('Taxa')}
+                        >
+                          <div className="flex items-center">
+                            Taxa
+                            {getSortIconDetalhados('Taxa')}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className={isColumnSortableDetalhados('Vencimento') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                          onClick={() => isColumnSortableDetalhados('Vencimento') && handleColumnHeaderClickDetalhados('Vencimento')}
+                        >
+                          <div className="flex items-center">
+                            Vencimento
+                            {getSortIconDetalhados('Vencimento')}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className={isColumnSortableDetalhados('Rendimento %') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                          onClick={() => isColumnSortableDetalhados('Rendimento %') && handleColumnHeaderClickDetalhados('Rendimento %')}
+                        >
+                          <div className="flex items-center">
+                            Rendimento %
+                            {getSortIconDetalhados('Rendimento %')}
+                          </div>
+                        </TableHead>
+                        <TableHead>Ações</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
