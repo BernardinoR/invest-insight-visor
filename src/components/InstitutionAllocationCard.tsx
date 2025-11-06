@@ -93,7 +93,7 @@ export function InstitutionAllocationCard({
           </div>
         )}
         {/* Table - takes full width on mobile, left side on desktop */}
-        <div className={selectedRows.length > 0 ? "w-full" : "w-full lg:pr-96"}>
+        <div className="w-full lg:pr-96">
           <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
             <Table>
               <TableHeader>
@@ -171,11 +171,9 @@ export function InstitutionAllocationCard({
         </div>
 
         {/* Pie Chart - centered on mobile, absolutely positioned on desktop */}
-        <div className={`mt-6 flex flex-col items-center justify-center ${
-          selectedRows.length > 0 ? "lg:mt-6" : "lg:mt-0 lg:absolute lg:top-6 lg:right-8 lg:w-80"
-        }`}>
-          <div className="relative w-full max-w-[320px] sm:max-w-[360px] lg:max-w-[280px]">
-            <ResponsiveContainer width="100%" height={280}>
+        <div className="mt-6 flex flex-col items-center justify-center lg:mt-0 lg:absolute lg:top-6 lg:right-8 lg:w-80">
+          <div className="relative w-full max-w-[300px] sm:max-w-[320px] lg:max-w-[280px]">
+            <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
                   data={filteredInstitutionData}
