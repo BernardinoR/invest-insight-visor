@@ -2061,6 +2061,25 @@ export default function DataManagement() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
+                    <Label htmlFor="bulk-nomeConta">Nome da Conta</Label>
+                    <Select 
+                      value={bulkEditData.nomeConta || 'no-change'} 
+                      onValueChange={(value) => setBulkEditData({...bulkEditData, nomeConta: value === 'no-change' ? undefined : value})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecione o nome da conta" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border-border z-50 max-h-[200px] overflow-y-auto">
+                        <SelectItem value="no-change">Não alterar</SelectItem>
+                        {nomesContaUnique.map((nome) => (
+                          <SelectItem key={nome} value={nome}>
+                            {nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
                     <Label htmlFor="bulk-rendimento">Rendimento (%)</Label>
                     <div className="relative">
                       <Input
