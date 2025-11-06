@@ -61,6 +61,24 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     moedaOrigem: true
   });
 
+  // Helper function to generate grid template columns based on visible columns
+  const getGridTemplateColumns = () => {
+    const columns = ['auto']; // First column is always visible (asset name/strategy)
+    
+    if (visibleColumns.alocacao) columns.push('auto');
+    if (visibleColumns.saldoBruto) columns.push('auto');
+    if (visibleColumns.mes) columns.push('auto');
+    if (visibleColumns.ano) columns.push('auto');
+    if (visibleColumns.inicio) columns.push('auto');
+    if (visibleColumns.emissor) columns.push('auto');
+    if (visibleColumns.instituicao) columns.push('auto');
+    if (visibleColumns.nomeConta) columns.push('auto');
+    if (visibleColumns.vencimento) columns.push('auto');
+    if (visibleColumns.moedaOrigem) columns.push('auto');
+    
+    return columns.join(' ');
+  };
+
   const handleInstitutionCardRender = useCallback((card: any) => {
     setInstitutionCardData(card);
   }, []);
@@ -1257,7 +1275,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                             <CollapsibleContent className="animate-accordion-down">
                               <div className="border-t border-border/50 bg-muted/10">
                                 {/* Table Header */}
-                                <div className={`grid gap-4 p-3 border-b border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground`} style={{ gridTemplateColumns: `auto ${visibleColumns.alocacao ? 'auto' : ''} ${visibleColumns.saldoBruto ? 'auto' : ''} ${visibleColumns.mes ? 'auto' : ''} ${visibleColumns.ano ? 'auto' : ''} ${visibleColumns.inicio ? 'auto' : ''} ${visibleColumns.emissor ? 'auto' : ''} ${visibleColumns.instituicao ? 'auto' : ''} ${visibleColumns.nomeConta ? 'auto' : ''} ${visibleColumns.vencimento ? 'auto' : ''} ${visibleColumns.moedaOrigem ? 'auto' : ''}`.trim() }}>
+                                <div className={`grid gap-4 p-3 border-b border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground`} style={{ gridTemplateColumns: getGridTemplateColumns() }}>
                                   <div></div>
                                   {visibleColumns.alocacao && <div className="text-center">Alocação / Qtd.</div>}
                                   {visibleColumns.saldoBruto && <div className="text-center">Saldo Bruto</div>}
@@ -1272,7 +1290,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                 </div>
                                 
                                 {/* Strategy Summary Row */}
-                                <div className={`grid gap-4 p-3 border-b border-border/30 bg-muted/30 text-sm font-semibold`} style={{ gridTemplateColumns: `auto ${visibleColumns.alocacao ? 'auto' : ''} ${visibleColumns.saldoBruto ? 'auto' : ''} ${visibleColumns.mes ? 'auto' : ''} ${visibleColumns.ano ? 'auto' : ''} ${visibleColumns.inicio ? 'auto' : ''} ${visibleColumns.emissor ? 'auto' : ''} ${visibleColumns.instituicao ? 'auto' : ''} ${visibleColumns.nomeConta ? 'auto' : ''} ${visibleColumns.vencimento ? 'auto' : ''} ${visibleColumns.moedaOrigem ? 'auto' : ''}`.trim() }}>
+                                <div className={`grid gap-4 p-3 border-b border-border/30 bg-muted/30 text-sm font-semibold`} style={{ gridTemplateColumns: getGridTemplateColumns() }}>
                                   <div className="text-foreground">{strategy}</div>
                                   {visibleColumns.alocacao && <div className="text-center text-foreground">{percentage.toFixed(2)}%</div>}
                                   {visibleColumns.saldoBruto && <div className="text-center text-foreground">{formatCurrency(totalPosition)}</div>}
@@ -1302,7 +1320,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                 </div>
 
                                 {/* Benchmark Row */}
-                                <div className={`grid gap-4 p-3 border-b border-border/30 bg-muted/10 text-sm`} style={{ gridTemplateColumns: `auto ${visibleColumns.alocacao ? 'auto' : ''} ${visibleColumns.saldoBruto ? 'auto' : ''} ${visibleColumns.mes ? 'auto' : ''} ${visibleColumns.ano ? 'auto' : ''} ${visibleColumns.inicio ? 'auto' : ''} ${visibleColumns.emissor ? 'auto' : ''} ${visibleColumns.instituicao ? 'auto' : ''} ${visibleColumns.nomeConta ? 'auto' : ''} ${visibleColumns.vencimento ? 'auto' : ''} ${visibleColumns.moedaOrigem ? 'auto' : ''}`.trim() }}>
+                                <div className={`grid gap-4 p-3 border-b border-border/30 bg-muted/10 text-sm`} style={{ gridTemplateColumns: getGridTemplateColumns() }}>
                                   <div className="text-muted-foreground">
                                     {(() => {
                                       switch (strategy) {
@@ -1354,7 +1372,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                    const assetReturns = calculateAssetReturns(item.Ativo);
                                    return (
                                    <div key={item.id}>
-                                      <div className={`grid gap-4 p-3 hover:bg-muted/20 transition-colors text-sm`} style={{ gridTemplateColumns: `auto ${visibleColumns.alocacao ? 'auto' : ''} ${visibleColumns.saldoBruto ? 'auto' : ''} ${visibleColumns.mes ? 'auto' : ''} ${visibleColumns.ano ? 'auto' : ''} ${visibleColumns.inicio ? 'auto' : ''} ${visibleColumns.emissor ? 'auto' : ''} ${visibleColumns.instituicao ? 'auto' : ''} ${visibleColumns.nomeConta ? 'auto' : ''} ${visibleColumns.vencimento ? 'auto' : ''} ${visibleColumns.moedaOrigem ? 'auto' : ''}`.trim() }}>
+                                      <div className={`grid gap-4 p-3 hover:bg-muted/20 transition-colors text-sm`} style={{ gridTemplateColumns: getGridTemplateColumns() }}>
                                         <div>
                                           <div className="font-medium text-foreground text-xs">{item.Ativo}</div>
                                         </div>
