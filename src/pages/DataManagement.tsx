@@ -129,6 +129,25 @@ export default function DataManagement() {
   const [correctThreshold, setCorrectThreshold] = useState<number>(0.01);
   const [tempCorrectThreshold, setTempCorrectThreshold] = useState<string>("0.01");
 
+  // Carregar configurações do banco ao montar o componente
+  useEffect(() => {
+    const loadVerificationSettings = async () => {
+      const { data, error } = await supabase
+        .from('verification_settings')
+        .select('*')
+        .single();
+      
+      if (data) {
+        setCorrectThreshold(data.correct_threshold);
+        setToleranceValue(data.tolerance_value);
+        setTempCorrectThreshold(data.correct_threshold.toString());
+        setTempToleranceValue(data.tolerance_value.toString());
+      }
+    };
+    
+    loadVerificationSettings();
+  }, []);
+
   // Todas as colunas disponíveis
   const availableColumns = [
     'Competência',
@@ -1587,7 +1606,7 @@ export default function DataManagement() {
             Cancelar
           </Button>
           <Button
-            onClick={() => {
+            onClick={async () => {
               const newToleranceValue = parseFloat(tempToleranceValue);
               const newCorrectThreshold = parseFloat(tempCorrectThreshold);
               
@@ -1619,13 +1638,31 @@ export default function DataManagement() {
                 });
                 return;
               }
+
+              // Salvar no banco (atualiza o registro com id = 1)
+              const { error } = await supabase
+                .from('verification_settings')
+                .update({
+                  correct_threshold: newCorrectThreshold,
+                  tolerance_value: newToleranceValue
+                })
+                .eq('id', 1);
               
-              // Salvar ambos os valores
+              if (error) {
+                toast({
+                  title: "Erro ao salvar",
+                  description: error.message,
+                  variant: "destructive",
+                });
+                return;
+              }
+              
+              // Salvar ambos os valores no estado
               setCorrectThreshold(newCorrectThreshold);
               setToleranceValue(newToleranceValue);
               
               toast({
-                title: "Configurações Atualizadas",
+                title: "Configurações salvas",
                 description: `Correto: ≤ R$ ${newCorrectThreshold.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} | Tolerância: ≤ R$ ${newToleranceValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
               });
               

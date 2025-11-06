@@ -425,6 +425,27 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_settings: {
+        Row: {
+          correct_threshold: number
+          id: number
+          tolerance_value: number
+          updated_at: string
+        }
+        Insert: {
+          correct_threshold?: number
+          id?: never
+          tolerance_value?: number
+          updated_at?: string
+        }
+        Update: {
+          correct_threshold?: number
+          id?: never
+          tolerance_value?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
