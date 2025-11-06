@@ -63,18 +63,18 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
   // Helper function to generate grid template columns based on visible columns
   const getGridTemplateColumns = () => {
-    const columns = ['auto']; // First column is always visible (asset name/strategy)
+    const columns = ['minmax(200px, 1fr)']; // Ativo - flexível com mínimo de 200px
     
-    if (visibleColumns.alocacao) columns.push('auto');
-    if (visibleColumns.saldoBruto) columns.push('auto');
-    if (visibleColumns.mes) columns.push('auto');
-    if (visibleColumns.ano) columns.push('auto');
-    if (visibleColumns.inicio) columns.push('auto');
-    if (visibleColumns.emissor) columns.push('auto');
-    if (visibleColumns.instituicao) columns.push('auto');
-    if (visibleColumns.nomeConta) columns.push('auto');
-    if (visibleColumns.vencimento) columns.push('auto');
-    if (visibleColumns.moedaOrigem) columns.push('auto');
+    if (visibleColumns.alocacao) columns.push('120px');      // Alocação % - fixo
+    if (visibleColumns.saldoBruto) columns.push('140px');    // Saldo Bruto - fixo
+    if (visibleColumns.mes) columns.push('80px');            // Mês % - fixo
+    if (visibleColumns.ano) columns.push('80px');            // Ano % - fixo
+    if (visibleColumns.inicio) columns.push('80px');         // Início % - fixo
+    if (visibleColumns.emissor) columns.push('150px');       // Emissor - fixo
+    if (visibleColumns.instituicao) columns.push('140px');   // Instituição - fixo
+    if (visibleColumns.nomeConta) columns.push('150px');     // Nome da Conta - fixo
+    if (visibleColumns.vencimento) columns.push('100px');    // Vencimento - fixo
+    if (visibleColumns.moedaOrigem) columns.push('100px');   // Moeda - fixo
     
     return columns.join(' ');
   };
