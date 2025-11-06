@@ -1701,8 +1701,8 @@ export default function DataManagement() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="consolidado">Dados Consolidados</TabsTrigger>
-            <TabsTrigger value="detalhados">Dados Detalhados</TabsTrigger>
+            <TabsTrigger value="consolidado">Consolidado</TabsTrigger>
+            <TabsTrigger value="detalhados">Ativos</TabsTrigger>
           </TabsList>
 
           <TabsContent value="consolidado">
@@ -1710,7 +1710,7 @@ export default function DataManagement() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <CardTitle>Dados Consolidados</CardTitle>
+                    <CardTitle>Consolidado</CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">
                       Performance consolidada por competência e instituição
                     </p>
@@ -1762,7 +1762,7 @@ export default function DataManagement() {
                       <SelectItem value="no-data">
                         <div className="flex items-center gap-2">
                           <Info className="h-4 w-4 text-gray-400" />
-                          <span>Sem Dados Detalhados</span>
+                          <span>Sem Ativos</span>
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -2086,7 +2086,7 @@ export default function DataManagement() {
                                              </div>
                                              {verification.status === 'mismatch' && (
                                                <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/20 rounded text-xs text-red-700 dark:text-red-400">
-                                                 ⚠️ Diferença significativa detectada. Verifique os dados detalhados.
+                                                 ⚠️ Diferença significativa detectada. Verifique os ativos.
                                                </div>
                                              )}
                                              {verification.status === 'no-data' && (
@@ -2171,7 +2171,7 @@ export default function DataManagement() {
           <TabsContent value="detalhados">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle>Dados Detalhados</CardTitle>
+                <CardTitle>Ativos</CardTitle>
                 <p className="text-sm text-muted-foreground">
                   Dados detalhados de ativos por competência
                 </p>
