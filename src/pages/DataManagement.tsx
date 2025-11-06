@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -35,6 +35,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   Popover,
   PopoverContent,
@@ -164,6 +166,9 @@ export default function DataManagement() {
   const [activeFilters, setActiveFilters] = useState<Filter[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   const [verifFilter, setVerifFilter] = useState<string>('all');
+  const [visibleColumnsDetalhados, setVisibleColumnsDetalhados] = useState<Set<string>>(
+    new Set(['Competência', 'Instituição', 'Nome da Conta', 'Moeda', 'Ativo', 'Emissor', 'Classe', 'Posição', 'Rendimento %', 'Ações'])
+  );
 
   // Mapeamento de colunas para campos do banco - Dados Consolidados
   const getFieldKeyFromColumn = (column: string): string | null => {
@@ -2165,47 +2170,126 @@ export default function DataManagement() {
 
           <TabsContent value="detalhados">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Dados Detalhados</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Dados detalhados de ativos por competência
-                  </p>
-                  {activeTab === 'detalhados' && selectedItems.size > 0 && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-sm text-muted-foreground">
-                        {selectedItems.size} item(s) selecionado(s)
-                      </span>
-                      <Button 
-                        size="sm" 
-                        onClick={handleBulkEdit}
-                        className="h-7"
-                      >
-                        <Edit className="mr-1 h-3 w-3" />
-                        Editar
+              <CardHeader className="pb-3">
+                <CardTitle>Dados Detalhados</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Dados detalhados de ativos por competência
+                </p>
+              </CardHeader>
+              <CardContent>
+                {/* Barra de Ferramentas */}
+                <div className="flex items-center gap-2 mb-3">
+                  <FilterBuilder onAddFilter={handleAddFilter} />
+                  
+                  <div className="flex-1" />
+                  
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-8">
+                        <Settings2 className="mr-2 h-4 w-4" />
+                        Colunas
+                        <ChevronDown className="ml-2 h-4 w-4" />
                       </Button>
-                      <Button 
-                        size="sm" 
-                        variant="destructive"
-                        onClick={handleBulkDelete}
-                        className="h-7"
-                      >
-                        <Trash2 className="mr-1 h-3 w-3" />
-                        Excluir
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={clearSelection}
-                        className="h-7"
-                      >
-                        <X className="mr-1 h-3 w-3" />
-                        Limpar
-                      </Button>
-                    </div>
-                  )}
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64" align="end">
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm mb-2">Colunas Visíveis</h4>
+                        
+                        {['Competência', 'Instituição', 'Nome da Conta', 'Moeda', 'Ativo', 'Emissor', 'Classe', 'Posição', 'Taxa', 'Vencimento', 'Rendimento %', 'Ações'].map((col) => (
+                          <div key={col} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`col-det-${col}`}
+                              checked={visibleColumnsDetalhados.has(col)}
+                              onCheckedChange={(checked) => {
+                                const newSet = new Set(visibleColumnsDetalhados);
+                                if (checked) {
+                                  newSet.add(col);
+                                } else {
+                                  newSet.delete(col);
+                                }
+                                setVisibleColumnsDetalhados(newSet);
+                              }}
+                            />
+                            <label
+                              htmlFor={`col-det-${col}`}
+                              className="text-sm font-normal cursor-pointer flex-1"
+                            >
+                              {col}
+                            </label>
+                          </div>
+                        ))}
+                        
+                        <Separator className="my-2" />
+                        
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => setVisibleColumnsDetalhados(new Set(['Competência', 'Instituição', 'Nome da Conta', 'Moeda', 'Ativo', 'Emissor', 'Classe', 'Posição', 'Taxa', 'Vencimento', 'Rendimento %', 'Ações']))}
+                            className="flex-1"
+                          >
+                            Todas
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => setVisibleColumnsDetalhados(new Set(['Ações']))}
+                            className="flex-1"
+                          >
+                            Nenhuma
+                          </Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  
+                  <Button size="sm" onClick={() => handleCreate('dados')}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Novo
+                  </Button>
                 </div>
-                <div className="flex items-center gap-4">
+
+                {/* Filtros Ativos */}
+                <ActiveFilters filters={activeFilters} onRemoveFilter={handleRemoveFilter} />
+
+
+                {/* Informações de Seleção */}
+                {activeTab === 'detalhados' && selectedItems.size > 0 && (
+                  <div className="flex items-center gap-2 mb-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                    <span className="text-sm text-muted-foreground">
+                      {selectedItems.size} item(s) selecionado(s)
+                    </span>
+                    <Button 
+                      size="sm" 
+                      onClick={handleBulkEdit}
+                      className="h-7"
+                    >
+                      <Edit className="mr-1 h-3 w-3" />
+                      Editar
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="destructive"
+                      onClick={handleBulkDelete}
+                      className="h-7"
+                    >
+                      <Trash2 className="mr-1 h-3 w-3" />
+                      Excluir
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={clearSelection}
+                      className="h-7"
+                    >
+                      <X className="mr-1 h-3 w-3" />
+                      Limpar
+                    </Button>
+                  </div>
+                )}
+
+                {/* Linha de Busca e Seleção */}
+                <div className="flex items-center gap-2 mb-3">
                   {activeTab === 'detalhados' && (
                     <Button 
                       size="sm" 
@@ -2217,22 +2301,17 @@ export default function DataManagement() {
                       Selecionar Todos
                     </Button>
                   )}
-                  <div className="relative">
+                  <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
                       placeholder="Buscar por ativo, emissor ou classe..."
                       value={searchAtivo}
                       onChange={(e) => setSearchAtivo(e.target.value)}
-                      className="pl-10 w-64"
+                      className="pl-10"
                     />
                   </div>
-                  <Button onClick={() => handleCreate('dados')}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Novo Registro
-                  </Button>
                 </div>
-              </CardHeader>
-              <CardContent>
+
                 <div className="overflow-x-auto">
                   <Table>
                       <TableHeader>
@@ -2249,106 +2328,130 @@ export default function DataManagement() {
                               }}
                           />
                         </TableHead>
-                        <TableHead 
-                          className={isColumnSortableDetalhados('Competência') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
-                          onClick={() => isColumnSortableDetalhados('Competência') && handleColumnHeaderClickDetalhados('Competência')}
-                        >
-                          <div className="flex items-center">
-                            Competência
-                            {getSortIconDetalhados('Competência')}
-                          </div>
-                        </TableHead>
-                        <TableHead 
-                          className={isColumnSortableDetalhados('Instituição') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
-                          onClick={() => isColumnSortableDetalhados('Instituição') && handleColumnHeaderClickDetalhados('Instituição')}
-                        >
-                          <div className="flex items-center">
-                            Instituição
-                            {getSortIconDetalhados('Instituição')}
-                          </div>
-                        </TableHead>
-                        <TableHead 
-                          className={isColumnSortableDetalhados('Nome da Conta') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
-                          onClick={() => isColumnSortableDetalhados('Nome da Conta') && handleColumnHeaderClickDetalhados('Nome da Conta')}
-                        >
-                          <div className="flex items-center">
-                            Nome da Conta
-                            {getSortIconDetalhados('Nome da Conta')}
-                          </div>
-                        </TableHead>
-                        <TableHead 
-                          className={isColumnSortableDetalhados('Moeda') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
-                          onClick={() => isColumnSortableDetalhados('Moeda') && handleColumnHeaderClickDetalhados('Moeda')}
-                        >
-                          <div className="flex items-center">
-                            Moeda
-                            {getSortIconDetalhados('Moeda')}
-                          </div>
-                        </TableHead>
-                        <TableHead 
-                          className={isColumnSortableDetalhados('Ativo') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
-                          onClick={() => isColumnSortableDetalhados('Ativo') && handleColumnHeaderClickDetalhados('Ativo')}
-                        >
-                          <div className="flex items-center">
-                            Ativo
-                            {getSortIconDetalhados('Ativo')}
-                          </div>
-                        </TableHead>
-                        <TableHead 
-                          className={isColumnSortableDetalhados('Emissor') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
-                          onClick={() => isColumnSortableDetalhados('Emissor') && handleColumnHeaderClickDetalhados('Emissor')}
-                        >
-                          <div className="flex items-center">
-                            Emissor
-                            {getSortIconDetalhados('Emissor')}
-                          </div>
-                        </TableHead>
-                        <TableHead 
-                          className={isColumnSortableDetalhados('Classe') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
-                          onClick={() => isColumnSortableDetalhados('Classe') && handleColumnHeaderClickDetalhados('Classe')}
-                        >
-                          <div className="flex items-center">
-                            Classe
-                            {getSortIconDetalhados('Classe')}
-                          </div>
-                        </TableHead>
-                        <TableHead 
-                          className={isColumnSortableDetalhados('Posição') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
-                          onClick={() => isColumnSortableDetalhados('Posição') && handleColumnHeaderClickDetalhados('Posição')}
-                        >
-                          <div className="flex items-center">
-                            Posição
-                            {getSortIconDetalhados('Posição')}
-                          </div>
-                        </TableHead>
-                        <TableHead 
-                          className={isColumnSortableDetalhados('Taxa') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
-                          onClick={() => isColumnSortableDetalhados('Taxa') && handleColumnHeaderClickDetalhados('Taxa')}
-                        >
-                          <div className="flex items-center">
-                            Taxa
-                            {getSortIconDetalhados('Taxa')}
-                          </div>
-                        </TableHead>
-                        <TableHead 
-                          className={isColumnSortableDetalhados('Vencimento') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
-                          onClick={() => isColumnSortableDetalhados('Vencimento') && handleColumnHeaderClickDetalhados('Vencimento')}
-                        >
-                          <div className="flex items-center">
-                            Vencimento
-                            {getSortIconDetalhados('Vencimento')}
-                          </div>
-                        </TableHead>
-                        <TableHead 
-                          className={isColumnSortableDetalhados('Rendimento %') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
-                          onClick={() => isColumnSortableDetalhados('Rendimento %') && handleColumnHeaderClickDetalhados('Rendimento %')}
-                        >
-                          <div className="flex items-center">
-                            Rendimento %
-                            {getSortIconDetalhados('Rendimento %')}
-                          </div>
-                        </TableHead>
-                        <TableHead>Ações</TableHead>
+                        {visibleColumnsDetalhados.has('Competência') && (
+                          <TableHead 
+                            className={isColumnSortableDetalhados('Competência') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            onClick={() => isColumnSortableDetalhados('Competência') && handleColumnHeaderClickDetalhados('Competência')}
+                          >
+                            <div className="flex items-center">
+                              Competência
+                              {getSortIconDetalhados('Competência')}
+                            </div>
+                          </TableHead>
+                        )}
+                        {visibleColumnsDetalhados.has('Instituição') && (
+                          <TableHead 
+                            className={isColumnSortableDetalhados('Instituição') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            onClick={() => isColumnSortableDetalhados('Instituição') && handleColumnHeaderClickDetalhados('Instituição')}
+                          >
+                            <div className="flex items-center">
+                              Instituição
+                              {getSortIconDetalhados('Instituição')}
+                            </div>
+                          </TableHead>
+                        )}
+                        {visibleColumnsDetalhados.has('Nome da Conta') && (
+                          <TableHead 
+                            className={isColumnSortableDetalhados('Nome da Conta') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            onClick={() => isColumnSortableDetalhados('Nome da Conta') && handleColumnHeaderClickDetalhados('Nome da Conta')}
+                          >
+                            <div className="flex items-center">
+                              Nome da Conta
+                              {getSortIconDetalhados('Nome da Conta')}
+                            </div>
+                          </TableHead>
+                        )}
+                        {visibleColumnsDetalhados.has('Moeda') && (
+                          <TableHead 
+                            className={isColumnSortableDetalhados('Moeda') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            onClick={() => isColumnSortableDetalhados('Moeda') && handleColumnHeaderClickDetalhados('Moeda')}
+                          >
+                            <div className="flex items-center">
+                              Moeda
+                              {getSortIconDetalhados('Moeda')}
+                            </div>
+                          </TableHead>
+                        )}
+                        {visibleColumnsDetalhados.has('Ativo') && (
+                          <TableHead 
+                            className={isColumnSortableDetalhados('Ativo') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            onClick={() => isColumnSortableDetalhados('Ativo') && handleColumnHeaderClickDetalhados('Ativo')}
+                          >
+                            <div className="flex items-center">
+                              Ativo
+                              {getSortIconDetalhados('Ativo')}
+                            </div>
+                          </TableHead>
+                        )}
+                        {visibleColumnsDetalhados.has('Emissor') && (
+                          <TableHead 
+                            className={isColumnSortableDetalhados('Emissor') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            onClick={() => isColumnSortableDetalhados('Emissor') && handleColumnHeaderClickDetalhados('Emissor')}
+                          >
+                            <div className="flex items-center">
+                              Emissor
+                              {getSortIconDetalhados('Emissor')}
+                            </div>
+                          </TableHead>
+                        )}
+                        {visibleColumnsDetalhados.has('Classe') && (
+                          <TableHead 
+                            className={isColumnSortableDetalhados('Classe') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            onClick={() => isColumnSortableDetalhados('Classe') && handleColumnHeaderClickDetalhados('Classe')}
+                          >
+                            <div className="flex items-center">
+                              Classe
+                              {getSortIconDetalhados('Classe')}
+                            </div>
+                          </TableHead>
+                        )}
+                        {visibleColumnsDetalhados.has('Posição') && (
+                          <TableHead 
+                            className={isColumnSortableDetalhados('Posição') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            onClick={() => isColumnSortableDetalhados('Posição') && handleColumnHeaderClickDetalhados('Posição')}
+                          >
+                            <div className="flex items-center">
+                              Posição
+                              {getSortIconDetalhados('Posição')}
+                            </div>
+                          </TableHead>
+                        )}
+                        {visibleColumnsDetalhados.has('Taxa') && (
+                          <TableHead 
+                            className={isColumnSortableDetalhados('Taxa') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            onClick={() => isColumnSortableDetalhados('Taxa') && handleColumnHeaderClickDetalhados('Taxa')}
+                          >
+                            <div className="flex items-center">
+                              Taxa
+                              {getSortIconDetalhados('Taxa')}
+                            </div>
+                          </TableHead>
+                        )}
+                        {visibleColumnsDetalhados.has('Vencimento') && (
+                          <TableHead 
+                            className={isColumnSortableDetalhados('Vencimento') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            onClick={() => isColumnSortableDetalhados('Vencimento') && handleColumnHeaderClickDetalhados('Vencimento')}
+                          >
+                            <div className="flex items-center">
+                              Vencimento
+                              {getSortIconDetalhados('Vencimento')}
+                            </div>
+                          </TableHead>
+                        )}
+                        {visibleColumnsDetalhados.has('Rendimento %') && (
+                          <TableHead 
+                            className={isColumnSortableDetalhados('Rendimento %') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}
+                            onClick={() => isColumnSortableDetalhados('Rendimento %') && handleColumnHeaderClickDetalhados('Rendimento %')}
+                          >
+                            <div className="flex items-center">
+                              Rendimento %
+                              {getSortIconDetalhados('Rendimento %')}
+                            </div>
+                          </TableHead>
+                        )}
+                        {visibleColumnsDetalhados.has('Ações') && (
+                          <TableHead>Ações</TableHead>
+                        )}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -2373,35 +2476,37 @@ export default function DataManagement() {
                                   onCheckedChange={() => toggleItemSelection(item.id)}
                                 />
                               </TableCell>
-                              <TableCell>{item.Competencia}</TableCell>
-                              <TableCell>{item.Instituicao}</TableCell>
-                              <TableCell>{item.nomeConta || '-'}</TableCell>
-                              <TableCell>{item.Moeda || '-'}</TableCell>
-                              <TableCell>{item.Ativo}</TableCell>
-                              <TableCell>{item.Emissor}</TableCell>
-                              <TableCell>{item["Classe do ativo"]}</TableCell>
-                              <TableCell>{formatCurrency(item.Posicao)}</TableCell>
-                              <TableCell>{item.Taxa}</TableCell>
-                              <TableCell>{item.Vencimento}</TableCell>
-                              <TableCell>{formatPercentage(item.Rendimento)}</TableCell>
-                              <TableCell>
-                                <div className="flex gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleEdit(item, 'dados')}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleDelete(item.id, 'dados')}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
+                              {visibleColumnsDetalhados.has('Competência') && <TableCell>{item.Competencia}</TableCell>}
+                              {visibleColumnsDetalhados.has('Instituição') && <TableCell>{item.Instituicao}</TableCell>}
+                              {visibleColumnsDetalhados.has('Nome da Conta') && <TableCell>{item.nomeConta || '-'}</TableCell>}
+                              {visibleColumnsDetalhados.has('Moeda') && <TableCell>{item.Moeda || '-'}</TableCell>}
+                              {visibleColumnsDetalhados.has('Ativo') && <TableCell>{item.Ativo}</TableCell>}
+                              {visibleColumnsDetalhados.has('Emissor') && <TableCell>{item.Emissor}</TableCell>}
+                              {visibleColumnsDetalhados.has('Classe') && <TableCell>{item["Classe do ativo"]}</TableCell>}
+                              {visibleColumnsDetalhados.has('Posição') && <TableCell>{formatCurrency(item.Posicao)}</TableCell>}
+                              {visibleColumnsDetalhados.has('Taxa') && <TableCell>{item.Taxa}</TableCell>}
+                              {visibleColumnsDetalhados.has('Vencimento') && <TableCell>{item.Vencimento}</TableCell>}
+                              {visibleColumnsDetalhados.has('Rendimento %') && <TableCell>{formatPercentage(item.Rendimento)}</TableCell>}
+                              {visibleColumnsDetalhados.has('Ações') && (
+                                <TableCell>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleEdit(item, 'dados')}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleDelete(item.id, 'dados')}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              )}
                             </TableRow>
                           ))
                        )}
