@@ -8,6 +8,7 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import DataManagement from "./pages/DataManagement";
+import ProvaReal from "./pages/ProvaReal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/dashboard/:clientName" element={<Dashboard />} />
               <Route path="/client/:clientName" element={<Dashboard />} />
               <Route path="/data-management/:clientName" element={<DataManagement />} />
+              <Route path="/prova-real/:clientName" element={<ProvaReal />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

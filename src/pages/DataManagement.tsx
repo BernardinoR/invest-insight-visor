@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -587,7 +587,17 @@ export default function DataManagement() {
               </p>
             </div>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/prova-real/${encodeURIComponent(decodedClientName)}`)}
+              className="flex items-center gap-2 bg-card/50 border-primary/20 hover:bg-primary/10"
+            >
+              <FileCheck className="h-4 w-4" />
+              Prova Real
+            </Button>
+            <ThemeToggle />
+          </div>
         </div>
 
         {/* Multi-Select Filters */}
