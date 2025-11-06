@@ -440,7 +440,9 @@ export default function DataManagement() {
     }
 
     if (calculatedReturn !== null) {
-      setBulkEditData({...bulkEditData, Rendimento: calculatedReturn});
+      // Arredondar para 4 casas decimais (resultará em 2 casas quando exibido como %)
+      const roundedReturn = Math.round(calculatedReturn * 10000) / 10000;
+      setBulkEditData({...bulkEditData, Rendimento: roundedReturn});
       setIsCalculatorOpen(false);
     }
   };
