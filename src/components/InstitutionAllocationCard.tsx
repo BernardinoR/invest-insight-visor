@@ -87,11 +87,6 @@ export function InstitutionAllocationCard({
   return (
     <Card className="relative bg-gradient-card border-border/50 shadow-elegant-md mb-8 overflow-hidden">
       <CardContent className="pb-4 pt-6 lg:pr-6">
-        <div className="mb-4 text-sm text-primary font-medium flex flex-wrap gap-2 min-h-[24px]">
-          {selectedRows.length > 0 && (
-            <span>{selectedRows.length} linha(s) selecionada(s)</span>
-          )}
-        </div>
         {/* Table - takes full width on mobile, left side on desktop */}
         <div className="w-full lg:pr-[400px]">
           <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">

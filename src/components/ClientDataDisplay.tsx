@@ -273,20 +273,6 @@ export const ClientDataDisplay = React.memo(({
             return null;
           })()}
           
-          {selectedRows.length > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="text-sm text-muted-foreground">
-                Filtros ativos: {selectedRows.length}
-              </div>
-              <button
-                onClick={onClearFilters}
-                className="text-sm text-primary hover:text-primary/80 underline"
-              >
-                Limpar filtros
-              </button>
-            </div>
-          )}
-          
           <InstitutionAllocationCard
             allInstitutionData={institutionCardData.allInstitutionData}
             filteredInstitutionData={institutionCardData.filteredInstitutionData}
