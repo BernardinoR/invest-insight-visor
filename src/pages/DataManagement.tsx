@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -298,29 +298,50 @@ export default function DataManagement() {
     }
   };
   
-  // Get unique values for filtering
-  const competencias = [...new Set([
-    ...consolidadoData.map(item => item.Competencia),
-    ...dadosData.map(item => item.Competencia)
-  ])].filter(comp => comp && comp.trim() !== '').sort().reverse();
+  // Get unique values for filtering - MEMOIZED
+  const competencias = useMemo(() => 
+    [...new Set([
+      ...consolidadoData.map(item => item.Competencia),
+      ...dadosData.map(item => item.Competencia)
+    ])].filter(comp => comp && comp.trim() !== '').sort().reverse(),
+    [consolidadoData, dadosData]
+  );
 
-  const instituicoes = [...new Set([
-    ...consolidadoData.map(item => item.Instituicao),
-    ...dadosData.map(item => item.Instituicao)
-  ])].filter(inst => inst && inst.trim() !== '').sort();
+  const instituicoes = useMemo(() =>
+    [...new Set([
+      ...consolidadoData.map(item => item.Instituicao),
+      ...dadosData.map(item => item.Instituicao)
+    ])].filter(inst => inst && inst.trim() !== '').sort(),
+    [consolidadoData, dadosData]
+  );
 
-  // Get unique classes and emissores for filtering (dados detalhados)
-  const classesAtivoUnique = [...new Set(dadosData.map(item => item["Classe do ativo"]))].filter(classe => classe && classe.trim() !== '').sort();
-  const emissores = [...new Set(dadosData.map(item => item.Emissor))].filter(emissor => emissor && emissor.trim() !== '').sort();
+  // Get unique classes and emissores for filtering (dados detalhados) - MEMOIZED
+  const classesAtivoUnique = useMemo(() => 
+    [...new Set(dadosData.map(item => item["Classe do ativo"]))]
+      .filter(classe => classe && classe.trim() !== '').sort(),
+    [dadosData]
+  );
   
-  // Get unique values for Nome da Conta and Moeda
-  const nomesContaUnique = [...new Set(consolidadoData.map(item => item.nomeConta))]
-    .filter(nome => nome && nome.trim() !== '')
-    .sort();
+  const emissores = useMemo(() =>
+    [...new Set(dadosData.map(item => item.Emissor))]
+      .filter(emissor => emissor && emissor.trim() !== '').sort(),
+    [dadosData]
+  );
+  
+  // Get unique values for Nome da Conta and Moeda - MEMOIZED
+  const nomesContaUnique = useMemo(() =>
+    [...new Set(consolidadoData.map(item => item.nomeConta))]
+      .filter(nome => nome && nome.trim() !== '')
+      .sort(),
+    [consolidadoData]
+  );
 
-  const moedasUnique = [...new Set(consolidadoData.map(item => item.Moeda))]
-    .filter(moeda => moeda && moeda.trim() !== '')
-    .sort();
+  const moedasUnique = useMemo(() =>
+    [...new Set(consolidadoData.map(item => item.Moeda))]
+      .filter(moeda => moeda && moeda.trim() !== '')
+      .sort(),
+    [consolidadoData]
+  );
 
   const [selectedCompetencias, setSelectedCompetencias] = useState<string[]>([]);
   const [selectedInstituicoes, setSelectedInstituicoes] = useState<string[]>([]);
@@ -660,10 +681,10 @@ export default function DataManagement() {
     }
   };
 
-  const handleEdit = (item: any, type: 'consolidado' | 'dados') => {
+  const handleEdit = useCallback((item: any, type: 'consolidado' | 'dados') => {
     setEditingItem({ ...item, type });
     setIsDialogOpen(true);
-  };
+  }, []);
 
   const handleCreate = (type: 'consolidado' | 'dados') => {
     const newItem = type === 'consolidado' 
@@ -793,16 +814,18 @@ export default function DataManagement() {
     }
   };
 
-  // Multi-selection functions
-  const toggleItemSelection = (id: number) => {
-    const newSelected = new Set(selectedItems);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedItems(newSelected);
-  };
+  // Multi-selection functions - OPTIMIZED
+  const toggleItemSelection = useCallback((id: number) => {
+    setSelectedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
 
   const selectAllVisibleItems = () => {
     const visibleItems = activeTab === 'consolidado' ? filteredConsolidadoData : filteredDadosData;
@@ -810,9 +833,9 @@ export default function DataManagement() {
     setSelectedItems(allIds);
   };
 
-  const clearSelection = () => {
+  const clearSelection = useCallback(() => {
     setSelectedItems(new Set());
-  };
+  }, []);
 
   const handleBulkEdit = () => {
     setIsBulkEditOpen(true);
@@ -1070,18 +1093,26 @@ export default function DataManagement() {
     detailedCount: number;
   }
 
-  const verifyIntegrity = (
+  // OPTIMIZED: Create index of assets by composite key - HUGE PERFORMANCE GAIN
+  const dadosIndex = useMemo(() => {
+    const index = new Map<string, DadosData[]>();
+    dadosData.forEach(item => {
+      const key = `${item.Competencia}-${item.Instituicao}-${item.nomeConta}`;
+      if (!index.has(key)) index.set(key, []);
+      index.get(key)!.push(item);
+    });
+    return index;
+  }, [dadosData]);
+
+  // OPTIMIZED: Verification function using index
+  const verifyIntegrity = useCallback((
     competencia: string, 
     instituicao: string, 
     nomeConta: string,
     patrimonioFinal: number
   ): VerificationResult => {
-    // Filtrar dados detalhados com a mesma chave
-    const relatedDetails = dadosData.filter(item => 
-      item.Competencia === competencia &&
-      item.Instituicao === instituicao &&
-      item.nomeConta === nomeConta
-    );
+    const key = `${competencia}-${instituicao}-${nomeConta}`;
+    const relatedDetails = dadosIndex.get(key) || [];
     
     // Somar todas as posições
     const detailedSum = relatedDetails.reduce((sum, item) => sum + (item.Posicao || 0), 0);
@@ -1093,9 +1124,9 @@ export default function DataManagement() {
     let status: VerificationResult['status'];
     if (relatedDetails.length === 0) {
       status = 'no-data';
-        } else if (difference < correctThreshold) { // Menos do que o limite de "correto"
-          status = 'match';
-    } else if (difference < toleranceValue) { // Menos do que a tolerância configurada
+    } else if (difference < correctThreshold) {
+      status = 'match';
+    } else if (difference < toleranceValue) {
       status = 'tolerance';
     } else {
       status = 'mismatch';
@@ -1108,74 +1139,73 @@ export default function DataManagement() {
       difference,
       detailedCount: relatedDetails.length
     };
-  };
+  }, [dadosIndex, correctThreshold, toleranceValue]);
 
-  // Filter data with advanced filters
-  let filteredConsolidadoData = consolidadoData;
-  
-  // Apply old filters for backward compatibility
-  if (selectedCompetencias.length > 0) {
-    filteredConsolidadoData = filteredConsolidadoData.filter(item => 
-      selectedCompetencias.includes(item.Competencia)
-    );
-  }
-  if (selectedInstituicoes.length > 0) {
-    filteredConsolidadoData = filteredConsolidadoData.filter(item => 
-      selectedInstituicoes.includes(item.Instituicao)
-    );
-  }
-  
-  // Apply advanced filters
-  filteredConsolidadoData = applyFilters(filteredConsolidadoData, activeFilters);
-  
-  // Apply verification filter
-  if (verifFilter !== 'all') {
-    filteredConsolidadoData = filteredConsolidadoData.filter(item => {
-      const verification = verifyIntegrity(
-        item.Competencia,
-        item.Instituicao,
-        item.nomeConta,
-        item["Patrimonio Final"]
+  // OPTIMIZED: Filter data with advanced filters - MEMOIZED
+  const filteredConsolidadoData = useMemo(() => {
+    let data = consolidadoData;
+    
+    // Apply old filters for backward compatibility
+    if (selectedCompetencias.length > 0) {
+      data = data.filter(item => selectedCompetencias.includes(item.Competencia));
+    }
+    if (selectedInstituicoes.length > 0) {
+      data = data.filter(item => selectedInstituicoes.includes(item.Instituicao));
+    }
+    
+    // Apply advanced filters
+    data = applyFilters(data, activeFilters);
+    
+    // Apply verification filter
+    if (verifFilter !== 'all') {
+      data = data.filter(item => {
+        const verification = verifyIntegrity(
+          item.Competencia,
+          item.Instituicao,
+          item.nomeConta,
+          item["Patrimonio Final"]
+        );
+        return verification.status === verifFilter;
+      });
+    }
+    
+    // Apply sorting
+    data = applySorting(data, sortConfig);
+    
+    return data;
+  }, [consolidadoData, selectedCompetencias, selectedInstituicoes, activeFilters, verifFilter, sortConfig, verifyIntegrity]);
+
+  // OPTIMIZED: Filter dados detalhados - MEMOIZED
+  const filteredDadosData = useMemo(() => {
+    let data = dadosData;
+    
+    if (selectedCompetencias.length > 0) {
+      data = data.filter(item => selectedCompetencias.includes(item.Competencia));
+    }
+    if (selectedInstituicoes.length > 0) {
+      data = data.filter(item => selectedInstituicoes.includes(item.Instituicao));
+    }
+
+    // Apply additional filters for dados detalhados
+    if (selectedClasses.length > 0) {
+      data = data.filter(item => selectedClasses.includes(item["Classe do ativo"]));
+    }
+    if (selectedEmissores.length > 0) {
+      data = data.filter(item => selectedEmissores.includes(item.Emissor));
+    }
+
+    // Apply search filter for ativos
+    if (searchAtivo.trim()) {
+      const searchLower = searchAtivo.toLowerCase();
+      data = data.filter(item => 
+        item.Ativo?.toLowerCase().includes(searchLower) ||
+        item.Emissor?.toLowerCase().includes(searchLower) ||
+        item["Classe do ativo"]?.toLowerCase().includes(searchLower)
       );
-      return verification.status === verifFilter;
-    });
-  }
-  
-  // Apply sorting
-  filteredConsolidadoData = applySorting(filteredConsolidadoData, sortConfig);
-
-  let filteredDadosData = dadosData;
-  if (selectedCompetencias.length > 0) {
-    filteredDadosData = filteredDadosData.filter(item => 
-      selectedCompetencias.includes(item.Competencia)
-    );
-  }
-  if (selectedInstituicoes.length > 0) {
-    filteredDadosData = filteredDadosData.filter(item => 
-      selectedInstituicoes.includes(item.Instituicao)
-    );
-  }
-
-  // Apply additional filters for dados detalhados
-  if (selectedClasses.length > 0) {
-    filteredDadosData = filteredDadosData.filter(item => 
-      selectedClasses.includes(item["Classe do ativo"])
-    );
-  }
-  if (selectedEmissores.length > 0) {
-    filteredDadosData = filteredDadosData.filter(item => 
-      selectedEmissores.includes(item.Emissor)
-    );
-  }
-
-  // Apply search filter for ativos
-  if (searchAtivo.trim()) {
-    filteredDadosData = filteredDadosData.filter(item => 
-      item.Ativo?.toLowerCase().includes(searchAtivo.toLowerCase()) ||
-      item.Emissor?.toLowerCase().includes(searchAtivo.toLowerCase()) ||
-      item["Classe do ativo"]?.toLowerCase().includes(searchAtivo.toLowerCase())
-    );
-  }
+    }
+    
+    return data;
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo]);
 
   // Filter Builder Component
   const FilterBuilder = ({ onAddFilter }: { onAddFilter: (filter: Filter) => void }) => {
@@ -2223,39 +2253,12 @@ export default function DataManagement() {
                 </p>
               </CardHeader>
               <CardContent>
-                {/* Card de Comparação */}
+                {/* Card de Comparação - OPTIMIZED */}
                 {selectedConsolidado && (() => {
-                  // Calcular soma dos ativos filtrados
-                  const calculateFilteredAssetsSum = () => {
-                    const filteredAssets = dadosData.filter(item => {
-                      if (selectedCompetencias.length > 0 && !selectedCompetencias.includes(item.Competencia)) {
-                        return false;
-                      }
-                      if (selectedInstituicoes.length > 0 && !selectedInstituicoes.includes(item.Instituicao)) {
-                        return false;
-                      }
-                      if (selectedClasses.length > 0 && !selectedClasses.includes(item["Classe do ativo"])) {
-                        return false;
-                      }
-                      if (selectedEmissores.length > 0 && !selectedEmissores.includes(item.Emissor)) {
-                        return false;
-                      }
-                      if (searchAtivo) {
-                        const searchLower = searchAtivo.toLowerCase();
-                        const matchesAtivo = item.Ativo?.toLowerCase().includes(searchLower);
-                        const matchesEmissor = item.Emissor?.toLowerCase().includes(searchLower);
-                        const matchesClasse = item["Classe do ativo"]?.toLowerCase().includes(searchLower);
-                        if (!matchesAtivo && !matchesEmissor && !matchesClasse) {
-                          return false;
-                        }
-                      }
-                      return true;
-                    });
-                    return filteredAssets.reduce((sum, item) => sum + (item.Posicao || 0), 0);
-                  };
+                  // MEMOIZED: Usar dados já filtrados ao invés de recalcular
+                  const assetsSum = filteredDadosData.reduce((sum, item) => sum + (item.Posicao || 0), 0);
 
                   const consolidadoValue = selectedConsolidado["Patrimonio Final"] || 0;
-                  const assetsSum = calculateFilteredAssetsSum();
                   const difference = Math.abs(consolidadoValue - assetsSum);
                   const percentDiff = consolidadoValue !== 0 
                     ? (difference / Math.abs(consolidadoValue)) * 100 
