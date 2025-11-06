@@ -128,7 +128,7 @@ export default function DataManagement() {
     id: string;
     field: string;
     operator: string;
-    value: string | number;
+    value: string | number | string[];
   }
 
   interface SortConfig {
@@ -541,8 +541,18 @@ export default function DataManagement() {
           case 'notEquals':
             return fieldValue !== filter.value;
           case 'contains':
+            if (Array.isArray(filter.value)) {
+              return filter.value.some(val => 
+                String(fieldValue).toLowerCase().includes(String(val).toLowerCase())
+              );
+            }
             return String(fieldValue).toLowerCase().includes(String(filter.value).toLowerCase());
           case 'notContains':
+            if (Array.isArray(filter.value)) {
+              return !filter.value.some(val => 
+                String(fieldValue).toLowerCase().includes(String(val).toLowerCase())
+              );
+            }
             return !String(fieldValue).toLowerCase().includes(String(filter.value).toLowerCase());
           case 'greaterThan':
             return Number(fieldValue) > Number(filter.value);
@@ -638,7 +648,14 @@ export default function DataManagement() {
     return op?.label || operator;
   };
 
-  const formatFilterValue = (value: string | number, fieldKey: string) => {
+  const formatFilterValue = (value: string | number | string[], fieldKey: string) => {
+    if (Array.isArray(value)) {
+      if (value.length === 0) return '(vazio)';
+      if (value.length === 1) return value[0];
+      if (value.length <= 3) return value.join(', ');
+      return `${value.slice(0, 2).join(', ')} +${value.length - 2}`;
+    }
+    
     const fieldType = getFieldType(fieldKey);
     if (fieldType === 'number' && typeof value === 'number') {
       return formatCurrency(value);
@@ -757,8 +774,18 @@ export default function DataManagement() {
   const FilterBuilder = ({ onAddFilter }: { onAddFilter: (filter: Filter) => void }) => {
     const [field, setField] = useState('');
     const [operator, setOperator] = useState('');
-    const [value, setValue] = useState<string | number>('');
+    const [value, setValue] = useState<string | number | string[]>('');
     const [open, setOpen] = useState(false);
+
+    useEffect(() => {
+      if (operator) {
+        if (['contains', 'notContains'].includes(operator)) {
+          setValue([]);
+        } else {
+          setValue('');
+        }
+      }
+    }, [operator]);
 
     const getOperators = (type: string) => {
       return operatorsByFieldType[type] || operatorsByFieldType.text;
@@ -829,8 +856,76 @@ export default function DataManagement() {
                 {(() => {
                   const fieldType = getFieldType(field);
                   const fieldOptions = getFieldOptions(field);
+                  const isMultiSelectOperator = ['contains', 'notContains'].includes(operator);
                   
-                  // Se o campo tem opções predefinidas, usar Select
+                  // Se o campo tem opções E o operador permite múltipla seleção
+                  if (fieldOptions && fieldOptions.length > 0 && isMultiSelectOperator) {
+                    return (
+                      <div className="mt-1">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-between"
+                              size="sm"
+                            >
+                              <span className="truncate">
+                                {Array.isArray(value) && value.length > 0
+                                  ? `${value.length} selecionado(s)`
+                                  : "Selecione valores"}
+                              </span>
+                              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-full p-0" align="start">
+                            <div className="max-h-64 overflow-y-auto p-2">
+                              {fieldOptions.map((option: string) => {
+                                const selectedValues = Array.isArray(value) ? value : [];
+                                const isSelected = selectedValues.includes(option);
+                                
+                                return (
+                                  <div
+                                    key={option}
+                                    className="flex items-center space-x-2 p-2 hover:bg-accent rounded cursor-pointer"
+                                    onClick={() => {
+                                      const currentValues = Array.isArray(value) ? [...value] : [];
+                                      if (isSelected) {
+                                        setValue(currentValues.filter(v => v !== option));
+                                      } else {
+                                        setValue([...currentValues, option]);
+                                      }
+                                    }}
+                                  >
+                                    <Checkbox checked={isSelected} />
+                                    <label className="flex-1 cursor-pointer text-sm">
+                                      {option}
+                                    </label>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            {Array.isArray(value) && value.length > 0 && (
+                              <div className="border-t p-2 flex justify-between items-center">
+                                <span className="text-xs text-muted-foreground">
+                                  {value.length} selecionado(s)
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setValue([])}
+                                  className="h-6 text-xs"
+                                >
+                                  Limpar
+                                </Button>
+                              </div>
+                            )}
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    );
+                  }
+                  
+                  // Se o campo tem opções mas NÃO é operador multi-select
                   if (fieldOptions && fieldOptions.length > 0) {
                     return (
                       <Select 
@@ -867,7 +962,17 @@ export default function DataManagement() {
 
             <Button 
               onClick={handleAdd}
-              disabled={!field || !operator || (!value && !['isEmpty', 'isNotEmpty'].includes(operator))}
+              disabled={
+                !field || 
+                !operator || 
+                (
+                  !['isEmpty', 'isNotEmpty'].includes(operator) && 
+                  (
+                    (Array.isArray(value) && value.length === 0) || 
+                    (!Array.isArray(value) && !value)
+                  )
+                )
+              }
               className="w-full"
               size="sm"
             >
