@@ -42,6 +42,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 interface ConsolidadoData {
   id: number;
@@ -349,6 +358,10 @@ export default function DataManagement() {
   const [selectedEmissores, setSelectedEmissores] = useState<string[]>([]);
   const [searchAtivo, setSearchAtivo] = useState<string>("");
   const [selectedConsolidado, setSelectedConsolidado] = useState<ConsolidadoData | null>(null);
+  
+  // Pagination states for Ativos tab
+  const [currentPageAtivos, setCurrentPageAtivos] = useState(1);
+  const [itemsPerPageAtivos, setItemsPerPageAtivos] = useState(100);
   const [classesAtivo, setClassesAtivo] = useState<string[]>([
     'CDI - Liquidez',
     'CDI - Títulos', 
@@ -1225,6 +1238,23 @@ export default function DataManagement() {
     
     return data;
   }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo]);
+
+  // Pagination for Ativos tab - Create paginated data
+  const paginatedDadosData = useMemo(() => {
+    const startIndex = (currentPageAtivos - 1) * itemsPerPageAtivos;
+    const endIndex = startIndex + itemsPerPageAtivos;
+    return filteredDadosData.slice(startIndex, endIndex);
+  }, [filteredDadosData, currentPageAtivos, itemsPerPageAtivos]);
+
+  // Calculate total pages
+  const totalPagesAtivos = useMemo(() => {
+    return Math.ceil(filteredDadosData.length / itemsPerPageAtivos);
+  }, [filteredDadosData.length, itemsPerPageAtivos]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPageAtivos(1);
+  }, [selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo, activeFilters]);
 
   // OPTIMIZED: selectAllVisibleItems moved here after filtered data definitions
   const selectAllVisibleItems = useCallback(() => {
@@ -2673,7 +2703,7 @@ export default function DataManagement() {
                             </TableCell>
                           </TableRow>
                         ) : (
-                          filteredDadosData.map((item) => (
+                          paginatedDadosData.map((item) => (
                             <TableRow key={item.id}>
                               <TableCell>
                                 <Checkbox
@@ -2722,6 +2752,129 @@ export default function DataManagement() {
                        )}
                      </TableBody>
                    </Table>
+                   
+                   {/* Pagination Controls - Ativos */}
+                   {filteredDadosData.length > 0 && (
+                     <div className="mt-4 flex items-center justify-between border-t pt-4">
+                       {/* Results Information */}
+                       <div className="flex items-center gap-4">
+                         <p className="text-sm text-muted-foreground">
+                           Mostrando{' '}
+                           <span className="font-medium">
+                             {(currentPageAtivos - 1) * itemsPerPageAtivos + 1}
+                           </span>
+                           {' '}-{' '}
+                           <span className="font-medium">
+                             {Math.min(currentPageAtivos * itemsPerPageAtivos, filteredDadosData.length)}
+                           </span>
+                           {' '}de{' '}
+                           <span className="font-medium">{filteredDadosData.length}</span>
+                           {' '}ativos
+                         </p>
+                         
+                         {/* Items per Page Selector */}
+                         <div className="flex items-center gap-2">
+                           <span className="text-sm text-muted-foreground">Itens por página:</span>
+                           <Select
+                             value={itemsPerPageAtivos.toString()}
+                             onValueChange={(value) => {
+                               setItemsPerPageAtivos(Number(value));
+                               setCurrentPageAtivos(1);
+                             }}
+                           >
+                             <SelectTrigger className="w-24 h-8">
+                               <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent>
+                               <SelectItem value="100">100</SelectItem>
+                               <SelectItem value="500">500</SelectItem>
+                               <SelectItem value="1000">1000</SelectItem>
+                             </SelectContent>
+                           </Select>
+                         </div>
+                       </div>
+
+                       {/* Page Navigation */}
+                       <Pagination>
+                         <PaginationContent>
+                           <PaginationItem>
+                             <PaginationPrevious
+                               onClick={() => setCurrentPageAtivos(prev => Math.max(1, prev - 1))}
+                               className={currentPageAtivos === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                             />
+                           </PaginationItem>
+                           
+                           {/* First Page */}
+                           {currentPageAtivos > 2 && (
+                             <>
+                               <PaginationItem>
+                                 <PaginationLink
+                                   onClick={() => setCurrentPageAtivos(1)}
+                                   className="cursor-pointer"
+                                 >
+                                   1
+                                 </PaginationLink>
+                               </PaginationItem>
+                               {currentPageAtivos > 3 && <PaginationEllipsis />}
+                             </>
+                           )}
+                           
+                           {/* Previous Page */}
+                           {currentPageAtivos > 1 && (
+                             <PaginationItem>
+                               <PaginationLink
+                                 onClick={() => setCurrentPageAtivos(currentPageAtivos - 1)}
+                                 className="cursor-pointer"
+                               >
+                                 {currentPageAtivos - 1}
+                               </PaginationLink>
+                             </PaginationItem>
+                           )}
+                           
+                           {/* Current Page */}
+                           <PaginationItem>
+                             <PaginationLink isActive>
+                               {currentPageAtivos}
+                             </PaginationLink>
+                           </PaginationItem>
+                           
+                           {/* Next Page */}
+                           {currentPageAtivos < totalPagesAtivos && (
+                             <PaginationItem>
+                               <PaginationLink
+                                 onClick={() => setCurrentPageAtivos(currentPageAtivos + 1)}
+                                 className="cursor-pointer"
+                               >
+                                 {currentPageAtivos + 1}
+                               </PaginationLink>
+                             </PaginationItem>
+                           )}
+                           
+                           {/* Last Page */}
+                           {currentPageAtivos < totalPagesAtivos - 1 && (
+                             <>
+                               {currentPageAtivos < totalPagesAtivos - 2 && <PaginationEllipsis />}
+                               <PaginationItem>
+                                 <PaginationLink
+                                   onClick={() => setCurrentPageAtivos(totalPagesAtivos)}
+                                   className="cursor-pointer"
+                                 >
+                                   {totalPagesAtivos}
+                                 </PaginationLink>
+                               </PaginationItem>
+                             </>
+                           )}
+                           
+                           <PaginationItem>
+                             <PaginationNext
+                               onClick={() => setCurrentPageAtivos(prev => Math.min(totalPagesAtivos, prev + 1))}
+                               className={currentPageAtivos === totalPagesAtivos ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                             />
+                           </PaginationItem>
+                         </PaginationContent>
+                       </Pagination>
+                     </div>
+                   )}
                  </div>
                </CardContent>
              </Card>
