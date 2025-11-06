@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -121,6 +121,34 @@ export default function DataManagement() {
   // Helper function to get visible columns count
   const getVisibleColumnsCount = () => {
     return visibleColumns.size + 1; // +1 para o checkbox
+  };
+
+  // Advanced Filters and Sorting
+  interface Filter {
+    id: string;
+    field: string;
+    operator: string;
+    value: string | number;
+  }
+
+  interface SortConfig {
+    field: string;
+    direction: 'asc' | 'desc';
+  }
+
+  const [activeFilters, setActiveFilters] = useState<Filter[]>([]);
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+
+  const handleAddFilter = (filter: Filter) => {
+    setActiveFilters([...activeFilters, filter]);
+  };
+
+  const handleRemoveFilter = (id: string) => {
+    if (id === 'all') {
+      setActiveFilters([]);
+    } else {
+      setActiveFilters(activeFilters.filter(f => f.id !== id));
+    }
   };
   
   // Get unique values for filtering
@@ -492,6 +520,123 @@ export default function DataManagement() {
     return ((value || 0) * 100).toFixed(2).replace('.', ',') + '%';
   };
 
+  // Advanced filtering logic
+  const applyFilters = (data: ConsolidadoData[], filters: Filter[]) => {
+    return data.filter(item => {
+      return filters.every(filter => {
+        const fieldValue = item[filter.field as keyof ConsolidadoData];
+        
+        switch (filter.operator) {
+          case 'equals':
+            return fieldValue === filter.value;
+          case 'notEquals':
+            return fieldValue !== filter.value;
+          case 'contains':
+            return String(fieldValue).toLowerCase().includes(String(filter.value).toLowerCase());
+          case 'notContains':
+            return !String(fieldValue).toLowerCase().includes(String(filter.value).toLowerCase());
+          case 'greaterThan':
+            return Number(fieldValue) > Number(filter.value);
+          case 'greaterThanOrEqual':
+            return Number(fieldValue) >= Number(filter.value);
+          case 'lessThan':
+            return Number(fieldValue) < Number(filter.value);
+          case 'lessThanOrEqual':
+            return Number(fieldValue) <= Number(filter.value);
+          case 'isEmpty':
+            return !fieldValue || fieldValue === '';
+          case 'isNotEmpty':
+            return fieldValue && fieldValue !== '';
+          default:
+            return true;
+        }
+      });
+    });
+  };
+
+  // Sorting logic
+  const applySorting = (data: ConsolidadoData[], sortConfig: SortConfig | null) => {
+    if (!sortConfig) return data;
+    
+    return [...data].sort((a, b) => {
+      const aValue = a[sortConfig.field as keyof ConsolidadoData];
+      const bValue = b[sortConfig.field as keyof ConsolidadoData];
+      
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return 1;
+      if (bValue == null) return -1;
+      
+      let comparison = 0;
+      
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        comparison = aValue - bValue;
+      } else {
+        comparison = String(aValue).localeCompare(String(bValue), 'pt-BR');
+      }
+      
+      return sortConfig.direction === 'asc' ? comparison : -comparison;
+    });
+  };
+
+  // Helper functions for filters
+  const operatorsByFieldType: { [key: string]: Array<{ value: string; label: string }> } = {
+    text: [
+      { value: 'equals', label: 'é' },
+      { value: 'notEquals', label: 'não é' },
+      { value: 'contains', label: 'contém' },
+      { value: 'notContains', label: 'não contém' },
+      { value: 'isEmpty', label: 'está vazio' },
+      { value: 'isNotEmpty', label: 'não está vazio' }
+    ],
+    number: [
+      { value: 'equals', label: '=' },
+      { value: 'notEquals', label: '≠' },
+      { value: 'greaterThan', label: '>' },
+      { value: 'greaterThanOrEqual', label: '≥' },
+      { value: 'lessThan', label: '<' },
+      { value: 'lessThanOrEqual', label: '≤' },
+      { value: 'isEmpty', label: 'está vazio' },
+      { value: 'isNotEmpty', label: 'não está vazio' }
+    ]
+  };
+
+  const filterableFields = [
+    { key: 'Competencia', label: 'Competência', type: 'text' },
+    { key: 'Instituicao', label: 'Instituição', type: 'text' },
+    { key: 'nomeConta', label: 'Nome da Conta', type: 'text' },
+    { key: 'Moeda', label: 'Moeda', type: 'text' },
+    { key: 'Patrimonio Inicial', label: 'Patrimônio Inicial', type: 'number' },
+    { key: 'Movimentação', label: 'Movimentação', type: 'number' },
+    { key: 'Impostos', label: 'Impostos', type: 'number' },
+    { key: 'Ganho Financeiro', label: 'Ganho Financeiro', type: 'number' },
+    { key: 'Patrimonio Final', label: 'Patrimônio Final', type: 'number' },
+    { key: 'Rendimento', label: 'Rendimento %', type: 'number' }
+  ];
+
+  const getFieldType = (fieldKey: string) => {
+    const field = filterableFields.find(f => f.key === fieldKey);
+    return field?.type || 'text';
+  };
+
+  const getFieldLabel = (fieldKey: string) => {
+    const field = filterableFields.find(f => f.key === fieldKey);
+    return field?.label || fieldKey;
+  };
+
+  const getOperatorLabel = (operator: string) => {
+    const allOperators = [...operatorsByFieldType.text, ...operatorsByFieldType.number];
+    const op = allOperators.find(o => o.value === operator);
+    return op?.label || operator;
+  };
+
+  const formatFilterValue = (value: string | number, fieldKey: string) => {
+    const fieldType = getFieldType(fieldKey);
+    if (fieldType === 'number' && typeof value === 'number') {
+      return formatCurrency(value);
+    }
+    return String(value);
+  };
+
   interface VerificationResult {
     status: 'match' | 'tolerance' | 'mismatch' | 'no-data';
     consolidatedValue: number;
@@ -540,8 +685,10 @@ export default function DataManagement() {
     };
   };
 
-  // Filter data by selected filters
+  // Filter data with advanced filters
   let filteredConsolidadoData = consolidadoData;
+  
+  // Apply old filters for backward compatibility
   if (selectedCompetencias.length > 0) {
     filteredConsolidadoData = filteredConsolidadoData.filter(item => 
       selectedCompetencias.includes(item.Competencia)
@@ -552,6 +699,12 @@ export default function DataManagement() {
       selectedInstituicoes.includes(item.Instituicao)
     );
   }
+  
+  // Apply advanced filters
+  filteredConsolidadoData = applyFilters(filteredConsolidadoData, activeFilters);
+  
+  // Apply sorting
+  filteredConsolidadoData = applySorting(filteredConsolidadoData, sortConfig);
 
   let filteredDadosData = dadosData;
   if (selectedCompetencias.length > 0) {
@@ -586,67 +739,203 @@ export default function DataManagement() {
     );
   }
 
-  // Multi-Select Component
-  const MultiSelectFilter = ({ 
-    label, 
-    options, 
-    selected, 
-    onChange 
-  }: { 
-    label: string; 
-    options: string[]; 
-    selected: string[]; 
-    onChange: (values: string[]) => void 
-  }) => {
+  // Filter Builder Component
+  const FilterBuilder = ({ onAddFilter }: { onAddFilter: (filter: Filter) => void }) => {
+    const [field, setField] = useState('');
+    const [operator, setOperator] = useState('');
+    const [value, setValue] = useState<string | number>('');
     const [open, setOpen] = useState(false);
 
+    const getOperators = (type: string) => {
+      return operatorsByFieldType[type] || operatorsByFieldType.text;
+    };
+
+    const handleAdd = () => {
+      if (field && operator) {
+        onAddFilter({
+          id: crypto.randomUUID(),
+          field,
+          operator,
+          value: operator === 'isEmpty' || operator === 'isNotEmpty' ? '' : value
+        });
+        setField('');
+        setOperator('');
+        setValue('');
+        setOpen(false);
+      }
+    };
+
     return (
-      <div>
-        <Label>{label}</Label>
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="w-[200px] justify-between">
-              {selected.length === 0 
-                ? `Todos ${label.toLowerCase()}` 
-                : selected.length === 1 
-                  ? selected[0] 
-                  : `${selected.length} selecionados`
-              }
-              <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[200px] p-0">
-            <div className="p-2 space-y-1 max-h-64 overflow-y-auto">
-              <div className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
-                <Checkbox
-                  checked={selected.length === 0}
-                  onCheckedChange={() => {
-                    onChange([]);
-                    // Não fechar o popover aqui
-                  }}
-                />
-                <span className="text-sm">Todos</span>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="sm" className="h-8">
+            <Plus className="mr-2 h-4 w-4" />
+            Adicionar Filtro
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80" align="start">
+          <div className="space-y-4">
+            <div>
+              <Label>Campo</Label>
+              <Select value={field} onValueChange={(val) => { setField(val); setOperator(''); setValue(''); }}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Selecione um campo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filterableFields.map(f => (
+                    <SelectItem key={f.key} value={f.key}>
+                      {f.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {field && (
+              <div>
+                <Label>Operador</Label>
+                <Select value={operator} onValueChange={setOperator}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Selecione um operador" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getOperators(getFieldType(field)).map(op => (
+                      <SelectItem key={op.value} value={op.value}>
+                        {op.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              {options.map((option) => (
-                <div key={option} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
-                  <Checkbox
-                    checked={selected.includes(option)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        onChange([...selected, option]);
-                      } else {
-                        onChange(selected.filter(item => item !== option));
-                      }
-                      // Não fechar o popover aqui
-                    }}
-                  />
-                  <span className="text-sm">{option}</span>
+            )}
+
+            {field && operator && !['isEmpty', 'isNotEmpty'].includes(operator) && (
+              <div>
+                <Label>Valor</Label>
+                <Input
+                  type={getFieldType(field) === 'number' ? 'number' : 'text'}
+                  value={value}
+                  onChange={(e) => setValue(getFieldType(field) === 'number' ? Number(e.target.value) : e.target.value)}
+                  placeholder="Digite o valor"
+                  className="mt-1"
+                />
+              </div>
+            )}
+
+            <Button 
+              onClick={handleAdd}
+              disabled={!field || !operator || (!value && !['isEmpty', 'isNotEmpty'].includes(operator))}
+              className="w-full"
+              size="sm"
+            >
+              Adicionar
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  };
+
+  // Active Filters Display
+  const ActiveFilters = ({ filters, onRemoveFilter }: { filters: Filter[]; onRemoveFilter: (id: string) => void }) => {
+    if (filters.length === 0) return null;
+
+    return (
+      <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-md mb-4">
+        <span className="text-sm text-muted-foreground font-medium">Filtros:</span>
+        {filters.map(filter => (
+          <div key={filter.id} className="flex items-center gap-1.5 bg-background border rounded-md px-2.5 py-1 text-sm shadow-sm">
+            <span className="font-medium text-foreground">{getFieldLabel(filter.field)}</span>
+            <span className="text-muted-foreground">{getOperatorLabel(filter.operator)}</span>
+            {!['isEmpty', 'isNotEmpty'].includes(filter.operator) && (
+              <span className="font-medium text-foreground">{formatFilterValue(filter.value, filter.field)}</span>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-4 w-4 p-0 ml-1 hover:bg-destructive/10"
+              onClick={() => onRemoveFilter(filter.id)}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        ))}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onRemoveFilter('all')}
+          className="h-7 text-xs text-muted-foreground hover:text-foreground"
+        >
+          Limpar todos
+        </Button>
+      </div>
+    );
+  };
+
+  // Sort Button Component
+  const SortButton = ({ sortConfig, onSort }: { sortConfig: SortConfig | null; onSort: (config: SortConfig | null) => void }) => {
+    const sortableFields = filterableFields;
+
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="sm" className="h-8">
+            {sortConfig ? (
+              <>
+                <SortAsc className="mr-2 h-4 w-4" />
+                {getFieldLabel(sortConfig.field)}
+                {sortConfig.direction === 'asc' ? ' ↑' : ' ↓'}
+              </>
+            ) : (
+              <>
+                <SortAsc className="mr-2 h-4 w-4" />
+                Ordenar
+              </>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-72" align="start">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-sm font-medium">Ordenar por</Label>
+              {sortConfig && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onSort(null)}
+                  className="h-6 text-xs"
+                >
+                  Limpar
+                </Button>
+              )}
+            </div>
+            <div className="space-y-1 max-h-80 overflow-y-auto">
+              {sortableFields.map(field => (
+                <div key={field.key} className="flex items-center gap-1">
+                  <Button
+                    variant={sortConfig?.field === field.key && sortConfig?.direction === 'asc' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => onSort({ field: field.key, direction: 'asc' })}
+                    className="flex-1 justify-start h-8 text-xs"
+                  >
+                    <ArrowUp className="mr-2 h-3 w-3" />
+                    {field.label}
+                  </Button>
+                  <Button
+                    variant={sortConfig?.field === field.key && sortConfig?.direction === 'desc' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => onSort({ field: field.key, direction: 'desc' })}
+                    className="flex-1 justify-start h-8 text-xs"
+                  >
+                    <ArrowDown className="mr-2 h-3 w-3" />
+                    {field.label}
+                  </Button>
                 </div>
               ))}
             </div>
-          </PopoverContent>
-        </Popover>
-      </div>
+          </div>
+        </PopoverContent>
+      </Popover>
     );
   };
 
@@ -685,40 +974,6 @@ export default function DataManagement() {
           </div>
         </div>
 
-        {/* Multi-Select Filters */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Filtros</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <MultiSelectFilter
-                label="Competências"
-                options={competencias}
-                selected={selectedCompetencias}
-                onChange={setSelectedCompetencias}
-              />
-              <MultiSelectFilter
-                label="Instituições"
-                options={instituicoes}
-                selected={selectedInstituicoes}
-                onChange={setSelectedInstituicoes}
-              />
-              <MultiSelectFilter
-                label="Classes de Ativo"
-                options={classesAtivoUnique}
-                selected={selectedClasses}
-                onChange={setSelectedClasses}
-              />
-              <MultiSelectFilter
-                label="Emissores"
-                options={emissores}
-                selected={selectedEmissores}
-                onChange={setSelectedEmissores}
-              />
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Painel de Resumo de Verificação */}
         <Card className="mb-6">
@@ -784,119 +1039,114 @@ export default function DataManagement() {
 
           <TabsContent value="consolidado">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Dados Consolidados</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Performance consolidada por competência e instituição
-                  </p>
-                  {activeTab === 'consolidado' && selectedItems.size > 0 && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-sm text-muted-foreground">
-                        {selectedItems.size} item(s) selecionado(s)
-                      </span>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <CardTitle>Dados Consolidados</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Performance consolidada por competência e instituição
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {/* Barra de Ferramentas */}
+                <div className="flex items-center gap-2 mb-3">
+                  <FilterBuilder onAddFilter={handleAddFilter} />
+                  <SortButton sortConfig={sortConfig} onSort={setSortConfig} />
+                  
+                  <div className="flex-1" />
+                  
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-8">
+                        <ChevronDown className="mr-2 h-4 w-4" />
+                        Colunas
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64" align="end">
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm mb-3">Selecionar Colunas</h4>
+                        <div className="space-y-2 max-h-80 overflow-y-auto">
+                          {availableColumns.map(column => (
+                            <div key={column} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`column-${column}`}
+                                checked={visibleColumns.has(column)}
+                                onCheckedChange={(checked) => {
+                                  const newVisible = new Set(visibleColumns);
+                                  if (checked) {
+                                    newVisible.add(column);
+                                  } else {
+                                    if (column !== 'Ações') {
+                                      newVisible.delete(column);
+                                    }
+                                  }
+                                  setVisibleColumns(newVisible);
+                                }}
+                                disabled={column === 'Ações'}
+                              />
+                              <label
+                                htmlFor={`column-${column}`}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                              >
+                                {column}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="pt-2 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => setVisibleColumns(new Set(availableColumns))}
+                          >
+                            Selecionar Todas
+                          </Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+
+                  {selectedItems.size > 0 && (
+                    <>
                       <Button 
                         size="sm" 
                         onClick={handleBulkEdit}
-                        className="h-7"
+                        className="h-8"
                       >
                         <Edit className="mr-1 h-3 w-3" />
-                        Editar
+                        Editar {selectedItems.size}
                       </Button>
                       <Button 
                         size="sm" 
                         variant="destructive"
                         onClick={handleBulkDelete}
-                        className="h-7"
+                        className="h-8"
                       >
                         <Trash2 className="mr-1 h-3 w-3" />
-                        Excluir
+                        Excluir {selectedItems.size}
                       </Button>
                       <Button 
                         size="sm" 
                         variant="outline"
                         onClick={clearSelection}
-                        className="h-7"
-                      >
-                        <X className="mr-1 h-3 w-3" />
-                        Limpar
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {activeTab === 'consolidado' && (
-                    <>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" size="sm" className="h-8">
-                            <ChevronDown className="mr-2 h-4 w-4" />
-                            Colunas
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-64" align="end">
-                          <div className="space-y-2">
-                            <h4 className="font-medium text-sm mb-3">Selecionar Colunas</h4>
-                            <div className="space-y-2 max-h-80 overflow-y-auto">
-                              {availableColumns.map(column => (
-                                <div key={column} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`column-${column}`}
-                                    checked={visibleColumns.has(column)}
-                                    onCheckedChange={(checked) => {
-                                      const newVisible = new Set(visibleColumns);
-                                      if (checked) {
-                                        newVisible.add(column);
-                                      } else {
-                                        // Sempre manter pelo menos Ações visível
-                                        if (column !== 'Ações') {
-                                          newVisible.delete(column);
-                                        }
-                                      }
-                                      setVisibleColumns(newVisible);
-                                    }}
-                                    disabled={column === 'Ações'} // Ações sempre visível
-                                  />
-                                  <label
-                                    htmlFor={`column-${column}`}
-                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                                  >
-                                    {column}
-                                  </label>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="pt-2 border-t">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="w-full"
-                                onClick={() => setVisibleColumns(new Set(availableColumns))}
-                              >
-                                Selecionar Todas
-                              </Button>
-                            </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={selectAllVisibleItems}
                         className="h-8"
                       >
-                        <CheckSquare className="mr-1 h-3 w-3" />
-                        Selecionar Todos
+                        <X className="mr-1 h-3 w-3" />
                       </Button>
                     </>
                   )}
-                  <Button onClick={() => handleCreate('consolidado')}>
+                  
+                  <Button size="sm" onClick={() => handleCreate('consolidado')} className="h-8">
                     <Plus className="mr-2 h-4 w-4" />
-                    Novo Registro
+                    Novo
                   </Button>
                 </div>
-              </CardHeader>
-              <CardContent>
+
+                {/* Active Filters */}
+                <ActiveFilters filters={activeFilters} onRemoveFilter={handleRemoveFilter} />
                 <div className="overflow-x-auto rounded-md border">
                   <Table>
                      <TableHeader>
