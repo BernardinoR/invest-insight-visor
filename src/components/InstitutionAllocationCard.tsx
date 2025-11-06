@@ -85,15 +85,15 @@ export function InstitutionAllocationCard({
   if (allInstitutionData.length === 0) return null;
 
   return (
-    <Card className="relative bg-gradient-card border-border/50 shadow-elegant-md mb-8 overflow-visible">
-      <CardContent className="pb-4 pt-6">
+    <Card className="relative bg-gradient-card border-border/50 shadow-elegant-md mb-8 overflow-hidden">
+      <CardContent className="pb-4 pt-6 lg:pr-6">
         {selectedRows.length > 0 && (
           <div className="mb-4 text-sm text-primary font-medium flex flex-wrap gap-2">
             <span>{selectedRows.length} linha(s) selecionada(s)</span>
           </div>
         )}
         {/* Table - takes full width on mobile, left side on desktop */}
-        <div className="w-full lg:pr-96">
+        <div className="w-full lg:pr-[400px]">
           <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
             <Table>
               <TableHeader>
@@ -171,8 +171,8 @@ export function InstitutionAllocationCard({
         </div>
 
         {/* Pie Chart - centered on mobile, absolutely positioned on desktop */}
-        <div className="mt-6 flex flex-col items-center justify-center lg:mt-0 lg:absolute lg:top-6 lg:right-8 lg:w-80">
-          <div className="relative w-full max-w-[300px] sm:max-w-[320px] lg:max-w-[280px]">
+        <div className="mt-6 flex flex-col items-center justify-center lg:mt-0 lg:absolute lg:top-6 lg:right-6 lg:w-[360px]">
+          <div className="relative w-full max-w-[300px] sm:max-w-[320px] lg:max-w-[340px]">
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
