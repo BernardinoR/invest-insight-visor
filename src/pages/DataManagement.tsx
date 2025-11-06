@@ -100,7 +100,8 @@ export default function DataManagement() {
   const [manualCalcData, setManualCalcData] = useState({
     competencia: '',
     indexador: 'CDI',
-    percentual: 100
+    percentual: 100,
+    cdiOperacao: '%' // '%' ou '+'
   });
   
   // Column visibility state
@@ -377,15 +378,33 @@ export default function DataManagement() {
         return null;
       }
 
-      baseReturn = cdiRecord.cdiRate;
-      const rendimentoFinal = baseReturn * (percentual / 100);
-
-      toast({
-        title: "Cálculo Realizado",
-        description: `${percentual}% do ${indexador} em ${competencia}: ${(rendimentoFinal * 100).toFixed(4)}%`,
-      });
-
-      return rendimentoFinal;
+      const cdiMensal = cdiRecord.cdiRate; // Taxa mensal do CDI
+      
+      if (manualCalcData.cdiOperacao === '%') {
+        // Modo Percentual: X% do CDI
+        baseReturn = cdiMensal * (percentual / 100);
+        
+        toast({
+          title: "Cálculo Realizado",
+          description: `${percentual}% do CDI em ${competencia}: ${(baseReturn * 100).toFixed(4)}%`,
+        });
+        
+      } else {
+        // Modo Soma: 100% do CDI + X% a.a.
+        // Converter o spread anual para mensal
+        const spreadAnual = percentual / 100;
+        const spreadMensal = Math.pow(1 + spreadAnual, 1/12) - 1;
+        
+        // 100% do CDI + spread mensal
+        baseReturn = cdiMensal + spreadMensal;
+        
+        toast({
+          title: "Cálculo Realizado",
+          description: `CDI (${(cdiMensal * 100).toFixed(4)}%) + ${percentual}% a.a. (${(spreadMensal * 100).toFixed(4)}% a.m.) = ${(baseReturn * 100).toFixed(4)}%`,
+        });
+      }
+      
+      return baseReturn;
       
     } else if (indexador === 'IPCA') {
       toast({
@@ -2407,7 +2426,7 @@ export default function DataManagement() {
                   <Label htmlFor="calc-indexador">Indexador</Label>
                   <Select 
                     value={manualCalcData.indexador} 
-                    onValueChange={(value) => setManualCalcData({...manualCalcData, indexador: value})}
+                    onValueChange={(value) => setManualCalcData({...manualCalcData, indexador: value, cdiOperacao: '%'})}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -2422,19 +2441,59 @@ export default function DataManagement() {
 
                 <div>
                   <Label htmlFor="calc-percentual">
-                    {manualCalcData.indexador === 'PRE' ? 'Taxa Anual (%)' : `Percentual do ${manualCalcData.indexador} (%)`}
+                    {manualCalcData.indexador === 'PRE' 
+                      ? 'Taxa Anual (%)' 
+                      : manualCalcData.indexador === 'CDI' && manualCalcData.cdiOperacao === '%'
+                        ? 'Percentual do CDI (%)'
+                        : manualCalcData.indexador === 'CDI' && manualCalcData.cdiOperacao === '+'
+                          ? 'Spread ao ano (%)'
+                          : `Percentual do ${manualCalcData.indexador} (%)`
+                    }
                   </Label>
-                  <Input
-                    id="calc-percentual"
-                    type="number"
-                    step="0.01"
-                    value={manualCalcData.percentual}
-                    onChange={(e) => setManualCalcData({...manualCalcData, percentual: parseFloat(e.target.value) || 0})}
-                  />
+                  
+                  <div className="flex gap-2">
+                    {/* Toggle % ou + (apenas para CDI) */}
+                    {manualCalcData.indexador === 'CDI' && (
+                      <div className="flex border rounded-md overflow-hidden">
+                        <Button
+                          type="button"
+                          variant={manualCalcData.cdiOperacao === '%' ? 'default' : 'outline'}
+                          onClick={() => setManualCalcData({...manualCalcData, cdiOperacao: '%'})}
+                          className="rounded-none px-4"
+                          size="sm"
+                        >
+                          %
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={manualCalcData.cdiOperacao === '+' ? 'default' : 'outline'}
+                          onClick={() => setManualCalcData({...manualCalcData, cdiOperacao: '+'})}
+                          className="rounded-none px-4"
+                          size="sm"
+                        >
+                          +
+                        </Button>
+                      </div>
+                    )}
+                    
+                    <Input
+                      id="calc-percentual"
+                      type="number"
+                      step="0.01"
+                      value={manualCalcData.percentual}
+                      onChange={(e) => setManualCalcData({...manualCalcData, percentual: parseFloat(e.target.value) || 0})}
+                      className="flex-1"
+                    />
+                  </div>
+                  
                   <p className="text-xs text-muted-foreground mt-1">
                     {manualCalcData.indexador === 'PRE' 
                       ? 'Ex: 12 para 12% ao ano'
-                      : `Ex: 80 para 80% do ${manualCalcData.indexador}`}
+                      : manualCalcData.indexador === 'CDI' && manualCalcData.cdiOperacao === '%'
+                        ? 'Ex: 80 para 80% do CDI'
+                        : manualCalcData.indexador === 'CDI' && manualCalcData.cdiOperacao === '+'
+                          ? 'Ex: 2 para CDI + 2% a.a.'
+                          : `Ex: 80 para 80% do ${manualCalcData.indexador}`}
                   </p>
                 </div>
               </div>
