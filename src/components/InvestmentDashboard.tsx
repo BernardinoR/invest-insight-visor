@@ -1296,24 +1296,24 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                               <div className="border-t border-border/50 bg-muted/10">
                                 {/* Table Header */}
                                 <div className={`grid gap-4 p-3 border-b border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground`} style={{ gridTemplateColumns: getGridTemplateColumns() }}>
-                                  <div></div>
-                                  {visibleColumns.alocacao && <div className="text-center">Alocação / Qtd.</div>}
-                                  {visibleColumns.saldoBruto && <div className="text-center">Saldo Bruto</div>}
+                                  <div className="text-left">Ativo</div>
+                                  {visibleColumns.alocacao && <div className="text-right">Alocação / Qtd.</div>}
+                                  {visibleColumns.saldoBruto && <div className="text-right">Saldo Bruto</div>}
                                   {visibleColumns.mes && <div className="text-center">Mês</div>}
                                   {visibleColumns.ano && <div className="text-center">Ano</div>}
                                   {visibleColumns.inicio && <div className="text-center">Início</div>}
-                                  {visibleColumns.emissor && <div className="text-center">Emissor</div>}
-                                  {visibleColumns.instituicao && <div className="text-center">Instituição</div>}
-                                  {visibleColumns.nomeConta && <div className="text-center">Nome da Conta</div>}
+                                  {visibleColumns.emissor && <div className="text-left">Emissor</div>}
+                                  {visibleColumns.instituicao && <div className="text-left">Instituição</div>}
+                                  {visibleColumns.nomeConta && <div className="text-left">Nome da Conta</div>}
                                   {visibleColumns.vencimento && <div className="text-center">Vencimento</div>}
                                   {visibleColumns.moedaOrigem && <div className="text-center">Moeda Origem</div>}
                                 </div>
                                 
                                 {/* Strategy Summary Row */}
                                 <div className={`grid gap-4 p-3 border-b border-border/30 bg-muted/30 text-sm font-semibold`} style={{ gridTemplateColumns: getGridTemplateColumns() }}>
-                                  <div className="text-foreground">{strategy}</div>
-                                  {visibleColumns.alocacao && <div className="text-center text-foreground">{percentage.toFixed(2)}%</div>}
-                                  {visibleColumns.saldoBruto && <div className="text-center text-foreground">{formatCurrency(totalPosition)}</div>}
+                                  <div className="text-left text-foreground">{strategy}</div>
+                                  {visibleColumns.alocacao && <div className="text-right text-foreground">{percentage.toFixed(2)}%</div>}
+                                  {visibleColumns.saldoBruto && <div className="text-right text-foreground">{formatCurrency(totalPosition)}</div>}
                                   {visibleColumns.mes && <div className="text-center">
                                     <div className="text-xs text-muted-foreground">Rent.</div>
                                     <div className={`font-medium ${monthReturn >= 0 ? "text-success" : "text-destructive"}`}>
@@ -1332,16 +1332,16 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                       {inceptionReturn >= 0 ? "+" : ""}{(inceptionReturn * 100).toFixed(2)}%
                                     </div>
                                   </div>}
-                                  {visibleColumns.emissor && <div className="text-center text-foreground">-</div>}
-                                  {visibleColumns.instituicao && <div className="text-center text-foreground">-</div>}
-                                  {visibleColumns.nomeConta && <div className="text-center text-foreground">-</div>}
+                                  {visibleColumns.emissor && <div className="text-left text-foreground">-</div>}
+                                  {visibleColumns.instituicao && <div className="text-left text-foreground">-</div>}
+                                  {visibleColumns.nomeConta && <div className="text-left text-foreground">-</div>}
                                   {visibleColumns.vencimento && <div className="text-center text-foreground">-</div>}
                                   {visibleColumns.moedaOrigem && <div className="text-center text-foreground">-</div>}
                                 </div>
 
                                 {/* Benchmark Row */}
                                 <div className={`grid gap-4 p-3 border-b border-border/30 bg-muted/10 text-sm`} style={{ gridTemplateColumns: getGridTemplateColumns() }}>
-                                  <div className="text-muted-foreground">
+                                  <div className="text-left text-muted-foreground">
                                     {(() => {
                                       switch (strategy) {
                                         case 'Pós Fixado - Liquidez':
@@ -1375,14 +1375,14 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                       }
                                     })()}
                                   </div>
-                                  {visibleColumns.alocacao && <div className="text-center text-muted-foreground">-</div>}
-                                  {visibleColumns.saldoBruto && <div className="text-center text-muted-foreground">-</div>}
+                                  {visibleColumns.alocacao && <div className="text-right text-muted-foreground">-</div>}
+                                  {visibleColumns.saldoBruto && <div className="text-right text-muted-foreground">-</div>}
                                   {visibleColumns.mes && <div className="text-center text-muted-foreground">-</div>}
                                   {visibleColumns.ano && <div className="text-center text-muted-foreground">-</div>}
                                   {visibleColumns.inicio && <div className="text-center text-muted-foreground">-</div>}
-                                  {visibleColumns.emissor && <div className="text-center text-muted-foreground">-</div>}
-                                  {visibleColumns.instituicao && <div className="text-center text-muted-foreground">-</div>}
-                                  {visibleColumns.nomeConta && <div className="text-center text-muted-foreground">-</div>}
+                                  {visibleColumns.emissor && <div className="text-left text-muted-foreground">-</div>}
+                                  {visibleColumns.instituicao && <div className="text-left text-muted-foreground">-</div>}
+                                  {visibleColumns.nomeConta && <div className="text-left text-muted-foreground">-</div>}
                                   {visibleColumns.vencimento && <div className="text-center text-muted-foreground">-</div>}
                                   {visibleColumns.moedaOrigem && <div className="text-center text-muted-foreground">-</div>}
                                 </div>
@@ -1393,13 +1393,13 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                    return (
                                    <div key={item.id}>
                                       <div className={`grid gap-4 p-3 hover:bg-muted/20 transition-colors text-sm`} style={{ gridTemplateColumns: getGridTemplateColumns() }}>
-                                        <div>
+                                        <div className="text-left">
                                           <div className="font-medium text-foreground text-xs">{item.Ativo}</div>
                                         </div>
-                                        {visibleColumns.alocacao && <div className="text-center text-foreground text-xs">
+                                        {visibleColumns.alocacao && <div className="text-right text-foreground text-xs">
                                           {displayPatrimonio > 0 ? `${((item.Posicao / displayPatrimonio) * 100).toFixed(2)}%` : "-"}
                                         </div>}
-                                        {visibleColumns.saldoBruto && <div className="text-center text-foreground">
+                                        {visibleColumns.saldoBruto && <div className="text-right text-foreground">
                                           {(() => {
                                             const moedaOriginal = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
                                             const posicaoConvertida = convertValue(item.Posicao || 0, item.Competencia, moedaOriginal);
@@ -1424,9 +1424,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                           </div>
                                           <div className="text-xs text-muted-foreground">-</div>
                                         </div>}
-                                       {visibleColumns.emissor && <div className="text-center text-foreground text-xs">{item.Emissor || "-"}</div>}
-                                       {visibleColumns.instituicao && <div className="text-center text-foreground text-xs">{item.Instituicao || "-"}</div>}
-                                       {visibleColumns.nomeConta && <div className="text-center text-foreground text-xs">{item.nomeConta || "-"}</div>}
+                                       {visibleColumns.emissor && <div className="text-left text-foreground text-xs">{item.Emissor || "-"}</div>}
+                                       {visibleColumns.instituicao && <div className="text-left text-foreground text-xs">{item.Instituicao || "-"}</div>}
+                                       {visibleColumns.nomeConta && <div className="text-left text-foreground text-xs">{item.nomeConta || "-"}</div>}
                                        {visibleColumns.vencimento && <div className="text-center text-foreground text-xs">
                                          {item.Vencimento ? new Date(item.Vencimento).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "-"}
                                        </div>}
