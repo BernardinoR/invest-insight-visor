@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -48,6 +49,26 @@ export function InstitutionAllocationCard({
     selectedRows
   });
 
+  // Calculate dynamic dimensions based on number of institutions
+  const chartDimensions = useMemo(() => {
+    const institutionCount = filteredInstitutionData.length;
+    const baseHeight = 180;
+    const heightPerInstitution = 30;
+    const maxHeight = 380;
+    const minHeight = 200;
+    
+    const calculatedHeight = Math.min(
+      maxHeight,
+      Math.max(minHeight, baseHeight + (institutionCount * heightPerInstitution))
+    );
+    
+    return {
+      height: calculatedHeight,
+      innerRadius: calculatedHeight * 0.23,
+      outerRadius: calculatedHeight * 0.29
+    };
+  }, [filteredInstitutionData.length]);
+
   // Helper to create unique row identifier
   const createRowId = (institution: string, account?: string) => {
     return account ? `${institution}|${account}` : institution;
@@ -86,7 +107,10 @@ export function InstitutionAllocationCard({
 
   return (
     <Card className="relative bg-gradient-card border-border/50 shadow-elegant-md mb-8 overflow-hidden">
-      <CardContent className="pb-4 pt-6 lg:pr-6 lg:min-h-[350px]">
+      <CardContent 
+        className="pb-4 pt-6 lg:pr-6" 
+        style={{ minHeight: `${chartDimensions.height + 80}px` }}
+      >
         {/* Table - takes full width on mobile, left side on desktop */}
         <div className="w-full lg:pr-[420px]">
           <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
@@ -168,14 +192,14 @@ export function InstitutionAllocationCard({
         {/* Pie Chart - centered on mobile, absolutely positioned on desktop */}
         <div className="mt-6 flex flex-col items-center justify-center lg:mt-0 lg:absolute lg:top-1/2 lg:-translate-y-1/2 lg:right-6 lg:w-[380px]">
           <div className="relative w-full max-w-[300px] sm:max-w-[340px] lg:max-w-[360px]">
-            <ResponsiveContainer width="100%" height={320}>
+            <ResponsiveContainer width="100%" height={chartDimensions.height}>
               <PieChart>
                 <Pie
                   data={filteredInstitutionData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={75}
-                  outerRadius={92}
+                  innerRadius={chartDimensions.innerRadius}
+                  outerRadius={chartDimensions.outerRadius}
                   paddingAngle={3}
                   dataKey="patrimonio"
                   stroke="none"
