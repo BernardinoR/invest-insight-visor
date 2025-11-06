@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -119,6 +119,11 @@ export default function DataManagement() {
     'Verificação',
     'Ações'
   ]));
+
+  // Configurações de tolerância
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [toleranceValue, setToleranceValue] = useState<number>(2500.00);
+  const [tempToleranceValue, setTempToleranceValue] = useState<string>("2500.00");
 
   // Todas as colunas disponíveis
   const availableColumns = [
@@ -954,7 +959,7 @@ export default function DataManagement() {
       status = 'no-data';
     } else if (difference < 0.01) { // Menos de 1 centavo
       status = 'match';
-    } else if (difference < 2500.00) { // Menos de R$ 2.500,00
+    } else if (difference < toleranceValue) { // Menos do que a tolerância configurada
       status = 'tolerance';
     } else {
       status = 'mismatch';
@@ -1371,6 +1376,89 @@ export default function DataManagement() {
               <FileCheck className="h-4 w-4" />
               Prova Real
             </Button>
+            
+            <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 bg-card/50 border-primary/20 hover:bg-primary/10"
+                >
+                  <Settings className="h-4 w-4" />
+                  Configurações
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Configurações de Verificação</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tolerance">
+                      Tolerância para Verificação de Integridade (R$)
+                    </Label>
+                    <div className="text-sm text-muted-foreground mb-2">
+                      Diferenças abaixo deste valor serão marcadas como "Tolerância" (amarelo) ao invés de "Inconsistente" (vermelho).
+                    </div>
+                    <Input
+                      id="tolerance"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={tempToleranceValue}
+                      onChange={(e) => setTempToleranceValue(e.target.value)}
+                      placeholder="Ex: 2500.00"
+                      className="w-full"
+                    />
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Valor atual: R$ {toleranceValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-muted p-3 rounded-md text-sm space-y-1">
+                    <p><strong>Como funciona:</strong></p>
+                    <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                      <li>Diferença {'<'} R$ 0,01: <span className="text-green-600 font-medium">✓ Correto</span></li>
+                      <li>Diferença {'<'} R$ {parseFloat(tempToleranceValue || "0").toLocaleString('pt-BR', { minimumFractionDigits: 2 })}: <span className="text-yellow-600 font-medium">⚠️ Tolerância</span></li>
+                      <li>Diferença ≥ R$ {parseFloat(tempToleranceValue || "0").toLocaleString('pt-BR', { minimumFractionDigits: 2 })}: <span className="text-red-600 font-medium">✗ Inconsistente</span></li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setTempToleranceValue(toleranceValue.toString());
+                      setIsSettingsOpen(false);
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const newValue = parseFloat(tempToleranceValue);
+                      if (!isNaN(newValue) && newValue >= 0) {
+                        setToleranceValue(newValue);
+                        toast({
+                          title: "Configuração Atualizada",
+                          description: `Nova tolerância: R$ ${newValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                        });
+                        setIsSettingsOpen(false);
+                      } else {
+                        toast({
+                          title: "Valor Inválido",
+                          description: "Por favor, insira um valor numérico válido maior ou igual a zero.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                  >
+                    Salvar
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            
             <ThemeToggle />
           </div>
         </div>
