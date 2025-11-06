@@ -163,6 +163,7 @@ export default function DataManagement() {
 
   const [activeFilters, setActiveFilters] = useState<Filter[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const [verifFilter, setVerifFilter] = useState<string>('all');
 
   // Mapeamento de colunas para campos do banco - Dados Consolidados
   const getFieldKeyFromColumn = (column: string): string | null => {
@@ -1102,6 +1103,19 @@ export default function DataManagement() {
   // Apply advanced filters
   filteredConsolidadoData = applyFilters(filteredConsolidadoData, activeFilters);
   
+  // Apply verification filter
+  if (verifFilter !== 'all') {
+    filteredConsolidadoData = filteredConsolidadoData.filter(item => {
+      const verification = verifyIntegrity(
+        item.Competencia,
+        item.Instituicao,
+        item.nomeConta,
+        item["Patrimonio Final"]
+      );
+      return verification.status === verifFilter;
+    });
+  }
+  
   // Apply sorting
   filteredConsolidadoData = applySorting(filteredConsolidadoData, sortConfig);
 
@@ -1702,6 +1716,52 @@ export default function DataManagement() {
                 {/* Barra de Ferramentas */}
                 <div className="flex items-center gap-2 mb-3">
                   <FilterBuilder onAddFilter={handleAddFilter} />
+                  
+                  {/* Filtro rápido de verificação */}
+                  <Select
+                    value={verifFilter}
+                    onValueChange={(value) => setVerifFilter(value)}
+                  >
+                    <SelectTrigger className={`w-[180px] h-8 ${
+                      verifFilter !== 'all' 
+                        ? 'bg-primary/10 border-primary' 
+                        : 'bg-card/50 border-primary/20'
+                    }`}>
+                      <SelectValue placeholder="Filtrar por verif." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">
+                        <div className="flex items-center gap-2">
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                          <span>Todos</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="match">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          <span>Correto</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="tolerance">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4 text-yellow-500" />
+                          <span>Tolerância</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="mismatch">
+                        <div className="flex items-center gap-2">
+                          <XCircle className="h-4 w-4 text-red-500" />
+                          <span>Inconsistente</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="no-data">
+                        <div className="flex items-center gap-2">
+                          <Info className="h-4 w-4 text-gray-400" />
+                          <span>Sem Dados Detalhados</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                   
                   <div className="flex-1" />
                   
