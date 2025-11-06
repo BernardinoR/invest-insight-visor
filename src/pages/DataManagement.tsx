@@ -98,6 +98,7 @@ export default function DataManagement() {
   
   // Calculator dialog state
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const [calculatorContext, setCalculatorContext] = useState<'bulk' | 'single'>('bulk');
   const [calculatorMode, setCalculatorMode] = useState<'auto' | 'manual'>('auto');
   const [manualCalcData, setManualCalcData] = useState({
     competencia: '',
@@ -467,7 +468,14 @@ export default function DataManagement() {
     if (calculatedReturn !== null) {
       // Arredondar para 4 casas decimais (resultará em 2 casas quando exibido como %)
       const roundedReturn = Math.round(calculatedReturn * 10000) / 10000;
-      setBulkEditData({...bulkEditData, Rendimento: roundedReturn});
+      
+      // Atualizar dependendo do contexto
+      if (calculatorContext === 'bulk') {
+        setBulkEditData({...bulkEditData, Rendimento: roundedReturn});
+      } else if (calculatorContext === 'single') {
+        setEditingItem({...editingItem, Rendimento: roundedReturn});
+      }
+      
       setIsCalculatorOpen(false);
     }
   };
@@ -2038,6 +2046,17 @@ export default function DataManagement() {
                         />
                         <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
                       </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCalculatorContext('single');
+                          setIsCalculatorOpen(true);
+                        }}
+                        className="mt-2 w-full"
+                      >
+                        Calcular
+                      </Button>
                     </div>
                   </div>
                 </>
@@ -2280,7 +2299,10 @@ export default function DataManagement() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setIsCalculatorOpen(true)}
+                      onClick={() => {
+                        setCalculatorContext('bulk');
+                        setIsCalculatorOpen(true);
+                      }}
                       className="mt-2 w-full"
                     >
                       Calcular
