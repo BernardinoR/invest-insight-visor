@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { TrendingUp, TrendingDown, Calendar, DollarSign, Target, ChevronDown, ChevronUp, Share2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Calendar, DollarSign, Target, ChevronDown, ChevronUp, Share2, Settings2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useClientData } from "@/hooks/useClientData";
 import { useMarketIndicators } from "@/hooks/useMarketIndicators";
@@ -27,6 +27,8 @@ import { RiskManagement } from "@/components/charts/RiskManagement";
 import { InvestmentPolicyCompliance } from "@/components/charts/InvestmentPolicyCompliance";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { CurrencyToggle } from "@/components/CurrencyToggle";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface InvestmentDashboardProps {
   selectedClient: string;
@@ -44,6 +46,20 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const [maturityDialogOpen, setMaturityDialogOpen] = useState(false);
   const [diversificationDialogOpen, setDiversificationDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'performance' | 'risk' | 'policy'>('performance');
+  
+  // Visible columns state for "Retorno por Ativo" table
+  const [visibleColumns, setVisibleColumns] = useState({
+    alocacao: true,
+    saldoBruto: true,
+    mes: true,
+    ano: true,
+    inicio: true,
+    emissor: true,
+    instituicao: true,
+    nomeConta: true,
+    vencimento: true,
+    moedaOrigem: true
+  });
 
   const handleInstitutionCardRender = useCallback((card: any) => {
     setInstitutionCardData(card);
@@ -764,10 +780,84 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
               <div className="mb-8 mt-8">
             <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-primary" />
-                  Retorno por Ativo
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-primary" />
+                    Retorno por Ativo
+                  </CardTitle>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Settings2 className="h-4 w-4" />
+                        Colunas
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56 bg-card border-border z-50">
+                      <DropdownMenuLabel>Exibir Colunas</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuCheckboxItem
+                        checked={visibleColumns.alocacao}
+                        onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, alocacao: checked }))}
+                      >
+                        Alocação / Qtd.
+                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem
+                        checked={visibleColumns.saldoBruto}
+                        onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, saldoBruto: checked }))}
+                      >
+                        Saldo Bruto
+                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem
+                        checked={visibleColumns.mes}
+                        onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, mes: checked }))}
+                      >
+                        Mês
+                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem
+                        checked={visibleColumns.ano}
+                        onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, ano: checked }))}
+                      >
+                        Ano
+                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem
+                        checked={visibleColumns.inicio}
+                        onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, inicio: checked }))}
+                      >
+                        Início
+                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem
+                        checked={visibleColumns.emissor}
+                        onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, emissor: checked }))}
+                      >
+                        Emissor
+                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem
+                        checked={visibleColumns.instituicao}
+                        onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, instituicao: checked }))}
+                      >
+                        Instituição
+                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem
+                        checked={visibleColumns.nomeConta}
+                        onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, nomeConta: checked }))}
+                      >
+                        Nome da Conta
+                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem
+                        checked={visibleColumns.vencimento}
+                        onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, vencimento: checked }))}
+                      >
+                        Vencimento
+                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem
+                        checked={visibleColumns.moedaOrigem}
+                        onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, moedaOrigem: checked }))}
+                      >
+                        Moeda Origem
+                      </DropdownMenuCheckboxItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -1167,52 +1257,52 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                             <CollapsibleContent className="animate-accordion-down">
                               <div className="border-t border-border/50 bg-muted/10">
                                 {/* Table Header */}
-                                <div className="grid grid-cols-11 gap-4 p-3 border-b border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground">
+                                <div className={`grid gap-4 p-3 border-b border-border/30 bg-muted/20 text-xs font-medium text-muted-foreground`} style={{ gridTemplateColumns: `auto ${visibleColumns.alocacao ? 'auto' : ''} ${visibleColumns.saldoBruto ? 'auto' : ''} ${visibleColumns.mes ? 'auto' : ''} ${visibleColumns.ano ? 'auto' : ''} ${visibleColumns.inicio ? 'auto' : ''} ${visibleColumns.emissor ? 'auto' : ''} ${visibleColumns.instituicao ? 'auto' : ''} ${visibleColumns.nomeConta ? 'auto' : ''} ${visibleColumns.vencimento ? 'auto' : ''} ${visibleColumns.moedaOrigem ? 'auto' : ''}`.trim() }}>
                                   <div></div>
-                                  <div className="text-center">Alocação / Qtd.</div>
-                                  <div className="text-center">Saldo Bruto</div>
-                                  <div className="text-center">Mês</div>
-                                  <div className="text-center">Ano</div>
-                                  <div className="text-center">Início</div>
-                                  <div className="text-center">Emissor</div>
-                                  <div className="text-center">Instituição</div>
-                                  <div className="text-center">Nome da Conta</div>
-                                  <div className="text-center">Vencimento</div>
-                                  <div className="text-center">Moeda Origem</div>
+                                  {visibleColumns.alocacao && <div className="text-center">Alocação / Qtd.</div>}
+                                  {visibleColumns.saldoBruto && <div className="text-center">Saldo Bruto</div>}
+                                  {visibleColumns.mes && <div className="text-center">Mês</div>}
+                                  {visibleColumns.ano && <div className="text-center">Ano</div>}
+                                  {visibleColumns.inicio && <div className="text-center">Início</div>}
+                                  {visibleColumns.emissor && <div className="text-center">Emissor</div>}
+                                  {visibleColumns.instituicao && <div className="text-center">Instituição</div>}
+                                  {visibleColumns.nomeConta && <div className="text-center">Nome da Conta</div>}
+                                  {visibleColumns.vencimento && <div className="text-center">Vencimento</div>}
+                                  {visibleColumns.moedaOrigem && <div className="text-center">Moeda Origem</div>}
                                 </div>
                                 
                                 {/* Strategy Summary Row */}
-                                <div className="grid grid-cols-11 gap-4 p-3 border-b border-border/30 bg-muted/30 text-sm font-semibold">
+                                <div className={`grid gap-4 p-3 border-b border-border/30 bg-muted/30 text-sm font-semibold`} style={{ gridTemplateColumns: `auto ${visibleColumns.alocacao ? 'auto' : ''} ${visibleColumns.saldoBruto ? 'auto' : ''} ${visibleColumns.mes ? 'auto' : ''} ${visibleColumns.ano ? 'auto' : ''} ${visibleColumns.inicio ? 'auto' : ''} ${visibleColumns.emissor ? 'auto' : ''} ${visibleColumns.instituicao ? 'auto' : ''} ${visibleColumns.nomeConta ? 'auto' : ''} ${visibleColumns.vencimento ? 'auto' : ''} ${visibleColumns.moedaOrigem ? 'auto' : ''}`.trim() }}>
                                   <div className="text-foreground">{strategy}</div>
-                                  <div className="text-center text-foreground">{percentage.toFixed(2)}%</div>
-                                  <div className="text-center text-foreground">{formatCurrency(totalPosition)}</div>
-                                  <div className="text-center">
+                                  {visibleColumns.alocacao && <div className="text-center text-foreground">{percentage.toFixed(2)}%</div>}
+                                  {visibleColumns.saldoBruto && <div className="text-center text-foreground">{formatCurrency(totalPosition)}</div>}
+                                  {visibleColumns.mes && <div className="text-center">
                                     <div className="text-xs text-muted-foreground">Rent.</div>
                                     <div className={`font-medium ${monthReturn >= 0 ? "text-success" : "text-destructive"}`}>
                                       {monthReturn >= 0 ? "+" : ""}{(monthReturn * 100).toFixed(2)}%
                                     </div>
-                                  </div>
-                                  <div className="text-center">
+                                  </div>}
+                                  {visibleColumns.ano && <div className="text-center">
                                     <div className="text-xs text-muted-foreground">Rent.</div>
                                     <div className={`font-medium ${yearReturn >= 0 ? "text-success" : "text-destructive"}`}>
                                       {yearReturn >= 0 ? "+" : ""}{(yearReturn * 100).toFixed(2)}%
                                     </div>
-                                  </div>
-                                  <div className="text-center">
+                                  </div>}
+                                  {visibleColumns.inicio && <div className="text-center">
                                     <div className="text-xs text-muted-foreground">Rent.</div>
                                     <div className={`font-medium ${inceptionReturn >= 0 ? "text-success" : "text-destructive"}`}>
                                       {inceptionReturn >= 0 ? "+" : ""}{(inceptionReturn * 100).toFixed(2)}%
                                     </div>
-                                  </div>
-                                  <div className="text-center text-foreground">-</div>
-                                  <div className="text-center text-foreground">-</div>
-                                  <div className="text-center text-foreground">-</div>
-                                  <div className="text-center text-foreground">-</div>
-                                  <div className="text-center text-foreground">-</div>
+                                  </div>}
+                                  {visibleColumns.emissor && <div className="text-center text-foreground">-</div>}
+                                  {visibleColumns.instituicao && <div className="text-center text-foreground">-</div>}
+                                  {visibleColumns.nomeConta && <div className="text-center text-foreground">-</div>}
+                                  {visibleColumns.vencimento && <div className="text-center text-foreground">-</div>}
+                                  {visibleColumns.moedaOrigem && <div className="text-center text-foreground">-</div>}
                                 </div>
 
                                 {/* Benchmark Row */}
-                                <div className="grid grid-cols-11 gap-4 p-3 border-b border-border/30 bg-muted/10 text-sm">
+                                <div className={`grid gap-4 p-3 border-b border-border/30 bg-muted/10 text-sm`} style={{ gridTemplateColumns: `auto ${visibleColumns.alocacao ? 'auto' : ''} ${visibleColumns.saldoBruto ? 'auto' : ''} ${visibleColumns.mes ? 'auto' : ''} ${visibleColumns.ano ? 'auto' : ''} ${visibleColumns.inicio ? 'auto' : ''} ${visibleColumns.emissor ? 'auto' : ''} ${visibleColumns.instituicao ? 'auto' : ''} ${visibleColumns.nomeConta ? 'auto' : ''} ${visibleColumns.vencimento ? 'auto' : ''} ${visibleColumns.moedaOrigem ? 'auto' : ''}`.trim() }}>
                                   <div className="text-muted-foreground">
                                     {(() => {
                                       switch (strategy) {
@@ -1247,16 +1337,16 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                       }
                                     })()}
                                   </div>
-                                  <div className="text-center text-muted-foreground">-</div>
-                                  <div className="text-center text-muted-foreground">-</div>
-                                  <div className="text-center text-muted-foreground">-</div>
-                                  <div className="text-center text-muted-foreground">-</div>
-                                  <div className="text-center text-muted-foreground">-</div>
-                                  <div className="text-center text-muted-foreground">-</div>
-                                  <div className="text-center text-muted-foreground">-</div>
-                                  <div className="text-center text-muted-foreground">-</div>
-                                  <div className="text-center text-muted-foreground">-</div>
-                                  <div className="text-center text-muted-foreground">-</div>
+                                  {visibleColumns.alocacao && <div className="text-center text-muted-foreground">-</div>}
+                                  {visibleColumns.saldoBruto && <div className="text-center text-muted-foreground">-</div>}
+                                  {visibleColumns.mes && <div className="text-center text-muted-foreground">-</div>}
+                                  {visibleColumns.ano && <div className="text-center text-muted-foreground">-</div>}
+                                  {visibleColumns.inicio && <div className="text-center text-muted-foreground">-</div>}
+                                  {visibleColumns.emissor && <div className="text-center text-muted-foreground">-</div>}
+                                  {visibleColumns.instituicao && <div className="text-center text-muted-foreground">-</div>}
+                                  {visibleColumns.nomeConta && <div className="text-center text-muted-foreground">-</div>}
+                                  {visibleColumns.vencimento && <div className="text-center text-muted-foreground">-</div>}
+                                  {visibleColumns.moedaOrigem && <div className="text-center text-muted-foreground">-</div>}
                                 </div>
 
                                  {/* Individual Assets */}
@@ -1264,45 +1354,45 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                    const assetReturns = calculateAssetReturns(item.Ativo);
                                    return (
                                    <div key={item.id}>
-                                      <div className="grid grid-cols-11 gap-4 p-3 hover:bg-muted/20 transition-colors text-sm">
+                                      <div className={`grid gap-4 p-3 hover:bg-muted/20 transition-colors text-sm`} style={{ gridTemplateColumns: `auto ${visibleColumns.alocacao ? 'auto' : ''} ${visibleColumns.saldoBruto ? 'auto' : ''} ${visibleColumns.mes ? 'auto' : ''} ${visibleColumns.ano ? 'auto' : ''} ${visibleColumns.inicio ? 'auto' : ''} ${visibleColumns.emissor ? 'auto' : ''} ${visibleColumns.instituicao ? 'auto' : ''} ${visibleColumns.nomeConta ? 'auto' : ''} ${visibleColumns.vencimento ? 'auto' : ''} ${visibleColumns.moedaOrigem ? 'auto' : ''}`.trim() }}>
                                         <div>
                                           <div className="font-medium text-foreground text-xs">{item.Ativo}</div>
                                         </div>
-                                        <div className="text-center text-foreground text-xs">
+                                        {visibleColumns.alocacao && <div className="text-center text-foreground text-xs">
                                           {displayPatrimonio > 0 ? `${((item.Posicao / displayPatrimonio) * 100).toFixed(2)}%` : "-"}
-                                        </div>
-                                        <div className="text-center text-foreground">
+                                        </div>}
+                                        {visibleColumns.saldoBruto && <div className="text-center text-foreground">
                                           {(() => {
                                             const moedaOriginal = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
                                             const posicaoConvertida = convertValue(item.Posicao || 0, item.Competencia, moedaOriginal);
                                             return formatCurrency(posicaoConvertida);
                                           })()}
-                                        </div>
-                                        <div className="text-center">
+                                        </div>}
+                                        {visibleColumns.mes && <div className="text-center">
                                           <div className={`font-medium ${assetReturns.monthReturn >= 0 ? "text-success" : "text-destructive"}`}>
                                             {assetReturns.monthReturn >= 0 ? "+" : ""}{(assetReturns.monthReturn * 100).toFixed(2)}%
                                           </div>
                                           <div className="text-xs text-muted-foreground">-</div>
-                                        </div>
-                                        <div className="text-center">
+                                        </div>}
+                                        {visibleColumns.ano && <div className="text-center">
                                           <div className={`font-medium ${assetReturns.yearReturn >= 0 ? "text-success" : "text-destructive"}`}>
                                             {assetReturns.yearReturn >= 0 ? "+" : ""}{(assetReturns.yearReturn * 100).toFixed(2)}%
                                           </div>
                                           <div className="text-xs text-muted-foreground">-</div>
-                                        </div>
-                                        <div className="text-center">
+                                        </div>}
+                                        {visibleColumns.inicio && <div className="text-center">
                                           <div className={`font-medium ${assetReturns.inceptionReturn >= 0 ? "text-success" : "text-destructive"}`}>
                                             {assetReturns.inceptionReturn >= 0 ? "+" : ""}{(assetReturns.inceptionReturn * 100).toFixed(2)}%
                                           </div>
                                           <div className="text-xs text-muted-foreground">-</div>
-                                        </div>
-                                       <div className="text-center text-foreground text-xs">{item.Emissor || "-"}</div>
-                                       <div className="text-center text-foreground text-xs">{item.Instituicao || "-"}</div>
-                                       <div className="text-center text-foreground text-xs">{item.nomeConta || "-"}</div>
-                                       <div className="text-center text-foreground text-xs">
+                                        </div>}
+                                       {visibleColumns.emissor && <div className="text-center text-foreground text-xs">{item.Emissor || "-"}</div>}
+                                       {visibleColumns.instituicao && <div className="text-center text-foreground text-xs">{item.Instituicao || "-"}</div>}
+                                       {visibleColumns.nomeConta && <div className="text-center text-foreground text-xs">{item.nomeConta || "-"}</div>}
+                                       {visibleColumns.vencimento && <div className="text-center text-foreground text-xs">
                                          {item.Vencimento ? new Date(item.Vencimento).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "-"}
-                                       </div>
-                                       <div className="text-center text-foreground text-xs">
+                                       </div>}
+                                       {visibleColumns.moedaOrigem && <div className="text-center text-foreground text-xs">
                                          {item.Moeda === 'Dolar' ? (
                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
                                              USD
@@ -1312,7 +1402,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                                              BRL
                                            </span>
                                          ) : '-'}
-                                       </div>
+                                       </div>}
                                       </div>
                                      {index < assets.length - 1 && (
                                        <div className="border-b border-border/20"></div>
