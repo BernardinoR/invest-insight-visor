@@ -386,7 +386,7 @@ export default function DataManagement() {
         
         toast({
           title: "Cálculo Realizado",
-          description: `${percentual}% do CDI em ${competencia}: ${(baseReturn * 100).toFixed(4)}%`,
+          description: `${percentual}% do CDI em ${competencia}: ${(baseReturn * 100).toFixed(2)}%`,
         });
         
       } else {
@@ -400,7 +400,7 @@ export default function DataManagement() {
         
         toast({
           title: "Cálculo Realizado",
-          description: `CDI (${(cdiMensal * 100).toFixed(4)}%) + ${percentual}% a.a. (${(spreadMensal * 100).toFixed(4)}% a.m.) = ${(baseReturn * 100).toFixed(4)}%`,
+          description: `CDI (${(cdiMensal * 100).toFixed(2)}%) + ${percentual}% a.a. (${(spreadMensal * 100).toFixed(2)}% a.m.) = ${(baseReturn * 100).toFixed(2)}%`,
         });
       }
       
@@ -420,7 +420,7 @@ export default function DataManagement() {
       
       toast({
         title: "Cálculo Realizado",
-        description: `Pré-fixado ${percentual}% a.a. = ${(taxaMensal * 100).toFixed(4)}% no mês`,
+        description: `Pré-fixado ${percentual}% a.a. = ${(taxaMensal * 100).toFixed(2)}% no mês`,
       });
       
       return taxaMensal;
