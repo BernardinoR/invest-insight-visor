@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCDIData } from '@/hooks/useCDIData';
 import { usePTAXData } from '@/hooks/usePTAXData';
+import { useMarketIndicators } from '@/hooks/useMarketIndicators';
 import {
   Table,
   TableBody,
@@ -79,6 +80,7 @@ export default function DataManagement() {
   const { toast } = useToast();
   const { cdiData } = useCDIData();
   const { getCotacaoByCompetencia } = usePTAXData();
+  const { marketData: marketIndicators } = useMarketIndicators();
   
   const decodedClientName = clientName ? decodeURIComponent(clientName) : "";
   
@@ -101,7 +103,8 @@ export default function DataManagement() {
     competencia: '',
     indexador: 'CDI',
     percentual: 100,
-    cdiOperacao: '%' // '%' ou '+'
+    cdiOperacao: '%', // '%' ou '+'
+    ipcaOperacao: '+' // Sempre '+' para IPCA
   });
   
   // Column visibility state
@@ -407,12 +410,34 @@ export default function DataManagement() {
       return baseReturn;
       
     } else if (indexador === 'IPCA') {
+      // Buscar taxa do IPCA para a competência
+      const ipcaRecord = marketIndicators.find(record => record.competencia === competencia);
+      
+      if (!ipcaRecord || ipcaRecord.ipca === null) {
+        toast({
+          title: "Erro",
+          description: `Dados do IPCA não encontrados para ${competencia}`,
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      const ipcaMensal = ipcaRecord.ipca; // Taxa mensal do IPCA
+      
+      // Modo Soma: 100% do IPCA + X% a.a.
+      // Converter o spread anual para mensal
+      const spreadAnual = percentual / 100;
+      const spreadMensal = Math.pow(1 + spreadAnual, 1/12) - 1;
+      
+      // 100% do IPCA + spread mensal
+      baseReturn = ipcaMensal + spreadMensal;
+      
       toast({
-        title: "Aviso",
-        description: "Cálculo baseado em IPCA ainda não implementado. Use CDI ou Pré-fixado.",
-        variant: "destructive",
+        title: "Cálculo Realizado",
+        description: `IPCA (${(ipcaMensal * 100).toFixed(2)}%) + ${percentual}% a.a. (${(spreadMensal * 100).toFixed(2)}% a.m.) = ${(baseReturn * 100).toFixed(2)}%`,
       });
-      return null;
+      
+      return baseReturn;
       
     } else if (indexador === 'PRE') {
       const taxaAnual = percentual / 100;
@@ -2428,7 +2453,15 @@ export default function DataManagement() {
                   <Label htmlFor="calc-indexador">Indexador</Label>
                   <Select 
                     value={manualCalcData.indexador} 
-                    onValueChange={(value) => setManualCalcData({...manualCalcData, indexador: value, cdiOperacao: '%'})}
+                    onValueChange={(value) => {
+                      if (value === 'CDI') {
+                        setManualCalcData({...manualCalcData, indexador: value, cdiOperacao: '%', percentual: 100});
+                      } else if (value === 'IPCA') {
+                        setManualCalcData({...manualCalcData, indexador: value, ipcaOperacao: '+', percentual: 5});
+                      } else {
+                        setManualCalcData({...manualCalcData, indexador: value, percentual: 100});
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -2449,7 +2482,9 @@ export default function DataManagement() {
                         ? 'Percentual do CDI (%)'
                         : manualCalcData.indexador === 'CDI' && manualCalcData.cdiOperacao === '+'
                           ? 'Spread ao ano (%)'
-                          : `Percentual do ${manualCalcData.indexador} (%)`
+                          : manualCalcData.indexador === 'IPCA'
+                            ? 'Spread ao ano (%)'
+                            : `Percentual do ${manualCalcData.indexador} (%)`
                     }
                   </Label>
                   
@@ -2495,7 +2530,9 @@ export default function DataManagement() {
                         ? 'Ex: 80 para 80% do CDI'
                         : manualCalcData.indexador === 'CDI' && manualCalcData.cdiOperacao === '+'
                           ? 'Ex: 2 para CDI + 2% a.a.'
-                          : `Ex: 80 para 80% do ${manualCalcData.indexador}`}
+                          : manualCalcData.indexador === 'IPCA'
+                            ? 'Ex: 5 para IPCA + 5% a.a.'
+                            : `Ex: 80 para 80% do ${manualCalcData.indexador}`}
                   </p>
                 </div>
               </div>
