@@ -810,66 +810,86 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                         Colunas
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56 bg-card border-border z-50">
-                      <DropdownMenuLabel>Exibir Colunas</DropdownMenuLabel>
+                    <DropdownMenuContent align="end" className="w-64 bg-background/95 backdrop-blur-sm border-border shadow-lg z-50">
+                      <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Exibir Colunas</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuCheckboxItem
                         checked={visibleColumns.alocacao}
                         onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, alocacao: checked }))}
+                        onSelect={(e) => e.preventDefault()}
+                        className="cursor-pointer"
                       >
                         Alocação / Qtd.
                       </DropdownMenuCheckboxItem>
                       <DropdownMenuCheckboxItem
                         checked={visibleColumns.saldoBruto}
                         onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, saldoBruto: checked }))}
+                        onSelect={(e) => e.preventDefault()}
+                        className="cursor-pointer"
                       >
                         Saldo Bruto
                       </DropdownMenuCheckboxItem>
                       <DropdownMenuCheckboxItem
                         checked={visibleColumns.mes}
                         onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, mes: checked }))}
+                        onSelect={(e) => e.preventDefault()}
+                        className="cursor-pointer"
                       >
                         Mês
                       </DropdownMenuCheckboxItem>
                       <DropdownMenuCheckboxItem
                         checked={visibleColumns.ano}
                         onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, ano: checked }))}
+                        onSelect={(e) => e.preventDefault()}
+                        className="cursor-pointer"
                       >
                         Ano
                       </DropdownMenuCheckboxItem>
                       <DropdownMenuCheckboxItem
                         checked={visibleColumns.inicio}
                         onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, inicio: checked }))}
+                        onSelect={(e) => e.preventDefault()}
+                        className="cursor-pointer"
                       >
                         Início
                       </DropdownMenuCheckboxItem>
                       <DropdownMenuCheckboxItem
                         checked={visibleColumns.emissor}
                         onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, emissor: checked }))}
+                        onSelect={(e) => e.preventDefault()}
+                        className="cursor-pointer"
                       >
                         Emissor
                       </DropdownMenuCheckboxItem>
                       <DropdownMenuCheckboxItem
                         checked={visibleColumns.instituicao}
                         onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, instituicao: checked }))}
+                        onSelect={(e) => e.preventDefault()}
+                        className="cursor-pointer"
                       >
                         Instituição
                       </DropdownMenuCheckboxItem>
                       <DropdownMenuCheckboxItem
                         checked={visibleColumns.nomeConta}
                         onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, nomeConta: checked }))}
+                        onSelect={(e) => e.preventDefault()}
+                        className="cursor-pointer"
                       >
                         Nome da Conta
                       </DropdownMenuCheckboxItem>
                       <DropdownMenuCheckboxItem
                         checked={visibleColumns.vencimento}
                         onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, vencimento: checked }))}
+                        onSelect={(e) => e.preventDefault()}
+                        className="cursor-pointer"
                       >
                         Vencimento
                       </DropdownMenuCheckboxItem>
                       <DropdownMenuCheckboxItem
                         checked={visibleColumns.moedaOrigem}
                         onCheckedChange={(checked) => setVisibleColumns(prev => ({ ...prev, moedaOrigem: checked }))}
+                        onSelect={(e) => e.preventDefault()}
+                        className="cursor-pointer"
                       >
                         Moeda Origem
                       </DropdownMenuCheckboxItem>
