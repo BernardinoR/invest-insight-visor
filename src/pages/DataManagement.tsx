@@ -124,6 +124,8 @@ export default function DataManagement() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [toleranceValue, setToleranceValue] = useState<number>(2500.00);
   const [tempToleranceValue, setTempToleranceValue] = useState<string>("2500.00");
+  const [correctThreshold, setCorrectThreshold] = useState<number>(0.01);
+  const [tempCorrectThreshold, setTempCorrectThreshold] = useState<string>("0.01");
 
   // Todas as colunas disponíveis
   const availableColumns = [
@@ -957,8 +959,8 @@ export default function DataManagement() {
     let status: VerificationResult['status'];
     if (relatedDetails.length === 0) {
       status = 'no-data';
-    } else if (difference < 0.01) { // Menos de 1 centavo
-      status = 'match';
+        } else if (difference < correctThreshold) { // Menos do que o limite de "correto"
+          status = 'match';
     } else if (difference < toleranceValue) { // Menos do que a tolerância configurada
       status = 'tolerance';
     } else {
@@ -1388,74 +1390,124 @@ export default function DataManagement() {
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Configurações de Verificação</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="tolerance">
-                      Tolerância para Verificação de Integridade (R$)
-                    </Label>
-                    <div className="text-sm text-muted-foreground mb-2">
-                      Diferenças abaixo deste valor serão marcadas como "Tolerância" (amarelo) ao invés de "Inconsistente" (vermelho).
-                    </div>
-                    <Input
-                      id="tolerance"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={tempToleranceValue}
-                      onChange={(e) => setTempToleranceValue(e.target.value)}
-                      placeholder="Ex: 2500.00"
-                      className="w-full"
-                    />
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Valor atual: R$ {toleranceValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                  </div>
-                  
-                  <div className="bg-muted p-3 rounded-md text-sm space-y-1">
-                    <p><strong>Como funciona:</strong></p>
-                    <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                      <li>Diferença {'<'} R$ 0,01: <span className="text-green-600 font-medium">✓ Correto</span></li>
-                      <li>Diferença {'<'} R$ {parseFloat(tempToleranceValue || "0").toLocaleString('pt-BR', { minimumFractionDigits: 2 })}: <span className="text-yellow-600 font-medium">⚠️ Tolerância</span></li>
-                      <li>Diferença ≥ R$ {parseFloat(tempToleranceValue || "0").toLocaleString('pt-BR', { minimumFractionDigits: 2 })}: <span className="text-red-600 font-medium">✗ Inconsistente</span></li>
-                    </ul>
-                  </div>
-                </div>
+        <DialogHeader>
+          <DialogTitle>Configurações de Verificação</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="correctThreshold">
+              Limite para "Correto" (R$)
+            </Label>
+            <div className="text-sm text-muted-foreground mb-2">
+              Diferenças abaixo deste valor serão marcadas como "Correto" (verde).
+            </div>
+            <Input
+              id="correctThreshold"
+              type="number"
+              step="0.01"
+              min="0"
+              value={tempCorrectThreshold}
+              onChange={(e) => setTempCorrectThreshold(e.target.value)}
+              placeholder="Ex: 0.01"
+              className="w-full"
+            />
+            <div className="text-xs text-muted-foreground mt-1">
+              Valor atual: R$ {correctThreshold.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tolerance">
+              Limite para "Tolerância" (R$)
+            </Label>
+            <div className="text-sm text-muted-foreground mb-2">
+              Diferenças abaixo deste valor serão marcadas como "Tolerância" (amarelo) ao invés de "Inconsistente" (vermelho).
+            </div>
+            <Input
+              id="tolerance"
+              type="number"
+              step="0.01"
+              min="0"
+              value={tempToleranceValue}
+              onChange={(e) => setTempToleranceValue(e.target.value)}
+              placeholder="Ex: 2500.00"
+              className="w-full"
+            />
+            <div className="text-xs text-muted-foreground mt-1">
+              Valor atual: R$ {toleranceValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+          </div>
+          
+          <div className="bg-muted p-3 rounded-md text-sm space-y-1">
+            <p><strong>Como funciona:</strong></p>
+            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+              <li>Diferença {'<'} R$ {parseFloat(tempCorrectThreshold || "0").toLocaleString('pt-BR', { minimumFractionDigits: 2 })}: <span className="text-green-600 font-medium">✓ Correto</span></li>
+              <li>Diferença {'<'} R$ {parseFloat(tempToleranceValue || "0").toLocaleString('pt-BR', { minimumFractionDigits: 2 })}: <span className="text-yellow-600 font-medium">⚠️ Tolerância</span></li>
+              <li>Diferença ≥ R$ {parseFloat(tempToleranceValue || "0").toLocaleString('pt-BR', { minimumFractionDigits: 2 })}: <span className="text-red-600 font-medium">✗ Inconsistente</span></li>
+            </ul>
+          </div>
+        </div>
                 
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setTempToleranceValue(toleranceValue.toString());
-                      setIsSettingsOpen(false);
-                    }}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      const newValue = parseFloat(tempToleranceValue);
-                      if (!isNaN(newValue) && newValue >= 0) {
-                        setToleranceValue(newValue);
-                        toast({
-                          title: "Configuração Atualizada",
-                          description: `Nova tolerância: R$ ${newValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-                        });
-                        setIsSettingsOpen(false);
-                      } else {
-                        toast({
-                          title: "Valor Inválido",
-                          description: "Por favor, insira um valor numérico válido maior ou igual a zero.",
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                  >
-                    Salvar
-                  </Button>
-                </div>
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setTempCorrectThreshold(correctThreshold.toString());
+              setTempToleranceValue(toleranceValue.toString());
+              setIsSettingsOpen(false);
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => {
+              const newToleranceValue = parseFloat(tempToleranceValue);
+              const newCorrectThreshold = parseFloat(tempCorrectThreshold);
+              
+              // Validações
+              if (isNaN(newToleranceValue) || newToleranceValue < 0) {
+                toast({
+                  title: "Valor Inválido",
+                  description: "Por favor, insira um valor de tolerância válido maior ou igual a zero.",
+                  variant: "destructive",
+                });
+                return;
+              }
+              
+              if (isNaN(newCorrectThreshold) || newCorrectThreshold < 0) {
+                toast({
+                  title: "Valor Inválido",
+                  description: "Por favor, insira um limite de 'Correto' válido maior ou igual a zero.",
+                  variant: "destructive",
+                });
+                return;
+              }
+              
+              // Validação lógica: limite "correto" deve ser menor que "tolerância"
+              if (newCorrectThreshold >= newToleranceValue) {
+                toast({
+                  title: "Configuração Inválida",
+                  description: "O limite 'Correto' deve ser menor que o limite 'Tolerância'.",
+                  variant: "destructive",
+                });
+                return;
+              }
+              
+              // Salvar ambos os valores
+              setCorrectThreshold(newCorrectThreshold);
+              setToleranceValue(newToleranceValue);
+              
+              toast({
+                title: "Configurações Atualizadas",
+                description: `Correto: ≤ R$ ${newCorrectThreshold.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} | Tolerância: ≤ R$ ${newToleranceValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+              });
+              
+              setIsSettingsOpen(false);
+            }}
+          >
+            Salvar
+          </Button>
+        </div>
               </DialogContent>
             </Dialog>
             
