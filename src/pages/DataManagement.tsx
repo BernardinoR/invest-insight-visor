@@ -2458,7 +2458,7 @@ export default function DataManagement() {
                         <Button
                           type="button"
                           variant={manualCalcData.cdiOperacao === '%' ? 'default' : 'outline'}
-                          onClick={() => setManualCalcData({...manualCalcData, cdiOperacao: '%'})}
+                          onClick={() => setManualCalcData({...manualCalcData, cdiOperacao: '%', percentual: 100})}
                           className="rounded-none px-4"
                           size="sm"
                         >
@@ -2467,7 +2467,7 @@ export default function DataManagement() {
                         <Button
                           type="button"
                           variant={manualCalcData.cdiOperacao === '+' ? 'default' : 'outline'}
-                          onClick={() => setManualCalcData({...manualCalcData, cdiOperacao: '+'})}
+                          onClick={() => setManualCalcData({...manualCalcData, cdiOperacao: '+', percentual: 0})}
                           className="rounded-none px-4"
                           size="sm"
                         >
