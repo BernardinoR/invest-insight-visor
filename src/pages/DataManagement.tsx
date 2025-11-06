@@ -296,26 +296,45 @@ export default function DataManagement() {
 
   // Função para calcular rentabilidade ponderada automaticamente
   const calculateWeightedReturn = () => {
-    const selectedConsolidados = consolidadoData.filter(item => selectedItems.has(item.id));
+    let registrosParaCalcular: any[] = [];
     
-    if (selectedConsolidados.length === 0) {
-      toast({
-        title: "Aviso",
-        description: "Nenhum registro selecionado",
-        variant: "destructive",
-      });
-      return null;
+    // Determinar quais registros consolidados usar baseado no contexto
+    if (calculatorContext === 'bulk') {
+      registrosParaCalcular = consolidadoData.filter(item => selectedItems.has(item.id));
+      
+      if (registrosParaCalcular.length === 0) {
+        toast({
+          title: "Aviso",
+          description: "Nenhum registro selecionado",
+          variant: "destructive",
+        });
+        return null;
+      }
+    } else if (calculatorContext === 'single') {
+      // No modo single, usar o registro sendo editado
+      if (!editingItem || !editingItem.Competencia) {
+        toast({
+          title: "Erro",
+          description: "Registro inválido para cálculo",
+          variant: "destructive",
+        });
+        return null;
+      }
+      registrosParaCalcular = [editingItem];
     }
 
     let totalPosicao = 0;
     let weightedRendimento = 0;
+    let totalAtivosEncontrados = 0;
 
-    selectedConsolidados.forEach(consolidado => {
+    registrosParaCalcular.forEach(consolidado => {
       const matchingDetalhados = dadosData.filter(dado => 
         dado.Competencia === consolidado.Competencia &&
         dado.Instituicao === consolidado.Instituicao &&
         dado.nomeConta === consolidado.nomeConta
       );
+
+      totalAtivosEncontrados += matchingDetalhados.length;
 
       matchingDetalhados.forEach(detalhado => {
         const posicao = detalhado.Posicao || 0;
@@ -329,7 +348,7 @@ export default function DataManagement() {
     if (totalPosicao === 0) {
       toast({
         title: "Aviso",
-        description: "Nenhum ativo detalhado encontrado para os registros selecionados",
+        description: `Nenhum ativo detalhado encontrado para o${registrosParaCalcular.length > 1 ? 's' : ''} registro${registrosParaCalcular.length > 1 ? 's' : ''} ${calculatorContext === 'single' ? 'selecionado' : 'selecionados'}`,
         variant: "destructive",
       });
       return null;
@@ -339,10 +358,41 @@ export default function DataManagement() {
     
     toast({
       title: "Cálculo Realizado",
-      description: `Rentabilidade ponderada: ${(rendimentoPonderado * 100).toFixed(4)}%`,
+      description: `${totalAtivosEncontrados} ativo${totalAtivosEncontrados !== 1 ? 's' : ''} encontrado${totalAtivosEncontrados !== 1 ? 's' : ''}. Rentabilidade ponderada: ${(rendimentoPonderado * 100).toFixed(4)}%`,
     });
 
     return rendimentoPonderado;
+  };
+
+  // Função auxiliar para contar ativos vinculados
+  const getLinkedAssetsCount = () => {
+    if (calculatorContext === 'bulk') {
+      const selectedConsolidados = consolidadoData.filter(item => selectedItems.has(item.id));
+      let totalAtivos = 0;
+      
+      selectedConsolidados.forEach(consolidado => {
+        const matchingDetalhados = dadosData.filter(dado => 
+          dado.Competencia === consolidado.Competencia &&
+          dado.Instituicao === consolidado.Instituicao &&
+          dado.nomeConta === consolidado.nomeConta
+        );
+        totalAtivos += matchingDetalhados.length;
+      });
+      
+      return totalAtivos;
+    } else if (calculatorContext === 'single') {
+      if (!editingItem || !editingItem.Competencia) return 0;
+      
+      const matchingDetalhados = dadosData.filter(dado => 
+        dado.Competencia === editingItem.Competencia &&
+        dado.Instituicao === editingItem.Instituicao &&
+        dado.nomeConta === editingItem.nomeConta
+      );
+      
+      return matchingDetalhados.length;
+    }
+    
+    return 0;
   };
 
   // Função para calcular rentabilidade baseada em indexador
@@ -2446,7 +2496,14 @@ export default function DataManagement() {
                   <strong>Critério:</strong> Mesma Competência, Instituição e Nome da Conta.
                 </p>
                 <div className="bg-muted p-3 rounded-md">
-                  <p className="text-sm font-medium">Registros selecionados: {selectedItems.size}</p>
+                  {calculatorContext === 'bulk' ? (
+                    <>
+                      <p className="text-sm font-medium">Registros consolidados selecionados: {selectedItems.size}</p>
+                      <p className="text-sm font-medium">Ativos vinculados: {getLinkedAssetsCount()}</p>
+                    </>
+                  ) : (
+                    <p className="text-sm font-medium">Ativos vinculados: {getLinkedAssetsCount()}</p>
+                  )}
                 </div>
               </div>
             )}
