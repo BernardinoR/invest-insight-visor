@@ -261,14 +261,14 @@ export default function DataManagement() {
       
       const [consolidadoResponse, dadosResponse] = await Promise.all([
         supabase
-          .from('Dados_consolidados_performances' as any)
+          .from('ConsolidadoPerformance')
           .select('*')
-          .eq('nomeCliente', decodedClientName)
+          .eq('Nome', decodedClientName)
           .order('Competencia', { ascending: false }),
         supabase
-          .from('Dados_performance_detalhe' as any)
+          .from('DadosPerformance')
           .select('*')
-          .eq('nomeCliente', decodedClientName)
+          .eq('Nome', decodedClientName)
           .order('Competencia', { ascending: false })
       ]);
 
