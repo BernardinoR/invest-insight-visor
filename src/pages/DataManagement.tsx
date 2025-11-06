@@ -2458,6 +2458,8 @@ export default function DataManagement() {
                         setManualCalcData({...manualCalcData, indexador: value, cdiOperacao: '%', percentual: 100});
                       } else if (value === 'IPCA') {
                         setManualCalcData({...manualCalcData, indexador: value, ipcaOperacao: '+', percentual: 5});
+                      } else if (value === 'PRE') {
+                        setManualCalcData({...manualCalcData, indexador: value, percentual: 10});
                       } else {
                         setManualCalcData({...manualCalcData, indexador: value, percentual: 100});
                       }
