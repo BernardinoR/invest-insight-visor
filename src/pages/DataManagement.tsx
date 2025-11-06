@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -459,6 +459,54 @@ export default function DataManagement() {
     return ((value || 0) * 100).toFixed(2).replace('.', ',') + '%';
   };
 
+  interface VerificationResult {
+    status: 'match' | 'tolerance' | 'mismatch' | 'no-data';
+    consolidatedValue: number;
+    detailedSum: number;
+    difference: number;
+    detailedCount: number;
+  }
+
+  const verifyIntegrity = (
+    competencia: string, 
+    instituicao: string, 
+    nomeConta: string,
+    patrimonioFinal: number
+  ): VerificationResult => {
+    // Filtrar dados detalhados com a mesma chave
+    const relatedDetails = dadosData.filter(item => 
+      item.Competencia === competencia &&
+      item.Instituicao === instituicao &&
+      item.nomeConta === nomeConta
+    );
+    
+    // Somar todas as posições
+    const detailedSum = relatedDetails.reduce((sum, item) => sum + (item.Posicao || 0), 0);
+    
+    // Calcular diferença
+    const difference = Math.abs(patrimonioFinal - detailedSum);
+    
+    // Determinar status
+    let status: VerificationResult['status'];
+    if (relatedDetails.length === 0) {
+      status = 'no-data';
+    } else if (difference < 0.01) { // Menos de 1 centavo
+      status = 'match';
+    } else if (difference < 1.00) { // Menos de R$ 1,00
+      status = 'tolerance';
+    } else {
+      status = 'mismatch';
+    }
+    
+    return {
+      status,
+      consolidatedValue: patrimonioFinal,
+      detailedSum,
+      difference,
+      detailedCount: relatedDetails.length
+    };
+  };
+
   // Filter data by selected filters
   let filteredConsolidadoData = consolidadoData;
   if (selectedCompetencias.length > 0) {
@@ -639,6 +687,62 @@ export default function DataManagement() {
           </CardContent>
         </Card>
 
+        {/* Painel de Resumo de Verificação */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg">Resumo de Verificação de Integridade</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-4 gap-4">
+              {(() => {
+                const stats = filteredConsolidadoData.reduce((acc, item) => {
+                  const verification = verifyIntegrity(
+                    item.Competencia,
+                    item.Instituicao,
+                    item.nomeConta,
+                    item["Patrimonio Final"]
+                  );
+                  acc[verification.status]++;
+                  return acc;
+                }, { match: 0, tolerance: 0, mismatch: 0, 'no-data': 0 });
+                
+                return (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      <div>
+                        <p className="text-2xl font-bold">{stats.match}</p>
+                        <p className="text-sm text-muted-foreground">Corretos</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-5 w-5 text-yellow-500" />
+                      <div>
+                        <p className="text-2xl font-bold">{stats.tolerance}</p>
+                        <p className="text-sm text-muted-foreground">Tolerância</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <XCircle className="h-5 w-5 text-red-500" />
+                      <div>
+                        <p className="text-2xl font-bold">{stats.mismatch}</p>
+                        <p className="text-sm text-muted-foreground">Inconsistentes</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Info className="h-5 w-5 text-blue-500" />
+                      <div>
+                        <p className="text-2xl font-bold">{stats['no-data']}</p>
+                        <p className="text-sm text-muted-foreground">Sem Dados</p>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </CardContent>
+        </Card>
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="consolidado">Dados Consolidados</TabsTrigger>
@@ -730,21 +834,22 @@ export default function DataManagement() {
                          <TableHead>Movimentação</TableHead>
                          <TableHead>Impostos</TableHead>
                          <TableHead>Ganho Financeiro</TableHead>
-                         <TableHead>Patrimônio Final</TableHead>
+                          <TableHead>Patrimônio Final</TableHead>
                          <TableHead>Rendimento %</TableHead>
+                         <TableHead className="text-center">Verificação</TableHead>
                          <TableHead>Ações</TableHead>
                        </TableRow>
                      </TableHeader>
                     <TableBody>
-                      {loading ? (
-                        <TableRow>
-                           <TableCell colSpan={12} className="text-center">
+                       {loading ? (
+                         <TableRow>
+                           <TableCell colSpan={13} className="text-center">
                              Carregando...
                            </TableCell>
-                        </TableRow>
-                       ) : filteredConsolidadoData.length === 0 ? (
+                         </TableRow>
+                        ) : filteredConsolidadoData.length === 0 ? (
                          <TableRow>
-                            <TableCell colSpan={12} className="text-center">
+                            <TableCell colSpan={13} className="text-center">
                               Nenhum dado encontrado
                             </TableCell>
                          </TableRow>
@@ -765,8 +870,78 @@ export default function DataManagement() {
                              <TableCell>{formatCurrency(item["Movimentação"])}</TableCell>
                              <TableCell>{formatCurrency(item.Impostos)}</TableCell>
                              <TableCell>{formatCurrency(item["Ganho Financeiro"])}</TableCell>
-                             <TableCell>{formatCurrency(item["Patrimonio Final"])}</TableCell>
+                              <TableCell>{formatCurrency(item["Patrimonio Final"])}</TableCell>
                              <TableCell>{formatPercentage(item.Rendimento)}</TableCell>
+                             <TableCell className="text-center">
+                               {(() => {
+                                 const verification = verifyIntegrity(
+                                   item.Competencia,
+                                   item.Instituicao,
+                                   item.nomeConta,
+                                   item["Patrimonio Final"]
+                                 );
+                                 
+                                 return (
+                                   <Popover>
+                                     <PopoverTrigger asChild>
+                                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                         {verification.status === 'match' && (
+                                           <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                         )}
+                                         {verification.status === 'tolerance' && (
+                                           <AlertCircle className="h-5 w-5 text-yellow-500" />
+                                         )}
+                                         {verification.status === 'mismatch' && (
+                                           <XCircle className="h-5 w-5 text-red-500" />
+                                         )}
+                                         {verification.status === 'no-data' && (
+                                           <Info className="h-5 w-5 text-blue-500" />
+                                         )}
+                                       </Button>
+                                     </PopoverTrigger>
+                                     <PopoverContent className="w-80">
+                                       <div className="space-y-2">
+                                         <h4 className="font-medium text-sm">Verificação de Integridade</h4>
+                                         <div className="text-sm space-y-1">
+                                           <div className="flex justify-between">
+                                             <span className="text-muted-foreground">Patrimônio Final:</span>
+                                             <span className="font-medium">{formatCurrency(verification.consolidatedValue)}</span>
+                                           </div>
+                                           <div className="flex justify-between">
+                                             <span className="text-muted-foreground">Soma Detalhada:</span>
+                                             <span className="font-medium">{formatCurrency(verification.detailedSum)}</span>
+                                           </div>
+                                           <div className="flex justify-between">
+                                             <span className="text-muted-foreground">Diferença:</span>
+                                             <span className={`font-medium ${
+                                               verification.status === 'mismatch' ? 'text-red-500' : 
+                                               verification.status === 'tolerance' ? 'text-yellow-500' : 
+                                               'text-green-500'
+                                             }`}>
+                                               {formatCurrency(verification.difference)}
+                                             </span>
+                                           </div>
+                                           <div className="flex justify-between">
+                                             <span className="text-muted-foreground">Registros Detalhados:</span>
+                                             <span className="font-medium">{verification.detailedCount}</span>
+                                           </div>
+                                           {verification.status === 'mismatch' && (
+                                             <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/20 rounded text-xs text-red-700 dark:text-red-400">
+                                               ⚠️ Diferença significativa detectada. Verifique os dados detalhados.
+                                             </div>
+                                           )}
+                                           {verification.status === 'no-data' && (
+                                             <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-xs text-blue-700 dark:text-blue-400">
+                                               ℹ️ Nenhum dado detalhado encontrado para esta combinação.
+                                             </div>
+                                           )}
+                                         </div>
+                                       </div>
+                                     </PopoverContent>
+                                   </Popover>
+                                 );
+                               })()}
+                             </TableCell>
                              <TableCell>
                                <div className="flex gap-2">
                                  <Button
@@ -782,6 +957,23 @@ export default function DataManagement() {
                                    onClick={() => handleDelete(item.id, 'consolidado')}
                                  >
                                    <Trash2 className="h-4 w-4" />
+                                 </Button>
+                                 <Button
+                                   variant="outline"
+                                   size="sm"
+                                   onClick={() => {
+                                     setActiveTab('detalhados');
+                                     setSelectedCompetencias([item.Competencia]);
+                                     setSelectedInstituicoes([item.Instituicao]);
+                                     setTimeout(() => {
+                                       document.querySelector('[value="detalhados"]')?.scrollIntoView({ 
+                                         behavior: 'smooth' 
+                                       });
+                                     }, 100);
+                                   }}
+                                   title="Ver dados detalhados"
+                                 >
+                                   <ExternalLink className="h-4 w-4" />
                                  </Button>
                                </div>
                              </TableCell>
