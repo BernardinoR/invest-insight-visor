@@ -2183,6 +2183,17 @@ export default function DataManagement() {
                   
                   <div className="flex-1" />
                   
+                  {/* Campo de Busca */}
+                  <div className="relative w-64">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Buscar por ativo, emissor ou classe..."
+                      value={searchAtivo}
+                      onChange={(e) => setSearchAtivo(e.target.value)}
+                      className="pl-10 h-8"
+                    />
+                  </div>
+                  
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" size="sm" className="h-8">
@@ -2287,30 +2298,6 @@ export default function DataManagement() {
                     </Button>
                   </div>
                 )}
-
-                {/* Linha de Busca e Seleção */}
-                <div className="flex items-center gap-2 mb-3">
-                  {activeTab === 'detalhados' && (
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={selectAllVisibleItems}
-                      className="h-8"
-                    >
-                      <CheckSquare className="mr-1 h-3 w-3" />
-                      Selecionar Todos
-                    </Button>
-                  )}
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                      placeholder="Buscar por ativo, emissor ou classe..."
-                      value={searchAtivo}
-                      onChange={(e) => setSearchAtivo(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
 
                 <div className="overflow-x-auto">
                   <Table>
