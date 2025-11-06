@@ -327,6 +327,7 @@ export default function DataManagement() {
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [selectedEmissores, setSelectedEmissores] = useState<string[]>([]);
   const [searchAtivo, setSearchAtivo] = useState<string>("");
+  const [selectedConsolidado, setSelectedConsolidado] = useState<ConsolidadoData | null>(null);
   const [classesAtivo, setClassesAtivo] = useState<string[]>([
     'CDI - Liquidez',
     'CDI - Títulos', 
@@ -1736,7 +1737,14 @@ export default function DataManagement() {
           </CardContent>
         </Card>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={(value) => {
+          setActiveTab(value);
+          if (value !== 'detalhados') {
+            setSelectedConsolidado(null);
+            setSelectedCompetencias([]);
+            setSelectedInstituicoes([]);
+          }
+        }}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="consolidado">Consolidado</TabsTrigger>
             <TabsTrigger value="detalhados">Ativos</TabsTrigger>
@@ -2151,22 +2159,23 @@ export default function DataManagement() {
                                      );
                                      
                                      return (
-                                       <Button
-                                         variant="ghost"
-                                         size="sm"
-                                         className="h-8 px-2 hover:bg-primary/10 text-primary"
-                                         onClick={() => {
-                                           setActiveTab('detalhados');
-                                           setSelectedCompetencias([item.Competencia]);
-                                           setSelectedInstituicoes([item.Instituicao]);
-                                           setTimeout(() => {
-                                             document.querySelector('[value="detalhados"]')?.scrollIntoView({ 
-                                               behavior: 'smooth' 
-                                             });
-                                           }, 100);
-                                         }}
-                                         title={`Ver ${verification.detailedCount || 0} ativos detalhados`}
-                                       >
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-8 px-2 hover:bg-primary/10 text-primary"
+                                          onClick={() => {
+                                            setSelectedConsolidado(item);
+                                            setActiveTab('detalhados');
+                                            setSelectedCompetencias([item.Competencia]);
+                                            setSelectedInstituicoes([item.Instituicao]);
+                                            setTimeout(() => {
+                                              document.querySelector('[value="detalhados"]')?.scrollIntoView({ 
+                                                behavior: 'smooth' 
+                                              });
+                                            }, 100);
+                                          }}
+                                          title={`Ver ${verification.detailedCount || 0} ativos detalhados`}
+                                        >
                                          <ArrowRight className="h-4 w-4" />
                                          <span className="ml-1 text-xs font-medium">{verification.detailedCount || 0}</span>
                                        </Button>
@@ -2214,6 +2223,163 @@ export default function DataManagement() {
                 </p>
               </CardHeader>
               <CardContent>
+                {/* Card de Comparação */}
+                {selectedConsolidado && (() => {
+                  // Calcular soma dos ativos filtrados
+                  const calculateFilteredAssetsSum = () => {
+                    const filteredAssets = dadosData.filter(item => {
+                      if (selectedCompetencias.length > 0 && !selectedCompetencias.includes(item.Competencia)) {
+                        return false;
+                      }
+                      if (selectedInstituicoes.length > 0 && !selectedInstituicoes.includes(item.Instituicao)) {
+                        return false;
+                      }
+                      if (selectedClasses.length > 0 && !selectedClasses.includes(item["Classe do ativo"])) {
+                        return false;
+                      }
+                      if (selectedEmissores.length > 0 && !selectedEmissores.includes(item.Emissor)) {
+                        return false;
+                      }
+                      if (searchAtivo) {
+                        const searchLower = searchAtivo.toLowerCase();
+                        const matchesAtivo = item.Ativo?.toLowerCase().includes(searchLower);
+                        const matchesEmissor = item.Emissor?.toLowerCase().includes(searchLower);
+                        const matchesClasse = item["Classe do ativo"]?.toLowerCase().includes(searchLower);
+                        if (!matchesAtivo && !matchesEmissor && !matchesClasse) {
+                          return false;
+                        }
+                      }
+                      return true;
+                    });
+                    return filteredAssets.reduce((sum, item) => sum + (item.Posicao || 0), 0);
+                  };
+
+                  const consolidadoValue = selectedConsolidado["Patrimonio Final"] || 0;
+                  const assetsSum = calculateFilteredAssetsSum();
+                  const difference = Math.abs(consolidadoValue - assetsSum);
+                  const percentDiff = consolidadoValue !== 0 
+                    ? (difference / Math.abs(consolidadoValue)) * 100 
+                    : 0;
+                  
+                  let status: 'match' | 'tolerance' | 'mismatch';
+                  if (difference <= correctThreshold) {
+                    status = 'match';
+                  } else if (difference <= toleranceValue) {
+                    status = 'tolerance';
+                  } else {
+                    status = 'mismatch';
+                  }
+                  
+                  const statusConfig = {
+                    match: {
+                      color: 'text-green-600 dark:text-green-400',
+                      bgColor: 'bg-green-50 dark:bg-green-950/20',
+                      borderColor: 'border-green-200 dark:border-green-800',
+                      icon: <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />,
+                      label: 'Correto'
+                    },
+                    tolerance: {
+                      color: 'text-yellow-600 dark:text-yellow-400',
+                      bgColor: 'bg-yellow-50 dark:bg-yellow-950/20',
+                      borderColor: 'border-yellow-200 dark:border-yellow-800',
+                      icon: <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />,
+                      label: 'Tolerância'
+                    },
+                    mismatch: {
+                      color: 'text-red-600 dark:text-red-400',
+                      bgColor: 'bg-red-50 dark:bg-red-950/20',
+                      borderColor: 'border-red-200 dark:border-red-800',
+                      icon: <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />,
+                      label: 'Inconsistente'
+                    }
+                  };
+                  
+                  const config = statusConfig[status];
+                  
+                  return (
+                    <Card className="mb-4 border-2 border-primary/20">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="text-base">Comparação: Consolidado vs Ativos</CardTitle>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {selectedConsolidado.Competencia} - {selectedConsolidado.Instituicao}
+                              {selectedConsolidado.nomeConta && selectedConsolidado.nomeConta !== '-' && ` - ${selectedConsolidado.nomeConta}`}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedConsolidado(null);
+                              setSelectedCompetencias([]);
+                              setSelectedInstituicoes([]);
+                            }}
+                            title="Limpar comparação"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className={`rounded-lg border ${config.borderColor} ${config.bgColor} p-4`}>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground font-medium">Patrimônio Final (Consolidado)</p>
+                              <p className="text-lg font-bold">
+                                {formatCurrency(consolidadoValue)}
+                              </p>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground font-medium">Soma dos Ativos Filtrados</p>
+                              <p className="text-lg font-bold">
+                                {formatCurrency(assetsSum)}
+                              </p>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground font-medium">Diferença Absoluta</p>
+                              <p className={`text-lg font-bold ${config.color}`}>
+                                {formatCurrency(difference)}
+                                <span className="text-xs ml-2">
+                                  ({percentDiff.toFixed(2)}%)
+                                </span>
+                              </p>
+                            </div>
+                            
+                            <div className="space-y-1 flex flex-col items-start justify-center">
+                              <p className="text-xs text-muted-foreground font-medium">Status</p>
+                              <div className="flex items-center gap-2">
+                                {config.icon}
+                                <span className={`font-semibold ${config.color}`}>
+                                  {config.label}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {status === 'mismatch' && (
+                            <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-800">
+                              <p className="text-xs text-red-700 dark:text-red-400">
+                                ⚠️ <strong>Atenção:</strong> Diferença significativa detectada entre o consolidado e a soma dos ativos. Verifique se há ativos faltantes ou valores incorretos.
+                              </p>
+                            </div>
+                          )}
+                          
+                          {status === 'tolerance' && (
+                            <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
+                              <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                                ℹ️ Diferença dentro da tolerância configurada (≤ {formatCurrency(toleranceValue)}).
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
+                
                 {/* Barra de Ferramentas */}
                 <div className="flex items-center gap-2 mb-3">
                   <FilterBuilder onAddFilter={handleAddFilter} />
