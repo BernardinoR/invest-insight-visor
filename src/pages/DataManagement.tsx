@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -827,11 +827,6 @@ export default function DataManagement() {
     });
   }, []);
 
-  const selectAllVisibleItems = () => {
-    const visibleItems = activeTab === 'consolidado' ? filteredConsolidadoData : filteredDadosData;
-    const allIds = new Set(visibleItems.map(item => item.id));
-    setSelectedItems(allIds);
-  };
 
   const clearSelection = useCallback(() => {
     setSelectedItems(new Set());
@@ -1141,7 +1136,36 @@ export default function DataManagement() {
     };
   }, [dadosIndex, correctThreshold, toleranceValue]);
 
-  // OPTIMIZED: Filter data with advanced filters - MEMOIZED
+  // FASE 1: CACHE - Pré-calcular todas as verificações UMA ÚNICA VEZ
+  const verificationsCache = useMemo(() => {
+    const cache = new Map<string, VerificationResult>();
+    
+    consolidadoData.forEach(item => {
+      const key = `${item.Competencia}-${item.Instituicao}-${item.nomeConta}`;
+      cache.set(key, verifyIntegrity(
+        item.Competencia,
+        item.Instituicao,
+        item.nomeConta,
+        item["Patrimonio Final"]
+      ));
+    });
+    
+    return cache;
+  }, [consolidadoData, verifyIntegrity]);
+
+  // Helper para buscar verificação no cache
+  const getVerification = useCallback((item: ConsolidadoData): VerificationResult => {
+    const key = `${item.Competencia}-${item.Instituicao}-${item.nomeConta}`;
+    return verificationsCache.get(key) || {
+      status: 'no-data',
+      consolidatedValue: item["Patrimonio Final"],
+      detailedSum: 0,
+      difference: 0,
+      detailedCount: 0
+    };
+  }, [verificationsCache]);
+
+  // OPTIMIZED: Filter data with advanced filters - MEMOIZED + Using cache
   const filteredConsolidadoData = useMemo(() => {
     let data = consolidadoData;
     
@@ -1156,15 +1180,10 @@ export default function DataManagement() {
     // Apply advanced filters
     data = applyFilters(data, activeFilters);
     
-    // Apply verification filter
+    // Apply verification filter - USING CACHE
     if (verifFilter !== 'all') {
       data = data.filter(item => {
-        const verification = verifyIntegrity(
-          item.Competencia,
-          item.Instituicao,
-          item.nomeConta,
-          item["Patrimonio Final"]
-        );
+        const verification = getVerification(item);
         return verification.status === verifFilter;
       });
     }
@@ -1173,7 +1192,7 @@ export default function DataManagement() {
     data = applySorting(data, sortConfig);
     
     return data;
-  }, [consolidadoData, selectedCompetencias, selectedInstituicoes, activeFilters, verifFilter, sortConfig, verifyIntegrity]);
+  }, [consolidadoData, selectedCompetencias, selectedInstituicoes, activeFilters, verifFilter, sortConfig, getVerification]);
 
   // OPTIMIZED: Filter dados detalhados - MEMOIZED
   const filteredDadosData = useMemo(() => {
@@ -1206,6 +1225,13 @@ export default function DataManagement() {
     
     return data;
   }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo]);
+
+  // OPTIMIZED: selectAllVisibleItems moved here after filtered data definitions
+  const selectAllVisibleItems = useCallback(() => {
+    const visibleItems = activeTab === 'consolidado' ? filteredConsolidadoData : filteredDadosData;
+    const allIds = new Set(visibleItems.map(item => item.id));
+    setSelectedItems(allIds);
+  }, [activeTab, filteredConsolidadoData, filteredDadosData]);
 
   // Filter Builder Component
   const FilterBuilder = ({ onAddFilter }: { onAddFilter: (filter: Filter) => void }) => {
@@ -1711,7 +1737,7 @@ export default function DataManagement() {
         </div>
 
 
-        {/* Painel de Resumo de Verificação */}
+        {/* Painel de Resumo de Verificação - OPTIMIZED: Using memoized stats */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-lg">Resumo de Verificação de Integridade</CardTitle>
@@ -1719,13 +1745,9 @@ export default function DataManagement() {
           <CardContent>
             <div className="grid grid-cols-4 gap-4">
               {(() => {
+                // FASE 1: Usar cache para calcular estatísticas
                 const stats = filteredConsolidadoData.reduce((acc, item) => {
-                  const verification = verifyIntegrity(
-                    item.Competencia,
-                    item.Instituicao,
-                    item.nomeConta,
-                    item["Patrimonio Final"]
-                  );
+                  const verification = getVerification(item);
                   acc[verification.status]++;
                   return acc;
                 }, { match: 0, tolerance: 0, mismatch: 0, 'no-data': 0 });
@@ -2105,15 +2127,10 @@ export default function DataManagement() {
                              {visibleColumns.has('Ganho Financeiro') && <TableCell className="text-right">{formatCurrency(item["Ganho Financeiro"])}</TableCell>}
                              {visibleColumns.has('Patrimônio Final') && <TableCell className="text-right">{formatCurrency(item["Patrimonio Final"])}</TableCell>}
                              {visibleColumns.has('Rendimento %') && <TableCell className="text-right">{formatPercentage(item.Rendimento)}</TableCell>}
-                             {visibleColumns.has('Verificação') && (
-                               <TableCell className="text-center">
-                                 {(() => {
-                                   const verification = verifyIntegrity(
-                                     item.Competencia,
-                                     item.Instituicao,
-                                     item.nomeConta,
-                                     item["Patrimonio Final"]
-                                   );
+                              {visibleColumns.has('Verificação') && (
+                                <TableCell className="text-center">
+                                  {(() => {
+                                    const verification = getVerification(item);
                                    
                                    return (
                                      <Popover>
@@ -2180,13 +2197,8 @@ export default function DataManagement() {
                              {visibleColumns.has('Ações') && (
                                <TableCell>
                                  <div className="flex items-center gap-1">
-                                   {(() => {
-                                     const verification = verifyIntegrity(
-                                       item.Competencia,
-                                       item.Instituicao,
-                                       item.nomeConta,
-                                       item["Patrimonio Final"]
-                                     );
+                                    {(() => {
+                                      const verification = getVerification(item);
                                      
                                      return (
                                         <Button
@@ -2717,16 +2729,16 @@ export default function DataManagement() {
         </Tabs>
       </div>
 
-      {/* Edit/Create Dialog */}
+      {/* Edit/Create Dialog - FASE 2: LAZY RENDER */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingItem?.id ? 'Editar' : 'Criar'} {editingItem?.type === 'consolidado' ? 'Dado Consolidado' : 'Dado Detalhado'}
-            </DialogTitle>
-          </DialogHeader>
-          
-          {editingItem && (
+        {isDialogOpen && editingItem && (
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingItem?.id ? 'Editar' : 'Criar'} {editingItem?.type === 'consolidado' ? 'Dado Consolidado' : 'Dado Detalhado'}
+              </DialogTitle>
+            </DialogHeader>
+            
             <div className="space-y-4">
               {editingItem.type === 'consolidado' ? (
                 <>
@@ -3082,8 +3094,8 @@ export default function DataManagement() {
                 </Button>
               </div>
             </div>
-          )}
-        </DialogContent>
+          </DialogContent>
+        )}
       </Dialog>
 
       {/* Bulk Edit Dialog */}
