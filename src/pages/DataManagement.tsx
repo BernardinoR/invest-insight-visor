@@ -954,7 +954,7 @@ export default function DataManagement() {
       status = 'no-data';
     } else if (difference < 0.01) { // Menos de 1 centavo
       status = 'match';
-    } else if (difference < 1.00) { // Menos de R$ 1,00
+    } else if (difference < 2500.00) { // Menos de R$ 2.500,00
       status = 'tolerance';
     } else {
       status = 'mismatch';
