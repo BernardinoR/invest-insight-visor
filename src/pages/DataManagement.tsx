@@ -2476,18 +2476,23 @@ export default function DataManagement() {
                               {visibleColumnsDetalhados.has('Rendimento %') && <TableCell>{formatPercentage(item.Rendimento)}</TableCell>}
                               {visibleColumnsDetalhados.has('Ações') && (
                                 <TableCell>
-                                  <div className="flex gap-2">
+                                  <div className="flex items-center gap-1">
                                     <Button
-                                      variant="outline"
+                                      variant="ghost"
                                       size="sm"
+                                      className="h-8 w-8 p-0"
                                       onClick={() => handleEdit(item, 'dados')}
+                                      title="Editar"
                                     >
                                       <Edit className="h-4 w-4" />
                                     </Button>
+                                    
                                     <Button
-                                      variant="outline"
+                                      variant="ghost"
                                       size="sm"
+                                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                                       onClick={() => handleDelete(item.id, 'dados')}
+                                      title="Excluir"
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
