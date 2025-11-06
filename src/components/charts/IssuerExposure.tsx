@@ -75,59 +75,84 @@ export function IssuerExposure({ clientName, dadosData: propDadosData }: {
         accounts.add(item.nomeConta);
       }
     });
-    return Array.from(accounts).sort();
+    const result = Array.from(accounts).sort();
+    console.log('📋 Unique accounts found:', result);
+    return result;
   }, [filteredData]);
 
   // Apply account filter if selected
-  const accountFilteredData = selectedAccount === "all" 
-    ? filteredData 
-    : filteredData.filter(item => item.nomeConta === selectedAccount);
+  const accountFilteredData = useMemo(() => {
+    console.log('🔍 Filtering by account:', selectedAccount);
+    console.log('📊 Total records before filter:', filteredData.length);
+    
+    const result = selectedAccount === "all" 
+      ? filteredData 
+      : filteredData.filter(item => {
+          const accountName = item.nomeConta || "Sem nome";
+          return accountName === selectedAccount;
+        });
+    
+    console.log('📊 Filtered data count:', result.length);
+    return result;
+  }, [selectedAccount, filteredData]);
 
   // Group investments by issuer and calculate totals
-  const issuerData = accountFilteredData
-    .filter(investment => investment.Emissor && investment.Posicao)
-    .reduce((acc, investment) => {
-      const issuer = investment.Emissor!;
-      const position = Number(investment.Posicao) || 0;
-      const vencimento = investment.Vencimento;
-      const nomeConta = investment.nomeConta || "Sem nome";
-      
-      if (!acc[issuer]) {
-        acc[issuer] = { 
-          name: issuer, 
-          exposure: 0, 
-          count: 0,
-          exceedsLimit: false,
-          vencimentos: [],
-          contas: []
-        };
-      }
-      acc[issuer].exposure += position;
-      acc[issuer].count += 1;
-      
-      // Add maturity date if it exists and isn't already in the list
-      if (vencimento && !acc[issuer].vencimentos.includes(vencimento)) {
-        acc[issuer].vencimentos.push(vencimento);
-      }
-      
-      // Add account name if it exists and isn't already in the list
-      if (nomeConta && !acc[issuer].contas.includes(nomeConta)) {
-        acc[issuer].contas.push(nomeConta);
-      }
-      
-      return acc;
-    }, {} as Record<string, IssuerData & { vencimentos: string[]; contas: string[] }>);
+  const issuerData = useMemo(() => {
+    console.log('📈 Calculating issuer data...');
+    const data = accountFilteredData
+      .filter(investment => investment.Emissor && investment.Posicao)
+      .reduce((acc, investment) => {
+        const issuer = investment.Emissor!;
+        const position = Number(investment.Posicao) || 0;
+        const vencimento = investment.Vencimento;
+        const nomeConta = investment.nomeConta || "Sem nome";
+        
+        if (!acc[issuer]) {
+          acc[issuer] = { 
+            name: issuer, 
+            exposure: 0, 
+            count: 0,
+            exceedsLimit: false,
+            vencimentos: [],
+            contas: []
+          };
+        }
+        acc[issuer].exposure += position;
+        acc[issuer].count += 1;
+        
+        // Add maturity date if it exists and isn't already in the list
+        if (vencimento && !acc[issuer].vencimentos.includes(vencimento)) {
+          acc[issuer].vencimentos.push(vencimento);
+        }
+        
+        // Add account name if it exists and isn't already in the list
+        if (nomeConta && !acc[issuer].contas.includes(nomeConta)) {
+          acc[issuer].contas.push(nomeConta);
+        }
+        
+        return acc;
+      }, {} as Record<string, IssuerData & { vencimentos: string[]; contas: string[] }>);
+    
+    console.log('📊 Issuer data calculated:', Object.keys(data).length, 'issuers');
+    return data;
+  }, [accountFilteredData]);
 
   const LIMIT = 250000; // R$ 250.000
 
   // Mark issuers that exceed the limit and sort by exposure
-  const chartData = Object.values(issuerData)
-    .map(item => ({
-      ...item,
-      exceedsLimit: item.exposure > LIMIT
-    }))
-    .sort((a, b) => b.exposure - a.exposure)
-    .slice(0, 15); // Top 15 issuers
+  const chartData = useMemo(() => {
+    console.log('📊 Calculating chart data...');
+    const data = Object.values(issuerData)
+      .map(item => ({
+        ...item,
+        exceedsLimit: item.exposure > LIMIT
+      }))
+      .sort((a, b) => b.exposure - a.exposure)
+      .slice(0, 15); // Top 15 issuers
+    
+    console.log('📊 Chart data:', data.length, 'issuers to display');
+    return data;
+  }, [issuerData]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -208,7 +233,13 @@ export function IssuerExposure({ clientName, dadosData: propDadosData }: {
           <div className="mt-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Filtrar por conta:</span>
-              <Select value={selectedAccount} onValueChange={setSelectedAccount}>
+              <Select 
+                value={selectedAccount} 
+                onValueChange={(value) => {
+                  console.log('🔄 Account filter changed to:', value);
+                  setSelectedAccount(value);
+                }}
+              >
                 <SelectTrigger className="w-[200px] h-9">
                   <SelectValue placeholder="Todas as contas" />
                 </SelectTrigger>
