@@ -1,12 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts';
 import { useClientData } from "@/hooks/useClientData";
+import { useState, useMemo } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface IssuerData {
   name: string;
   exposure: number;
   count: number;
   exceedsLimit: boolean;
+  contas: string[];
 }
 
 export function IssuerExposure({ clientName, dadosData: propDadosData }: { 
@@ -16,9 +19,11 @@ export function IssuerExposure({ clientName, dadosData: propDadosData }: {
     Posicao: number;
     Vencimento: string;
     Competencia: string;
+    nomeConta?: string;
   }>;
 }) {
   const { dadosData: hookDadosData, loading } = useClientData(clientName || "");
+  const [selectedAccount, setSelectedAccount] = useState<string>("all");
   
   // Use provided data if available, otherwise use hook data
   const rawData = propDadosData || hookDadosData;
@@ -62,13 +67,30 @@ export function IssuerExposure({ clientName, dadosData: propDadosData }: {
 
   const filteredData = getMostRecentData(rawData);
 
+  // Extract unique account names from the data
+  const uniqueAccounts = useMemo(() => {
+    const accounts = new Set<string>();
+    filteredData.forEach(item => {
+      if (item.nomeConta) {
+        accounts.add(item.nomeConta);
+      }
+    });
+    return Array.from(accounts).sort();
+  }, [filteredData]);
+
+  // Apply account filter if selected
+  const accountFilteredData = selectedAccount === "all" 
+    ? filteredData 
+    : filteredData.filter(item => item.nomeConta === selectedAccount);
+
   // Group investments by issuer and calculate totals
-  const issuerData = filteredData
+  const issuerData = accountFilteredData
     .filter(investment => investment.Emissor && investment.Posicao)
     .reduce((acc, investment) => {
       const issuer = investment.Emissor!;
       const position = Number(investment.Posicao) || 0;
       const vencimento = investment.Vencimento;
+      const nomeConta = investment.nomeConta || "Sem nome";
       
       if (!acc[issuer]) {
         acc[issuer] = { 
@@ -76,7 +98,8 @@ export function IssuerExposure({ clientName, dadosData: propDadosData }: {
           exposure: 0, 
           count: 0,
           exceedsLimit: false,
-          vencimentos: []
+          vencimentos: [],
+          contas: []
         };
       }
       acc[issuer].exposure += position;
@@ -87,8 +110,13 @@ export function IssuerExposure({ clientName, dadosData: propDadosData }: {
         acc[issuer].vencimentos.push(vencimento);
       }
       
+      // Add account name if it exists and isn't already in the list
+      if (nomeConta && !acc[issuer].contas.includes(nomeConta)) {
+        acc[issuer].contas.push(nomeConta);
+      }
+      
       return acc;
-    }, {} as Record<string, IssuerData & { vencimentos: string[] }>);
+    }, {} as Record<string, IssuerData & { vencimentos: string[]; contas: string[] }>);
 
   const LIMIT = 250000; // R$ 250.000
 
@@ -138,6 +166,11 @@ export function IssuerExposure({ clientName, dadosData: propDadosData }: {
             <span className="font-medium">Vencimentos:</span><br />
             {formatVencimentos(data.vencimentos)}
           </p>
+          {selectedAccount === "all" && data.contas && data.contas.length > 0 && (
+            <p className="text-muted-foreground text-sm mt-1">
+              <span className="font-medium">Contas:</span> {data.contas.join(', ')}
+            </p>
+          )}
           {exceedsLimit && (
             <p className="text-destructive font-medium mt-1">
               Acima do limite em: R$ {excess.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -171,6 +204,32 @@ export function IssuerExposure({ clientName, dadosData: propDadosData }: {
             <span>Acima do limite</span>
           </div>
         </div>
+        {uniqueAccounts.length > 0 && (
+          <div className="mt-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Filtrar por conta:</span>
+              <Select value={selectedAccount} onValueChange={setSelectedAccount}>
+                <SelectTrigger className="w-[200px] h-9">
+                  <SelectValue placeholder="Todas as contas" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border z-50">
+                  <SelectItem value="all" className="cursor-pointer">
+                    Todas as contas
+                  </SelectItem>
+                  {uniqueAccounts.map((account) => (
+                    <SelectItem 
+                      key={account} 
+                      value={account}
+                      className="cursor-pointer"
+                    >
+                      {account || "Sem nome"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={350}>
