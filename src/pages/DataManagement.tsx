@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -165,6 +165,15 @@ export default function DataManagement() {
   // Get unique classes and emissores for filtering (dados detalhados)
   const classesAtivoUnique = [...new Set(dadosData.map(item => item["Classe do ativo"]))].filter(classe => classe && classe.trim() !== '').sort();
   const emissores = [...new Set(dadosData.map(item => item.Emissor))].filter(emissor => emissor && emissor.trim() !== '').sort();
+  
+  // Get unique values for Nome da Conta and Moeda
+  const nomesContaUnique = [...new Set(consolidadoData.map(item => item.nomeConta))]
+    .filter(nome => nome && nome.trim() !== '')
+    .sort();
+
+  const moedasUnique = [...new Set(consolidadoData.map(item => item.Moeda))]
+    .filter(moeda => moeda && moeda.trim() !== '')
+    .sort();
 
   const [selectedCompetencias, setSelectedCompetencias] = useState<string[]>([]);
   const [selectedInstituicoes, setSelectedInstituicoes] = useState<string[]>([]);
@@ -600,18 +609,18 @@ export default function DataManagement() {
     ]
   };
 
-  const filterableFields = [
-    { key: 'Competencia', label: 'Competência', type: 'text' },
-    { key: 'Instituicao', label: 'Instituição', type: 'text' },
-    { key: 'nomeConta', label: 'Nome da Conta', type: 'text' },
-    { key: 'Moeda', label: 'Moeda', type: 'text' },
+  const filterableFields = useMemo(() => [
+    { key: 'Competencia', label: 'Competência', type: 'text', options: competencias },
+    { key: 'Instituicao', label: 'Instituição', type: 'text', options: instituicoes },
+    { key: 'nomeConta', label: 'Nome da Conta', type: 'text', options: nomesContaUnique },
+    { key: 'Moeda', label: 'Moeda', type: 'text', options: moedasUnique },
     { key: 'Patrimonio Inicial', label: 'Patrimônio Inicial', type: 'number' },
     { key: 'Movimentação', label: 'Movimentação', type: 'number' },
     { key: 'Impostos', label: 'Impostos', type: 'number' },
     { key: 'Ganho Financeiro', label: 'Ganho Financeiro', type: 'number' },
     { key: 'Patrimonio Final', label: 'Patrimônio Final', type: 'number' },
     { key: 'Rendimento', label: 'Rendimento %', type: 'number' }
-  ];
+  ], [competencias, instituicoes, nomesContaUnique, moedasUnique]);
 
   const getFieldType = (fieldKey: string) => {
     const field = filterableFields.find(f => f.key === fieldKey);
@@ -635,6 +644,11 @@ export default function DataManagement() {
       return formatCurrency(value);
     }
     return String(value);
+  };
+
+  const getFieldOptions = (fieldKey: string) => {
+    const field = filterableFields.find(f => f.key === fieldKey);
+    return (field as any)?.options || null;
   };
 
   interface VerificationResult {
@@ -812,13 +826,42 @@ export default function DataManagement() {
             {field && operator && !['isEmpty', 'isNotEmpty'].includes(operator) && (
               <div>
                 <Label>Valor</Label>
-                <Input
-                  type={getFieldType(field) === 'number' ? 'number' : 'text'}
-                  value={value}
-                  onChange={(e) => setValue(getFieldType(field) === 'number' ? Number(e.target.value) : e.target.value)}
-                  placeholder="Digite o valor"
-                  className="mt-1"
-                />
+                {(() => {
+                  const fieldType = getFieldType(field);
+                  const fieldOptions = getFieldOptions(field);
+                  
+                  // Se o campo tem opções predefinidas, usar Select
+                  if (fieldOptions && fieldOptions.length > 0) {
+                    return (
+                      <Select 
+                        value={String(value)} 
+                        onValueChange={(val) => setValue(val)}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Selecione um valor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {fieldOptions.map((option: string) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    );
+                  }
+                  
+                  // Caso contrário, usar Input normal
+                  return (
+                    <Input
+                      type={fieldType === 'number' ? 'number' : 'text'}
+                      value={value}
+                      onChange={(e) => setValue(fieldType === 'number' ? Number(e.target.value) : e.target.value)}
+                      placeholder="Digite o valor"
+                      className="mt-1"
+                    />
+                  );
+                })()}
               </div>
             )}
 
