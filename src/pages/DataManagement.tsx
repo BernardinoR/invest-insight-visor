@@ -2660,6 +2660,40 @@ interface VerificationResult {
                     </PopoverContent>
                   </Popover>
                   
+                  {selectedItems.size > 0 && (
+                    <>
+                      <span className="text-sm text-muted-foreground">
+                        {selectedItems.size} item(s) selecionado(s)
+                      </span>
+                      <Button 
+                        size="sm" 
+                        onClick={handleBulkEdit}
+                        className="h-7"
+                      >
+                        <Edit className="mr-1 h-3 w-3" />
+                        Editar
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={handleBulkDelete}
+                        className="h-7"
+                      >
+                        <Trash2 className="mr-1 h-3 w-3" />
+                        Excluir
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={clearSelection}
+                        className="h-7"
+                      >
+                        <X className="mr-1 h-3 w-3" />
+                        Limpar
+                      </Button>
+                    </>
+                  )}
+                  
                   <Button size="sm" onClick={() => handleCreate('dados')}>
                     <Plus className="mr-2 h-4 w-4" />
                     Novo
@@ -2668,42 +2702,6 @@ interface VerificationResult {
 
                 {/* Filtros Ativos */}
                 <ActiveFilters filters={activeFilters} onRemoveFilter={handleRemoveFilter} />
-
-
-                {/* Informações de Seleção */}
-                {activeTab === 'detalhados' && selectedItems.size > 0 && (
-                  <div className="flex items-center gap-2 mb-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
-                    <span className="text-sm text-muted-foreground">
-                      {selectedItems.size} item(s) selecionado(s)
-                    </span>
-                    <Button 
-                      size="sm" 
-                      onClick={handleBulkEdit}
-                      className="h-7"
-                    >
-                      <Edit className="mr-1 h-3 w-3" />
-                      Editar
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="destructive"
-                      onClick={handleBulkDelete}
-                      className="h-7"
-                    >
-                      <Trash2 className="mr-1 h-3 w-3" />
-                      Excluir
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={clearSelection}
-                      className="h-7"
-                    >
-                      <X className="mr-1 h-3 w-3" />
-                      Limpar
-                    </Button>
-                  </div>
-                )}
 
                 <div className="overflow-x-auto">
                   <Table>
