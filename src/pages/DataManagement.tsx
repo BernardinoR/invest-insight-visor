@@ -134,13 +134,22 @@ export default function DataManagement() {
   // Calculator dialog state
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [calculatorContext, setCalculatorContext] = useState<'bulk' | 'single'>('bulk');
-  const [calculatorMode, setCalculatorMode] = useState<'auto' | 'manual'>('auto');
+  const [calculatorMode, setCalculatorMode] = useState<'auto' | 'manual' | 'custom'>('auto');
   const [manualCalcData, setManualCalcData] = useState({
     competencia: '',
     indexador: 'CDI',
     percentual: 100,
     cdiOperacao: '%', // '%' ou '+'
     ipcaOperacao: '+' // Sempre '+' para IPCA
+  });
+  const [customCalcData, setCustomCalcData] = useState({
+    valorInicial: 0,
+    taxa: 0, // Taxa em percentual (ex: 1.5 para 1.5%)
+  });
+  const [customCalcResults, setCustomCalcResults] = useState({
+    percentual: 0,
+    ganhoFinanceiro: 0,
+    valorFinal: 0,
   });
   
   // Column visibility state
@@ -671,14 +680,64 @@ export default function DataManagement() {
     return null;
   };
 
+  const calculateCustomReturn = () => {
+    const { valorInicial, taxa } = customCalcData;
+    
+    if (valorInicial <= 0) {
+      toast({
+        title: "Erro",
+        description: "Por favor, informe um valor inicial válido",
+        variant: "destructive",
+      });
+      return null;
+    }
+    
+    if (taxa <= 0) {
+      toast({
+        title: "Erro",
+        description: "Por favor, informe uma taxa válida",
+        variant: "destructive",
+      });
+      return null;
+    }
+    
+    // Cálculos
+    const taxaDecimal = taxa / 100; // Converter % para decimal
+    const ganhoFinanceiro = valorInicial * taxaDecimal;
+    const valorFinal = valorInicial + ganhoFinanceiro;
+    const percentualRetorno = taxa / 100; // Para armazenar no banco (0.015 para 1.5%)
+    
+    setCustomCalcResults({
+      percentual: taxa,
+      ganhoFinanceiro: ganhoFinanceiro,
+      valorFinal: valorFinal,
+    });
+    
+    toast({
+      title: "Cálculo Realizado",
+      description: (
+        <div className="space-y-1">
+          <p><strong>Valor Inicial:</strong> R$ {valorInicial.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+          <p><strong>Taxa:</strong> {taxa}%</p>
+          <p><strong>Ganho Financeiro:</strong> R$ {ganhoFinanceiro.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+          <p><strong>Valor Final:</strong> R$ {valorFinal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+        </div>
+      ),
+    });
+    
+    return percentualRetorno; // Retorna em formato decimal (ex: 0.015)
+  };
+
   // Função para confirmar e aplicar o cálculo ao campo Rendimento
   const handleCalculatorConfirm = () => {
     let calculatedReturn: number | null = null;
 
     if (calculatorMode === 'auto') {
       calculatedReturn = calculateWeightedReturn();
-    } else {
+    } else if (calculatorMode === 'manual') {
       calculatedReturn = calculateManualReturn();
+    } else if (calculatorMode === 'custom') {
+      calculatedReturn = calculateCustomReturn();
     }
 
     if (calculatedReturn !== null) {
@@ -3625,6 +3684,13 @@ interface VerificationResult {
               >
                 Manual
               </Button>
+              <Button
+                variant={calculatorMode === 'custom' ? 'default' : 'outline'}
+                onClick={() => setCalculatorMode('custom')}
+                className="flex-1"
+              >
+                Personalizado
+              </Button>
             </div>
 
             {/* Modo Automático */}
@@ -3757,6 +3823,77 @@ interface VerificationResult {
                             : `Ex: 80 para 80% do ${manualCalcData.indexador}`}
                   </p>
                 </div>
+              </div>
+            )}
+
+            {/* Modo Personalizado */}
+            {calculatorMode === 'custom' && (
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="calc-valor-inicial">Valor Inicial (R$)</Label>
+                  <Input
+                    id="calc-valor-inicial"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={customCalcData.valorInicial || ''}
+                    onChange={(e) => setCustomCalcData({...customCalcData, valorInicial: parseFloat(e.target.value) || 0})}
+                    placeholder="Ex: 10000.00"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Informe o valor do investimento inicial
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="calc-taxa">Taxa (%)</Label>
+                  <Input
+                    id="calc-taxa"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={customCalcData.taxa || ''}
+                    onChange={(e) => setCustomCalcData({...customCalcData, taxa: parseFloat(e.target.value) || 0})}
+                    placeholder="Ex: 1.5"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ex: 1.5 para 1,5% de rendimento
+                  </p>
+                </div>
+
+                {/* Exibir resultados se já calculados */}
+                {customCalcResults.valorFinal > 0 && (
+                  <div className="bg-muted p-4 rounded-md space-y-2 border border-primary/20">
+                    <h4 className="font-semibold text-sm">Resultado do Cálculo:</h4>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Valor Percentual:</p>
+                        <p className="font-medium">{customCalcResults.percentual.toFixed(2)}%</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-muted-foreground">Ganho Financeiro:</p>
+                        <p className="font-medium text-green-600">
+                          R$ {customCalcResults.ganhoFinanceiro.toLocaleString('pt-BR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}
+                        </p>
+                      </div>
+                      
+                      <div className="col-span-2">
+                        <p className="text-muted-foreground">Valor Final:</p>
+                        <p className="font-medium text-lg">
+                          R$ {customCalcResults.valorFinal.toLocaleString('pt-BR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
