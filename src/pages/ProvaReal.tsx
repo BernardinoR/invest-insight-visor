@@ -1,8 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2, AlertCircle, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Loader2, AlertCircle, CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Table,
   TableBody,
@@ -184,47 +185,161 @@ export default function ProvaReal() {
 
         {/* Status Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">PTAX (Dólar)</CardTitle>
-                {getStatusIcon(ptaxLoading, ptaxError)}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium">PTAX (Dólar)</CardTitle>
+                    {getStatusIcon(ptaxLoading, ptaxError)}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    {ptaxError ? `Erro: ${ptaxError}` : `${ptaxData.length} competências carregadas`}
+                  </p>
+                </CardContent>
+              </Card>
+            </PopoverTrigger>
+            <PopoverContent className="w-96">
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm">API do PTAX</h4>
+                <div className="space-y-2 text-xs">
+                  <div>
+                    <p className="font-medium text-muted-foreground">Fonte:</p>
+                    <a 
+                      href="https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/aplicacao#!/recursos" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline flex items-center gap-1"
+                    >
+                      Banco Central do Brasil - PTAX
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                  <div>
+                    <p className="font-medium text-muted-foreground">Endpoint:</p>
+                    <code className="text-xs bg-muted p-1 rounded block break-all mt-1">
+                      https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaPeriodo
+                    </code>
+                  </div>
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground">
-                {ptaxError ? `Erro: ${ptaxError}` : `${ptaxData.length} competências carregadas`}
-              </p>
-            </CardContent>
-          </Card>
+            </PopoverContent>
+          </Popover>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">CDI</CardTitle>
-                {getStatusIcon(cdiLoading, cdiError)}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium">CDI</CardTitle>
+                    {getStatusIcon(cdiLoading, cdiError)}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    {cdiError ? `Erro: ${cdiError}` : `${cdiData.length} competências carregadas`}
+                  </p>
+                </CardContent>
+              </Card>
+            </PopoverTrigger>
+            <PopoverContent className="w-96">
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm">API do CDI</h4>
+                <div className="space-y-2 text-xs">
+                  <div>
+                    <p className="font-medium text-muted-foreground">Fonte:</p>
+                    <a 
+                      href="https://www3.bcb.gov.br/sgspub/" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline flex items-center gap-1"
+                    >
+                      Banco Central - SGS (Série 12)
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                  <div>
+                    <p className="font-medium text-muted-foreground">Endpoint:</p>
+                    <code className="text-xs bg-muted p-1 rounded block break-all mt-1">
+                      https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json
+                    </code>
+                  </div>
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground">
-                {cdiError ? `Erro: ${cdiError}` : `${cdiData.length} competências carregadas`}
-              </p>
-            </CardContent>
-          </Card>
+            </PopoverContent>
+          </Popover>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">Indicadores de Mercado</CardTitle>
-                {getStatusIcon(marketLoading, marketError)}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium">Indicadores de Mercado</CardTitle>
+                    {getStatusIcon(marketLoading, marketError)}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    {marketError ? `Erro: ${marketError}` : `${marketData.length} competências carregadas`}
+                  </p>
+                </CardContent>
+              </Card>
+            </PopoverTrigger>
+            <PopoverContent className="w-96">
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm">APIs dos Indicadores de Mercado</h4>
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <p className="font-medium">IPCA</p>
+                    <a 
+                      href="https://www3.bcb.gov.br/sgspub/" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline flex items-center gap-1 text-xs"
+                    >
+                      Banco Central - SGS (Série 433)
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <code className="text-xs bg-muted p-1 rounded block break-all mt-1">
+                      https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json
+                    </code>
+                  </div>
+                  <div>
+                    <p className="font-medium">Ibovespa</p>
+                    <a 
+                      href="https://www.b3.com.br/pt_br/market-data-e-indices/indices/indices-amplos/ibovespa.htm" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline flex items-center gap-1 text-xs"
+                    >
+                      B3 - Bolsa de Valores
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <code className="text-xs bg-muted p-1 rounded block break-all mt-1">
+                      https://sistemaswebb3-listados.b3.com.br/indexProxy/indexCall/GetPortfolioDay/IBOV
+                    </code>
+                  </div>
+                  <div>
+                    <p className="font-medium">IFIX</p>
+                    <a 
+                      href="https://www.b3.com.br/pt_br/market-data-e-indices/indices/indices-de-segmentos-e-setoriais/ifix-indice-de-fundos-de-investimentos-imobiliarios.htm" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline flex items-center gap-1 text-xs"
+                    >
+                      B3 - Fundos Imobiliários
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <code className="text-xs bg-muted p-1 rounded block break-all mt-1">
+                      https://sistemaswebb3-listados.b3.com.br/indexProxy/indexCall/GetPortfolioDay/IFIX
+                    </code>
+                  </div>
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground">
-                {marketError ? `Erro: ${marketError}` : `${marketData.length} competências carregadas`}
-              </p>
-            </CardContent>
-          </Card>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Error Alert */}
