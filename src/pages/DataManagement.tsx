@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -681,6 +681,47 @@ export default function DataManagement() {
     }
 
     return null;
+  };
+
+  const handleCreateFromRecord = (item: any, type: 'consolidado' | 'dados') => {
+    if (type === 'consolidado') {
+      // Criar novo registro Consolidado baseado no item
+      setEditingItem({
+        id: '',  // ID vazio indica novo registro
+        cliente: clientName,
+        Competencia: '',  // Competência em branco para ser preenchida
+        Instituicao: item.Instituicao,
+        nomeConta: item.nomeConta || '',
+        Moeda: item.Moeda || '',
+        "Patrimonio Inicial": item["Patrimonio Final"] || 0,
+        "Movimentação": 0,
+        Impostos: 0,
+        "Ganho Financeiro": 0,
+        "Patrimonio Final": 0,
+        Rendimento: 0,
+        type: 'consolidado'
+      });
+    } else {
+      // Criar novo registro Dados Detalhados baseado no item
+      setEditingItem({
+        id: '',  // ID vazio indica novo registro
+        cliente: clientName,
+        Competencia: '',  // Competência em branco para ser preenchida
+        Instituicao: item.Instituicao,
+        nomeConta: item.nomeConta || '',
+        Moeda: item.Moeda || '',
+        Ativo: '',
+        Emissor: '',
+        "Classe do ativo": '',
+        Posicao: item.Posicao || 0,
+        Taxa: '',
+        Vencimento: '',
+        Rendimento: 0,
+        type: 'dados'
+      });
+    }
+    
+    setIsDialogOpen(true);
   };
 
   const calculateCustomReturn = () => {
@@ -2566,7 +2607,17 @@ interface VerificationResult {
                                          <span className="ml-1 text-xs font-medium">{verification.detailedCount || 0}</span>
                                        </Button>
                                      );
-                                   })()}
+                                    })()}
+                                   
+                                   <Button
+                                     variant="ghost"
+                                     size="sm"
+                                     className="h-8 w-8 p-0 text-primary hover:text-primary"
+                                     onClick={() => handleCreateFromRecord(item, 'consolidado')}
+                                     title="Criar novo registro com base neste"
+                                   >
+                                     <Copy className="h-4 w-4" />
+                                   </Button>
                                    
                                    <Button
                                      variant="ghost"
@@ -3071,6 +3122,16 @@ interface VerificationResult {
                               {visibleColumnsDetalhados.has('Ações') && (
                                 <TableCell>
                                   <div className="flex items-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 text-primary hover:text-primary"
+                                      onClick={() => handleCreateFromRecord(item, 'dados')}
+                                      title="Criar novo registro com base neste"
+                                    >
+                                      <Copy className="h-4 w-4" />
+                                    </Button>
+                                    
                                     <Button
                                       variant="ghost"
                                       size="sm"
