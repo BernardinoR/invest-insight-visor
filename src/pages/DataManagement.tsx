@@ -145,7 +145,7 @@ export default function DataManagement() {
   const [customCalcData, setCustomCalcData] = useState({
     valorInicial: 0,
     competencia: '', // MM/YYYY
-    indexador: 'CDI' as 'CDI' | 'IPCA' | 'PRE',
+    indexador: 'CDI' as 'CDI' | 'IPCA' | 'PRE' | 'MANUAL',
     cdiOperacao: '%' as '%' | '+', // Apenas para CDI
     percentual: 100, // Valor padrão
   });
@@ -801,6 +801,11 @@ export default function DataManagement() {
       const spreadMensal = Math.pow(1 + spreadAnual, 1/12) - 1;
       taxaMensal = ipcaMensal + spreadMensal;
       descricaoCalculo = `IPCA (${(ipcaMensal * 100).toFixed(2)}%) + ${percentual}% a.a. (${(spreadMensal * 100).toFixed(2)}% a.m.) = ${(taxaMensal * 100).toFixed(2)}%`;
+      
+    } else if (indexador === 'MANUAL') {
+      // Rentabilidade manual: usuário informa diretamente o percentual mensal
+      taxaMensal = percentual / 100;
+      descricaoCalculo = `Rentabilidade manual: ${percentual.toFixed(2)}% no mês`;
       
     } else if (indexador === 'PRE') {
       const taxaAnual = percentual / 100;
@@ -4084,6 +4089,8 @@ interface VerificationResult {
                         setCustomCalcData({...customCalcData, indexador: value, percentual: 5});
                       } else if (value === 'PRE') {
                         setCustomCalcData({...customCalcData, indexador: value, percentual: 10});
+                      } else if (value === 'MANUAL') {
+                        setCustomCalcData({...customCalcData, indexador: value, percentual: 1.0});
                       }
                     }}
                   >
@@ -4094,6 +4101,7 @@ interface VerificationResult {
                       <SelectItem value="CDI">CDI</SelectItem>
                       <SelectItem value="IPCA">IPCA</SelectItem>
                       <SelectItem value="PRE">Pré-fixado</SelectItem>
+                      <SelectItem value="MANUAL">Manual</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -4101,15 +4109,17 @@ interface VerificationResult {
                 {/* Percentual/Taxa */}
                 <div>
                   <Label htmlFor="calc-custom-percentual">
-                    {customCalcData.indexador === 'PRE' 
-                      ? 'Taxa Anual (%)' 
-                      : customCalcData.indexador === 'CDI' && customCalcData.cdiOperacao === '%'
-                        ? 'Percentual do CDI (%)'
-                        : customCalcData.indexador === 'CDI' && customCalcData.cdiOperacao === '+'
-                          ? 'Spread ao ano (%)'
-                          : customCalcData.indexador === 'IPCA'
+                    {customCalcData.indexador === 'MANUAL'
+                      ? 'Rentabilidade do Mês (%)'
+                      : customCalcData.indexador === 'PRE' 
+                        ? 'Taxa Anual (%)' 
+                        : customCalcData.indexador === 'CDI' && customCalcData.cdiOperacao === '%'
+                          ? 'Percentual do CDI (%)'
+                          : customCalcData.indexador === 'CDI' && customCalcData.cdiOperacao === '+'
                             ? 'Spread ao ano (%)'
-                            : `Percentual (%)`
+                            : customCalcData.indexador === 'IPCA'
+                              ? 'Spread ao ano (%)'
+                              : `Percentual (%)`
                     }
                   </Label>
                   
@@ -4149,15 +4159,17 @@ interface VerificationResult {
                   </div>
                   
                   <p className="text-xs text-muted-foreground mt-1">
-                    {customCalcData.indexador === 'PRE' 
-                      ? 'Ex: 12 para 12% ao ano'
-                      : customCalcData.indexador === 'CDI' && customCalcData.cdiOperacao === '%'
-                        ? 'Ex: 80 para 80% do CDI'
-                        : customCalcData.indexador === 'CDI' && customCalcData.cdiOperacao === '+'
-                          ? 'Ex: 2 para CDI + 2% a.a.'
-                          : customCalcData.indexador === 'IPCA'
-                            ? 'Ex: 5 para IPCA + 5% a.a.'
-                            : `Ex: 80 para 80%`}
+                    {customCalcData.indexador === 'MANUAL'
+                      ? 'Ex: 1.5 para 1,5% de rentabilidade no mês'
+                      : customCalcData.indexador === 'PRE' 
+                        ? 'Ex: 12 para 12% ao ano'
+                        : customCalcData.indexador === 'CDI' && customCalcData.cdiOperacao === '%'
+                          ? 'Ex: 80 para 80% do CDI'
+                          : customCalcData.indexador === 'CDI' && customCalcData.cdiOperacao === '+'
+                            ? 'Ex: 2 para CDI + 2% a.a.'
+                            : customCalcData.indexador === 'IPCA'
+                              ? 'Ex: 5 para IPCA + 5% a.a.'
+                              : `Ex: 80 para 80%`}
                   </p>
                 </div>
 
