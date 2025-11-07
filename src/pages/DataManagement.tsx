@@ -699,6 +699,12 @@ export default function DataManagement() {
     setIsDialogOpen(true);
   }, []);
 
+  // Limpar filtros ao mudar de aba
+  useEffect(() => {
+    setActiveFilters([]);
+    setSortConfig(null);
+  }, [activeTab]);
+
   const handleCreate = (type: 'consolidado' | 'dados') => {
     const newItem = type === 'consolidado' 
       ? {
@@ -1044,7 +1050,8 @@ export default function DataManagement() {
     ]
   };
 
-  const filterableFields = useMemo(() => [
+  // Campos filtráveis para aba CONSOLIDADO
+  const filterableFieldsConsolidado = useMemo(() => [
     { key: 'Competencia', label: 'Competência', type: 'text', options: competencias },
     { key: 'Instituicao', label: 'Instituição', type: 'text', options: instituicoes },
     { key: 'nomeConta', label: 'Nome da Conta', type: 'text', options: nomesContaUnique },
@@ -1057,13 +1064,35 @@ export default function DataManagement() {
     { key: 'Rendimento', label: 'Rendimento %', type: 'number' }
   ], [competencias, instituicoes, nomesContaUnique, moedasUnique]);
 
+  // Campos filtráveis para aba ATIVOS
+  const filterableFieldsAtivos = useMemo(() => [
+    { key: 'Competencia', label: 'Competência', type: 'text', options: competencias },
+    { key: 'Instituicao', label: 'Instituição', type: 'text', options: instituicoes },
+    { key: 'nomeConta', label: 'Nome da Conta', type: 'text', options: nomesContaUnique },
+    { key: 'Moeda', label: 'Moeda', type: 'text', options: moedasUnique },
+    { key: 'Ativo', label: 'Ativo', type: 'text' },
+    { key: 'Emissor', label: 'Emissor', type: 'text', options: emissores },
+    { key: 'Classe do ativo', label: 'Classe', type: 'text', options: classesAtivoUnique },
+    { key: 'Posicao', label: 'Posição', type: 'number' },
+    { key: 'Taxa', label: 'Taxa', type: 'number' },
+    { key: 'Vencimento', label: 'Vencimento', type: 'text' },
+    { key: 'Rendimento', label: 'Rendimento %', type: 'number' }
+  ], [competencias, instituicoes, nomesContaUnique, moedasUnique, emissores, classesAtivoUnique]);
+
+  // Helper para obter os campos filtráveis baseado na aba ativa
+  const getFilterableFields = () => {
+    return activeTab === 'detalhados' ? filterableFieldsAtivos : filterableFieldsConsolidado;
+  };
+
   const getFieldType = (fieldKey: string) => {
-    const field = filterableFields.find(f => f.key === fieldKey);
+    const allFields = [...filterableFieldsConsolidado, ...filterableFieldsAtivos];
+    const field = allFields.find(f => f.key === fieldKey);
     return field?.type || 'text';
   };
 
   const getFieldLabel = (fieldKey: string) => {
-    const field = filterableFields.find(f => f.key === fieldKey);
+    const allFields = [...filterableFieldsConsolidado, ...filterableFieldsAtivos];
+    const field = allFields.find(f => f.key === fieldKey);
     return field?.label || fieldKey;
   };
 
@@ -1089,7 +1118,8 @@ export default function DataManagement() {
   };
 
   const getFieldOptions = (fieldKey: string) => {
-    const field = filterableFields.find(f => f.key === fieldKey);
+    const allFields = [...filterableFieldsConsolidado, ...filterableFieldsAtivos];
+    const field = allFields.find(f => f.key === fieldKey);
     return (field as any)?.options || null;
   };
 
@@ -1340,7 +1370,7 @@ interface VerificationResult {
                   <SelectValue placeholder="Selecione um campo" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filterableFields.map(f => (
+                  {getFilterableFields().map(f => (
                     <SelectItem key={f.key} value={f.key}>
                       {f.label}
                     </SelectItem>
@@ -1539,7 +1569,7 @@ interface VerificationResult {
 
   // Sort Button Component
   const SortButton = ({ sortConfig, onSort }: { sortConfig: SortConfig | null; onSort: (config: SortConfig | null) => void }) => {
-    const sortableFields = filterableFields;
+    const sortableFields = getFilterableFields();
 
     return (
       <Popover>
