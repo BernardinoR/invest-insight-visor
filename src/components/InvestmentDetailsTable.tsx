@@ -103,6 +103,12 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     return strategy;
   };
 
+  // Helper function to check if an asset should be excluded from profitability calculations
+  const shouldExcludeFromProfitability = (assetName: string): boolean => {
+    const normalizedName = assetName.toLowerCase().trim();
+    return normalizedName === 'caixa' || normalizedName === 'proventos';
+  };
+
   // Calculate accumulated returns with compound interest for each strategy from filtered data
   const calculateAccumulatedReturnsFromData = (filteredData: Array<{
     "Classe do ativo": string;
@@ -111,6 +117,7 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     Nome?: string;
     Posicao: number;
     Moeda?: string;
+    Ativo: string;
   }>, strategy: string) => {
     if (filteredData.length === 0) return 0;
 
@@ -130,6 +137,11 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
       let totalWeightedReturn = 0;
       
       items.forEach(item => {
+        // Skip assets that should not count in profitability calculations
+        if (shouldExcludeFromProfitability(item.Ativo)) {
+          return; // Skip this asset
+        }
+        
         // Convert position considering original currency
         const positionOriginal = Number(item.Posicao) || 0;
         const moedaOriginal = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
@@ -174,6 +186,8 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     Competencia: string;
     Nome?: string;
     Posicao: number;
+    Moeda?: string;
+    Ativo: string;
   }>, strategy: string) => {
     return calculateAccumulatedReturnsFromData(allData.filter(item => {
       const originalStrategy = item["Classe do ativo"] || "Outros";
@@ -284,6 +298,11 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
               let totalWeightedReturn = 0;
               
               items.forEach(item => {
+                // Skip assets that should not count in profitability calculations
+                if (shouldExcludeFromProfitability(item.Ativo)) {
+                  return; // Skip this asset
+                }
+                
                 const position = Number(item.Posicao) || 0;
                 const monthlyReturn = Number(item.Rendimento) || 0;
                 totalPosition += position;
@@ -462,6 +481,11 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     let lastMonthTotalReturn = 0;
 
     lastMonthAssets.forEach(asset => {
+      // Skip assets that should not count in profitability calculations
+      if (shouldExcludeFromProfitability(asset.Ativo)) {
+        return; // Skip this asset
+      }
+      
       const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
       const positionConverted = convertValue(asset.Posicao || 0, asset.Competencia, moedaOriginal);
       const returnAdjusted = adjustReturnWithFX(asset.Rendimento || 0, asset.Competencia, moedaOriginal);
@@ -495,6 +519,11 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
       let totalReturn = 0;
       
       competenciaAssets.forEach(asset => {
+        // Skip assets that should not count in profitability calculations
+        if (shouldExcludeFromProfitability(asset.Ativo)) {
+          return; // Skip this asset
+        }
+        
         const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
         const positionConverted = convertValue(asset.Posicao || 0, asset.Competencia, moedaOriginal);
         const returnAdjusted = adjustReturnWithFX(asset.Rendimento || 0, asset.Competencia, moedaOriginal);
@@ -514,6 +543,11 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
       let totalReturn = 0;
       
       competenciaAssets.forEach(asset => {
+        // Skip assets that should not count in profitability calculations
+        if (shouldExcludeFromProfitability(asset.Ativo)) {
+          return; // Skip this asset
+        }
+        
         const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
         const positionConverted = convertValue(asset.Posicao || 0, asset.Competencia, moedaOriginal);
         const returnAdjusted = adjustReturnWithFX(asset.Rendimento || 0, asset.Competencia, moedaOriginal);
