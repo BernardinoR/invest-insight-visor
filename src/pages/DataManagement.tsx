@@ -710,12 +710,12 @@ export default function DataManagement() {
         Instituicao: item.Instituicao,
         nomeConta: item.nomeConta || '',
         Moeda: item.Moeda || '',
-        Ativo: '',
-        Emissor: '',
-        "Classe do ativo": '',
+        Ativo: item.Ativo || '',
+        Emissor: item.Emissor || '',
+        "Classe do ativo": item["Classe do ativo"] || '',
         Posicao: item.Posicao || 0,
-        Taxa: '',
-        Vencimento: '',
+        Taxa: item.Taxa || '',
+        Vencimento: item.Vencimento || '',
         Rendimento: 0,
         type: 'dados'
       });
