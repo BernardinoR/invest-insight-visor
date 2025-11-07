@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2 } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -1093,13 +1093,15 @@ export default function DataManagement() {
     return (field as any)?.options || null;
   };
 
-  interface VerificationResult {
-    status: 'match' | 'tolerance' | 'mismatch' | 'no-data';
-    consolidatedValue: number;
-    detailedSum: number;
-    difference: number;
-    detailedCount: number;
-  }
+interface VerificationResult {
+  status: 'match' | 'tolerance' | 'mismatch' | 'no-data';
+  consolidatedValue: number;
+  detailedSum: number;
+  difference: number;
+  detailedCount: number;
+  unclassifiedCount: number;
+  hasUnclassified: boolean;
+}
 
   // OPTIMIZED: Create index of assets by composite key - HUGE PERFORMANCE GAIN
   const dadosIndex = useMemo(() => {
@@ -1125,6 +1127,13 @@ export default function DataManagement() {
     // Somar todas as posições
     const detailedSum = relatedDetails.reduce((sum, item) => sum + (item.Posicao || 0), 0);
     
+    // Contar ativos não classificados
+    const unclassifiedCount = relatedDetails.filter(item => 
+      item["Classe do ativo"] === "Não Classificado" || 
+      !item["Classe do ativo"] || 
+      item["Classe do ativo"]?.trim() === ""
+    ).length;
+    
     // Calcular diferença
     const difference = Math.abs(patrimonioFinal - detailedSum);
     
@@ -1145,7 +1154,9 @@ export default function DataManagement() {
       consolidatedValue: patrimonioFinal,
       detailedSum,
       difference,
-      detailedCount: relatedDetails.length
+      detailedCount: relatedDetails.length,
+      unclassifiedCount,
+      hasUnclassified: unclassifiedCount > 0
     };
   }, [dadosIndex, correctThreshold, toleranceValue]);
 
@@ -1174,7 +1185,9 @@ export default function DataManagement() {
       consolidatedValue: item["Patrimonio Final"],
       detailedSum: 0,
       difference: 0,
-      detailedCount: 0
+      detailedCount: 0,
+      unclassifiedCount: 0,
+      hasUnclassified: false
     };
   }, [verificationsCache]);
 
@@ -1206,6 +1219,17 @@ export default function DataManagement() {
     
     return data;
   }, [consolidadoData, selectedCompetencias, selectedInstituicoes, activeFilters, verifFilter, sortConfig, getVerification]);
+
+  const unclassifiedStats = useMemo(() => {
+    return filteredConsolidadoData.reduce((acc, item) => {
+      const verification = getVerification(item);
+      if (verification.hasUnclassified) {
+        acc.recordsWithUnclassified++;
+        acc.totalUnclassified += verification.unclassifiedCount;
+      }
+      return acc;
+    }, { recordsWithUnclassified: 0, totalUnclassified: 0 });
+  }, [filteredConsolidadoData, getVerification]);
 
   // OPTIMIZED: Filter dados detalhados - MEMOIZED
   const filteredDadosData = useMemo(() => {
@@ -1812,6 +1836,18 @@ export default function DataManagement() {
                         <p className="text-sm text-muted-foreground">Sem Dados</p>
                       </div>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-5 w-5 text-orange-500" />
+                      <div>
+                        <p className="text-2xl font-bold">{unclassifiedStats.recordsWithUnclassified}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Com Não Classificados
+                          <span className="block text-xs text-orange-600 mt-0.5">
+                            {unclassifiedStats.totalUnclassified} ativos
+                          </span>
+                        </p>
+                      </div>
+                    </div>
                   </>
                 );
               })()}
@@ -2163,23 +2199,28 @@ export default function DataManagement() {
                                     const verification = getVerification(item);
                                    
                                    return (
-                                     <Popover>
-                                       <PopoverTrigger asChild>
-                                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                           {verification.status === 'match' && (
-                                             <CheckCircle2 className="h-5 w-5 text-green-500" />
-                                           )}
-                                           {verification.status === 'tolerance' && (
-                                             <AlertCircle className="h-5 w-5 text-yellow-500" />
-                                           )}
-                                           {verification.status === 'mismatch' && (
-                                             <XCircle className="h-5 w-5 text-red-500" />
-                                           )}
-                                           {verification.status === 'no-data' && (
-                                             <Info className="h-5 w-5 text-blue-500" />
-                                           )}
-                                         </Button>
-                                       </PopoverTrigger>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 relative">
+                              {verification.status === 'match' && (
+                                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                              )}
+                              {verification.status === 'tolerance' && (
+                                <AlertCircle className="h-5 w-5 text-yellow-500" />
+                              )}
+                              {verification.status === 'mismatch' && (
+                                <XCircle className="h-5 w-5 text-red-500" />
+                              )}
+                              {verification.status === 'no-data' && (
+                                <Info className="h-5 w-5 text-blue-500" />
+                              )}
+                              {verification.hasUnclassified && (
+                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-orange-500 rounded-full flex items-center justify-center">
+                                  <Tag className="h-2.5 w-2.5 text-white" />
+                                </span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
                                        <PopoverContent className="w-80">
                                          <div className="space-y-2">
                                            <h4 className="font-medium text-sm">Verificação de Integridade</h4>
@@ -2202,21 +2243,38 @@ export default function DataManagement() {
                                                  {formatCurrency(verification.difference)}
                                                </span>
                                              </div>
-                                             <div className="flex justify-between">
-                                               <span className="text-muted-foreground">Registros Detalhados:</span>
-                                               <span className="font-medium">{verification.detailedCount}</span>
-                                             </div>
-                                             {verification.status === 'mismatch' && (
-                                               <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/20 rounded text-xs text-red-700 dark:text-red-400">
-                                                 ⚠️ Diferença significativa detectada. Verifique os ativos.
-                                               </div>
-                                             )}
-                                             {verification.status === 'no-data' && (
-                                               <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-xs text-blue-700 dark:text-blue-400">
-                                                 ℹ️ Nenhum dado detalhado encontrado para esta combinação.
-                                               </div>
-                                             )}
-                                           </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Registros Detalhados:</span>
+                                                <span className="font-medium">{verification.detailedCount}</span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Não Classificados:</span>
+                                                <span className={`font-medium ${
+                                                  verification.hasUnclassified ? 'text-orange-500' : 'text-green-500'
+                                                }`}>
+                                                  {verification.unclassifiedCount}
+                                                  {verification.hasUnclassified && (
+                                                    <Tag className="h-3 w-3 ml-1 inline" />
+                                                  )}
+                                                </span>
+                                              </div>
+                                              {verification.status === 'mismatch' && (
+                                                <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/20 rounded text-xs text-red-700 dark:text-red-400">
+                                                  ⚠️ Diferença significativa detectada. Verifique os ativos.
+                                                </div>
+                                              )}
+                                              {verification.status === 'no-data' && (
+                                                <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-xs text-blue-700 dark:text-blue-400">
+                                                  ℹ️ Nenhum dado detalhado encontrado para esta combinação.
+                                                </div>
+                                              )}
+                                              {verification.hasUnclassified && (
+                                                <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded text-xs text-orange-700 dark:text-orange-400">
+                                                  🏷️ {verification.unclassifiedCount} ativo{verification.unclassifiedCount > 1 ? 's' : ''} sem classificação detectado{verification.unclassifiedCount > 1 ? 's' : ''}. 
+                                                  Recomenda-se classificá-lo{verification.unclassifiedCount > 1 ? 's' : ''}.
+                                                </div>
+                                              )}
+                                            </div>
                                          </div>
                                        </PopoverContent>
                                      </Popover>
