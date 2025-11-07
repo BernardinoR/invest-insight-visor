@@ -55,11 +55,11 @@ import {
 // Lista definitiva de classes de ativos válidas (usada no dropdown e validação)
 const VALID_ASSET_CLASSES = [
   'CDI - Liquidez',
-  'CDI - Títulos', 
+  'CDI - Titulos', 
   'CDI - Fundos',
-  'Inflação - Títulos',
+  'Inflação - Titulos',
   'Inflação - Fundos',
-  'Pré Fixado - Títulos',
+  'Pré Fixado - Titulos',
   'Pré Fixado - Fundos',
   'Multimercado',
   'Imobiliário - Ativos',
