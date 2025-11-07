@@ -2201,23 +2201,26 @@ interface VerificationResult {
                                    return (
                         <Popover>
                           <PopoverTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 relative">
+                            <Button variant="ghost" size="sm" className="h-8 px-1 flex items-center gap-1">
+                              {/* PRIMEIRA BOLINHA: Status de Integridade Numérica */}
                               {verification.status === 'match' && (
-                                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
                               )}
                               {verification.status === 'tolerance' && (
-                                <AlertCircle className="h-5 w-5 text-yellow-500" />
+                                <AlertCircle className="h-4 w-4 text-yellow-500" />
                               )}
                               {verification.status === 'mismatch' && (
-                                <XCircle className="h-5 w-5 text-red-500" />
+                                <XCircle className="h-4 w-4 text-red-500" />
                               )}
                               {verification.status === 'no-data' && (
-                                <Info className="h-5 w-5 text-blue-500" />
+                                <Info className="h-4 w-4 text-blue-500" />
                               )}
-                              {verification.hasUnclassified && (
-                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-orange-500 rounded-full flex items-center justify-center">
-                                  <Tag className="h-2.5 w-2.5 text-white" />
-                                </span>
+                              
+                              {/* SEGUNDA BOLINHA: Status de Classificação */}
+                              {verification.hasUnclassified ? (
+                                <XCircle className="h-4 w-4 text-red-500" />
+                              ) : (
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
                               )}
                             </Button>
                           </PopoverTrigger>
