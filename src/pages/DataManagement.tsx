@@ -3479,6 +3479,14 @@ interface VerificationResult {
                         size="sm"
                         onClick={() => {
                           setCalculatorContext('single');
+                          // Preencher automaticamente os campos da calculadora personalizada
+                          if (editingItem["Patrimonio Inicial"]) {
+                            setCustomCalcData({
+                              ...customCalcData,
+                              valorInicial: editingItem["Patrimonio Inicial"] || 0,
+                              competencia: editingItem.Competencia || ''
+                            });
+                          }
                           setIsCalculatorOpen(true);
                         }}
                         className="mt-2 w-full"
@@ -3644,6 +3652,14 @@ interface VerificationResult {
                       size="sm"
                       onClick={() => {
                         setCalculatorContext('single');
+                        // Preencher automaticamente os campos da calculadora personalizada para Dados Detalhados
+                        if (editingItem.Posicao) {
+                          setCustomCalcData({
+                            ...customCalcData,
+                            valorInicial: editingItem.Posicao || 0,
+                            competencia: editingItem.Competencia || ''
+                          });
+                        }
                         setIsCalculatorOpen(true);
                       }}
                       className="mt-2 w-full"
