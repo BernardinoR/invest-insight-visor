@@ -841,14 +841,27 @@ export default function DataManagement() {
       } else if (calculatorContext === 'single') {
         // Para edição/criação individual
         if (calculatorMode === 'custom' && customData) {
-          setEditingItem({
-            ...editingItem, 
-            Rendimento: roundedReturn,
-            Competencia: customData.competencia,
-            "Patrimonio Inicial": customData.valorInicial,
-            "Ganho Financeiro": customData.ganhoFinanceiro,
-            "Patrimonio Final": customData.valorFinal
-          });
+          // Verificar se estamos no formulário Consolidado ou Dados Detalhados
+          const hasConsolidadoFields = 'Patrimonio Inicial' in editingItem || editingItem.type === 'consolidado';
+          
+          if (hasConsolidadoFields) {
+            // Formulário Consolidado: preenche todos os campos
+            setEditingItem({
+              ...editingItem, 
+              Rendimento: roundedReturn,
+              Competencia: customData.competencia,
+              "Patrimonio Inicial": customData.valorInicial,
+              "Ganho Financeiro": customData.ganhoFinanceiro,
+              "Patrimonio Final": customData.valorFinal
+            });
+          } else {
+            // Formulário Dados Detalhados: preenche apenas Rendimento e Competência
+            setEditingItem({
+              ...editingItem, 
+              Rendimento: roundedReturn,
+              Competencia: customData.competencia
+            });
+          }
         } else {
           setEditingItem({...editingItem, Rendimento: roundedReturn});
         }
@@ -3564,6 +3577,17 @@ interface VerificationResult {
                       />
                       <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCalculatorContext('single');
+                        setIsCalculatorOpen(true);
+                      }}
+                      className="mt-2 w-full"
+                    >
+                      Calcular
+                    </Button>
                   </div>
                 </>
               )}
