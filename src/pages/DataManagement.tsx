@@ -949,11 +949,11 @@ export default function DataManagement() {
     return ((value || 0) * 100).toFixed(2).replace('.', ',') + '%';
   };
 
-  // Advanced filtering logic
-  const applyFilters = (data: ConsolidadoData[], filters: Filter[]) => {
+  // Advanced filtering logic - Generic version
+  const applyFiltersGeneric = <T extends Record<string, any>>(data: T[], filters: Filter[]) => {
     return data.filter(item => {
       return filters.every(filter => {
-        const fieldValue = item[filter.field as keyof ConsolidadoData];
+        const fieldValue = item[filter.field as keyof T];
         
         switch (filter.operator) {
           case 'equals':
@@ -993,13 +993,13 @@ export default function DataManagement() {
     });
   };
 
-  // Sorting logic
-  const applySorting = (data: ConsolidadoData[], sortConfig: SortConfig | null) => {
+  // Sorting logic - Generic version
+  const applySortingGeneric = <T extends Record<string, any>>(data: T[], sortConfig: SortConfig | null) => {
     if (!sortConfig) return data;
     
     return [...data].sort((a, b) => {
-      const aValue = a[sortConfig.field as keyof ConsolidadoData];
-      const bValue = b[sortConfig.field as keyof ConsolidadoData];
+      const aValue = a[sortConfig.field as keyof T];
+      const bValue = b[sortConfig.field as keyof T];
       
       if (aValue == null && bValue == null) return 0;
       if (aValue == null) return 1;
@@ -1234,7 +1234,7 @@ interface VerificationResult {
     }
     
     // Apply advanced filters
-    data = applyFilters(data, activeFilters);
+    data = applyFiltersGeneric(data, activeFilters);
     
     // Apply verification filter - USING CACHE
     if (verifFilter !== 'all') {
@@ -1245,7 +1245,7 @@ interface VerificationResult {
     }
     
     // Apply sorting
-    data = applySorting(data, sortConfig);
+    data = applySortingGeneric(data, sortConfig);
     
     return data;
   }, [consolidadoData, selectedCompetencias, selectedInstituicoes, activeFilters, verifFilter, sortConfig, getVerification]);
@@ -1280,6 +1280,9 @@ interface VerificationResult {
       data = data.filter(item => selectedEmissores.includes(item.Emissor));
     }
 
+    // Apply advanced filters
+    data = applyFiltersGeneric(data, activeFilters);
+
     // Apply search filter for ativos
     if (searchAtivo.trim()) {
       const searchLower = searchAtivo.toLowerCase();
@@ -1290,8 +1293,11 @@ interface VerificationResult {
       );
     }
     
+    // Apply sorting
+    data = applySortingGeneric(data, sortConfig);
+    
     return data;
-  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo]);
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo, activeFilters, sortConfig]);
 
   // Pagination for Ativos tab - Create paginated data
   const paginatedDadosData = useMemo(() => {
