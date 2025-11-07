@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -219,8 +219,9 @@ export default function DataManagement() {
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   const [verifFilter, setVerifFilter] = useState<string>('all');
   const [visibleColumnsDetalhados, setVisibleColumnsDetalhados] = useState<Set<string>>(
-    new Set(['Competência', 'Instituição', 'Nome da Conta', 'Moeda', 'Ativo', 'Emissor', 'Classe', 'Posição', 'Rendimento %', 'Ações'])
+    new Set(['Competência', 'Instituição', 'Nome da Conta', 'Moeda', 'Ativo', 'Emissor', 'Classe', 'Posição', 'Rendimento %', 'Verificação', 'Ações'])
   );
+  const [showOnlyUnclassified, setShowOnlyUnclassified] = useState(false);
 
   // Mapeamento de colunas para campos do banco - Dados Consolidados
   const getFieldKeyFromColumn = (column: string): string | null => {
@@ -1298,11 +1299,44 @@ interface VerificationResult {
       );
     }
     
+    // Filter for unclassified assets only
+    if (showOnlyUnclassified) {
+      data = data.filter(item => !isValidAssetClass(item["Classe do ativo"]));
+    }
+    
     // Apply sorting
     data = applySortingGeneric(data, sortConfig);
     
     return data;
-  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo, activeFilters, sortConfig]);
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo, showOnlyUnclassified, activeFilters, sortConfig, isValidAssetClass]);
+
+  // Contador de ativos não classificados na view atual (antes do filtro showOnlyUnclassified)
+  const unclassifiedInCurrentView = useMemo(() => {
+    let data = dadosData;
+    
+    if (selectedCompetencias.length > 0) {
+      data = data.filter(item => selectedCompetencias.includes(item.Competencia));
+    }
+    if (selectedInstituicoes.length > 0) {
+      data = data.filter(item => selectedInstituicoes.includes(item.Instituicao));
+    }
+    if (selectedClasses.length > 0) {
+      data = data.filter(item => selectedClasses.includes(item["Classe do ativo"]));
+    }
+    if (selectedEmissores.length > 0) {
+      data = data.filter(item => selectedEmissores.includes(item.Emissor));
+    }
+    if (searchAtivo.trim()) {
+      const searchLower = searchAtivo.toLowerCase();
+      data = data.filter(item => 
+        item.Ativo?.toLowerCase().includes(searchLower) ||
+        item.Emissor?.toLowerCase().includes(searchLower) ||
+        item["Classe do ativo"]?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return data.filter(item => !isValidAssetClass(item["Classe do ativo"])).length;
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo, isValidAssetClass]);
 
   // Pagination for Ativos tab - Create paginated data
   const paginatedDadosData = useMemo(() => {
@@ -2533,6 +2567,22 @@ interface VerificationResult {
                 <div className="flex items-center gap-2 mb-3">
                   <FilterBuilder onAddFilter={handleAddFilter} />
                   
+                  {/* Filtro Rápido: Mostrar Não Classificados */}
+                  <Button 
+                    variant={showOnlyUnclassified ? "default" : "outline"}
+                    size="sm" 
+                    className="h-8"
+                    onClick={() => setShowOnlyUnclassified(!showOnlyUnclassified)}
+                  >
+                    <AlertTriangle className="mr-2 h-4 w-4" />
+                    {showOnlyUnclassified ? 'Mostrando Não Classificados' : 'Mostrar Não Classificados'}
+                    {!showOnlyUnclassified && unclassifiedInCurrentView > 0 && (
+                      <Badge variant="destructive" className="ml-2 px-1.5 py-0 text-[10px]">
+                        {unclassifiedInCurrentView}
+                      </Badge>
+                    )}
+                  </Button>
+                  
                   <div className="flex-1" />
                   
                   {/* Campo de Busca */}
@@ -2558,7 +2608,7 @@ interface VerificationResult {
                       <div className="space-y-2">
                         <h4 className="font-medium text-sm mb-2">Colunas Visíveis</h4>
                         
-                        {['Competência', 'Instituição', 'Nome da Conta', 'Moeda', 'Ativo', 'Emissor', 'Classe', 'Posição', 'Taxa', 'Vencimento', 'Rendimento %', 'Ações'].map((col) => (
+                        {['Competência', 'Instituição', 'Nome da Conta', 'Moeda', 'Ativo', 'Emissor', 'Classe', 'Posição', 'Taxa', 'Vencimento', 'Rendimento %', 'Verificação', 'Ações'].map((col) => (
                           <div key={col} className="flex items-center space-x-2">
                             <Checkbox
                               id={`col-det-${col}`}
@@ -2588,7 +2638,7 @@ interface VerificationResult {
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            onClick={() => setVisibleColumnsDetalhados(new Set(['Competência', 'Instituição', 'Nome da Conta', 'Moeda', 'Ativo', 'Emissor', 'Classe', 'Posição', 'Taxa', 'Vencimento', 'Rendimento %', 'Ações']))}
+                            onClick={() => setVisibleColumnsDetalhados(new Set(['Competência', 'Instituição', 'Nome da Conta', 'Moeda', 'Ativo', 'Emissor', 'Classe', 'Posição', 'Taxa', 'Vencimento', 'Rendimento %', 'Verificação', 'Ações']))}
                             className="flex-1"
                           >
                             Todas
@@ -2788,6 +2838,9 @@ interface VerificationResult {
                             </div>
                           </TableHead>
                         )}
+                        {visibleColumnsDetalhados.has('Verificação') && (
+                          <TableHead className="w-16 text-center whitespace-nowrap">Verif.</TableHead>
+                        )}
                         {visibleColumnsDetalhados.has('Ações') && (
                           <TableHead className="whitespace-nowrap">Ações</TableHead>
                         )}
@@ -2826,6 +2879,19 @@ interface VerificationResult {
                               {visibleColumnsDetalhados.has('Taxa') && <TableCell>{item.Taxa}</TableCell>}
                               {visibleColumnsDetalhados.has('Vencimento') && <TableCell>{item.Vencimento}</TableCell>}
                               {visibleColumnsDetalhados.has('Rendimento %') && <TableCell>{formatPercentage(item.Rendimento)}</TableCell>}
+                              {visibleColumnsDetalhados.has('Verificação') && (
+                                <TableCell className="text-center">
+                                  {!isValidAssetClass(item["Classe do ativo"]) ? (
+                                    <div title="Classe inválida ou não classificada">
+                                      <XCircle className="h-4 w-4 text-red-500 mx-auto" />
+                                    </div>
+                                  ) : (
+                                    <div title="Classificado corretamente">
+                                      <CheckCircle2 className="h-4 w-4 text-green-500 mx-auto" />
+                                    </div>
+                                  )}
+                                </TableCell>
+                              )}
                               {visibleColumnsDetalhados.has('Ações') && (
                                 <TableCell>
                                   <div className="flex items-center gap-1">
