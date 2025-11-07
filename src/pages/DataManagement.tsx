@@ -144,7 +144,10 @@ export default function DataManagement() {
   });
   const [customCalcData, setCustomCalcData] = useState({
     valorInicial: 0,
-    taxa: 0, // Taxa em percentual (ex: 1.5 para 1.5%)
+    competencia: '', // MM/YYYY
+    indexador: 'CDI' as 'CDI' | 'IPCA' | 'PRE',
+    cdiOperacao: '%' as '%' | '+', // Apenas para CDI
+    percentual: 100, // Valor padrão
   });
   const [customCalcResults, setCustomCalcResults] = useState({
     percentual: 0,
@@ -681,8 +684,9 @@ export default function DataManagement() {
   };
 
   const calculateCustomReturn = () => {
-    const { valorInicial, taxa } = customCalcData;
+    const { valorInicial, competencia, indexador, cdiOperacao, percentual } = customCalcData;
     
+    // Validações
     if (valorInicial <= 0) {
       toast({
         title: "Erro",
@@ -692,23 +696,84 @@ export default function DataManagement() {
       return null;
     }
     
-    if (taxa <= 0) {
+    if (!competencia) {
       toast({
         title: "Erro",
-        description: "Por favor, informe uma taxa válida",
+        description: "Por favor, informe a competência",
         variant: "destructive",
       });
       return null;
     }
     
-    // Cálculos
-    const taxaDecimal = taxa / 100; // Converter % para decimal
-    const ganhoFinanceiro = valorInicial * taxaDecimal;
+    const competenciaRegex = /^\d{2}\/\d{4}$/;
+    if (!competenciaRegex.test(competencia)) {
+      toast({
+        title: "Erro",
+        description: "Competência deve estar no formato MM/YYYY",
+        variant: "destructive",
+      });
+      return null;
+    }
+    
+    let taxaMensal = 0; // Taxa mensal em decimal (ex: 0.0085 para 0.85%)
+    let descricaoCalculo = '';
+    
+    // Cálculo conforme indexador (igual ao modo Manual)
+    if (indexador === 'CDI') {
+      const cdiRecord = cdiData.find(record => record.competencia === competencia);
+      
+      if (!cdiRecord) {
+        toast({
+          title: "Erro",
+          description: `Dados do CDI não encontrados para ${competencia}`,
+          variant: "destructive",
+        });
+        return null;
+      }
+      
+      const cdiMensal = cdiRecord.cdiRate;
+      
+      if (cdiOperacao === '%') {
+        taxaMensal = cdiMensal * (percentual / 100);
+        descricaoCalculo = `${percentual}% do CDI (${(cdiMensal * 100).toFixed(2)}%) = ${(taxaMensal * 100).toFixed(2)}%`;
+      } else {
+        const spreadAnual = percentual / 100;
+        const spreadMensal = Math.pow(1 + spreadAnual, 1/12) - 1;
+        taxaMensal = cdiMensal + spreadMensal;
+        descricaoCalculo = `CDI (${(cdiMensal * 100).toFixed(2)}%) + ${percentual}% a.a. (${(spreadMensal * 100).toFixed(2)}% a.m.) = ${(taxaMensal * 100).toFixed(2)}%`;
+      }
+      
+    } else if (indexador === 'IPCA') {
+      const ipcaRecord = marketIndicators.find(record => record.competencia === competencia);
+      
+      if (!ipcaRecord || ipcaRecord.ipca === null) {
+        toast({
+          title: "Erro",
+          description: `Dados do IPCA não encontrados para ${competencia}`,
+          variant: "destructive",
+        });
+        return null;
+      }
+      
+      const ipcaMensal = ipcaRecord.ipca;
+      const spreadAnual = percentual / 100;
+      const spreadMensal = Math.pow(1 + spreadAnual, 1/12) - 1;
+      taxaMensal = ipcaMensal + spreadMensal;
+      descricaoCalculo = `IPCA (${(ipcaMensal * 100).toFixed(2)}%) + ${percentual}% a.a. (${(spreadMensal * 100).toFixed(2)}% a.m.) = ${(taxaMensal * 100).toFixed(2)}%`;
+      
+    } else if (indexador === 'PRE') {
+      const taxaAnual = percentual / 100;
+      taxaMensal = Math.pow(1 + taxaAnual, 1/12) - 1;
+      descricaoCalculo = `Pré-fixado ${percentual}% a.a. = ${(taxaMensal * 100).toFixed(2)}% no mês`;
+    }
+    
+    // Cálculos financeiros
+    const ganhoFinanceiro = valorInicial * taxaMensal;
     const valorFinal = valorInicial + ganhoFinanceiro;
-    const percentualRetorno = taxa / 100; // Para armazenar no banco (0.015 para 1.5%)
+    const percentualDisplay = taxaMensal * 100; // Para exibir como %
     
     setCustomCalcResults({
-      percentual: taxa,
+      percentual: percentualDisplay,
       ganhoFinanceiro: ganhoFinanceiro,
       valorFinal: valorFinal,
     });
@@ -717,15 +782,16 @@ export default function DataManagement() {
       title: "Cálculo Realizado",
       description: (
         <div className="space-y-1">
+          <p><strong>Competência:</strong> {competencia}</p>
+          <p><strong>Cálculo:</strong> {descricaoCalculo}</p>
           <p><strong>Valor Inicial:</strong> R$ {valorInicial.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-          <p><strong>Taxa:</strong> {taxa}%</p>
           <p><strong>Ganho Financeiro:</strong> R$ {ganhoFinanceiro.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
           <p><strong>Valor Final:</strong> R$ {valorFinal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
         </div>
       ),
     });
     
-    return percentualRetorno; // Retorna em formato decimal (ex: 0.015)
+    return taxaMensal; // Retorna em formato decimal (ex: 0.0085)
   };
 
   // Função para confirmar e aplicar o cálculo ao campo Rendimento
@@ -3829,6 +3895,7 @@ interface VerificationResult {
             {/* Modo Personalizado */}
             {calculatorMode === 'custom' && (
               <div className="space-y-3">
+                {/* Valor Inicial */}
                 <div>
                   <Label htmlFor="calc-valor-inicial">Valor Inicial (R$)</Label>
                   <Input
@@ -3845,19 +3912,113 @@ interface VerificationResult {
                   </p>
                 </div>
 
+                {/* Competência */}
                 <div>
-                  <Label htmlFor="calc-taxa">Taxa (%)</Label>
+                  <Label htmlFor="calc-custom-competencia">Competência</Label>
                   <Input
-                    id="calc-taxa"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={customCalcData.taxa || ''}
-                    onChange={(e) => setCustomCalcData({...customCalcData, taxa: parseFloat(e.target.value) || 0})}
-                    placeholder="Ex: 1.5"
+                    id="calc-custom-competencia"
+                    value={customCalcData.competencia}
+                    onChange={(e) => {
+                      let value = e.target.value.replace(/\D/g, '');
+                      if (value.length >= 2) {
+                        value = value.substring(0, 2) + '/' + value.substring(2, 6);
+                      }
+                      setCustomCalcData({...customCalcData, competencia: value});
+                    }}
+                    placeholder="MM/YYYY"
+                    maxLength={7}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Ex: 1.5 para 1,5% de rendimento
+                    Ex: 10/2024 para outubro de 2024
+                  </p>
+                </div>
+
+                {/* Indexador */}
+                <div>
+                  <Label htmlFor="calc-custom-indexador">Indexador</Label>
+                  <Select 
+                    value={customCalcData.indexador} 
+                    onValueChange={(value) => {
+                      if (value === 'CDI') {
+                        setCustomCalcData({...customCalcData, indexador: value, cdiOperacao: '%', percentual: 100});
+                      } else if (value === 'IPCA') {
+                        setCustomCalcData({...customCalcData, indexador: value, percentual: 5});
+                      } else if (value === 'PRE') {
+                        setCustomCalcData({...customCalcData, indexador: value, percentual: 10});
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CDI">CDI</SelectItem>
+                      <SelectItem value="IPCA">IPCA</SelectItem>
+                      <SelectItem value="PRE">Pré-fixado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Percentual/Taxa */}
+                <div>
+                  <Label htmlFor="calc-custom-percentual">
+                    {customCalcData.indexador === 'PRE' 
+                      ? 'Taxa Anual (%)' 
+                      : customCalcData.indexador === 'CDI' && customCalcData.cdiOperacao === '%'
+                        ? 'Percentual do CDI (%)'
+                        : customCalcData.indexador === 'CDI' && customCalcData.cdiOperacao === '+'
+                          ? 'Spread ao ano (%)'
+                          : customCalcData.indexador === 'IPCA'
+                            ? 'Spread ao ano (%)'
+                            : `Percentual (%)`
+                    }
+                  </Label>
+                  
+                  <div className="flex gap-2">
+                    {/* Toggle % ou + (apenas para CDI) */}
+                    {customCalcData.indexador === 'CDI' && (
+                      <div className="flex border rounded-md overflow-hidden">
+                        <Button
+                          type="button"
+                          variant={customCalcData.cdiOperacao === '%' ? 'default' : 'outline'}
+                          onClick={() => setCustomCalcData({...customCalcData, cdiOperacao: '%', percentual: 100})}
+                          className="rounded-none px-4"
+                          size="sm"
+                        >
+                          %
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={customCalcData.cdiOperacao === '+' ? 'default' : 'outline'}
+                          onClick={() => setCustomCalcData({...customCalcData, cdiOperacao: '+', percentual: 0})}
+                          className="rounded-none px-4"
+                          size="sm"
+                        >
+                          +
+                        </Button>
+                      </div>
+                    )}
+                    
+                    <Input
+                      id="calc-custom-percentual"
+                      type="number"
+                      step="0.01"
+                      value={customCalcData.percentual}
+                      onChange={(e) => setCustomCalcData({...customCalcData, percentual: parseFloat(e.target.value) || 0})}
+                      className="flex-1"
+                    />
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {customCalcData.indexador === 'PRE' 
+                      ? 'Ex: 12 para 12% ao ano'
+                      : customCalcData.indexador === 'CDI' && customCalcData.cdiOperacao === '%'
+                        ? 'Ex: 80 para 80% do CDI'
+                        : customCalcData.indexador === 'CDI' && customCalcData.cdiOperacao === '+'
+                          ? 'Ex: 2 para CDI + 2% a.a.'
+                          : customCalcData.indexador === 'IPCA'
+                            ? 'Ex: 5 para IPCA + 5% a.a.'
+                            : `Ex: 80 para 80%`}
                   </p>
                 </div>
 
@@ -3869,7 +4030,7 @@ interface VerificationResult {
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
                         <p className="text-muted-foreground">Valor Percentual:</p>
-                        <p className="font-medium">{customCalcResults.percentual.toFixed(2)}%</p>
+                        <p className="font-medium">{customCalcResults.percentual.toFixed(4)}%</p>
                       </div>
                       
                       <div>
