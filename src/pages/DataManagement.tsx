@@ -52,6 +52,30 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
+// Lista definitiva de classes de ativos válidas (usada no dropdown e validação)
+const VALID_ASSET_CLASSES = [
+  'CDI - Liquidez',
+  'CDI - Títulos', 
+  'CDI - Fundos',
+  'Inflação - Títulos',
+  'Inflação - Fundos',
+  'Pré Fixado - Títulos',
+  'Pré Fixado - Fundos',
+  'Multimercado',
+  'Imobiliário - Ativos',
+  'Imobiliário - Fundos',
+  'Ações - Ativos',
+  'Ações - ETFs',
+  'Ações - Fundos',
+  'Ações - Long Biased',
+  'Private Equity/Venture Capital/Special Sits',
+  'Exterior - Renda Fixa',
+  'Exterior - Ações',
+  'COE',
+  'Criptoativos',
+  'Ouro'
+] as const;
+
 interface ConsolidadoData {
   id: number;
   "Patrimonio Inicial": number;
@@ -392,31 +416,8 @@ export default function DataManagement() {
 
   const fetchClassesAtivo = async () => {
     try {
-      // Define a list of asset classes based on PoliticaInvestimentos table structure
-      const classesAtivoStatic = [
-        'CDI - Liquidez',
-        'CDI - Títulos', 
-        'CDI - Fundos',
-        'Inflação - Títulos',
-        'Inflação - Fundos',
-        'Pré Fixado - Títulos',
-        'Pré Fixado - Fundos',
-        'Multimercado',
-        'Imobiliário - Ativos',
-        'Imobiliário - Fundos',
-        'Ações - Ativos',
-        'Ações - ETFs',
-        'Ações - Fundos',
-        'Ações - Long Biased',
-        'Private Equity/Venture Capital/Special Sits',
-        'Exterior - Renda Fixa',
-        'Exterior - Ações',
-        'COE',
-        'Criptoativos',
-        'Ouro'
-      ];
-      console.log('Classes de ativo carregadas:', classesAtivoStatic);
-      setClassesAtivo(classesAtivoStatic);
+      console.log('Classes de ativo carregadas:', VALID_ASSET_CLASSES);
+      setClassesAtivo([...VALID_ASSET_CLASSES]);
     } catch (error) {
       console.error('Erro ao buscar classes de ativo:', error);
     }
@@ -1144,6 +1145,12 @@ interface VerificationResult {
     return index;
   }, [dadosData]);
 
+  // Valida se uma classe de ativo está na lista de opções válidas do dropdown
+  const isValidAssetClass = useCallback((classe: string | null | undefined): boolean => {
+    if (!classe || classe.trim() === '') return false;
+    return VALID_ASSET_CLASSES.includes(classe as any);
+  }, []);
+
   // OPTIMIZED: Verification function using index
   const verifyIntegrity = useCallback((
     competencia: string, 
@@ -1157,11 +1164,9 @@ interface VerificationResult {
     // Somar todas as posições
     const detailedSum = relatedDetails.reduce((sum, item) => sum + (item.Posicao || 0), 0);
     
-    // Contar ativos não classificados
+    // Contar ativos não classificados ou com classes inválidas
     const unclassifiedCount = relatedDetails.filter(item => 
-      item["Classe do ativo"] === "Não Classificado" || 
-      !item["Classe do ativo"] || 
-      item["Classe do ativo"]?.trim() === ""
+      !isValidAssetClass(item["Classe do ativo"])
     ).length;
     
     // Calcular diferença
@@ -2309,8 +2314,10 @@ interface VerificationResult {
                                               )}
                                               {verification.hasUnclassified && (
                                                 <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded text-xs text-orange-700 dark:text-orange-400">
-                                                  🏷️ {verification.unclassifiedCount} ativo{verification.unclassifiedCount > 1 ? 's' : ''} sem classificação detectado{verification.unclassifiedCount > 1 ? 's' : ''}. 
-                                                  Recomenda-se classificá-lo{verification.unclassifiedCount > 1 ? 's' : ''}.
+                                                  🏷️ {verification.unclassifiedCount} ativo{verification.unclassifiedCount > 1 ? 's' : ''} com classe inválida ou não classificada detectado{verification.unclassifiedCount > 1 ? 's' : ''}.
+                                                  <div className="mt-1 text-[10px] opacity-80">
+                                                    Certifique-se de que a classe está na lista de opções válidas do dropdown.
+                                                  </div>
                                                 </div>
                                               )}
                                             </div>
