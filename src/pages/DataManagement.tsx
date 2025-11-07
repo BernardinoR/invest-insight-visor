@@ -688,7 +688,7 @@ export default function DataManagement() {
       // Criar novo registro Consolidado baseado no item
       setEditingItem({
         id: '',  // ID vazio indica novo registro
-        cliente: clientName,
+        Nome: clientName,
         Competencia: '',  // Competência em branco para ser preenchida
         Instituicao: item.Instituicao,
         nomeConta: item.nomeConta || '',
@@ -705,7 +705,7 @@ export default function DataManagement() {
       // Criar novo registro Dados Detalhados baseado no item
       setEditingItem({
         id: '',  // ID vazio indica novo registro
-        cliente: clientName,
+        Nome: clientName,
         Competencia: '',  // Competência em branco para ser preenchida
         Instituicao: item.Instituicao,
         nomeConta: item.nomeConta || '',
