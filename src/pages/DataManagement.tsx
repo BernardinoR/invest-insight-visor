@@ -855,11 +855,12 @@ export default function DataManagement() {
               "Patrimonio Final": customData.valorFinal
             });
           } else {
-            // Formulário Dados Detalhados: preenche apenas Rendimento e Competência
+            // Formulário Dados Detalhados: preenche Rendimento, Competência e Posição
             setEditingItem({
               ...editingItem, 
               Rendimento: roundedReturn,
-              Competencia: customData.competencia
+              Competencia: customData.competencia,
+              Posicao: customData.valorFinal
             });
           }
         } else {
