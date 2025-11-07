@@ -791,19 +791,31 @@ export default function DataManagement() {
       ),
     });
     
-    return taxaMensal; // Retorna em formato decimal (ex: 0.0085)
+    // Retorna objeto completo com todos os dados calculados
+    return {
+      taxaMensal,
+      valorInicial,
+      ganhoFinanceiro,
+      valorFinal,
+      competencia
+    };
   };
 
   // Função para confirmar e aplicar o cálculo ao campo Rendimento
   const handleCalculatorConfirm = () => {
     let calculatedReturn: number | null = null;
+    let customData: any = null; // Para armazenar dados extras do modo Personalizado
 
     if (calculatorMode === 'auto') {
       calculatedReturn = calculateWeightedReturn();
     } else if (calculatorMode === 'manual') {
       calculatedReturn = calculateManualReturn();
     } else if (calculatorMode === 'custom') {
-      calculatedReturn = calculateCustomReturn();
+      const result = calculateCustomReturn();
+      if (result) {
+        calculatedReturn = result.taxaMensal;
+        customData = result; // Armazena todos os dados calculados
+      }
     }
 
     if (calculatedReturn !== null) {
@@ -812,9 +824,34 @@ export default function DataManagement() {
       
       // Atualizar dependendo do contexto
       if (calculatorContext === 'bulk') {
-        setBulkEditData({...bulkEditData, Rendimento: roundedReturn});
+        // Para edição em lote
+        if (calculatorMode === 'custom' && customData) {
+          setBulkEditData({
+            ...bulkEditData, 
+            Rendimento: roundedReturn,
+            Competencia: customData.competencia,
+            "Patrimonio Inicial": customData.valorInicial,
+            "Ganho Financeiro": customData.ganhoFinanceiro,
+            "Patrimonio Final": customData.valorFinal
+          });
+        } else {
+          setBulkEditData({...bulkEditData, Rendimento: roundedReturn});
+        }
+        
       } else if (calculatorContext === 'single') {
-        setEditingItem({...editingItem, Rendimento: roundedReturn});
+        // Para edição/criação individual
+        if (calculatorMode === 'custom' && customData) {
+          setEditingItem({
+            ...editingItem, 
+            Rendimento: roundedReturn,
+            Competencia: customData.competencia,
+            "Patrimonio Inicial": customData.valorInicial,
+            "Ganho Financeiro": customData.ganhoFinanceiro,
+            "Patrimonio Final": customData.valorFinal
+          });
+        } else {
+          setEditingItem({...editingItem, Rendimento: roundedReturn});
+        }
       }
       
       setIsCalculatorOpen(false);
