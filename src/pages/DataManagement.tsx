@@ -2202,55 +2202,88 @@ interface VerificationResult {
             <CardTitle className="text-lg">Resumo de Verificação de Integridade</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="space-y-4">
               {(() => {
                 // FASE 1: Usar cache para calcular estatísticas
                 const stats = filteredConsolidadoData.reduce((acc, item) => {
                   const verification = getVerification(item);
                   acc[verification.status]++;
+                  
+                  // Contar registros com rentabilidade faltando
+                  if (verification.hasMissingYield) {
+                    acc.missingYieldRecords++;
+                    acc.missingYieldTotal += verification.missingYieldCount;
+                  }
+                  
                   return acc;
-                }, { match: 0, tolerance: 0, mismatch: 0, 'no-data': 0 });
+                }, { 
+                  match: 0, 
+                  tolerance: 0, 
+                  mismatch: 0, 
+                  'no-data': 0,
+                  missingYieldRecords: 0,
+                  missingYieldTotal: 0
+                });
                 
                 return (
                   <>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      <div>
-                        <p className="text-2xl font-bold">{stats.match}</p>
-                        <p className="text-sm text-muted-foreground">Corretos</p>
+                    {/* Primeira linha: 4 colunas */}
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                        <div>
+                          <p className="text-2xl font-bold">{stats.match}</p>
+                          <p className="text-sm text-muted-foreground">Corretos</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="h-5 w-5 text-yellow-500" />
+                        <div>
+                          <p className="text-2xl font-bold">{stats.tolerance}</p>
+                          <p className="text-sm text-muted-foreground">Tolerância</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <XCircle className="h-5 w-5 text-red-500" />
+                        <div>
+                          <p className="text-2xl font-bold">{stats.mismatch}</p>
+                          <p className="text-sm text-muted-foreground">Inconsistentes</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Info className="h-5 w-5 text-blue-500" />
+                        <div>
+                          <p className="text-2xl font-bold">{stats['no-data']}</p>
+                          <p className="text-sm text-muted-foreground">Sem Dados</p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-5 w-5 text-yellow-500" />
-                      <div>
-                        <p className="text-2xl font-bold">{stats.tolerance}</p>
-                        <p className="text-sm text-muted-foreground">Tolerância</p>
+                    
+                    {/* Segunda linha: 2 colunas */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-5 w-5 text-orange-500" />
+                        <div>
+                          <p className="text-2xl font-bold">{unclassifiedStats.recordsWithUnclassified}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Com Não Classificados
+                            <span className="block text-xs text-orange-600 mt-0.5">
+                              {unclassifiedStats.totalUnclassified} ativos
+                            </span>
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <XCircle className="h-5 w-5 text-red-500" />
-                      <div>
-                        <p className="text-2xl font-bold">{stats.mismatch}</p>
-                        <p className="text-sm text-muted-foreground">Inconsistentes</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Info className="h-5 w-5 text-blue-500" />
-                      <div>
-                        <p className="text-2xl font-bold">{stats['no-data']}</p>
-                        <p className="text-sm text-muted-foreground">Sem Dados</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Tag className="h-5 w-5 text-orange-500" />
-                      <div>
-                        <p className="text-2xl font-bold">{unclassifiedStats.recordsWithUnclassified}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Com Não Classificados
-                          <span className="block text-xs text-orange-600 mt-0.5">
-                            {unclassifiedStats.totalUnclassified} ativos
-                          </span>
-                        </p>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-5 w-5 text-purple-500" />
+                        <div>
+                          <p className="text-2xl font-bold">{stats.missingYieldRecords}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Com Rentabilidade Faltando
+                            <span className="block text-xs text-purple-600 mt-0.5">
+                              {stats.missingYieldTotal} ativos
+                            </span>
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </>
