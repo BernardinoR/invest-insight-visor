@@ -243,22 +243,22 @@ export default function DataManagement() {
     if (editingItem && isDialogOpen) {
       setNumericFieldsText({
         "Patrimonio Inicial": editingItem["Patrimonio Inicial"] != null 
-          ? String(editingItem["Patrimonio Inicial"]) 
+          ? formatBrazilianNumber(editingItem["Patrimonio Inicial"]) 
           : '',
         "Movimentação": editingItem["Movimentação"] != null 
-          ? String(editingItem["Movimentação"]) 
+          ? formatBrazilianNumber(editingItem["Movimentação"]) 
           : '',
         "Impostos": editingItem.Impostos != null 
-          ? String(editingItem.Impostos) 
+          ? formatBrazilianNumber(editingItem.Impostos) 
           : '',
         "Ganho Financeiro": editingItem["Ganho Financeiro"] != null 
-          ? String(editingItem["Ganho Financeiro"]) 
+          ? formatBrazilianNumber(editingItem["Ganho Financeiro"]) 
           : '',
         "Patrimonio Final": editingItem["Patrimonio Final"] != null 
-          ? String(editingItem["Patrimonio Final"]) 
+          ? formatBrazilianNumber(editingItem["Patrimonio Final"]) 
           : '',
         "Posicao": editingItem.Posicao != null 
-          ? String(editingItem.Posicao) 
+          ? formatBrazilianNumber(editingItem.Posicao) 
           : ''
       });
     } else if (isDialogOpen) {
