@@ -55,57 +55,7 @@ export function useMarketIndicators(clientName?: string) {
         console.error('Error fetching IPCA:', ipcaError);
       }
 
-      // For B3 APIs, we'll use a CORS proxy service to bypass CORS restrictions
-      const corsProxy = 'https://api.allorigins.win/raw?url=';
-      
-      let ibovespaData = null;
-      let ifixData = null;
-
-      // Try to fetch Ibovespa data with CORS proxy
-      try {
-        console.log('Attempting to fetch Ibovespa data...');
-        const ibovUrl = `${corsProxy}${encodeURIComponent('https://sistemaswebb3-listados.b3.com.br/indexProxy/indexCall/GetPortfolioDay/IBOV')}`;
-        const ibovResponse = await fetch(ibovUrl);
-        if (ibovResponse.ok) {
-          const ibovText = await ibovResponse.text();
-          try {
-            ibovespaData = JSON.parse(ibovText);
-            console.log('Ibovespa data fetched successfully:', ibovespaData);
-          } catch (parseError) {
-            console.error('Error parsing Ibovespa JSON:', parseError);
-          }
-        } else {
-          console.error('Ibovespa API error:', ibovResponse.status);
-        }
-      } catch (ibovError) {
-        console.error('Error fetching Ibovespa:', ibovError);
-      }
-
-      // Try to fetch IFIX data with CORS proxy
-      try {
-        console.log('Attempting to fetch IFIX data...');
-        const ifixUrl = `${corsProxy}${encodeURIComponent('https://sistemaswebb3-listados.b3.com.br/indexProxy/indexCall/GetPortfolioDay/IFIX')}`;
-        const ifixResponse = await fetch(ifixUrl);
-        if (ifixResponse.ok) {
-          const ifixText = await ifixResponse.text();
-          try {
-            ifixData = JSON.parse(ifixText);
-            console.log('IFIX data fetched successfully:', ifixData);
-          } catch (parseError) {
-            console.error('Error parsing IFIX JSON:', parseError);
-          }
-        } else {
-          console.error('IFIX API error:', ifixResponse.status);
-        }
-      } catch (ifixError) {
-        console.error('Error fetching IFIX:', ifixError);
-      }
-
-      console.log('Market data fetched:', {
-        ibovespaDataExists: !!ibovespaData,
-        ifixDataExists: !!ifixData,
-        ipcaDataLength: ipcaData.length
-      });
+      console.log('IPCA data fetched:', ipcaData.length, 'records');
 
       // Process and consolidate data by competencia
       const competenciaMap = new Map<string, {
@@ -120,46 +70,6 @@ export function useMarketIndicators(clientName?: string) {
         return `${month}/${year}`;
       };
 
-      // Current competencia (for B3 current data)
-      const currentDate = new Date();
-      const currentCompetencia = `${String(currentDate.getMonth() + 1).padStart(2, '0')}/${currentDate.getFullYear()}`;
-
-      // Process B3 current data for current competencia
-      if (ibovespaData?.index) {
-        console.log('Processing Ibovespa data:', ibovespaData.index);
-        if (!competenciaMap.has(currentCompetencia)) {
-          competenciaMap.set(currentCompetencia, { ibovespa: [], ifix: [], ipca: [] });
-        }
-        // Get percentage variation from B3 data
-        const oscilacao = ibovespaData.index.oscilacao;
-        console.log('Ibovespa oscilacao:', oscilacao);
-        
-        if (oscilacao !== undefined && oscilacao !== null) {
-          const variation = parseFloat(oscilacao.toString().replace(',', '.')) / 100; // Convert percentage to decimal
-          if (!isNaN(variation)) {
-            competenciaMap.get(currentCompetencia)!.ibovespa.push(variation);
-            console.log('Added Ibovespa variation:', variation);
-          }
-        }
-      }
-
-      if (ifixData?.index) {
-        console.log('Processing IFIX data:', ifixData.index);
-        if (!competenciaMap.has(currentCompetencia)) {
-          competenciaMap.set(currentCompetencia, { ibovespa: [], ifix: [], ipca: [] });
-        }
-        // Get percentage variation from B3 data
-        const oscilacao = ifixData.index.oscilacao;
-        console.log('IFIX oscilacao:', oscilacao);
-        
-        if (oscilacao !== undefined && oscilacao !== null) {
-          const variation = parseFloat(oscilacao.toString().replace(',', '.')) / 100; // Convert percentage to decimal
-          if (!isNaN(variation)) {
-            competenciaMap.get(currentCompetencia)!.ifix.push(variation);
-            console.log('Added IFIX variation:', variation);
-          }
-        }
-      }
 
       // Process IPCA historical data (monthly values)
       ipcaData.forEach((item: any) => {
@@ -192,19 +102,12 @@ export function useMarketIndicators(clientName?: string) {
       sortedCompetencias.forEach(competencia => {
         const data = competenciaMap.get(competencia)!;
         
-        // Calculate average values for the month
-        const avgIbovespa = data.ibovespa.length > 0 ? 
-          data.ibovespa.reduce((sum, val) => sum + val, 0) / data.ibovespa.length : null;
-        
-        const avgIfix = data.ifix.length > 0 ? 
-          data.ifix.reduce((sum, val) => sum + val, 0) / data.ifix.length : null;
-
         // IPCA is typically one value per month
         const monthlyIpca = data.ipca.length > 0 ? data.ipca[0] : 0;
 
-        // For B3 data, use the variation directly as monthly return, but only if we have real data
-        let ibovespaMonthly = avgIbovespa !== null ? avgIbovespa : 0;
-        let ifixMonthly = avgIfix !== null ? avgIfix : 0;
+        // Set B3 data to 0 (removed API calls)
+        const ibovespaMonthly = 0;
+        const ifixMonthly = 0;
 
         // Calculate client target return ONLY if we have both IPCA data and target value
         let clientTargetMonthly = 0;
@@ -234,15 +137,6 @@ export function useMarketIndicators(clientName?: string) {
           });
         }
 
-        // Update accumulated returns only when we have non-zero data
-        if (ibovespaMonthly !== 0) {
-          ibovespaAccumulated = (1 + ibovespaAccumulated) * (1 + ibovespaMonthly) - 1;
-        }
-        
-        if (ifixMonthly !== 0) {
-          ifixAccumulated = (1 + ifixAccumulated) * (1 + ifixMonthly) - 1;
-        }
-
         // IPCA accumulation
         if (monthlyIpca !== 0) {
           ipcaAccumulated = (1 + ipcaAccumulated) * (1 + monthlyIpca) - 1;
@@ -266,12 +160,8 @@ export function useMarketIndicators(clientName?: string) {
         });
 
         console.log(`Processed ${competencia}:`, {
-          ibovespaMonthly,
-          ifixMonthly,
           monthlyIpca,
           clientTargetMonthly,
-          ibovespaAccumulated,
-          ifixAccumulated,
           ipcaAccumulated,
           clientTargetAccumulated
         });
