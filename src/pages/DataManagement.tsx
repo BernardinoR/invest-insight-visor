@@ -319,6 +319,9 @@ export default function DataManagement() {
 
   // Ref para o input de upload de CSV
   const csvFileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Estado para controlar o Dialog de exportação
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
 
   // Mapeamento de colunas para campos do banco - Dados Consolidados
   const getFieldKeyFromColumn = (column: string): string | null => {
@@ -1741,14 +1744,18 @@ interface VerificationResult {
     }).length;
   }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo]);
 
-  // Função para exportar dados filtrados para CSV
+  // Função para abrir o dialog de exportação
   const exportToCSV = () => {
+    setIsExportDialogOpen(true);
+  };
+
+  // Função genérica de exportação que aceita os dados como parâmetro
+  const performCSVExport = (dataToExport: DadosData[], exportType: 'filtered' | 'all') => {
     try {
-      // Usar os dados já filtrados (filteredDadosData)
-      if (!filteredDadosData || filteredDadosData.length === 0) {
+      if (!dataToExport || dataToExport.length === 0) {
         toast({
           title: "Nenhum dado para exportar",
-          description: "A tabela filtrada está vazia.",
+          description: "Não há dados disponíveis para exportação.",
           variant: "destructive",
         });
         return;
@@ -1772,7 +1779,7 @@ interface VerificationResult {
       // Criar linhas do CSV
       const csvRows = [
         headers.join(','), // Cabeçalho
-        ...filteredDadosData.map(item => {
+        ...dataToExport.map(item => {
           return [
             item.Competencia || '',
             item.Instituicao || '',
@@ -1802,8 +1809,12 @@ interface VerificationResult {
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       
+      const fileName = exportType === 'filtered' 
+        ? `ativos_filtrados_${decodedClientName?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`
+        : `ativos_completo_${decodedClientName?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+      
       link.setAttribute('href', url);
-      link.setAttribute('download', `ativos_${decodedClientName?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', fileName);
       link.style.visibility = 'hidden';
       
       document.body.appendChild(link);
@@ -1812,8 +1823,11 @@ interface VerificationResult {
       
       toast({
         title: "Exportação concluída",
-        description: `${filteredDadosData.length} registro(s) exportado(s) com sucesso.`,
+        description: `${dataToExport.length} registro(s) exportado(s) com sucesso.`,
       });
+      
+      // Fechar o dialog após exportação
+      setIsExportDialogOpen(false);
     } catch (error) {
       console.error('Erro ao exportar CSV:', error);
       toast({
@@ -3425,6 +3439,56 @@ interface VerificationResult {
                       <ArrowUp className="h-4 w-4" />
                     </Button>
                     
+                    {/* Dialog de Escolha de Exportação */}
+                    <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Exportar Dados para CSV</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <p className="text-sm text-muted-foreground">
+                            Escolha qual conjunto de dados você deseja exportar:
+                          </p>
+                          
+                          <div className="space-y-3">
+                            {/* Opção: Exportar com filtro atual */}
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start h-auto py-4 px-4"
+                              onClick={() => performCSVExport(filteredDadosData, 'filtered')}
+                            >
+                              <div className="flex flex-col items-start w-full">
+                                <div className="flex items-center gap-2 font-medium">
+                                  <FilterIcon className="h-4 w-4" />
+                                  Exportar dados filtrados
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {filteredDadosData.length} registro(s) com os filtros atuais aplicados
+                                </div>
+                              </div>
+                            </Button>
+
+                            {/* Opção: Exportar todos os dados */}
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start h-auto py-4 px-4"
+                              onClick={() => performCSVExport(dadosData, 'all')}
+                            >
+                              <div className="flex flex-col items-start w-full">
+                                <div className="flex items-center gap-2 font-medium">
+                                  <BarChart3 className="h-4 w-4" />
+                                  Exportar todos os dados
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {dadosData.length} registro(s) sem aplicar filtros
+                                </div>
+                              </div>
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
                     {/* Botão Exportar CSV */}
                     <Button
                       variant="ghost"
