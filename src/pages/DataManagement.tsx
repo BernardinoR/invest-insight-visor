@@ -3557,11 +3557,11 @@ interface VerificationResult {
                                     {/* Verificação da Rentabilidade */}
                                     {!hasValidYield(item.Rendimento) ? (
                                       <div title="Rentabilidade não preenchida">
-                                        <XCircle className="h-4 w-4 text-purple-500" />
+                                        <XCircle className="h-4 w-4 text-red-500" />
                                       </div>
                                     ) : (
                                       <div title="Rentabilidade preenchida">
-                                        <CheckCircle2 className="h-4 w-4 text-blue-500" />
+                                        <CheckCircle2 className="h-4 w-4 text-green-500" />
                                       </div>
                                     )}
                                   </div>
