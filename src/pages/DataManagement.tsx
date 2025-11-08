@@ -2227,8 +2227,8 @@ interface VerificationResult {
                 
                 return (
                   <>
-                    {/* Primeira linha: 4 colunas */}
-                    <div className="grid grid-cols-4 gap-4">
+                    {/* Primeira linha: 3 colunas */}
+                    <div className="grid grid-cols-3 gap-4">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-5 w-5 text-green-500" />
                         <div>
@@ -2250,6 +2250,10 @@ interface VerificationResult {
                           <p className="text-sm text-muted-foreground">Inconsistentes</p>
                         </div>
                       </div>
+                    </div>
+                    
+                    {/* Segunda linha: 3 colunas */}
+                    <div className="grid grid-cols-3 gap-4">
                       <div className="flex items-center gap-2">
                         <Info className="h-5 w-5 text-blue-500" />
                         <div>
@@ -2257,10 +2261,6 @@ interface VerificationResult {
                           <p className="text-sm text-muted-foreground">Sem Dados</p>
                         </div>
                       </div>
-                    </div>
-                    
-                    {/* Segunda linha: 2 colunas */}
-                    <div className="grid grid-cols-2 gap-4">
                       <div className="flex items-center gap-2">
                         <Tag className="h-5 w-5 text-orange-500" />
                         <div>
