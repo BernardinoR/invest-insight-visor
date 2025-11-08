@@ -3436,7 +3436,8 @@ interface VerificationResult {
                           setNumericFieldsText({...numericFieldsText, "Patrimonio Inicial": text});
                         }}
                         onBlur={() => {
-                          const numericValue = parseBrazilianNumber(numericFieldsText["Patrimonio Inicial"]);
+                          const text = numericFieldsText["Patrimonio Inicial"];
+                          const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, "Patrimonio Inicial": numericValue});
                           const formatted = numericValue.toLocaleString('pt-BR', {
                             minimumFractionDigits: 2,
@@ -3457,7 +3458,8 @@ interface VerificationResult {
                           setNumericFieldsText({...numericFieldsText, "Movimentação": text});
                         }}
                         onBlur={() => {
-                          const numericValue = parseBrazilianNumber(numericFieldsText["Movimentação"]);
+                          const text = numericFieldsText["Movimentação"];
+                          const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, "Movimentação": numericValue});
                           const formatted = numericValue.toLocaleString('pt-BR', {
                             minimumFractionDigits: 2,
@@ -3481,7 +3483,8 @@ interface VerificationResult {
                           setNumericFieldsText({...numericFieldsText, Impostos: text});
                         }}
                         onBlur={() => {
-                          const numericValue = parseBrazilianNumber(numericFieldsText.Impostos);
+                          const text = numericFieldsText.Impostos;
+                          const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, Impostos: numericValue});
                           const formatted = numericValue.toLocaleString('pt-BR', {
                             minimumFractionDigits: 2,
@@ -3502,7 +3505,8 @@ interface VerificationResult {
                           setNumericFieldsText({...numericFieldsText, "Ganho Financeiro": text});
                         }}
                         onBlur={() => {
-                          const numericValue = parseBrazilianNumber(numericFieldsText["Ganho Financeiro"]);
+                          const text = numericFieldsText["Ganho Financeiro"];
+                          const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, "Ganho Financeiro": numericValue});
                           const formatted = numericValue.toLocaleString('pt-BR', {
                             minimumFractionDigits: 2,
@@ -3526,7 +3530,8 @@ interface VerificationResult {
                           setNumericFieldsText({...numericFieldsText, "Patrimonio Final": text});
                         }}
                         onBlur={() => {
-                          const numericValue = parseBrazilianNumber(numericFieldsText["Patrimonio Final"]);
+                          const text = numericFieldsText["Patrimonio Final"];
+                          const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, "Patrimonio Final": numericValue});
                           const formatted = numericValue.toLocaleString('pt-BR', {
                             minimumFractionDigits: 2,
@@ -3678,7 +3683,8 @@ interface VerificationResult {
                           setNumericFieldsText({...numericFieldsText, Posicao: text});
                         }}
                         onBlur={() => {
-                          const numericValue = parseBrazilianNumber(numericFieldsText.Posicao);
+                          const text = numericFieldsText.Posicao;
+                          const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, Posicao: numericValue});
                           const formatted = numericValue.toLocaleString('pt-BR', {
                             minimumFractionDigits: 2,
