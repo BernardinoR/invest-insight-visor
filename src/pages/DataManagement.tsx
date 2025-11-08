@@ -1761,37 +1761,41 @@ interface VerificationResult {
         return;
       }
 
-      // Definir colunas do CSV
-      const headers = [
-        'Competencia',
-        'Instituicao',
-        'Nome da Conta',
-        'Moeda',
-        'Ativo',
-        'Emissor',
-        'Classe do ativo',
-        'Posicao',
-        'Taxa',
-        'Vencimento',
-        'Rendimento'
-      ];
+    // Definir colunas do CSV
+    const headers = [
+      'Nome',
+      'Instituicao',
+      'Data',
+      'Ativo',
+      'Posicao',
+      'Classe do ativo',
+      'Taxa',
+      'Vencimento',
+      'Emissor',
+      'Competencia',
+      'Rendimento',
+      'Moeda',
+      'Nome da conta'
+    ];
 
       // Criar linhas do CSV
       const csvRows = [
         headers.join(','), // Cabeçalho
         ...dataToExport.map(item => {
           return [
-            item.Competencia || '',
+            item.Nome || '',
             item.Instituicao || '',
-            item.nomeConta || '',
-            item.Moeda || '',
+            item.Data || '',
             item.Ativo || '',
-            item.Emissor || '',
-            item["Classe do ativo"] || '',
             item.Posicao || '',
+            item["Classe do ativo"] || '',
             item.Taxa || '',
             item.Vencimento || '',
-            item.Rendimento || ''
+            item.Emissor || '',
+            item.Competencia || '',
+            item.Rendimento || '',
+            item.Moeda || '',
+            item.nomeConta || ''
           ].map(value => {
             // Escapar vírgulas e aspas
             const stringValue = String(value);
