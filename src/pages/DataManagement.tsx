@@ -96,6 +96,14 @@ const parseBrazilianNumber = (value: string): number => {
   return isNaN(numericValue) ? 0 : numericValue;
 };
 
+// Formata número para padrão brasileiro com separador de milhares
+const formatBrazilianNumber = (value: number): string => {
+  const parts = value.toFixed(2).split('.');
+  const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const decimalPart = parts[1];
+  return `${integerPart},${decimalPart}`;
+};
+
 interface ConsolidadoData {
   id: number;
   "Patrimonio Inicial": number;
@@ -3451,10 +3459,7 @@ interface VerificationResult {
                           const text = numericFieldsText["Patrimonio Inicial"];
                           const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, "Patrimonio Inicial": numericValue});
-                          const formatted = numericValue.toLocaleString('pt-BR', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                          });
+                          const formatted = formatBrazilianNumber(numericValue);
                           setNumericFieldsText({...numericFieldsText, "Patrimonio Inicial": formatted});
                         }}
                       />
@@ -3473,10 +3478,7 @@ interface VerificationResult {
                           const text = numericFieldsText["Movimentação"];
                           const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, "Movimentação": numericValue});
-                          const formatted = numericValue.toLocaleString('pt-BR', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                          });
+                          const formatted = formatBrazilianNumber(numericValue);
                           setNumericFieldsText({...numericFieldsText, "Movimentação": formatted});
                         }}
                       />
@@ -3498,10 +3500,7 @@ interface VerificationResult {
                           const text = numericFieldsText.Impostos;
                           const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, Impostos: numericValue});
-                          const formatted = numericValue.toLocaleString('pt-BR', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                          });
+                          const formatted = formatBrazilianNumber(numericValue);
                           setNumericFieldsText({...numericFieldsText, Impostos: formatted});
                         }}
                       />
@@ -3520,10 +3519,7 @@ interface VerificationResult {
                           const text = numericFieldsText["Ganho Financeiro"];
                           const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, "Ganho Financeiro": numericValue});
-                          const formatted = numericValue.toLocaleString('pt-BR', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                          });
+                          const formatted = formatBrazilianNumber(numericValue);
                           setNumericFieldsText({...numericFieldsText, "Ganho Financeiro": formatted});
                         }}
                       />
@@ -3545,10 +3541,7 @@ interface VerificationResult {
                           const text = numericFieldsText["Patrimonio Final"];
                           const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, "Patrimonio Final": numericValue});
-                          const formatted = numericValue.toLocaleString('pt-BR', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                          });
+                          const formatted = formatBrazilianNumber(numericValue);
                           setNumericFieldsText({...numericFieldsText, "Patrimonio Final": formatted});
                         }}
                       />
@@ -3698,10 +3691,7 @@ interface VerificationResult {
                           const text = numericFieldsText.Posicao;
                           const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, Posicao: numericValue});
-                          const formatted = numericValue.toLocaleString('pt-BR', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                          });
+                          const formatted = formatBrazilianNumber(numericValue);
                           setNumericFieldsText({...numericFieldsText, Posicao: formatted});
                         }}
                       />
