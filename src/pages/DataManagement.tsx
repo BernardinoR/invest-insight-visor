@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -316,6 +316,9 @@ export default function DataManagement() {
   );
   const [showOnlyUnclassified, setShowOnlyUnclassified] = useState(false);
   const [showOnlyMissingYield, setShowOnlyMissingYield] = useState(false);
+
+  // Ref para o input de upload de CSV
+  const csvFileInputRef = useRef<HTMLInputElement>(null);
 
   // Mapeamento de colunas para campos do banco - Dados Consolidados
   const getFieldKeyFromColumn = (column: string): string | null => {
@@ -1737,6 +1740,162 @@ interface VerificationResult {
       return false;
     }).length;
   }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo]);
+
+  // Função para exportar dados filtrados para CSV
+  const exportToCSV = () => {
+    try {
+      // Usar os dados já filtrados (filteredDadosData)
+      if (!filteredDadosData || filteredDadosData.length === 0) {
+        toast({
+          title: "Nenhum dado para exportar",
+          description: "A tabela filtrada está vazia.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Definir colunas do CSV
+      const headers = [
+        'Competencia',
+        'Instituicao',
+        'Nome da Conta',
+        'Moeda',
+        'Ativo',
+        'Emissor',
+        'Classe do ativo',
+        'Posicao',
+        'Taxa',
+        'Vencimento',
+        'Rendimento'
+      ];
+
+      // Criar linhas do CSV
+      const csvRows = [
+        headers.join(','), // Cabeçalho
+        ...filteredDadosData.map(item => {
+          return [
+            item.Competencia || '',
+            item.Instituicao || '',
+            item.nomeConta || '',
+            item.Moeda || '',
+            item.Ativo || '',
+            item.Emissor || '',
+            item["Classe do ativo"] || '',
+            item.Posicao || '',
+            item.Taxa || '',
+            item.Vencimento || '',
+            item.Rendimento || ''
+          ].map(value => {
+            // Escapar vírgulas e aspas
+            const stringValue = String(value);
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+              return `"${stringValue.replace(/"/g, '""')}"`;
+            }
+            return stringValue;
+          }).join(',');
+        })
+      ];
+
+      // Criar blob e baixar
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `ativos_${decodedClientName?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Exportação concluída",
+        description: `${filteredDadosData.length} registro(s) exportado(s) com sucesso.`,
+      });
+    } catch (error) {
+      console.error('Erro ao exportar CSV:', error);
+      toast({
+        title: "Erro ao exportar",
+        description: "Ocorreu um erro ao exportar os dados.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Função para importar CSV
+  const handleImportCSV = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Verificar se é CSV
+    if (!file.name.endsWith('.csv')) {
+      toast({
+        title: "Arquivo inválido",
+        description: "Por favor, selecione um arquivo CSV.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result as string;
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        if (lines.length < 2) {
+          toast({
+            title: "Arquivo vazio",
+            description: "O arquivo CSV não contém dados.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Parse CSV
+        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+        const data = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+          const row: any = {};
+          
+          headers.forEach((header, index) => {
+            row[header] = values[index] || null;
+          });
+          
+          data.push(row);
+        }
+
+        // Aqui você pode adicionar lógica para inserir os dados no Supabase
+        // Por enquanto, vamos apenas mostrar um toast com o número de linhas
+        toast({
+          title: "CSV carregado",
+          description: `${data.length} registro(s) encontrado(s). Implementar lógica de importação no Supabase.`,
+        });
+
+        console.log('Dados importados:', data);
+        
+      } catch (error) {
+        console.error('Erro ao processar CSV:', error);
+        toast({
+          title: "Erro ao importar",
+          description: "Ocorreu um erro ao processar o arquivo CSV.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    reader.readAsText(file, 'UTF-8');
+    
+    // Limpar input
+    if (csvFileInputRef.current) {
+      csvFileInputRef.current.value = '';
+    }
+  };
 
   // Pagination for Ativos tab - Create paginated data
   const paginatedDadosData = useMemo(() => {
@@ -3243,6 +3402,40 @@ interface VerificationResult {
                       </div>
                     </PopoverContent>
                   </Popover>
+                  
+                  {/* Botões CSV - Importar/Exportar */}
+                  <div className="flex items-center gap-1">
+                    {/* Input file escondido */}
+                    <input
+                      ref={csvFileInputRef}
+                      type="file"
+                      accept=".csv"
+                      onChange={handleImportCSV}
+                      className="hidden"
+                    />
+                    
+                    {/* Botão Importar CSV */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => csvFileInputRef.current?.click()}
+                      title="Importar CSV"
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </Button>
+                    
+                    {/* Botão Exportar CSV */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={exportToCSV}
+                      title="Exportar CSV"
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                  </div>
                   
                   <div className="flex-1" />
                   
