@@ -2,8 +2,8 @@ import React, { lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Database, TrendingUp, Calendar, Target } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Database, TrendingUp, Calendar, Target, Info } from "lucide-react";
 import { InstitutionAllocationCard } from "./InstitutionAllocationCard";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
@@ -235,53 +235,124 @@ export const ClientDataDisplay = React.memo(({
                       <TableCell className={impostos >= 0 ? "text-muted-foreground" : "text-destructive"}>
                         {formatCurrency(impostos)}
                       </TableCell>
-                      <TableCell className={ganhoFinanceiro >= 0 ? "text-success" : "text-destructive"}>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="cursor-help underline decoration-dotted">
-                                {formatCurrency(ganhoFinanceiro)}
+              <TableCell className={ganhoFinanceiro >= 0 ? "text-success" : "text-destructive"}>
+                <Dialog>
+                  <div className="flex items-center gap-2">
+                    {/* Valor clicável */}
+                    <DialogTrigger asChild>
+                      <button 
+                        className="font-semibold hover:underline cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring rounded px-1 transition-all"
+                        aria-label="Ver decomposição do ganho financeiro"
+                      >
+                        {formatCurrency(ganhoFinanceiro)}
+                      </button>
+                    </DialogTrigger>
+                    
+                    {/* Ícone de informação */}
+                    <DialogTrigger asChild>
+                      <button 
+                        className="opacity-60 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-ring rounded-full p-0.5"
+                        aria-label="Ver decomposição do ganho financeiro"
+                      >
+                        <Info className="h-4 w-4" />
+                      </button>
+                    </DialogTrigger>
+                  </div>
+
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-primary" />
+                        Decomposição do Ganho Financeiro
+                      </DialogTitle>
+                    </DialogHeader>
+                    
+                    {(() => {
+                      const breakdown = getGanhoFinanceiroBreakdown(
+                        item["Ganho Financeiro"],
+                        item["Patrimonio Inicial"],
+                        item.Competencia,
+                        moedaOriginal
+                      );
+                      
+                      const isConversao = moedaOriginal !== currency;
+                      
+                      return (
+                        <div className="space-y-4 py-4">
+                          {/* Header com informações da instituição */}
+                          <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-muted-foreground">Instituição:</span>
+                              <span className="font-semibold">{item.Instituicao}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-muted-foreground">Competência:</span>
+                              <span className="font-medium">{item.Competencia}</span>
+                            </div>
+                            {isConversao && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm text-muted-foreground">Conversão:</span>
+                                <Badge variant="outline" className="font-mono text-xs">
+                                  {moedaOriginal} → {currency}
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Breakdown dos valores */}
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center py-2 border-b">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                                <span className="text-sm font-medium">Rentabilidade</span>
+                              </div>
+                              <span className="font-semibold text-lg">
+                                {formatCurrency(breakdown.rentabilidade)}
                               </span>
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              {(() => {
-                                const breakdown = getGanhoFinanceiroBreakdown(
-                                  item["Ganho Financeiro"],
-                                  item["Patrimonio Inicial"],
-                                  item.Competencia,
-                                  moedaOriginal
-                                );
-                                
-                                const isConversao = moedaOriginal !== currency;
-                                
-                                return (
-                                  <div className="space-y-1.5">
-                                    <div className="font-semibold text-sm border-b pb-1">
-                                      Decomposição do Ganho
-                                    </div>
-                                    <div className="flex justify-between gap-4 text-xs">
-                                      <span className="text-muted-foreground">Rentabilidade:</span>
-                                      <span className="font-medium">{formatCurrency(breakdown.rentabilidade)}</span>
-                                    </div>
-                                    {isConversao && (
-                                      <div className="flex justify-between gap-4 text-xs">
-                                        <span className="text-muted-foreground">Efeito Cambial:</span>
-                                        <span className={breakdown.efeitoCambial >= 0 ? "font-medium text-success" : "font-medium text-destructive"}>
-                                          {formatCurrency(breakdown.efeitoCambial)}
-                                        </span>
-                                      </div>
-                                    )}
-                                    <div className="flex justify-between gap-4 text-xs border-t pt-1 mt-1">
-                                      <span className="font-semibold">Total:</span>
-                                      <span className="font-semibold">{formatCurrency(breakdown.total)}</span>
-                                    </div>
-                                  </div>
-                                );
-                              })()}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </TableCell>
+                            </div>
+
+                            {isConversao && (
+                              <div className="flex justify-between items-center py-2 border-b">
+                                <div className="flex items-center gap-2">
+                                  <div className={`h-2 w-2 rounded-full ${breakdown.efeitoCambial >= 0 ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                  <span className="text-sm font-medium">Efeito Cambial</span>
+                                </div>
+                                <span className={`font-semibold text-lg ${breakdown.efeitoCambial >= 0 ? 'text-success' : 'text-destructive'}`}>
+                                  {breakdown.efeitoCambial >= 0 ? '+' : ''}{formatCurrency(breakdown.efeitoCambial)}
+                                </span>
+                              </div>
+                            )}
+
+                            <div className="flex justify-between items-center py-3 bg-primary/5 rounded-lg px-3 mt-2">
+                              <span className="font-bold">Total</span>
+                              <span className={`font-bold text-xl ${breakdown.total >= 0 ? 'text-success' : 'text-destructive'}`}>
+                                {formatCurrency(breakdown.total)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Explicação do efeito cambial (se aplicável) */}
+                          {isConversao && (
+                            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-xs space-y-1">
+                              <div className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                                ℹ️ Sobre o Efeito Cambial
+                              </div>
+                              <p className="text-blue-800 dark:text-blue-200 leading-relaxed">
+                                O <strong>Efeito Cambial</strong> representa o impacto da variação da taxa de câmbio sobre o patrimônio inicial. 
+                                {breakdown.efeitoCambial >= 0 ? (
+                                  <> Um efeito <strong className="text-green-700 dark:text-green-400">positivo</strong> indica que a moeda de origem se valorizou em relação à moeda de exibição.</>
+                                ) : (
+                                  <> Um efeito <strong className="text-red-700 dark:text-red-400">negativo</strong> indica que a moeda de origem se desvalorizou em relação à moeda de exibição.</>
+                                )}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </DialogContent>
+                </Dialog>
+              </TableCell>
                       <TableCell className="font-semibold">
                         {formatCurrency(patrimonioFinal)}
                       </TableCell>
