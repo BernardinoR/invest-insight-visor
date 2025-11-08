@@ -315,6 +315,7 @@ export default function DataManagement() {
     new Set(['Competência', 'Instituição', 'Nome da Conta', 'Moeda', 'Ativo', 'Emissor', 'Classe', 'Posição', 'Rendimento %', 'Verificação', 'Ações'])
   );
   const [showOnlyUnclassified, setShowOnlyUnclassified] = useState(false);
+  const [showOnlyMissingYield, setShowOnlyMissingYield] = useState(false);
 
   // Mapeamento de colunas para campos do banco - Dados Consolidados
   const getFieldKeyFromColumn = (column: string): string | null => {
@@ -1629,16 +1630,34 @@ interface VerificationResult {
       );
     }
     
-    // Filter for unclassified assets only
-    if (showOnlyUnclassified) {
-      data = data.filter(item => !isValidAssetClass(item["Classe do ativo"]));
+    // Filter for quality issues
+    if (showOnlyUnclassified || showOnlyMissingYield) {
+      data = data.filter(item => {
+        const isUnclassified = showOnlyUnclassified && !isValidAssetClass(item["Classe do ativo"]);
+        const hasMissingYield = showOnlyMissingYield && (() => {
+          const rendimento = item.Rendimento;
+          if (rendimento == null) return true;
+          if (typeof rendimento === 'string') {
+            const trimmed = rendimento.trim();
+            if (trimmed === '' || trimmed === '-') return true;
+          }
+          return false;
+        })();
+        
+        // Se ambos filtros estão ativos, mostrar itens que atendem pelo menos um
+        if (showOnlyUnclassified && showOnlyMissingYield) {
+          return isUnclassified || hasMissingYield;
+        }
+        // Se apenas um filtro está ativo, retornar apenas esse
+        return isUnclassified || hasMissingYield;
+      });
     }
     
     // Apply sorting
     data = applySortingGeneric(data, sortConfig);
     
     return data;
-  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo, showOnlyUnclassified, activeFilters, sortConfig, isValidAssetClass]);
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo, showOnlyUnclassified, showOnlyMissingYield, activeFilters, sortConfig, isValidAssetClass]);
 
   // Contador de ativos não classificados na view atual (antes do filtro showOnlyUnclassified)
   const unclassifiedInCurrentView = useMemo(() => {
@@ -1667,6 +1686,42 @@ interface VerificationResult {
     
     return data.filter(item => !isValidAssetClass(item["Classe do ativo"])).length;
   }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo, isValidAssetClass]);
+
+  // Contador de ativos com rentabilidade faltando na view atual
+  const missingYieldInCurrentView = useMemo(() => {
+    let data = dadosData;
+    
+    if (selectedCompetencias.length > 0) {
+      data = data.filter(item => selectedCompetencias.includes(item.Competencia));
+    }
+    if (selectedInstituicoes.length > 0) {
+      data = data.filter(item => selectedInstituicoes.includes(item.Instituicao));
+    }
+    if (selectedClasses.length > 0) {
+      data = data.filter(item => selectedClasses.includes(item["Classe do ativo"]));
+    }
+    if (selectedEmissores.length > 0) {
+      data = data.filter(item => selectedEmissores.includes(item.Emissor));
+    }
+    if (searchAtivo.trim()) {
+      const searchLower = searchAtivo.toLowerCase();
+      data = data.filter(item => 
+        item.Ativo?.toLowerCase().includes(searchLower) ||
+        item.Emissor?.toLowerCase().includes(searchLower) ||
+        item["Classe do ativo"]?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return data.filter(item => {
+      const rendimento = item.Rendimento;
+      if (rendimento == null) return true;
+      if (typeof rendimento === 'string') {
+        const trimmed = rendimento.trim();
+        if (trimmed === '' || trimmed === '-') return true;
+      }
+      return false;
+    }).length;
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo]);
 
   // Pagination for Ativos tab - Create paginated data
   const paginatedDadosData = useMemo(() => {
@@ -3071,21 +3126,108 @@ interface VerificationResult {
                 <div className="flex items-center gap-2 mb-3">
                   <FilterBuilder onAddFilter={handleAddFilter} />
                   
-                  {/* Filtro Rápido: Mostrar Não Classificados */}
-                  <Button 
-                    variant={showOnlyUnclassified ? "default" : "outline"}
-                    size="sm" 
-                    className="h-8"
-                    onClick={() => setShowOnlyUnclassified(!showOnlyUnclassified)}
-                  >
-                    <AlertTriangle className="mr-2 h-4 w-4" />
-                    {showOnlyUnclassified ? 'Mostrando Não Classificados' : 'Mostrar Não Classificados'}
-                    {!showOnlyUnclassified && unclassifiedInCurrentView > 0 && (
-                      <Badge variant="destructive" className="ml-2 px-1.5 py-0 text-[10px]">
-                        {unclassifiedInCurrentView}
-                      </Badge>
-                    )}
-                  </Button>
+                  {/* Filtros de Qualidade */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant={(showOnlyUnclassified || showOnlyMissingYield) ? "default" : "outline"}
+                        size="sm" 
+                        className="h-8"
+                      >
+                        <AlertTriangle className="mr-2 h-4 w-4" />
+                        Filtros de Qualidade
+                        {(unclassifiedInCurrentView > 0 || missingYieldInCurrentView > 0) && (
+                          <Badge 
+                            variant={(showOnlyUnclassified || showOnlyMissingYield) ? "secondary" : "destructive"} 
+                            className="ml-2 px-1.5 py-0 text-[10px]"
+                          >
+                            {unclassifiedInCurrentView + missingYieldInCurrentView}
+                          </Badge>
+                        )}
+                        <ChevronDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 p-3" align="start">
+                      <div className="space-y-3">
+                        <div className="text-sm font-medium text-foreground mb-2">
+                          Mostrar apenas ativos com:
+                        </div>
+                        
+                        {/* Não Classificados */}
+                        <div className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors">
+                          <Checkbox 
+                            id="filter-unclassified"
+                            checked={showOnlyUnclassified}
+                            onCheckedChange={(checked) => setShowOnlyUnclassified(checked as boolean)}
+                            className="mt-0.5"
+                          />
+                          <div className="flex-1 space-y-1">
+                            <label 
+                              htmlFor="filter-unclassified" 
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
+                            >
+                              <Tag className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
+                              Classe não classificada
+                              {unclassifiedInCurrentView > 0 && (
+                                <Badge variant="outline" className="ml-auto px-1.5 py-0 text-[10px] bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300">
+                                  {unclassifiedInCurrentView}
+                                </Badge>
+                              )}
+                            </label>
+                            <p className="text-xs text-muted-foreground">
+                              Ativos sem classificação válida
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Rentabilidade Faltando */}
+                        <div className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors">
+                          <Checkbox 
+                            id="filter-missing-yield"
+                            checked={showOnlyMissingYield}
+                            onCheckedChange={(checked) => setShowOnlyMissingYield(checked as boolean)}
+                            className="mt-0.5"
+                          />
+                          <div className="flex-1 space-y-1">
+                            <label 
+                              htmlFor="filter-missing-yield" 
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
+                            >
+                              <DollarSign className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                              Rentabilidade faltando
+                              {missingYieldInCurrentView > 0 && (
+                                <Badge variant="outline" className="ml-auto px-1.5 py-0 text-[10px] bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300">
+                                  {missingYieldInCurrentView}
+                                </Badge>
+                              )}
+                            </label>
+                            <p className="text-xs text-muted-foreground">
+                              Ativos sem rentabilidade preenchida
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Ações */}
+                        {(showOnlyUnclassified || showOnlyMissingYield) && (
+                          <>
+                            <Separator className="my-2" />
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="w-full h-7 text-xs"
+                              onClick={() => {
+                                setShowOnlyUnclassified(false);
+                                setShowOnlyMissingYield(false);
+                              }}
+                            >
+                              <X className="mr-1 h-3 w-3" />
+                              Limpar filtros
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                   
                   <div className="flex-1" />
                   
