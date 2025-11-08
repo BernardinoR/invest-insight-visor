@@ -76,6 +76,26 @@ const VALID_ASSET_CLASSES = [
   'Ouro'
 ] as const;
 
+// Helper function to parse Brazilian number format
+const parseBrazilianNumber = (value: string): number => {
+  if (!value || value.trim() === '') return 0;
+  
+  // Remove espaços
+  let cleaned = value.trim();
+  
+  // Se tiver vírgula, assume formato brasileiro
+  if (cleaned.includes(',')) {
+    // Remove todos os pontos (separadores de milhares)
+    cleaned = cleaned.replace(/\./g, '');
+    // Substitui vírgula por ponto (decimal)
+    cleaned = cleaned.replace(',', '.');
+  }
+  
+  // Converte para número
+  const numericValue = parseFloat(cleaned);
+  return isNaN(numericValue) ? 0 : numericValue;
+};
+
 interface ConsolidadoData {
   id: number;
   "Patrimonio Inicial": number;
@@ -3367,16 +3387,8 @@ interface VerificationResult {
                         type="text"
                         value={editingItem["Patrimonio Inicial"] || ''}
                         onChange={(e) => {
-                          const value = e.target.value;
-                          // Se contém vírgula, trata como formato brasileiro
-                          if (value.includes(',')) {
-                            const numericValue = parseFloat(value.replace(',', '.')) || 0;
-                            setEditingItem({...editingItem, "Patrimonio Inicial": numericValue});
-                          } else {
-                            // Se não contém vírgula, trata como número normal
-                            const numericValue = parseFloat(value) || 0;
-                            setEditingItem({...editingItem, "Patrimonio Inicial": numericValue});
-                          }
+                          const numericValue = parseBrazilianNumber(e.target.value);
+                          setEditingItem({...editingItem, "Patrimonio Inicial": numericValue});
                         }}
                       />
                     </div>
@@ -3387,16 +3399,8 @@ interface VerificationResult {
                         type="text"
                         value={editingItem["Movimentação"] || ''}
                         onChange={(e) => {
-                          const value = e.target.value;
-                          // Se contém vírgula, trata como formato brasileiro
-                          if (value.includes(',')) {
-                            const numericValue = parseFloat(value.replace(',', '.')) || 0;
-                            setEditingItem({...editingItem, "Movimentação": numericValue});
-                          } else {
-                            // Se não contém vírgula, trata como número normal
-                            const numericValue = parseFloat(value) || 0;
-                            setEditingItem({...editingItem, "Movimentação": numericValue});
-                          }
+                          const numericValue = parseBrazilianNumber(e.target.value);
+                          setEditingItem({...editingItem, "Movimentação": numericValue});
                         }}
                       />
                     </div>
@@ -3410,16 +3414,8 @@ interface VerificationResult {
                         type="text"
                         value={editingItem.Impostos || ''}
                         onChange={(e) => {
-                          const value = e.target.value;
-                          // Se contém vírgula, trata como formato brasileiro
-                          if (value.includes(',')) {
-                            const numericValue = parseFloat(value.replace(',', '.')) || 0;
-                            setEditingItem({...editingItem, Impostos: numericValue});
-                          } else {
-                            // Se não contém vírgula, trata como número normal
-                            const numericValue = parseFloat(value) || 0;
-                            setEditingItem({...editingItem, Impostos: numericValue});
-                          }
+                          const numericValue = parseBrazilianNumber(e.target.value);
+                          setEditingItem({...editingItem, Impostos: numericValue});
                         }}
                       />
                     </div>
@@ -3430,16 +3426,8 @@ interface VerificationResult {
                         type="text"
                         value={editingItem["Ganho Financeiro"] || ''}
                         onChange={(e) => {
-                          const value = e.target.value;
-                          // Se contém vírgula, trata como formato brasileiro
-                          if (value.includes(',')) {
-                            const numericValue = parseFloat(value.replace(',', '.')) || 0;
-                            setEditingItem({...editingItem, "Ganho Financeiro": numericValue});
-                          } else {
-                            // Se não contém vírgula, trata como número normal
-                            const numericValue = parseFloat(value) || 0;
-                            setEditingItem({...editingItem, "Ganho Financeiro": numericValue});
-                          }
+                          const numericValue = parseBrazilianNumber(e.target.value);
+                          setEditingItem({...editingItem, "Ganho Financeiro": numericValue});
                         }}
                       />
                     </div>
@@ -3453,16 +3441,8 @@ interface VerificationResult {
                         type="text"
                         value={editingItem["Patrimonio Final"] || ''}
                         onChange={(e) => {
-                          const value = e.target.value;
-                          // Se contém vírgula, trata como formato brasileiro
-                          if (value.includes(',')) {
-                            const numericValue = parseFloat(value.replace(',', '.')) || 0;
-                            setEditingItem({...editingItem, "Patrimonio Final": numericValue});
-                          } else {
-                            // Se não contém vírgula, trata como número normal
-                            const numericValue = parseFloat(value) || 0;
-                            setEditingItem({...editingItem, "Patrimonio Final": numericValue});
-                          }
+                          const numericValue = parseBrazilianNumber(e.target.value);
+                          setEditingItem({...editingItem, "Patrimonio Final": numericValue});
                         }}
                       />
                     </div>
