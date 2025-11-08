@@ -1181,12 +1181,16 @@ export default function DataManagement() {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
+  const formatCurrency = (value: number, currency: string = 'Real') => {
+    const currencyCode = currency === 'Dolar' ? 'USD' : 'BRL';
+    const formatted = new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL',
+      currency: currencyCode,
       minimumFractionDigits: 2
     }).format(value || 0);
+    
+    // Substitui "US$" por "U$" para seguir formato brasileiro
+    return formatted.replace('US$', 'U$');
   };
 
   const formatPercentage = (value: number) => {
@@ -2504,11 +2508,11 @@ interface VerificationResult {
                              {visibleColumns.has('Instituição') && <TableCell>{item.Instituicao}</TableCell>}
                              {visibleColumns.has('Nome da Conta') && <TableCell>{item.nomeConta || '-'}</TableCell>}
                              {visibleColumns.has('Moeda') && <TableCell>{item.Moeda || '-'}</TableCell>}
-                             {visibleColumns.has('Patrimônio Inicial') && <TableCell className="text-right">{formatCurrency(item["Patrimonio Inicial"])}</TableCell>}
-                             {visibleColumns.has('Movimentação') && <TableCell className="text-right">{formatCurrency(item["Movimentação"])}</TableCell>}
-                             {visibleColumns.has('Impostos') && <TableCell className="text-right">{formatCurrency(item.Impostos)}</TableCell>}
-                             {visibleColumns.has('Ganho Financeiro') && <TableCell className="text-right">{formatCurrency(item["Ganho Financeiro"])}</TableCell>}
-                             {visibleColumns.has('Patrimônio Final') && <TableCell className="text-right">{formatCurrency(item["Patrimonio Final"])}</TableCell>}
+                             {visibleColumns.has('Patrimônio Inicial') && <TableCell className="text-right">{formatCurrency(item["Patrimonio Inicial"], item.Moeda)}</TableCell>}
+                             {visibleColumns.has('Movimentação') && <TableCell className="text-right">{formatCurrency(item["Movimentação"], item.Moeda)}</TableCell>}
+                             {visibleColumns.has('Impostos') && <TableCell className="text-right">{formatCurrency(item.Impostos, item.Moeda)}</TableCell>}
+                             {visibleColumns.has('Ganho Financeiro') && <TableCell className="text-right">{formatCurrency(item["Ganho Financeiro"], item.Moeda)}</TableCell>}
+                             {visibleColumns.has('Patrimônio Final') && <TableCell className="text-right">{formatCurrency(item["Patrimonio Final"], item.Moeda)}</TableCell>}
                              {visibleColumns.has('Rendimento %') && <TableCell className="text-right">{formatPercentage(item.Rendimento)}</TableCell>}
                               {visibleColumns.has('Verificação') && (
                                 <TableCell className="text-center">
@@ -2545,22 +2549,22 @@ interface VerificationResult {
                                          <div className="space-y-2">
                                            <h4 className="font-medium text-sm">Verificação de Integridade</h4>
                                            <div className="text-sm space-y-1">
-                                             <div className="flex justify-between">
-                                               <span className="text-muted-foreground">Patrimônio Final:</span>
-                                               <span className="font-medium">{formatCurrency(verification.consolidatedValue)}</span>
-                                             </div>
-                                             <div className="flex justify-between">
-                                               <span className="text-muted-foreground">Soma Detalhada:</span>
-                                               <span className="font-medium">{formatCurrency(verification.detailedSum)}</span>
-                                             </div>
-                                             <div className="flex justify-between">
-                                               <span className="text-muted-foreground">Diferença:</span>
-                                               <span className={`font-medium ${
-                                                 verification.status === 'mismatch' ? 'text-red-500' : 
-                                                 verification.status === 'tolerance' ? 'text-yellow-500' : 
-                                                 'text-green-500'
-                                               }`}>
-                                                 {formatCurrency(verification.difference)}
+                                              <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Patrimônio Final:</span>
+                                                <span className="font-medium">{formatCurrency(verification.consolidatedValue, item.Moeda)}</span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Soma Detalhada:</span>
+                                                <span className="font-medium">{formatCurrency(verification.detailedSum, item.Moeda)}</span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Diferença:</span>
+                                                <span className={`font-medium ${
+                                                  verification.status === 'mismatch' ? 'text-red-500' : 
+                                                  verification.status === 'tolerance' ? 'text-yellow-500' : 
+                                                  'text-green-500'
+                                                }`}>
+                                                  {formatCurrency(verification.difference, item.Moeda)}
                                                </span>
                                              </div>
                                               <div className="flex justify-between">
@@ -3127,7 +3131,7 @@ interface VerificationResult {
                               {visibleColumnsDetalhados.has('Ativo') && <TableCell>{item.Ativo}</TableCell>}
                               {visibleColumnsDetalhados.has('Emissor') && <TableCell>{item.Emissor}</TableCell>}
                               {visibleColumnsDetalhados.has('Classe') && <TableCell>{item["Classe do ativo"]}</TableCell>}
-                              {visibleColumnsDetalhados.has('Posição') && <TableCell>{formatCurrency(item.Posicao)}</TableCell>}
+                              {visibleColumnsDetalhados.has('Posição') && <TableCell>{formatCurrency(item.Posicao, item.Moeda)}</TableCell>}
                               {visibleColumnsDetalhados.has('Taxa') && <TableCell>{item.Taxa}</TableCell>}
                               {visibleColumnsDetalhados.has('Vencimento') && <TableCell>{item.Vencimento}</TableCell>}
                               {visibleColumnsDetalhados.has('Rendimento %') && <TableCell>{formatPercentage(item.Rendimento)}</TableCell>}
