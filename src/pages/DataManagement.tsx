@@ -2880,6 +2880,28 @@ interface VerificationResult {
                   // MEMOIZED: Usar dados já filtrados ao invés de recalcular
                   const assetsSum = filteredDadosData.reduce((sum, item) => sum + (item.Posicao || 0), 0);
 
+                  // Calcular ativos não classificados nos dados filtrados
+                  const unclassifiedInComparison = filteredDadosData.filter(item => 
+                    !isValidAssetClass(item["Classe do ativo"])
+                  ).length;
+
+                  // Calcular ativos com rentabilidade faltando nos dados filtrados
+                  const missingYieldInComparison = filteredDadosData.filter(item => {
+                    const rendimento = item.Rendimento;
+                    
+                    // Verificar se está vazio, null, undefined, ou é apenas "-"
+                    if (rendimento == null) return true;
+                    
+                    // Se for string, verificar se está vazia ou é apenas "-"
+                    if (typeof rendimento === 'string') {
+                      const trimmed = rendimento.trim();
+                      if (trimmed === '' || trimmed === '-') return true;
+                    }
+                    
+                    // Se for número, aceitar qualquer valor (incluindo 0)
+                    return false;
+                  }).length;
+
                   const consolidadoValue = selectedConsolidado["Patrimonio Final"] || 0;
                   const difference = Math.abs(consolidadoValue - assetsSum);
                   const percentDiff = consolidadoValue !== 0 
@@ -2997,6 +3019,46 @@ interface VerificationResult {
                               <p className="text-xs text-yellow-700 dark:text-yellow-400">
                                 ℹ️ Diferença dentro da tolerância configurada (≤ {formatCurrency(toleranceValue)}).
                               </p>
+                            </div>
+                          )}
+                          
+                          {/* Seção de Verificações Adicionais */}
+                          {(unclassifiedInComparison > 0 || missingYieldInComparison > 0) && (
+                            <div className="mt-4 pt-4 border-t">
+                              <p className="text-xs font-medium text-muted-foreground mb-3">Alertas de Qualidade dos Dados</p>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                
+                                {/* Ativos Não Classificados */}
+                                {unclassifiedInComparison > 0 && (
+                                  <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800">
+                                    <Tag className="h-4 w-4 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-semibold text-orange-900 dark:text-orange-100">
+                                        {unclassifiedInComparison} {unclassifiedInComparison === 1 ? 'ativo' : 'ativos'}
+                                      </p>
+                                      <p className="text-xs text-orange-700 dark:text-orange-300">
+                                        Não classificado{unclassifiedInComparison === 1 ? '' : 's'} ou com classe inválida
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Rentabilidade Faltando */}
+                                {missingYieldInComparison > 0 && (
+                                  <div className="flex items-start gap-2 p-3 rounded-lg bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800">
+                                    <DollarSign className="h-4 w-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+                                        {missingYieldInComparison} {missingYieldInComparison === 1 ? 'ativo' : 'ativos'}
+                                      </p>
+                                      <p className="text-xs text-purple-700 dark:text-purple-300">
+                                        Sem rentabilidade preenchida
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                              </div>
                             </div>
                           )}
                         </div>
