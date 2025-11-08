@@ -114,7 +114,7 @@ export default function ProvaReal() {
 
   const formatPercent = (value: number | null) => {
     if (value === null || value === undefined) return "-";
-    return `${value.toFixed(2)}%`;
+    return `${(value * 100).toFixed(2)}%`;
   };
 
   const formatCurrency = (value: number | null) => {
