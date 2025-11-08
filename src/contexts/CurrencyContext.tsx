@@ -9,6 +9,7 @@ interface CurrencyContextType {
   convertValue: (value: number, competencia: string, originalCurrency: 'BRL' | 'USD') => number;
   convertValuesBatch: (values: Array<{ value: number; competencia: string; originalCurrency: 'BRL' | 'USD' }>) => number[];
   adjustReturnWithFX: (returnPercent: number, competencia: string, originalCurrency: 'BRL' | 'USD') => number;
+  convertGanhoFinanceiro: (ganhoFinanceiroOriginal: number, patrimonioInicial: number, competencia: string, originalCurrency: 'BRL' | 'USD') => number;
   formatCurrency: (value: number) => string;
   getCurrencySymbol: () => string;
   getCompetenciaAnterior: (competencia: string) => string;
@@ -106,6 +107,41 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return returnPercent;
   }, [currency, getCotacaoByCompetencia, getCompetenciaAnterior]);
 
+  const convertGanhoFinanceiro = useCallback((
+    ganhoFinanceiroOriginal: number,
+    patrimonioInicial: number,
+    competencia: string,
+    originalCurrency: 'BRL' | 'USD'
+  ): number => {
+    // Se moeda original = moeda de exibição, retornar sem conversão
+    if (originalCurrency === currency) {
+      return ganhoFinanceiroOriginal;
+    }
+
+    const competenciaAnterior = getCompetenciaAnterior(competencia);
+    const cotacaoAtual = getCotacaoByCompetencia(competencia);
+    const cotacaoAnterior = getCotacaoByCompetencia(competenciaAnterior);
+
+    if (!cotacaoAtual || !cotacaoAnterior) {
+      // Fallback para conversão simples se não houver cotações
+      return convertValue(ganhoFinanceiroOriginal, competencia, originalCurrency);
+    }
+
+    // BRL → USD
+    if (originalCurrency === 'BRL' && currency === 'USD') {
+      return (ganhoFinanceiroOriginal / cotacaoAtual) + 
+             (patrimonioInicial * (1/cotacaoAtual - 1/cotacaoAnterior));
+    }
+
+    // USD → BRL
+    if (originalCurrency === 'USD' && currency === 'BRL') {
+      return (ganhoFinanceiroOriginal * cotacaoAtual) + 
+             (patrimonioInicial * (cotacaoAtual - cotacaoAnterior));
+    }
+
+    return ganhoFinanceiroOriginal;
+  }, [currency, getCotacaoByCompetencia, getCompetenciaAnterior, convertValue]);
+
   const formatCurrency = useCallback((value: number): string => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -124,10 +160,11 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     convertValue,
     convertValuesBatch,
     adjustReturnWithFX,
+    convertGanhoFinanceiro,
     formatCurrency,
     getCurrencySymbol,
     getCompetenciaAnterior
-  }), [currency, convertValue, convertValuesBatch, adjustReturnWithFX, formatCurrency, getCurrencySymbol, getCompetenciaAnterior]);
+  }), [currency, convertValue, convertValuesBatch, adjustReturnWithFX, convertGanhoFinanceiro, formatCurrency, getCurrencySymbol, getCompetenciaAnterior]);
 
   return (
     <CurrencyContext.Provider value={contextValue}>

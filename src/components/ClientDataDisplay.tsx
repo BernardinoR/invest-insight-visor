@@ -92,7 +92,7 @@ export const ClientDataDisplay = React.memo(({
   marketData, 
   clientTarget 
 }: ClientDataDisplayProps) => {
-  const { convertValue, adjustReturnWithFX, formatCurrency, getCompetenciaAnterior } = useCurrency();
+  const { convertValue, adjustReturnWithFX, convertGanhoFinanceiro, formatCurrency, getCompetenciaAnterior } = useCurrency();
   
   if (!clientName) {
     return null;
@@ -202,9 +202,10 @@ export const ClientDataDisplay = React.memo(({
                     item.Competencia, 
                     moedaOriginal
                   );
-                  const ganhoFinanceiro = convertValue(
-                    item["Ganho Financeiro"], 
-                    item.Competencia, 
+                  const ganhoFinanceiro = convertGanhoFinanceiro(
+                    item["Ganho Financeiro"],
+                    item["Patrimonio Inicial"],
+                    item.Competencia,
                     moedaOriginal
                   );
                   const patrimonioFinal = convertValue(
