@@ -2639,7 +2639,7 @@ interface VerificationResult {
                                    return (
                         <Popover>
                           <PopoverTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 px-1 flex items-center gap-1">
+                            <Button variant="ghost" size="sm" className="h-8 px-1 flex items-center justify-center gap-1 mx-auto">
                               {/* PRIMEIRA BOLINHA: Status de Integridade Numérica */}
                               {verification.status === 'match' && (
                                 <CheckCircle2 className="h-4 w-4 text-green-500" />
