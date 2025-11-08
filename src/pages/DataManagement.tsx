@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -124,7 +124,7 @@ interface DadosData {
   id: number;
   "Posicao": number;
   "Vencimento": string;
-  "Rendimento": number;
+  "Rendimento": number | string | null;
   "Taxa": string;
   "Ativo": string;
   "Emissor": string;
@@ -597,7 +597,7 @@ export default function DataManagement() {
 
       matchingDetalhados.forEach(detalhado => {
         const posicao = detalhado.Posicao || 0;
-        const rendimento = detalhado.Rendimento || 0;
+        const rendimento = typeof detalhado.Rendimento === 'number' ? detalhado.Rendimento : 0;
         
         totalPosicao += posicao;
         weightedRendimento += posicao * rendimento;
@@ -1440,6 +1440,8 @@ interface VerificationResult {
   detailedCount: number;
   unclassifiedCount: number;
   hasUnclassified: boolean;
+  missingYieldCount: number;
+  hasMissingYield: boolean;
 }
 
   // OPTIMIZED: Create index of assets by composite key - HUGE PERFORMANCE GAIN
@@ -1477,6 +1479,23 @@ interface VerificationResult {
       !isValidAssetClass(item["Classe do ativo"])
     ).length;
     
+    // Contar ativos sem rentabilidade preenchida
+    const missingYieldCount = relatedDetails.filter(item => {
+      const rendimento = item.Rendimento;
+      
+      // Verificar se está vazio, null, undefined, ou é apenas "-"
+      if (rendimento == null) return true;
+      
+      // Se for string, verificar se está vazia ou é apenas "-"
+      if (typeof rendimento === 'string') {
+        const trimmed = rendimento.trim();
+        if (trimmed === '' || trimmed === '-') return true;
+      }
+      
+      // Se for número, aceitar qualquer valor (incluindo 0)
+      return false;
+    }).length;
+    
     // Calcular diferença
     const difference = Math.abs(patrimonioFinal - detailedSum);
     
@@ -1499,7 +1518,9 @@ interface VerificationResult {
       difference,
       detailedCount: relatedDetails.length,
       unclassifiedCount,
-      hasUnclassified: unclassifiedCount > 0
+      hasUnclassified: unclassifiedCount > 0,
+      missingYieldCount,
+      hasMissingYield: missingYieldCount > 0
     };
   }, [dadosIndex, correctThreshold, toleranceValue]);
 
@@ -1530,7 +1551,9 @@ interface VerificationResult {
       difference: 0,
       detailedCount: 0,
       unclassifiedCount: 0,
-      hasUnclassified: false
+      hasUnclassified: false,
+      missingYieldCount: 0,
+      hasMissingYield: false
     };
   }, [verificationsCache]);
 
@@ -2604,6 +2627,13 @@ interface VerificationResult {
                               ) : (
                                 <CheckCircle2 className="h-4 w-4 text-green-500" />
                               )}
+                              
+                              {/* TERCEIRA BOLINHA: Status de Rentabilidade */}
+                              {verification.hasMissingYield ? (
+                                <XCircle className="h-4 w-4 text-red-500" />
+                              ) : (
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                              )}
                             </Button>
                           </PopoverTrigger>
                                        <PopoverContent className="w-80">
@@ -2658,6 +2688,44 @@ interface VerificationResult {
                                                   🏷️ {verification.unclassifiedCount} ativo{verification.unclassifiedCount > 1 ? 's' : ''} com classe inválida ou não classificada detectado{verification.unclassifiedCount > 1 ? 's' : ''}.
                                                   <div className="mt-1 text-[10px] opacity-80">
                                                     Certifique-se de que a classe está na lista de opções válidas do dropdown.
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                            
+                                            <Separator className="my-2" />
+                                            <div>
+                                              <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                                                <DollarSign className="h-4 w-4" />
+                                                Verificação de Rentabilidade
+                                              </h4>
+                                              <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Com Rentabilidade:</span>
+                                                <span className={`font-medium ${
+                                                  !verification.hasMissingYield ? 'text-green-500' : 'text-muted-foreground'
+                                                }`}>
+                                                  {verification.detailedCount - verification.missingYieldCount}
+                                                  {!verification.hasMissingYield && (
+                                                    <CheckCircle2 className="h-3 w-3 ml-1 inline" />
+                                                  )}
+                                                </span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Sem Rentabilidade:</span>
+                                                <span className={`font-medium ${
+                                                  verification.hasMissingYield ? 'text-red-500' : 'text-green-500'
+                                                }`}>
+                                                  {verification.missingYieldCount}
+                                                  {verification.hasMissingYield && (
+                                                    <XCircle className="h-3 w-3 ml-1 inline" />
+                                                  )}
+                                                </span>
+                                              </div>
+                                              {verification.hasMissingYield && (
+                                                <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/20 rounded text-xs text-red-700 dark:text-red-400">
+                                                  💰 {verification.missingYieldCount} ativo{verification.missingYieldCount > 1 ? 's' : ''} sem campo "Rendimento" preenchido.
+                                                  <div className="mt-1 text-[10px] opacity-80">
+                                                    Preencha o campo "Rendimento" para todos os ativos.
                                                   </div>
                                                 </div>
                                               )}
@@ -3195,7 +3263,7 @@ interface VerificationResult {
                               {visibleColumnsDetalhados.has('Posição') && <TableCell>{formatCurrency(item.Posicao, item.Moeda)}</TableCell>}
                               {visibleColumnsDetalhados.has('Taxa') && <TableCell>{item.Taxa}</TableCell>}
                               {visibleColumnsDetalhados.has('Vencimento') && <TableCell>{item.Vencimento}</TableCell>}
-                              {visibleColumnsDetalhados.has('Rendimento %') && <TableCell>{formatPercentage(item.Rendimento)}</TableCell>}
+                              {visibleColumnsDetalhados.has('Rendimento %') && <TableCell>{typeof item.Rendimento === 'number' ? formatPercentage(item.Rendimento) : item.Rendimento || '-'}</TableCell>}
                               {visibleColumnsDetalhados.has('Verificação') && (
                                 <TableCell className="text-center">
                                   {!isValidAssetClass(item["Classe do ativo"]) ? (
