@@ -234,12 +234,24 @@ export default function DataManagement() {
   useEffect(() => {
     if (editingItem && isDialogOpen) {
       setNumericFieldsText({
-        "Patrimonio Inicial": String(editingItem["Patrimonio Inicial"] || ''),
-        "Movimentação": String(editingItem["Movimentação"] || ''),
-        "Impostos": String(editingItem.Impostos || ''),
-        "Ganho Financeiro": String(editingItem["Ganho Financeiro"] || ''),
-        "Patrimonio Final": String(editingItem["Patrimonio Final"] || ''),
-        "Posicao": String(editingItem.Posicao || '')
+        "Patrimonio Inicial": editingItem["Patrimonio Inicial"] != null 
+          ? String(editingItem["Patrimonio Inicial"]) 
+          : '',
+        "Movimentação": editingItem["Movimentação"] != null 
+          ? String(editingItem["Movimentação"]) 
+          : '',
+        "Impostos": editingItem.Impostos != null 
+          ? String(editingItem.Impostos) 
+          : '',
+        "Ganho Financeiro": editingItem["Ganho Financeiro"] != null 
+          ? String(editingItem["Ganho Financeiro"]) 
+          : '',
+        "Patrimonio Final": editingItem["Patrimonio Final"] != null 
+          ? String(editingItem["Patrimonio Final"]) 
+          : '',
+        "Posicao": editingItem.Posicao != null 
+          ? String(editingItem.Posicao) 
+          : ''
       });
     } else if (isDialogOpen) {
       // Resetar quando criar novo
