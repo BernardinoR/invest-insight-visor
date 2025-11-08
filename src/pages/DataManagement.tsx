@@ -322,6 +322,9 @@ export default function DataManagement() {
   
   // Estado para controlar o Dialog de exportação
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  
+  // Estado para controlar o Dialog de importação
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   // Mapeamento de colunas para campos do banco - Dados Consolidados
   const getFieldKeyFromColumn = (column: string): string | null => {
@@ -1915,6 +1918,107 @@ interface VerificationResult {
     }
   };
 
+  // Função para download do template Excel exemplo
+  const downloadExcelTemplate = () => {
+    try {
+      // Dados de exemplo para o template
+      const headers = [
+        'Nome',
+        'Instituicao',
+        'Data',
+        'Ativo',
+        'Posicao',
+        'Classe do ativo',
+        'Taxa',
+        'Vencimento',
+        'Emissor',
+        'Competencia',
+        'Rendimento',
+        'Moeda',
+        'Nome da conta'
+      ];
+
+      // Linhas de exemplo
+      const exampleRows = [
+        [
+          'Cliente Exemplo',
+          'Banco Exemplo S.A.',
+          '2025-01-15',
+          'CDB',
+          '50000.00',
+          'CDI - Titulos',
+          '110% CDI',
+          '2026-01-15',
+          'Banco Exemplo',
+          '202501',
+          '500.00',
+          'BRL',
+          'Conta Corrente 12345'
+        ],
+        [
+          'Cliente Exemplo',
+          'Corretora XYZ',
+          '2025-01-15',
+          'LCI',
+          '100000.00',
+          'Inflação - Titulos',
+          'IPCA + 5.5%',
+          '2027-03-20',
+          'Banco ABC',
+          '202501',
+          '1200.00',
+          'BRL',
+          'Conta Investimento 67890'
+        ]
+      ];
+
+      // Criar CSV (compatível com Excel)
+      const csvRows = [
+        headers.join(','),
+        ...exampleRows.map(row => 
+          row.map(value => {
+            // Escapar valores com vírgulas ou aspas
+            const stringValue = String(value);
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+              return `"${stringValue.replace(/"/g, '""')}"`;
+            }
+            return stringValue;
+          }).join(',')
+        )
+      ];
+
+      const csvContent = csvRows.join('\n');
+      
+      // Criar blob com BOM para compatibilidade com Excel
+      const blob = new Blob(['\uFEFF' + csvContent], { 
+        type: 'text/csv;charset=utf-8;' 
+      });
+      
+      // Download
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `template_importacao_ativos_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Template baixado",
+        description: "Arquivo exemplo baixado com sucesso. Use-o como referência para importar seus dados.",
+      });
+    } catch (error) {
+      console.error('Erro ao gerar template:', error);
+      toast({
+        title: "Erro ao gerar template",
+        description: "Ocorreu um erro ao criar o arquivo exemplo.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Pagination for Ativos tab - Create paginated data
   const paginatedDadosData = useMemo(() => {
     const startIndex = (currentPageAtivos - 1) * itemsPerPageAtivos;
@@ -3437,7 +3541,7 @@ interface VerificationResult {
                       variant="ghost"
                       size="sm"
                       className="h-8 w-8 p-0"
-                      onClick={() => csvFileInputRef.current?.click()}
+                      onClick={() => setIsImportDialogOpen(true)}
                       title="Importar CSV"
                     >
                       <ArrowUp className="h-4 w-4" />
@@ -3488,6 +3592,85 @@ interface VerificationResult {
                                 </div>
                               </div>
                             </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    {/* Dialog de Importação CSV */}
+                    <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Importar Dados de CSV</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <p className="text-sm text-muted-foreground">
+                            Escolha uma das opções abaixo para importar seus dados:
+                          </p>
+                          
+                          <div className="space-y-3">
+                            {/* Opção 1: Download do Template Excel */}
+                            <div className="border rounded-lg p-4 space-y-3">
+                              <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                                  <FileCheck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-sm">1. Baixar arquivo exemplo</h4>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Baixe um arquivo Excel exemplo com o formato correto das colunas e dados de exemplo.
+                                  </p>
+                                </div>
+                              </div>
+                              <Button
+                                variant="outline"
+                                className="w-full"
+                                onClick={downloadExcelTemplate}
+                              >
+                                <ArrowDown className="mr-2 h-4 w-4" />
+                                Baixar Template Excel
+                              </Button>
+                            </div>
+
+                            {/* Opção 2: Upload do CSV */}
+                            <div className="border rounded-lg p-4 space-y-3">
+                              <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                                  <ArrowUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                </div>
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-sm">2. Importar seu arquivo CSV</h4>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Após preencher o arquivo, faça o upload do CSV para importar os dados.
+                                  </p>
+                                </div>
+                              </div>
+                              <Button
+                                variant="default"
+                                className="w-full"
+                                onClick={() => {
+                                  setIsImportDialogOpen(false);
+                                  csvFileInputRef.current?.click();
+                                }}
+                              >
+                                <ArrowUp className="mr-2 h-4 w-4" />
+                                Selecionar arquivo CSV
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Informação adicional */}
+                          <div className="bg-muted/50 rounded-lg p-3 mt-4">
+                            <div className="flex gap-2">
+                              <Info className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                              <div className="text-xs text-muted-foreground">
+                                <p className="font-medium mb-1">Ordem das colunas:</p>
+                                <p className="text-[10px] leading-relaxed">
+                                  Nome → Instituicao → Data → Ativo → Posicao → Classe do ativo → 
+                                  Taxa → Vencimento → Emissor → Competencia → Rendimento → Moeda → Nome da conta
+                                </p>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </DialogContent>
