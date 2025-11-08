@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -2638,62 +2638,86 @@ interface VerificationResult {
                           </PopoverTrigger>
                                        <PopoverContent className="w-80">
                                          <div className="space-y-2">
-                                           <h4 className="font-medium text-sm">Verificação de Integridade</h4>
-                                           <div className="text-sm space-y-1">
-                                              <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Patrimônio Final:</span>
-                                                <span className="font-medium">{formatCurrency(verification.consolidatedValue, item.Moeda)}</span>
-                                              </div>
-                                              <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Soma Detalhada:</span>
-                                                <span className="font-medium">{formatCurrency(verification.detailedSum, item.Moeda)}</span>
-                                              </div>
-                                              <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Diferença:</span>
-                                                <span className={`font-medium ${
-                                                  verification.status === 'mismatch' ? 'text-red-500' : 
-                                                  verification.status === 'tolerance' ? 'text-yellow-500' : 
-                                                  'text-green-500'
-                                                }`}>
-                                                  {formatCurrency(verification.difference, item.Moeda)}
-                                               </span>
-                                             </div>
-                                              <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Registros Detalhados:</span>
-                                                <span className="font-medium">{verification.detailedCount}</span>
-                                              </div>
-                                              <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Não Classificados:</span>
-                                                <span className={`font-medium ${
-                                                  verification.hasUnclassified ? 'text-orange-500' : 'text-green-500'
-                                                }`}>
-                                                  {verification.unclassifiedCount}
-                                                  {verification.hasUnclassified && (
-                                                    <Tag className="h-3 w-3 ml-1 inline" />
-                                                  )}
+                                           <div>
+                                             <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                                               <BarChart3 className="h-4 w-4" />
+                                               Verificação de Integridade
+                                             </h4>
+                                             <div className="text-sm space-y-1">
+                                               <div className="flex justify-between">
+                                                 <span className="text-muted-foreground">Patrimônio Final:</span>
+                                                 <span className="font-medium">{formatCurrency(verification.consolidatedValue, item.Moeda)}</span>
+                                               </div>
+                                               <div className="flex justify-between">
+                                                 <span className="text-muted-foreground">Soma Detalhada:</span>
+                                                 <span className="font-medium">{formatCurrency(verification.detailedSum, item.Moeda)}</span>
+                                               </div>
+                                               <div className="flex justify-between">
+                                                 <span className="text-muted-foreground">Diferença:</span>
+                                                 <span className={`font-medium ${
+                                                   verification.status === 'mismatch' ? 'text-red-500' : 
+                                                   verification.status === 'tolerance' ? 'text-yellow-500' : 
+                                                   'text-green-500'
+                                                 }`}>
+                                                   {formatCurrency(verification.difference, item.Moeda)}
                                                 </span>
                                               </div>
-                                              {verification.status === 'mismatch' && (
-                                                <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/20 rounded text-xs text-red-700 dark:text-red-400">
-                                                  ⚠️ Diferença significativa detectada. Verifique os ativos.
-                                                </div>
-                                              )}
-                                              {verification.status === 'no-data' && (
-                                                <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-xs text-blue-700 dark:text-blue-400">
-                                                  ℹ️ Nenhum dado detalhado encontrado para esta combinação.
-                                                </div>
-                                              )}
-                                              {verification.hasUnclassified && (
-                                                <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded text-xs text-orange-700 dark:text-orange-400">
-                                                  🏷️ {verification.unclassifiedCount} ativo{verification.unclassifiedCount > 1 ? 's' : ''} com classe inválida ou não classificada detectado{verification.unclassifiedCount > 1 ? 's' : ''}.
-                                                  <div className="mt-1 text-[10px] opacity-80">
-                                                    Certifique-se de que a classe está na lista de opções válidas do dropdown.
-                                                  </div>
-                                                </div>
-                                              )}
-                                            </div>
-                                            
-                                            <Separator className="my-2" />
+                                               <div className="flex justify-between">
+                                                 <span className="text-muted-foreground">Registros Detalhados:</span>
+                                                 <span className="font-medium">{verification.detailedCount}</span>
+                                               </div>
+                                               {verification.status === 'mismatch' && (
+                                                 <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/20 rounded text-xs text-red-700 dark:text-red-400">
+                                                   ⚠️ Diferença significativa detectada. Verifique os ativos.
+                                                 </div>
+                                               )}
+                                               {verification.status === 'no-data' && (
+                                                 <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-xs text-blue-700 dark:text-blue-400">
+                                                   ℹ️ Nenhum dado detalhado encontrado para esta combinação.
+                                                 </div>
+                                               )}
+                                             </div>
+                                           </div>
+                                           
+                                           <Separator className="my-2" />
+                                           <div>
+                                             <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                                               <Tag className="h-4 w-4" />
+                                               Verificação de Classificação
+                                             </h4>
+                                             <div className="flex justify-between">
+                                               <span className="text-muted-foreground">Classificados:</span>
+                                               <span className={`font-medium ${
+                                                 !verification.hasUnclassified ? 'text-green-500' : 'text-muted-foreground'
+                                               }`}>
+                                                 {verification.detailedCount - verification.unclassifiedCount}
+                                                 {!verification.hasUnclassified && (
+                                                   <CheckCircle2 className="h-3 w-3 ml-1 inline" />
+                                                 )}
+                                               </span>
+                                             </div>
+                                             <div className="flex justify-between">
+                                               <span className="text-muted-foreground">Não Classificados:</span>
+                                               <span className={`font-medium ${
+                                                 verification.hasUnclassified ? 'text-red-500' : 'text-green-500'
+                                               }`}>
+                                                 {verification.unclassifiedCount}
+                                                 {verification.hasUnclassified && (
+                                                   <XCircle className="h-3 w-3 ml-1 inline" />
+                                                 )}
+                                               </span>
+                                             </div>
+                                             {verification.hasUnclassified && (
+                                               <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/20 rounded text-xs text-red-700 dark:text-red-400">
+                                                 🏷️ {verification.unclassifiedCount} ativo{verification.unclassifiedCount > 1 ? 's' : ''} com classe inválida ou não classificada detectado{verification.unclassifiedCount > 1 ? 's' : ''}.
+                                                 <div className="mt-1 text-[10px] opacity-80">
+                                                   Certifique-se de que a classe está na lista de opções válidas do dropdown.
+                                                 </div>
+                                               </div>
+                                             )}
+                                           </div>
+                                           
+                                           <Separator className="my-2" />
                                             <div>
                                               <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
                                                 <DollarSign className="h-4 w-4" />
