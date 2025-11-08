@@ -25,10 +25,6 @@ interface ProvaRealData {
   cdiAcumulado: number | null;
   ipcaMensal: number | null;
   ipcaAcumulado: number | null;
-  ibovespaMensal: number | null;
-  ibovespaAcumulado: number | null;
-  ifixMensal: number | null;
-  ifixAcumulado: number | null;
   metaCliente: number | null;
 }
 
@@ -57,10 +53,6 @@ export default function ProvaReal() {
           cdiAcumulado: null,
           ipcaMensal: null,
           ipcaAcumulado: null,
-          ibovespaMensal: null,
-          ibovespaAcumulado: null,
-          ifixMensal: null,
-          ifixAcumulado: null,
           metaCliente: null,
         });
       }
@@ -80,10 +72,6 @@ export default function ProvaReal() {
           cdiAcumulado: null,
           ipcaMensal: null,
           ipcaAcumulado: null,
-          ibovespaMensal: null,
-          ibovespaAcumulado: null,
-          ifixMensal: null,
-          ifixAcumulado: null,
           metaCliente: null,
         });
       }
@@ -103,20 +91,12 @@ export default function ProvaReal() {
           cdiAcumulado: null,
           ipcaMensal: null,
           ipcaAcumulado: null,
-          ibovespaMensal: null,
-          ibovespaAcumulado: null,
-          ifixMensal: null,
-          ifixAcumulado: null,
           metaCliente: null,
         });
       }
       const data = dataMap.get(item.competencia)!;
       data.ipcaMensal = item.ipca;
       data.ipcaAcumulado = item.accumulatedIpca;
-      data.ibovespaMensal = item.ibovespa;
-      data.ibovespaAcumulado = item.accumulatedIbovespa;
-      data.ifixMensal = item.ifix;
-      data.ifixAcumulado = item.accumulatedIfix;
       data.metaCliente = item.clientTarget;
     });
 
@@ -306,36 +286,6 @@ export default function ProvaReal() {
                       https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json
                     </code>
                   </div>
-                  <div>
-                    <p className="font-medium">Ibovespa</p>
-                    <a 
-                      href="https://www.b3.com.br/pt_br/market-data-e-indices/indices/indices-amplos/ibovespa.htm" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline flex items-center gap-1 text-xs"
-                    >
-                      B3 - Bolsa de Valores
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                    <code className="text-xs bg-muted p-1 rounded block break-all mt-1">
-                      https://sistemaswebb3-listados.b3.com.br/indexProxy/indexCall/GetPortfolioDay/IBOV
-                    </code>
-                  </div>
-                  <div>
-                    <p className="font-medium">IFIX</p>
-                    <a 
-                      href="https://www.b3.com.br/pt_br/market-data-e-indices/indices/indices-de-segmentos-e-setoriais/ifix-indice-de-fundos-de-investimentos-imobiliarios.htm" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline flex items-center gap-1 text-xs"
-                    >
-                      B3 - Fundos Imobiliários
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                    <code className="text-xs bg-muted p-1 rounded block break-all mt-1">
-                      https://sistemaswebb3-listados.b3.com.br/indexProxy/indexCall/GetPortfolioDay/IFIX
-                    </code>
-                  </div>
                 </div>
               </div>
             </PopoverContent>
@@ -382,10 +332,6 @@ export default function ProvaReal() {
                       <TableHead className="min-w-[120px]">CDI Acumulado</TableHead>
                       <TableHead className="min-w-[120px]">IPCA Mensal</TableHead>
                       <TableHead className="min-w-[130px]">IPCA Acumulado</TableHead>
-                      <TableHead className="min-w-[130px]">Ibovespa Mensal</TableHead>
-                      <TableHead className="min-w-[150px]">Ibovespa Acumulado</TableHead>
-                      <TableHead className="min-w-[110px]">IFIX Mensal</TableHead>
-                      <TableHead className="min-w-[130px]">IFIX Acumulado</TableHead>
                       {clientTarget && <TableHead className="min-w-[130px]">Meta Cliente</TableHead>}
                     </TableRow>
                   </TableHeader>
@@ -399,10 +345,6 @@ export default function ProvaReal() {
                         <TableCell className={row.cdiAcumulado !== null && row.cdiAcumulado > 0 ? "text-green-600 dark:text-green-400" : ""}>{formatPercent(row.cdiAcumulado)}</TableCell>
                         <TableCell className={row.ipcaMensal !== null && row.ipcaMensal > 0 ? "text-green-600 dark:text-green-400" : row.ipcaMensal !== null && row.ipcaMensal < 0 ? "text-red-600 dark:text-red-400" : ""}>{formatPercent(row.ipcaMensal)}</TableCell>
                         <TableCell className={row.ipcaAcumulado !== null && row.ipcaAcumulado > 0 ? "text-green-600 dark:text-green-400" : row.ipcaAcumulado !== null && row.ipcaAcumulado < 0 ? "text-red-600 dark:text-red-400" : ""}>{formatPercent(row.ipcaAcumulado)}</TableCell>
-                        <TableCell className={row.ibovespaMensal !== null && row.ibovespaMensal > 0 ? "text-green-600 dark:text-green-400" : row.ibovespaMensal !== null && row.ibovespaMensal < 0 ? "text-red-600 dark:text-red-400" : ""}>{formatPercent(row.ibovespaMensal)}</TableCell>
-                        <TableCell className={row.ibovespaAcumulado !== null && row.ibovespaAcumulado > 0 ? "text-green-600 dark:text-green-400" : row.ibovespaAcumulado !== null && row.ibovespaAcumulado < 0 ? "text-red-600 dark:text-red-400" : ""}>{formatPercent(row.ibovespaAcumulado)}</TableCell>
-                        <TableCell className={row.ifixMensal !== null && row.ifixMensal > 0 ? "text-green-600 dark:text-green-400" : row.ifixMensal !== null && row.ifixMensal < 0 ? "text-red-600 dark:text-red-400" : ""}>{formatPercent(row.ifixMensal)}</TableCell>
-                        <TableCell className={row.ifixAcumulado !== null && row.ifixAcumulado > 0 ? "text-green-600 dark:text-green-400" : row.ifixAcumulado !== null && row.ifixAcumulado < 0 ? "text-red-600 dark:text-red-400" : ""}>{formatPercent(row.ifixAcumulado)}</TableCell>
                         {clientTarget && <TableCell className="text-blue-600 dark:text-blue-400">{formatPercent(row.metaCliente)}</TableCell>}
                       </TableRow>
                     ))}
@@ -422,9 +364,7 @@ export default function ProvaReal() {
             <CardContent className="text-sm text-muted-foreground space-y-2">
               <p><strong>PTAX:</strong> Cotação de venda do dólar americano no último dia útil da competência (fonte: Banco Central do Brasil)</p>
               <p><strong>CDI:</strong> Certificado de Depósito Interbancário - taxa de juros média praticada entre bancos (fonte: Banco Central do Brasil)</p>
-              <p><strong>IPCA:</strong> Índice Nacional de Preços ao Consumidor Amplo - inflação oficial do Brasil (fonte: B3)</p>
-              <p><strong>Ibovespa:</strong> Índice da Bolsa de Valores de São Paulo - principal indicador do mercado de ações brasileiro (fonte: B3)</p>
-              <p><strong>IFIX:</strong> Índice de Fundos de Investimentos Imobiliários - indicador do mercado de FIIs (fonte: B3)</p>
+              <p><strong>IPCA:</strong> Índice Nacional de Preços ao Consumidor Amplo - inflação oficial do Brasil (fonte: Banco Central do Brasil)</p>
               {clientTarget && <p><strong>Meta Cliente:</strong> Meta de retorno mensal definida na política de investimentos do cliente</p>}
             </CardContent>
           </Card>
