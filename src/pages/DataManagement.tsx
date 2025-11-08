@@ -518,6 +518,21 @@ export default function DataManagement() {
     }
   };
 
+  // Verifica se o ativo tem rentabilidade preenchida
+  const hasValidYield = (rendimento: any): boolean => {
+    // Verificar se está vazio, null, undefined
+    if (rendimento == null) return false;
+    
+    // Se for string, verificar se está vazia ou é apenas "-"
+    if (typeof rendimento === 'string') {
+      const trimmed = rendimento.trim();
+      if (trimmed === '' || trimmed === '-') return false;
+    }
+    
+    // Se chegou aqui, tem rentabilidade válida (incluindo 0)
+    return true;
+  };
+
   const fetchData = async () => {
     if (!decodedClientName) return;
 
@@ -3485,7 +3500,7 @@ interface VerificationResult {
                           </TableHead>
                         )}
                         {visibleColumnsDetalhados.has('Verificação') && (
-                          <TableHead className="w-16 text-center whitespace-nowrap">Verif.</TableHead>
+                          <TableHead className="w-20 text-center whitespace-nowrap">Verif.</TableHead>
                         )}
                         {visibleColumnsDetalhados.has('Ações') && (
                           <TableHead className="whitespace-nowrap">Ações</TableHead>
@@ -3527,15 +3542,29 @@ interface VerificationResult {
                               {visibleColumnsDetalhados.has('Rendimento %') && <TableCell>{typeof item.Rendimento === 'number' ? formatPercentage(item.Rendimento) : item.Rendimento || '-'}</TableCell>}
                               {visibleColumnsDetalhados.has('Verificação') && (
                                 <TableCell className="text-center">
-                                  {!isValidAssetClass(item["Classe do ativo"]) ? (
-                                    <div title="Classe inválida ou não classificada">
-                                      <XCircle className="h-4 w-4 text-red-500 mx-auto" />
-                                    </div>
-                                  ) : (
-                                    <div title="Classificado corretamente">
-                                      <CheckCircle2 className="h-4 w-4 text-green-500 mx-auto" />
-                                    </div>
-                                  )}
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    {/* Verificação da Classe */}
+                                    {!isValidAssetClass(item["Classe do ativo"]) ? (
+                                      <div title="Classe inválida ou não classificada">
+                                        <XCircle className="h-4 w-4 text-red-500" />
+                                      </div>
+                                    ) : (
+                                      <div title="Classe válida">
+                                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                      </div>
+                                    )}
+                                    
+                                    {/* Verificação da Rentabilidade */}
+                                    {!hasValidYield(item.Rendimento) ? (
+                                      <div title="Rentabilidade não preenchida">
+                                        <XCircle className="h-4 w-4 text-purple-500" />
+                                      </div>
+                                    ) : (
+                                      <div title="Rentabilidade preenchida">
+                                        <CheckCircle2 className="h-4 w-4 text-blue-500" />
+                                      </div>
+                                    )}
+                                  </div>
                                 </TableCell>
                               )}
                               {visibleColumnsDetalhados.has('Ações') && (
