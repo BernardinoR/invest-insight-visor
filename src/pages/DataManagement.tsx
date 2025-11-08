@@ -175,6 +175,23 @@ export default function DataManagement() {
     valorFinal: 0,
   });
   
+  // Estado para armazenar valores de texto dos campos numéricos durante edição
+  const [numericFieldsText, setNumericFieldsText] = useState<{
+    "Patrimonio Inicial": string;
+    "Movimentação": string;
+    "Impostos": string;
+    "Ganho Financeiro": string;
+    "Patrimonio Final": string;
+    "Posicao": string;
+  }>({
+    "Patrimonio Inicial": '',
+    "Movimentação": '',
+    "Impostos": '',
+    "Ganho Financeiro": '',
+    "Patrimonio Final": '',
+    "Posicao": ''
+  });
+  
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set([
     'Competência',
@@ -212,6 +229,30 @@ export default function DataManagement() {
     
     loadVerificationSettings();
   }, []);
+
+  // Inicializar campos de texto quando o dialog abrir com item para edição
+  useEffect(() => {
+    if (editingItem && isDialogOpen) {
+      setNumericFieldsText({
+        "Patrimonio Inicial": String(editingItem["Patrimonio Inicial"] || ''),
+        "Movimentação": String(editingItem["Movimentação"] || ''),
+        "Impostos": String(editingItem.Impostos || ''),
+        "Ganho Financeiro": String(editingItem["Ganho Financeiro"] || ''),
+        "Patrimonio Final": String(editingItem["Patrimonio Final"] || ''),
+        "Posicao": String(editingItem.Posicao || '')
+      });
+    } else if (isDialogOpen) {
+      // Resetar quando criar novo
+      setNumericFieldsText({
+        "Patrimonio Inicial": '',
+        "Movimentação": '',
+        "Impostos": '',
+        "Ganho Financeiro": '',
+        "Patrimonio Final": '',
+        "Posicao": ''
+      });
+    }
+  }, [editingItem, isDialogOpen]);
 
   // Todas as colunas disponíveis
   const availableColumns = [
@@ -3389,10 +3430,19 @@ interface VerificationResult {
                       <Input
                         id="patrimonioInicial"
                         type="text"
-                        value={editingItem["Patrimonio Inicial"] || ''}
+                        value={numericFieldsText["Patrimonio Inicial"]}
                         onChange={(e) => {
-                          const numericValue = parseBrazilianNumber(e.target.value);
+                          const text = e.target.value;
+                          setNumericFieldsText({...numericFieldsText, "Patrimonio Inicial": text});
+                        }}
+                        onBlur={() => {
+                          const numericValue = parseBrazilianNumber(numericFieldsText["Patrimonio Inicial"]);
                           setEditingItem({...editingItem, "Patrimonio Inicial": numericValue});
+                          const formatted = numericValue.toLocaleString('pt-BR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          });
+                          setNumericFieldsText({...numericFieldsText, "Patrimonio Inicial": formatted});
                         }}
                       />
                     </div>
@@ -3401,10 +3451,19 @@ interface VerificationResult {
                       <Input
                         id="movimentacao"
                         type="text"
-                        value={editingItem["Movimentação"] || ''}
+                        value={numericFieldsText["Movimentação"]}
                         onChange={(e) => {
-                          const numericValue = parseBrazilianNumber(e.target.value);
+                          const text = e.target.value;
+                          setNumericFieldsText({...numericFieldsText, "Movimentação": text});
+                        }}
+                        onBlur={() => {
+                          const numericValue = parseBrazilianNumber(numericFieldsText["Movimentação"]);
                           setEditingItem({...editingItem, "Movimentação": numericValue});
+                          const formatted = numericValue.toLocaleString('pt-BR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          });
+                          setNumericFieldsText({...numericFieldsText, "Movimentação": formatted});
                         }}
                       />
                     </div>
@@ -3416,10 +3475,19 @@ interface VerificationResult {
                       <Input
                         id="impostos"
                         type="text"
-                        value={editingItem.Impostos || ''}
+                        value={numericFieldsText.Impostos}
                         onChange={(e) => {
-                          const numericValue = parseBrazilianNumber(e.target.value);
+                          const text = e.target.value;
+                          setNumericFieldsText({...numericFieldsText, Impostos: text});
+                        }}
+                        onBlur={() => {
+                          const numericValue = parseBrazilianNumber(numericFieldsText.Impostos);
                           setEditingItem({...editingItem, Impostos: numericValue});
+                          const formatted = numericValue.toLocaleString('pt-BR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          });
+                          setNumericFieldsText({...numericFieldsText, Impostos: formatted});
                         }}
                       />
                     </div>
@@ -3428,10 +3496,19 @@ interface VerificationResult {
                       <Input
                         id="ganhoFinanceiro"
                         type="text"
-                        value={editingItem["Ganho Financeiro"] || ''}
+                        value={numericFieldsText["Ganho Financeiro"]}
                         onChange={(e) => {
-                          const numericValue = parseBrazilianNumber(e.target.value);
+                          const text = e.target.value;
+                          setNumericFieldsText({...numericFieldsText, "Ganho Financeiro": text});
+                        }}
+                        onBlur={() => {
+                          const numericValue = parseBrazilianNumber(numericFieldsText["Ganho Financeiro"]);
                           setEditingItem({...editingItem, "Ganho Financeiro": numericValue});
+                          const formatted = numericValue.toLocaleString('pt-BR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          });
+                          setNumericFieldsText({...numericFieldsText, "Ganho Financeiro": formatted});
                         }}
                       />
                     </div>
@@ -3443,10 +3520,19 @@ interface VerificationResult {
                       <Input
                         id="patrimonioFinal"
                         type="text"
-                        value={editingItem["Patrimonio Final"] || ''}
+                        value={numericFieldsText["Patrimonio Final"]}
                         onChange={(e) => {
-                          const numericValue = parseBrazilianNumber(e.target.value);
+                          const text = e.target.value;
+                          setNumericFieldsText({...numericFieldsText, "Patrimonio Final": text});
+                        }}
+                        onBlur={() => {
+                          const numericValue = parseBrazilianNumber(numericFieldsText["Patrimonio Final"]);
                           setEditingItem({...editingItem, "Patrimonio Final": numericValue});
+                          const formatted = numericValue.toLocaleString('pt-BR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          });
+                          setNumericFieldsText({...numericFieldsText, "Patrimonio Final": formatted});
                         }}
                       />
                     </div>
@@ -3586,18 +3672,19 @@ interface VerificationResult {
                       <Input
                         id="posicao"
                         type="text"
-                        value={editingItem.Posicao || ''}
+                        value={numericFieldsText.Posicao}
                         onChange={(e) => {
-                          const value = e.target.value;
-                          // Se contém vírgula, trata como formato brasileiro
-                          if (value.includes(',')) {
-                            const numericValue = parseFloat(value.replace(',', '.')) || 0;
-                            setEditingItem({...editingItem, Posicao: numericValue});
-                          } else {
-                            // Se não contém vírgula, trata como número normal
-                            const numericValue = parseFloat(value) || 0;
-                            setEditingItem({...editingItem, Posicao: numericValue});
-                          }
+                          const text = e.target.value;
+                          setNumericFieldsText({...numericFieldsText, Posicao: text});
+                        }}
+                        onBlur={() => {
+                          const numericValue = parseBrazilianNumber(numericFieldsText.Posicao);
+                          setEditingItem({...editingItem, Posicao: numericValue});
+                          const formatted = numericValue.toLocaleString('pt-BR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          });
+                          setNumericFieldsText({...numericFieldsText, Posicao: formatted});
                         }}
                       />
                     </div>
