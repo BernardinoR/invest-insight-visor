@@ -10,6 +10,7 @@ interface CurrencyContextType {
   convertValuesBatch: (values: Array<{ value: number; competencia: string; originalCurrency: 'BRL' | 'USD' }>) => number[];
   adjustReturnWithFX: (returnPercent: number, competencia: string, originalCurrency: 'BRL' | 'USD') => number;
   convertGanhoFinanceiro: (ganhoFinanceiroOriginal: number, patrimonioInicial: number, competencia: string, originalCurrency: 'BRL' | 'USD') => number;
+  getGanhoFinanceiroBreakdown: (ganhoFinanceiroOriginal: number, patrimonioInicial: number, competencia: string, originalCurrency: 'BRL' | 'USD') => { rentabilidade: number; efeitoCambial: number; total: number };
   formatCurrency: (value: number) => string;
   getCurrencySymbol: () => string;
   getCompetenciaAnterior: (competencia: string) => string;
@@ -142,6 +143,60 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return ganhoFinanceiroOriginal;
   }, [currency, getCotacaoByCompetencia, getCompetenciaAnterior, convertValue]);
 
+  const getGanhoFinanceiroBreakdown = useCallback((
+    ganhoFinanceiroOriginal: number,
+    patrimonioInicial: number,
+    competencia: string,
+    originalCurrency: 'BRL' | 'USD'
+  ): { rentabilidade: number; efeitoCambial: number; total: number } => {
+    // Se moeda original = moeda de exibição, não há efeito cambial
+    if (originalCurrency === currency) {
+      return {
+        rentabilidade: ganhoFinanceiroOriginal,
+        efeitoCambial: 0,
+        total: ganhoFinanceiroOriginal
+      };
+    }
+
+    const competenciaAnterior = getCompetenciaAnterior(competencia);
+    const cotacaoAtual = getCotacaoByCompetencia(competencia);
+    const cotacaoAnterior = getCotacaoByCompetencia(competenciaAnterior);
+
+    if (!cotacaoAtual || !cotacaoAnterior) {
+      // Fallback: todo como rentabilidade se não houver cotações
+      const convertido = convertValue(ganhoFinanceiroOriginal, competencia, originalCurrency);
+      return {
+        rentabilidade: convertido,
+        efeitoCambial: 0,
+        total: convertido
+      };
+    }
+
+    let rentabilidade: number;
+    let efeitoCambial: number;
+
+    // BRL → USD
+    if (originalCurrency === 'BRL' && currency === 'USD') {
+      rentabilidade = ganhoFinanceiroOriginal / cotacaoAtual;
+      efeitoCambial = patrimonioInicial * (1/cotacaoAtual - 1/cotacaoAnterior);
+    }
+    // USD → BRL
+    else if (originalCurrency === 'USD' && currency === 'BRL') {
+      rentabilidade = ganhoFinanceiroOriginal * cotacaoAtual;
+      efeitoCambial = patrimonioInicial * (cotacaoAtual - cotacaoAnterior);
+    }
+    else {
+      rentabilidade = ganhoFinanceiroOriginal;
+      efeitoCambial = 0;
+    }
+
+    return {
+      rentabilidade,
+      efeitoCambial,
+      total: rentabilidade + efeitoCambial
+    };
+  }, [currency, getCotacaoByCompetencia, getCompetenciaAnterior, convertValue]);
+
   const formatCurrency = useCallback((value: number): string => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -161,10 +216,11 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     convertValuesBatch,
     adjustReturnWithFX,
     convertGanhoFinanceiro,
+    getGanhoFinanceiroBreakdown,
     formatCurrency,
     getCurrencySymbol,
     getCompetenciaAnterior
-  }), [currency, convertValue, convertValuesBatch, adjustReturnWithFX, convertGanhoFinanceiro, formatCurrency, getCurrencySymbol, getCompetenciaAnterior]);
+  }), [currency, convertValue, convertValuesBatch, adjustReturnWithFX, convertGanhoFinanceiro, getGanhoFinanceiroBreakdown, formatCurrency, getCurrencySymbol, getCompetenciaAnterior]);
 
   return (
     <CurrencyContext.Provider value={contextValue}>

@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Database, TrendingUp, Calendar, Target } from "lucide-react";
 import { InstitutionAllocationCard } from "./InstitutionAllocationCard";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -92,7 +93,7 @@ export const ClientDataDisplay = React.memo(({
   marketData, 
   clientTarget 
 }: ClientDataDisplayProps) => {
-  const { convertValue, adjustReturnWithFX, convertGanhoFinanceiro, formatCurrency, getCompetenciaAnterior } = useCurrency();
+  const { convertValue, adjustReturnWithFX, convertGanhoFinanceiro, getGanhoFinanceiroBreakdown, formatCurrency, getCompetenciaAnterior, currency } = useCurrency();
   
   if (!clientName) {
     return null;
@@ -235,7 +236,51 @@ export const ClientDataDisplay = React.memo(({
                         {formatCurrency(impostos)}
                       </TableCell>
                       <TableCell className={ganhoFinanceiro >= 0 ? "text-success" : "text-destructive"}>
-                        {formatCurrency(ganhoFinanceiro)}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help underline decoration-dotted">
+                                {formatCurrency(ganhoFinanceiro)}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              {(() => {
+                                const breakdown = getGanhoFinanceiroBreakdown(
+                                  item["Ganho Financeiro"],
+                                  item["Patrimonio Inicial"],
+                                  item.Competencia,
+                                  moedaOriginal
+                                );
+                                
+                                const isConversao = moedaOriginal !== currency;
+                                
+                                return (
+                                  <div className="space-y-1.5">
+                                    <div className="font-semibold text-sm border-b pb-1">
+                                      Decomposição do Ganho
+                                    </div>
+                                    <div className="flex justify-between gap-4 text-xs">
+                                      <span className="text-muted-foreground">Rentabilidade:</span>
+                                      <span className="font-medium">{formatCurrency(breakdown.rentabilidade)}</span>
+                                    </div>
+                                    {isConversao && (
+                                      <div className="flex justify-between gap-4 text-xs">
+                                        <span className="text-muted-foreground">Efeito Cambial:</span>
+                                        <span className={breakdown.efeitoCambial >= 0 ? "font-medium text-success" : "font-medium text-destructive"}>
+                                          {formatCurrency(breakdown.efeitoCambial)}
+                                        </span>
+                                      </div>
+                                    )}
+                                    <div className="flex justify-between gap-4 text-xs border-t pt-1 mt-1">
+                                      <span className="font-semibold">Total:</span>
+                                      <span className="font-semibold">{formatCurrency(breakdown.total)}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </TableCell>
                       <TableCell className="font-semibold">
                         {formatCurrency(patrimonioFinal)}
