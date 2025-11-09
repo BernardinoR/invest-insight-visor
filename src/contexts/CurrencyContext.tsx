@@ -6,7 +6,6 @@ type Currency = 'BRL' | 'USD';
 interface CurrencyContextType {
   currency: Currency;
   setCurrency: (currency: Currency) => void;
-  isConverting: boolean;
   convertValue: (value: number, competencia: string, originalCurrency: 'BRL' | 'USD') => number;
   convertValuesBatch: (values: Array<{ value: number; competencia: string; originalCurrency: 'BRL' | 'USD' }>) => number[];
   adjustReturnWithFX: (returnPercent: number, competencia: string, originalCurrency: 'BRL' | 'USD') => number;
@@ -20,25 +19,9 @@ interface CurrencyContextType {
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currency, setCurrencyState] = useState<Currency>('BRL');
-  const [isConverting, setIsConverting] = useState(false);
+  const [currency, setCurrency] = useState<Currency>('BRL');
   const conversionCacheRef = useRef<Map<string, number>>(new Map());
   const { ptaxData, getCotacaoByCompetencia } = usePTAXData();
-
-  const setCurrency = (newCurrency: Currency) => {
-    if (newCurrency === currency) return;
-    
-    // Ativar loading
-    setIsConverting(true);
-    
-    // Defer para permitir UI atualizar
-    setTimeout(() => {
-      setCurrencyState(newCurrency);
-      
-      // Desativar loading após cálculos
-      setTimeout(() => setIsConverting(false), 100);
-    }, 50);
-  };
 
   // Clear cache when currency changes
   useEffect(() => {
@@ -229,7 +212,6 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const contextValue = useMemo(() => ({
     currency,
     setCurrency,
-    isConverting,
     convertValue,
     convertValuesBatch,
     adjustReturnWithFX,
@@ -238,7 +220,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     formatCurrency,
     getCurrencySymbol,
     getCompetenciaAnterior
-  }), [currency, isConverting, convertValue, convertValuesBatch, adjustReturnWithFX, convertGanhoFinanceiro, getGanhoFinanceiroBreakdown, formatCurrency, getCurrencySymbol, getCompetenciaAnterior]);
+  }), [currency, convertValue, convertValuesBatch, adjustReturnWithFX, convertGanhoFinanceiro, getGanhoFinanceiroBreakdown, formatCurrency, getCurrencySymbol, getCompetenciaAnterior]);
 
   return (
     <CurrencyContext.Provider value={contextValue}>

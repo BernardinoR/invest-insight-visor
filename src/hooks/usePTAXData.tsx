@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import React from "react";
 
 interface PTAXData {
@@ -12,7 +12,6 @@ export function usePTAXData() {
   const [ptaxData, setPtaxData] = useState<PTAXData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const cotacaoCacheRef = useRef<Map<string, number | null>>(new Map());
 
   useEffect(() => {
     const today = new Date();
@@ -104,12 +103,7 @@ export function usePTAXData() {
     }
   };
 
-  const getCotacaoByCompetencia = useCallback((competencia: string): number | null => {
-    // Verificar cache primeiro (O(1))
-    if (cotacaoCacheRef.current.has(competencia)) {
-      return cotacaoCacheRef.current.get(competencia)!;
-    }
-
+  const getCotacaoByCompetencia = (competencia: string): number | null => {
     const lastFiveMonths = ptaxData
       .sort((a, b) => {
         const [mesA, anoA] = a.competencia.split('/').map(Number);
@@ -129,7 +123,6 @@ export function usePTAXData() {
     const found = ptaxData.find(item => item.competencia === competencia);
     if (found) {
       console.log(`✅ PTAX exact match for ${competencia}: ${found.cotacao}`);
-      cotacaoCacheRef.current.set(competencia, found.cotacao);
       return found.cotacao;
     }
 
@@ -153,19 +146,12 @@ export function usePTAXData() {
 
     if (nearest) {
       console.log(`⚠️ PTAX not found for ${competencia}, using nearest previous: ${nearest.competencia} = ${nearest.cotacao}`);
-      cotacaoCacheRef.current.set(competencia, nearest.cotacao);
       return nearest.cotacao;
     }
 
     console.error(`❌ No PTAX data available for ${competencia} or any previous date`);
-    cotacaoCacheRef.current.set(competencia, null);
     return null;
-  }, [ptaxData]);
-
-  // Limpar cache quando ptaxData atualizar
-  useEffect(() => {
-    cotacaoCacheRef.current.clear();
-  }, [ptaxData]);
+  };
 
   return {
     ptaxData,
