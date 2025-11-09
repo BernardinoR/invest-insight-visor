@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCDIData } from "@/hooks/useCDIData";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -353,9 +353,9 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     fetchData();
   }, [selectedClient, filteredRange]);
 
-  // Filter to get only the most recent competencia - MEMOIZED
-  const filteredDadosData = useMemo(() => {
-    if (dadosData.length === 0) return [];
+  // Filter to get only the most recent competencia
+  const getMostRecentData = (data: typeof dadosData) => {
+    if (data.length === 0) return [];
     
     // Convert competencia string to date for proper comparison
     const competenciaToDate = (competencia: string) => {
@@ -366,15 +366,17 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     };
     
     // Find the most recent competencia using date comparison
-    const mostRecentCompetencia = dadosData.reduce((latest, current) => {
+    const mostRecentCompetencia = data.reduce((latest, current) => {
       const latestDate = competenciaToDate(latest.Competencia);
       const currentDate = competenciaToDate(current.Competencia);
       return currentDate > latestDate ? current : latest;
     }).Competencia;
     
     // Return all records with the most recent competencia
-    return dadosData.filter(item => item.Competencia === mostRecentCompetencia);
-  }, [dadosData]);
+    return data.filter(item => item.Competencia === mostRecentCompetencia);
+  };
+
+  const filteredDadosData = getMostRecentData(dadosData);
   
   console.log('InvestmentDetailsTable - Dados mais recentes:', {
     totalRecords: filteredDadosData.length,
@@ -383,47 +385,32 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     sample: filteredDadosData.slice(0, 5).map(d => ({ ativo: d.Ativo, classe: d["Classe do ativo"], posicao: d.Posicao }))
   });
 
-  // Pre-calculate all currency conversions - MEMOIZED
-  const convertedData = useMemo(() => {
-    return filteredDadosData.map(investment => {
-      const moedaOriginal = investment.Moeda === 'Dolar' ? 'USD' : 'BRL';
-      const posicaoConvertida = convertValue(
-        Number(investment.Posicao) || 0,
-        investment.Competencia,
-        moedaOriginal
-      );
-      
-      return {
-        ...investment,
-        posicaoConvertida,
-        moedaOriginal
+  // Group investments by grouped asset class and calculate totals using filtered data
+  const strategyData = filteredDadosData.reduce((acc, investment) => {
+    const originalStrategy = investment["Classe do ativo"] || "Outros";
+    const groupedStrategy = groupStrategy(originalStrategy);
+    
+    if (!acc[groupedStrategy]) {
+      acc[groupedStrategy] = { 
+        name: groupedStrategy, 
+        value: 0, 
+        count: 0,
+        totalReturn: 0,
+        avgReturnMonth: 0,
+        assets: new Set<string>()
       };
-    });
-  }, [filteredDadosData, convertValue]);
-
-  // Group investments by grouped asset class using pre-converted data - MEMOIZED
-  const strategyData = useMemo(() => {
-    return convertedData.reduce((acc, investment) => {
-      const originalStrategy = investment["Classe do ativo"] || "Outros";
-      const groupedStrategy = groupStrategy(originalStrategy);
-      
-      if (!acc[groupedStrategy]) {
-        acc[groupedStrategy] = { 
-          name: groupedStrategy, 
-          value: 0, 
-          count: 0,
-          totalReturn: 0,
-          avgReturnMonth: 0,
-          assets: new Set<string>()
-        };
-      }
-      
-      acc[groupedStrategy].value += investment.posicaoConvertida;
-      acc[groupedStrategy].assets.add(investment.Ativo);
-      acc[groupedStrategy].count = acc[groupedStrategy].assets.size;
-      return acc;
-    }, {} as Record<string, { name: string; value: number; count: number; totalReturn: number; avgReturnMonth: number; assets: Set<string> }>);
-  }, [convertedData]);
+    }
+    
+    // Convert position considering original currency
+    const posicaoOriginal = Number(investment.Posicao) || 0;
+    const moedaOriginal = investment.Moeda === 'Dolar' ? 'USD' : 'BRL';
+    const posicaoConvertida = convertValue(posicaoOriginal, investment.Competencia, moedaOriginal);
+    
+    acc[groupedStrategy].value += posicaoConvertida;
+    acc[groupedStrategy].assets.add(investment.Ativo);
+    acc[groupedStrategy].count = acc[groupedStrategy].assets.size;
+    return acc;
+  }, {} as Record<string, { name: string; value: number; count: number; totalReturn: number; avgReturnMonth: number; assets: Set<string> }>);
 
   console.log('InvestmentDetailsTable - Estratégias agrupadas:', 
     Object.entries(strategyData).map(([key, value]) => ({
@@ -468,144 +455,140 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     }, 0);
   };
 
-  // Pre-calculate all strategy returns with caching - MEMOIZED
-  const strategyReturnsCache = useMemo(() => {
-    const cache: Record<string, { monthReturn: number; yearReturn: number; inceptionReturn: number }> = {};
+  // Calculate returns for strategies (same logic as Dashboard)
+  const calculateStrategyReturns = (strategy: string) => {
+    // Get all data for this strategy from dadosData (not filtered to most recent)
+    const allStrategyData = dadosData.filter(item => groupStrategy(item["Classe do ativo"] || "Outros") === strategy);
     
-    // Pre-process data by strategy and competencia with currency conversions
-    const dataByStrategy: Record<string, Array<{
-      competencia: string;
-      posicaoConvertida: number;
-      returnAdjusted: number;
-      ativo: string;
-    }>> = {};
+    if (allStrategyData.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
     
-    dadosData.forEach(item => {
-      const strategy = groupStrategy(item["Classe do ativo"] || "Outros");
-      if (!dataByStrategy[strategy]) {
-        dataByStrategy[strategy] = [];
-      }
-      
-      const moedaOriginal = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
-      const posicaoConvertida = convertValue(item.Posicao || 0, item.Competencia, moedaOriginal);
-      const returnAdjusted = adjustReturnWithFX(item.Rendimento || 0, item.Competencia, moedaOriginal);
-      
-      dataByStrategy[strategy].push({
-        competencia: item.Competencia,
-        posicaoConvertida,
-        returnAdjusted,
-        ativo: item.Ativo
-      });
-    });
+    // Convert competencia string to date for proper comparison
+    const competenciaToDate = (competencia: string) => {
+      const [month, year] = competencia.split('/');
+      return new Date(parseInt(year), parseInt(month) - 1);
+    };
     
-    // Calculate returns for each strategy
-    Object.keys(dataByStrategy).forEach(strategy => {
-      const strategyAssets = dataByStrategy[strategy];
-      
-      if (strategyAssets.length === 0) {
-        cache[strategy] = { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
-        return;
-      }
-      
-      // Find most recent competencia
-      const mostRecentCompetencia = strategyAssets.reduce((latest, current) => {
-        return current.competencia > latest.competencia ? current : latest;
-      }).competencia;
-      
-      // Monthly return (last competencia)
-      const lastMonthAssets = strategyAssets.filter(item => item.competencia === mostRecentCompetencia);
-      let lastMonthTotalPosition = 0;
-      let lastMonthTotalReturn = 0;
-      
-      lastMonthAssets.forEach(asset => {
-        if (shouldExcludeFromProfitability(asset.ativo)) return;
-        lastMonthTotalPosition += asset.posicaoConvertida;
-        lastMonthTotalReturn += asset.returnAdjusted * asset.posicaoConvertida;
-      });
-      
-      const monthReturn = lastMonthTotalPosition > 0 ? (lastMonthTotalReturn / lastMonthTotalPosition) : 0;
-      
-      // Group by competencia for aggregated calculations
-      const competenciaGroups = strategyAssets.reduce((acc, item) => {
-        if (!acc[item.competencia]) acc[item.competencia] = [];
-        acc[item.competencia].push(item);
-        return acc;
-      }, {} as Record<string, typeof strategyAssets>);
-      
-      const sortedCompetencias = Object.keys(competenciaGroups).sort();
-      
-      // Year return
-      const lastYear = mostRecentCompetencia.substring(3);
-      const yearCompetencias = sortedCompetencias.filter(comp => comp.endsWith(lastYear));
-      
-      const yearReturns = yearCompetencias.map(competencia => {
-        const assets = competenciaGroups[competencia];
-        let totalPosition = 0;
-        let totalReturn = 0;
-        
-        assets.forEach(asset => {
-          if (shouldExcludeFromProfitability(asset.ativo)) return;
-          totalPosition += asset.posicaoConvertida;
-          totalReturn += asset.returnAdjusted * asset.posicaoConvertida;
-        });
-        
-        return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
-      });
-      
-      const yearReturn = calculateCompoundReturn(yearReturns);
-      
-      // Inception return
-      const monthlyReturns = sortedCompetencias.map(competencia => {
-        const assets = competenciaGroups[competencia];
-        let totalPosition = 0;
-        let totalReturn = 0;
-        
-        assets.forEach(asset => {
-          if (shouldExcludeFromProfitability(asset.ativo)) return;
-          totalPosition += asset.posicaoConvertida;
-          totalReturn += asset.returnAdjusted * asset.posicaoConvertida;
-        });
-        
-        return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
-      });
-      
-      const inceptionReturn = calculateCompoundReturn(monthlyReturns);
-      
-      cache[strategy] = { monthReturn, yearReturn, inceptionReturn };
-    });
+    // Find the most recent competencia using date comparison
+    const mostRecentCompetencia = allStrategyData.reduce((latest, current) => {
+      const latestDate = competenciaToDate(latest.Competencia);
+      const currentDate = competenciaToDate(current.Competencia);
+      return currentDate > latestDate ? current : latest;
+    }).Competencia;
     
-    return cache;
-  }, [dadosData, convertValue, adjustReturnWithFX]);
+    // Get only assets from the most recent competencia for monthly return calculation
+    const lastMonthAssets = allStrategyData.filter(item => item.Competencia === mostRecentCompetencia);
+    let lastMonthTotalPosition = 0;
+    let lastMonthTotalReturn = 0;
 
-  // Consolidated data with cached returns - MEMOIZED
-  const consolidatedData = useMemo(() => {
-    return Object.values(strategyData)
-      .map((item) => {
-        const strategyReturns = strategyReturnsCache[item.name] || { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
-        
-        return {
-          ...item,
-          percentage: totalPatrimonio > 0 ? (item.value / totalPatrimonio) * 100 : 0,
-          avgReturn: strategyReturns.monthReturn * 100, // Month return
-          yearReturn: strategyReturns.yearReturn * 100, // Year return
-          inceptionReturn: strategyReturns.inceptionReturn * 100, // Inception return
-        };
-      })
-      .sort((a, b) => {
-        const indexA = strategyOrder.indexOf(a.name);
-        const indexB = strategyOrder.indexOf(b.name);
-        
-        // If both strategies are in the order array, sort by their position
-        if (indexA !== -1 && indexB !== -1) {
-          return indexA - indexB;
+    lastMonthAssets.forEach(asset => {
+      // Skip assets that should not count in profitability calculations
+      if (shouldExcludeFromProfitability(asset.Ativo)) {
+        return; // Skip this asset
+      }
+      
+      const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+      const positionConverted = convertValue(asset.Posicao || 0, asset.Competencia, moedaOriginal);
+      const returnAdjusted = adjustReturnWithFX(asset.Rendimento || 0, asset.Competencia, moedaOriginal);
+      
+      lastMonthTotalPosition += positionConverted;
+      lastMonthTotalReturn += returnAdjusted * positionConverted;
+    });
+
+    const monthReturn = lastMonthTotalPosition > 0 ? (lastMonthTotalReturn / lastMonthTotalPosition) : 0;
+    
+    // Group by competencia for year and inception calculations
+    const competenciaGroups = allStrategyData.reduce((acc, item) => {
+      if (!acc[item.Competencia]) {
+        acc[item.Competencia] = [];
+      }
+      acc[item.Competencia].push(item);
+      return acc;
+    }, {} as Record<string, typeof allStrategyData>);
+    
+    const sortedCompetencias = Object.keys(competenciaGroups).sort();
+    
+    if (sortedCompetencias.length === 0) return { monthReturn, yearReturn: 0, inceptionReturn: 0 };
+    
+    // Year return: compound return for the year of the most recent competencia
+    const lastYear = mostRecentCompetencia.substring(3);
+    const yearCompetenciasInFilter = sortedCompetencias.filter(comp => comp.endsWith(lastYear));
+    
+    const yearReturns = yearCompetenciasInFilter.map(competencia => {
+      const competenciaAssets = competenciaGroups[competencia];
+      let totalPosition = 0;
+      let totalReturn = 0;
+      
+      competenciaAssets.forEach(asset => {
+        // Skip assets that should not count in profitability calculations
+        if (shouldExcludeFromProfitability(asset.Ativo)) {
+          return; // Skip this asset
         }
-        // If only one is in the array, prioritize it
-        if (indexA !== -1) return -1;
-        if (indexB !== -1) return 1;
-        // If neither is in the array, maintain original order
-        return 0;
+        
+        const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+        const positionConverted = convertValue(asset.Posicao || 0, asset.Competencia, moedaOriginal);
+        const returnAdjusted = adjustReturnWithFX(asset.Rendimento || 0, asset.Competencia, moedaOriginal);
+        
+        totalPosition += positionConverted;
+        totalReturn += returnAdjusted * positionConverted;
       });
-  }, [strategyData, totalPatrimonio, strategyReturnsCache]);
+      
+      return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
+    });
+    const yearReturn = calculateCompoundReturn(yearReturns);
+    
+    // Inception return: compound return for all competencias
+    const monthlyReturns = sortedCompetencias.map(competencia => {
+      const competenciaAssets = competenciaGroups[competencia];
+      let totalPosition = 0;
+      let totalReturn = 0;
+      
+      competenciaAssets.forEach(asset => {
+        // Skip assets that should not count in profitability calculations
+        if (shouldExcludeFromProfitability(asset.Ativo)) {
+          return; // Skip this asset
+        }
+        
+        const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+        const positionConverted = convertValue(asset.Posicao || 0, asset.Competencia, moedaOriginal);
+        const returnAdjusted = adjustReturnWithFX(asset.Rendimento || 0, asset.Competencia, moedaOriginal);
+        
+        totalPosition += positionConverted;
+        totalReturn += returnAdjusted * positionConverted;
+      });
+      
+      return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
+    });
+    const inceptionReturn = calculateCompoundReturn(monthlyReturns);
+    
+    return { monthReturn, yearReturn, inceptionReturn };
+  };
+
+  const consolidatedData = Object.values(strategyData)
+    .map((item) => {
+      const strategyReturns = calculateStrategyReturns(item.name);
+      
+      return {
+        ...item,
+        percentage: totalPatrimonio > 0 ? (item.value / totalPatrimonio) * 100 : 0,
+        avgReturn: strategyReturns.monthReturn * 100, // Month return
+        yearReturn: strategyReturns.yearReturn * 100, // Year return
+        inceptionReturn: strategyReturns.inceptionReturn * 100, // Inception return
+      };
+    })
+    .sort((a, b) => {
+      const indexA = strategyOrder.indexOf(a.name);
+      const indexB = strategyOrder.indexOf(b.name);
+      
+      // If both strategies are in the order array, sort by their position
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      // If only one is in the array, prioritize it
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      // If neither is in the array, maintain original order
+      return 0;
+    });
 
   const getPerformanceBadge = (performance: number) => {
     if (performance > 2) {
