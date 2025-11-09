@@ -326,6 +326,15 @@ export default function DataManagement() {
   // Estado para controlar o Dialog de importação
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
+  // Estado para controlar o Dialog de exportação - Consolidado
+  const [isExportDialogOpenConsolidado, setIsExportDialogOpenConsolidado] = useState(false);
+
+  // Estado para controlar o Dialog de importação - Consolidado
+  const [isImportDialogOpenConsolidado, setIsImportDialogOpenConsolidado] = useState(false);
+
+  // Ref para o input de upload de CSV - Consolidado
+  const csvFileInputRefConsolidado = useRef<HTMLInputElement>(null);
+
   // Mapeamento de colunas para campos do banco - Dados Consolidados
   const getFieldKeyFromColumn = (column: string): string | null => {
     const mapping: { [key: string]: string } = {
@@ -2019,6 +2028,271 @@ interface VerificationResult {
     }
   };
 
+  // ============================================
+  // FUNÇÕES CSV - CONSOLIDADO
+  // ============================================
+
+  // Função para abrir o dialog de exportação - Consolidado
+  const exportToCSVConsolidado = () => {
+    setIsExportDialogOpenConsolidado(true);
+  };
+
+  // Função de exportação CSV - Consolidado
+  const performCSVExportConsolidado = (dataToExport: ConsolidadoData[], exportType: 'filtered' | 'all') => {
+    try {
+      if (!dataToExport || dataToExport.length === 0) {
+        toast({
+          title: "Nenhum dado para exportar",
+          description: "Não há dados consolidados disponíveis para exportação.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Definir colunas do CSV na ordem CORRETA
+      const headers = [
+        'Nome',
+        'Instituicao',
+        'Data',
+        'Competencia',
+        'Patrimonio Inicial',
+        'Movimentação',
+        'Impostos',
+        'Patrimonio Final',
+        'Ganho Financeiro',
+        'Rendimento',
+        'Moeda',
+        'Nome da conta'
+      ];
+
+      // Criar linhas do CSV com mapeamento CORRETO
+      const csvRows = [
+        headers.join(','), // Cabeçalho
+        ...dataToExport.map(item => {
+          return [
+            item.Nome || '',
+            item.Instituicao || '',
+            item.Data || '',
+            item.Competencia || '',
+            item["Patrimonio Inicial"] || '',
+            item["Movimentação"] || '',
+            item.Impostos || '',
+            item["Patrimonio Final"] || '',
+            item["Ganho Financeiro"] || '',
+            item.Rendimento || '',
+            item.Moeda || '',
+            item.nomeConta || ''
+          ].map(value => {
+            // Escapar vírgulas e aspas
+            const stringValue = String(value);
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+              return `"${stringValue.replace(/"/g, '""')}"`;
+            }
+            return stringValue;
+          }).join(',');
+        })
+      ];
+
+      // Criar blob e baixar
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      const fileName = exportType === 'filtered' 
+        ? `consolidado_filtrado_${decodedClientName?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`
+        : `consolidado_completo_${decodedClientName?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', fileName);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Exportação concluída",
+        description: `${dataToExport.length} registro(s) consolidado(s) exportado(s) com sucesso.`,
+      });
+      
+      // Fechar o dialog após exportação
+      setIsExportDialogOpenConsolidado(false);
+    } catch (error) {
+      console.error('Erro ao exportar CSV consolidado:', error);
+      toast({
+        title: "Erro ao exportar",
+        description: "Ocorreu um erro ao exportar os dados consolidados.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Função para importar CSV - Consolidado
+  const handleImportCSVConsolidado = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Verificar se é CSV
+    if (!file.name.endsWith('.csv')) {
+      toast({
+        title: "Arquivo inválido",
+        description: "Por favor, selecione um arquivo CSV.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result as string;
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        if (lines.length < 2) {
+          toast({
+            title: "Arquivo vazio",
+            description: "O arquivo CSV não contém dados.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Parse CSV
+        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+        const data = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+          const row: any = {};
+          
+          headers.forEach((header, index) => {
+            row[header] = values[index] || null;
+          });
+          
+          data.push(row);
+        }
+
+        // Aqui você pode adicionar lógica para inserir os dados no Supabase
+        toast({
+          title: "CSV carregado",
+          description: `${data.length} registro(s) consolidado(s) encontrado(s). Implementar lógica de importação no Supabase.`,
+        });
+
+        console.log('Dados consolidados importados:', data);
+        
+      } catch (error) {
+        console.error('Erro ao processar CSV consolidado:', error);
+        toast({
+          title: "Erro ao importar",
+          description: "Ocorreu um erro ao processar o arquivo CSV.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    reader.readAsText(file, 'UTF-8');
+    
+    // Limpar input
+    if (csvFileInputRefConsolidado.current) {
+      csvFileInputRefConsolidado.current.value = '';
+    }
+  };
+
+  // Função para download do template Excel - Consolidado
+  const downloadExcelTemplateConsolidado = () => {
+    try {
+      const headers = [
+        'Nome',
+        'Instituicao',
+        'Data',
+        'Competencia',
+        'Patrimonio Inicial',
+        'Movimentação',
+        'Impostos',
+        'Patrimonio Final',
+        'Ganho Financeiro',
+        'Rendimento',
+        'Moeda',
+        'Nome da conta'
+      ];
+
+      // Linhas de exemplo
+      const exampleRows = [
+        [
+          'Adriana de Farias',
+          'XP Investimentos',
+          '2024-11-30',
+          '11/2024',
+          '500000.00',
+          '10000.00',
+          '500.00',
+          '514500.00',
+          '5000.00',
+          '0.01',
+          'Real',
+          'Conta 12345'
+        ],
+        [
+          'Adriana de Farias',
+          'BTG Pactual',
+          '2024-11-30',
+          '11/2024',
+          '100000.00',
+          '0.00',
+          '100.00',
+          '101400.00',
+          '1500.00',
+          '0.015',
+          'Dolar',
+          'Conta 67890'
+        ]
+      ];
+
+      // Criar CSV
+      const csvRows = [
+        headers.join(','),
+        ...exampleRows.map(row => 
+          row.map(value => {
+            const stringValue = String(value);
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+              return `"${stringValue.replace(/"/g, '""')}"`;
+            }
+            return stringValue;
+          }).join(',')
+        )
+      ];
+
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob(['\uFEFF' + csvContent], { 
+        type: 'text/csv;charset=utf-8;' 
+      });
+      
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `template_importacao_consolidado_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Template baixado",
+        description: "Arquivo exemplo de dados consolidados baixado com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao gerar template consolidado:', error);
+      toast({
+        title: "Erro ao gerar template",
+        description: "Ocorreu um erro ao criar o arquivo exemplo.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Pagination for Ativos tab - Create paginated data
   const paginatedDadosData = useMemo(() => {
     const startIndex = (currentPageAtivos - 1) * itemsPerPageAtivos;
@@ -2721,6 +2995,169 @@ interface VerificationResult {
                   </Select>
                   
                   <div className="flex-1" />
+                  
+                  {/* Botões CSV - Importar/Exportar - CONSOLIDADO */}
+                  <div className="flex items-center gap-1">
+                    {/* Input file escondido */}
+                    <input
+                      ref={csvFileInputRefConsolidado}
+                      type="file"
+                      accept=".csv"
+                      onChange={handleImportCSVConsolidado}
+                      className="hidden"
+                    />
+                    
+                    {/* Botão Importar CSV */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setIsImportDialogOpenConsolidado(true)}
+                      title="Importar CSV"
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </Button>
+                    
+                    {/* Dialog de Escolha de Exportação - Consolidado */}
+                    <Dialog open={isExportDialogOpenConsolidado} onOpenChange={setIsExportDialogOpenConsolidado}>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Exportar Dados Consolidados para CSV</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <p className="text-sm text-muted-foreground">
+                            Escolha qual conjunto de dados consolidados você deseja exportar:
+                          </p>
+                          
+                          <div className="space-y-3">
+                            {/* Opção: Exportar com filtro atual */}
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start h-auto py-4 px-4"
+                              onClick={() => performCSVExportConsolidado(filteredConsolidadoData, 'filtered')}
+                            >
+                              <div className="flex flex-col items-start w-full">
+                                <div className="flex items-center gap-2 font-medium">
+                                  <FilterIcon className="h-4 w-4" />
+                                  Exportar dados filtrados
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {filteredConsolidadoData.length} registro(s) com os filtros atuais aplicados
+                                </div>
+                              </div>
+                            </Button>
+
+                            {/* Opção: Exportar todos os dados */}
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start h-auto py-4 px-4"
+                              onClick={() => performCSVExportConsolidado(consolidadoData, 'all')}
+                            >
+                              <div className="flex flex-col items-start w-full">
+                                <div className="flex items-center gap-2 font-medium">
+                                  <BarChart3 className="h-4 w-4" />
+                                  Exportar todos os dados
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {consolidadoData.length} registro(s) sem aplicar filtros
+                                </div>
+                              </div>
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    {/* Dialog de Importação CSV - Consolidado */}
+                    <Dialog open={isImportDialogOpenConsolidado} onOpenChange={setIsImportDialogOpenConsolidado}>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Importar Dados Consolidados de CSV</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <p className="text-sm text-muted-foreground">
+                            Escolha uma das opções abaixo para importar dados consolidados:
+                          </p>
+                          
+                          <div className="space-y-3">
+                            {/* Opção 1: Download do Template Excel */}
+                            <div className="border rounded-lg p-4 space-y-3">
+                              <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                                  <FileCheck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-sm">1. Baixar arquivo exemplo</h4>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Baixe um arquivo CSV exemplo com o formato correto das colunas de dados consolidados.
+                                  </p>
+                                </div>
+                              </div>
+                              <Button
+                                variant="outline"
+                                className="w-full"
+                                onClick={downloadExcelTemplateConsolidado}
+                              >
+                                <ArrowDown className="mr-2 h-4 w-4" />
+                                Baixar Template CSV
+                              </Button>
+                            </div>
+
+                            {/* Opção 2: Upload do CSV */}
+                            <div className="border rounded-lg p-4 space-y-3">
+                              <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                                  <ArrowUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                </div>
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-sm">2. Importar seu arquivo CSV</h4>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Após preencher o arquivo, faça o upload do CSV para importar os dados consolidados.
+                                  </p>
+                                </div>
+                              </div>
+                              <Button
+                                variant="default"
+                                className="w-full"
+                                onClick={() => {
+                                  setIsImportDialogOpenConsolidado(false);
+                                  csvFileInputRefConsolidado.current?.click();
+                                }}
+                              >
+                                <ArrowUp className="mr-2 h-4 w-4" />
+                                Selecionar arquivo CSV
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Informação adicional */}
+                          <div className="bg-muted/50 rounded-lg p-3 mt-4">
+                            <div className="flex gap-2">
+                              <Info className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                              <div className="text-xs text-muted-foreground">
+                                <p className="font-medium mb-1">Ordem das colunas:</p>
+                                <p className="text-[10px] leading-relaxed">
+                                  Nome → Instituicao → Data → Competencia → Patrimonio Inicial → Movimentação → 
+                                  Impostos → Patrimonio Final → Ganho Financeiro → Rendimento → Moeda → Nome da conta
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    {/* Botão Exportar CSV */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={exportToCSVConsolidado}
+                      title="Exportar CSV"
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                  </div>
                   
                   <Popover>
                     <PopoverTrigger asChild>
