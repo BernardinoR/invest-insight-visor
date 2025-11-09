@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useDeferredValue } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCDIData } from "@/hooks/useCDIData";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -51,7 +51,8 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
   const { cdiData } = useCDIData();
   
   // Get currency conversion functions
-  const { convertValue, adjustReturnWithFX } = useCurrency();
+  const { convertValue, adjustReturnWithFX, isConverting, currency } = useCurrency();
+  const deferredCurrency = useDeferredValue(currency);
 
   // Function to group strategy names according to original specification
   const groupStrategy = (strategy: string): string => {
@@ -374,7 +375,7 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     
     // Return all records with the most recent competencia
     return dadosData.filter(item => item.Competencia === mostRecentCompetencia);
-  }, [dadosData]);
+  }, [dadosData, deferredCurrency]);
   
   console.log('InvestmentDetailsTable - Dados mais recentes:', {
     totalRecords: filteredDadosData.length,
@@ -399,7 +400,7 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
         moedaOriginal
       };
     });
-  }, [filteredDadosData, convertValue]);
+  }, [filteredDadosData, convertValue, deferredCurrency]);
 
   // Group investments by grouped asset class using pre-converted data - MEMOIZED
   const strategyData = useMemo(() => {
@@ -423,7 +424,7 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
       acc[groupedStrategy].count = acc[groupedStrategy].assets.size;
       return acc;
     }, {} as Record<string, { name: string; value: number; count: number; totalReturn: number; avgReturnMonth: number; assets: Set<string> }>);
-  }, [convertedData]);
+  }, [convertedData, deferredCurrency]);
 
   console.log('InvestmentDetailsTable - Estratégias agrupadas:', 
     Object.entries(strategyData).map(([key, value]) => ({
@@ -468,114 +469,58 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     }, 0);
   };
 
-  // Pre-calculate all strategy returns with caching - MEMOIZED
+  // Pre-calculate all strategy returns with caching - OTIMIZADO para processar apenas dados recentes
   const strategyReturnsCache = useMemo(() => {
     const cache: Record<string, { monthReturn: number; yearReturn: number; inceptionReturn: number }> = {};
     
-    // Pre-process data by strategy and competencia with currency conversions
-    const dataByStrategy: Record<string, Array<{
-      competencia: string;
-      posicaoConvertida: number;
-      returnAdjusted: number;
-      ativo: string;
-    }>> = {};
+    // Encontrar competência mais recente
+    const mostRecentCompetencia = dadosData.length > 0 
+      ? dadosData.reduce((latest, current) => 
+          current.Competencia > latest.Competencia ? current : latest
+        ).Competencia
+      : null;
     
-    dadosData.forEach(item => {
+    if (!mostRecentCompetencia) return cache;
+    
+    // Processar APENAS dados recentes para retorno mensal
+    const recentData = dadosData.filter(item => item.Competencia === mostRecentCompetencia);
+    const dataByStrategy: Record<string, typeof recentData> = {};
+    
+    recentData.forEach(item => {
       const strategy = groupStrategy(item["Classe do ativo"] || "Outros");
-      if (!dataByStrategy[strategy]) {
-        dataByStrategy[strategy] = [];
-      }
-      
-      const moedaOriginal = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
-      const posicaoConvertida = convertValue(item.Posicao || 0, item.Competencia, moedaOriginal);
-      const returnAdjusted = adjustReturnWithFX(item.Rendimento || 0, item.Competencia, moedaOriginal);
-      
-      dataByStrategy[strategy].push({
-        competencia: item.Competencia,
-        posicaoConvertida,
-        returnAdjusted,
-        ativo: item.Ativo
-      });
+      if (!dataByStrategy[strategy]) dataByStrategy[strategy] = [];
+      dataByStrategy[strategy].push(item);
     });
     
-    // Calculate returns for each strategy
+    // Calcular APENAS retorno mensal (resto vem do useEffect)
     Object.keys(dataByStrategy).forEach(strategy => {
-      const strategyAssets = dataByStrategy[strategy];
+      const assets = dataByStrategy[strategy];
+      let totalPosition = 0;
+      let totalReturn = 0;
       
-      if (strategyAssets.length === 0) {
-        cache[strategy] = { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
-        return;
-      }
-      
-      // Find most recent competencia
-      const mostRecentCompetencia = strategyAssets.reduce((latest, current) => {
-        return current.competencia > latest.competencia ? current : latest;
-      }).competencia;
-      
-      // Monthly return (last competencia)
-      const lastMonthAssets = strategyAssets.filter(item => item.competencia === mostRecentCompetencia);
-      let lastMonthTotalPosition = 0;
-      let lastMonthTotalReturn = 0;
-      
-      lastMonthAssets.forEach(asset => {
-        if (shouldExcludeFromProfitability(asset.ativo)) return;
-        lastMonthTotalPosition += asset.posicaoConvertida;
-        lastMonthTotalReturn += asset.returnAdjusted * asset.posicaoConvertida;
+      assets.forEach(asset => {
+        if (shouldExcludeFromProfitability(asset.Ativo)) return;
+        
+        const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+        const posicaoConvertida = convertValue(asset.Posicao || 0, asset.Competencia, moedaOriginal);
+        const returnAdjusted = adjustReturnWithFX(asset.Rendimento || 0, asset.Competencia, moedaOriginal);
+        
+        totalPosition += posicaoConvertida;
+        totalReturn += returnAdjusted * posicaoConvertida;
       });
       
-      const monthReturn = lastMonthTotalPosition > 0 ? (lastMonthTotalReturn / lastMonthTotalPosition) : 0;
+      const monthReturn = totalPosition > 0 ? (totalReturn / totalPosition) : 0;
       
-      // Group by competencia for aggregated calculations
-      const competenciaGroups = strategyAssets.reduce((acc, item) => {
-        if (!acc[item.competencia]) acc[item.competencia] = [];
-        acc[item.competencia].push(item);
-        return acc;
-      }, {} as Record<string, typeof strategyAssets>);
-      
-      const sortedCompetencias = Object.keys(competenciaGroups).sort();
-      
-      // Year return
-      const lastYear = mostRecentCompetencia.substring(3);
-      const yearCompetencias = sortedCompetencias.filter(comp => comp.endsWith(lastYear));
-      
-      const yearReturns = yearCompetencias.map(competencia => {
-        const assets = competenciaGroups[competencia];
-        let totalPosition = 0;
-        let totalReturn = 0;
-        
-        assets.forEach(asset => {
-          if (shouldExcludeFromProfitability(asset.ativo)) return;
-          totalPosition += asset.posicaoConvertida;
-          totalReturn += asset.returnAdjusted * asset.posicaoConvertida;
-        });
-        
-        return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
-      });
-      
-      const yearReturn = calculateCompoundReturn(yearReturns);
-      
-      // Inception return
-      const monthlyReturns = sortedCompetencias.map(competencia => {
-        const assets = competenciaGroups[competencia];
-        let totalPosition = 0;
-        let totalReturn = 0;
-        
-        assets.forEach(asset => {
-          if (shouldExcludeFromProfitability(asset.ativo)) return;
-          totalPosition += asset.posicaoConvertida;
-          totalReturn += asset.returnAdjusted * asset.posicaoConvertida;
-        });
-        
-        return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
-      });
-      
-      const inceptionReturn = calculateCompoundReturn(monthlyReturns);
-      
-      cache[strategy] = { monthReturn, yearReturn, inceptionReturn };
+      // Usar dados do useEffect para year/inception (já calculados)
+      cache[strategy] = {
+        monthReturn,
+        yearReturn: yearlyAccumulatedData[strategy] || 0,
+        inceptionReturn: accumulatedReturnsData[strategy] || 0
+      };
     });
     
     return cache;
-  }, [dadosData, convertValue, adjustReturnWithFX]);
+  }, [dadosData, convertValue, adjustReturnWithFX, yearlyAccumulatedData, accumulatedReturnsData, deferredCurrency]);
 
   // Consolidated data with cached returns - MEMOIZED
   const consolidatedData = useMemo(() => {
@@ -605,7 +550,7 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
         // If neither is in the array, maintain original order
         return 0;
       });
-  }, [strategyData, totalPatrimonio, strategyReturnsCache]);
+  }, [strategyData, totalPatrimonio, strategyReturnsCache, deferredCurrency]);
 
   const getPerformanceBadge = (performance: number) => {
     if (performance > 2) {
@@ -628,7 +573,17 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
   };
 
   return (
-    <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
+    <Card className="bg-gradient-card border-border/50 shadow-elegant-md relative">
+      {/* Overlay de loading durante conversão */}
+      {isConverting && (
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <p className="text-sm text-muted-foreground">Convertendo valores...</p>
+          </div>
+        </div>
+      )}
+      
       <CardHeader>
         <CardTitle className="text-foreground">Detalhamento dos Investimentos</CardTitle>
         <p className="text-sm text-muted-foreground">Posições consolidadas por estratégia</p>
