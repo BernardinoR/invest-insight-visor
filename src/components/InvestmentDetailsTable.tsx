@@ -492,24 +492,34 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
       dataByStrategy[strategy].push(item);
     });
     
-    // Calcular APENAS retorno mensal (resto vem do useEffect)
-    Object.keys(dataByStrategy).forEach(strategy => {
-      const assets = dataByStrategy[strategy];
-      let totalPosition = 0;
-      let totalReturn = 0;
-      
-      assets.forEach(asset => {
-        if (shouldExcludeFromProfitability(asset.Ativo)) return;
+    // Processar TODAS as estratégias que existem em dados históricos
+    const allStrategies = new Set<string>([
+      ...Object.keys(dataByStrategy), // Estratégias com dados recentes
+      ...Object.keys(yearlyAccumulatedData), // Estratégias com dados anuais
+      ...Object.keys(accumulatedReturnsData) // Estratégias com dados de início
+    ]);
+    
+    allStrategies.forEach(strategy => {
+      // Calcular retorno mensal (se tiver dados recentes)
+      let monthReturn = 0;
+      if (dataByStrategy[strategy]) {
+        const assets = dataByStrategy[strategy];
+        let totalPosition = 0;
+        let totalReturn = 0;
         
-        const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
-        const posicaoConvertida = convertValue(asset.Posicao || 0, asset.Competencia, moedaOriginal);
-        const returnAdjusted = adjustReturnWithFX(asset.Rendimento || 0, asset.Competencia, moedaOriginal);
+        assets.forEach(asset => {
+          if (shouldExcludeFromProfitability(asset.Ativo)) return;
+          
+          const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+          const posicaoConvertida = convertValue(asset.Posicao || 0, asset.Competencia, moedaOriginal);
+          const returnAdjusted = adjustReturnWithFX(asset.Rendimento || 0, asset.Competencia, moedaOriginal);
+          
+          totalPosition += posicaoConvertida;
+          totalReturn += returnAdjusted * posicaoConvertida;
+        });
         
-        totalPosition += posicaoConvertida;
-        totalReturn += returnAdjusted * posicaoConvertida;
-      });
-      
-      const monthReturn = totalPosition > 0 ? (totalReturn / totalPosition) : 0;
+        monthReturn = totalPosition > 0 ? (totalReturn / totalPosition) : 0;
+      }
       
       // Usar dados do useEffect para year/inception (já calculados)
       cache[strategy] = {
