@@ -2994,8 +2994,6 @@ interface VerificationResult {
                     </SelectContent>
                   </Select>
                   
-                  <div className="flex-1" />
-                  
                   {/* Botões CSV - Importar/Exportar - CONSOLIDADO */}
                   <div className="flex items-center gap-1">
                     {/* Input file escondido */}
@@ -3158,6 +3156,8 @@ interface VerificationResult {
                       <ArrowDown className="h-4 w-4" />
                     </Button>
                   </div>
+                  
+                  <div className="flex-1" />
                   
                   <Popover>
                     <PopoverTrigger asChild>
