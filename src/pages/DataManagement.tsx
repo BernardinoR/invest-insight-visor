@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3 } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, History, Clock } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +42,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Pagination,
   PaginationContent,
@@ -335,6 +344,11 @@ export default function DataManagement() {
   // Ref para o input de upload de CSV - Consolidado
   const csvFileInputRefConsolidado = useRef<HTMLInputElement>(null);
 
+  // Estado para controlar o Sheet de histórico de extratos
+  const [isHistorySheetOpen, setIsHistorySheetOpen] = useState(false);
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
   // Mapeamento de colunas para campos do banco - Dados Consolidados
   const getFieldKeyFromColumn = (column: string): string | null => {
     const mapping: { [key: string]: string } = {
@@ -585,6 +599,80 @@ export default function DataManagement() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Função para carregar histórico de status de extratos
+  const fetchExtratoHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('extrato_status_log')
+        .select('*')
+        .eq('cliente', decodedClientName)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      setHistoryData(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar histórico:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar histórico de extratos",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  // Carregar histórico quando o sheet abrir
+  useEffect(() => {
+    if (isHistorySheetOpen) {
+      fetchExtratoHistory();
+    }
+  }, [isHistorySheetOpen]);
+
+  // Helper para obter ícone e cor de cada status
+  const getStatusInfo = (status: string) => {
+    const statusMap: Record<string, { icon: any; color: string; bgColor: string }> = {
+      'Extrato Recebido': { 
+        icon: CheckCircle2, 
+        color: 'text-blue-600 dark:text-blue-400', 
+        bgColor: 'bg-blue-50 dark:bg-blue-950/50' 
+      },
+      'Processado': { 
+        icon: Settings2, 
+        color: 'text-purple-600 dark:text-purple-400', 
+        bgColor: 'bg-purple-50 dark:bg-purple-950/50' 
+      },
+      'Ajustado': { 
+        icon: Edit, 
+        color: 'text-orange-600 dark:text-orange-400', 
+        bgColor: 'bg-orange-50 dark:bg-orange-950/50' 
+      },
+      'Classificado': { 
+        icon: Tag, 
+        color: 'text-indigo-600 dark:text-indigo-400', 
+        bgColor: 'bg-indigo-50 dark:bg-indigo-950/50' 
+      },
+      'Enviado': { 
+        icon: CheckCircle2, 
+        color: 'text-green-600 dark:text-green-400', 
+        bgColor: 'bg-green-50 dark:bg-green-950/50' 
+      },
+      'Erro': { 
+        icon: XCircle, 
+        color: 'text-red-600 dark:text-red-400', 
+        bgColor: 'bg-red-50 dark:bg-red-950/50' 
+      },
+    };
+    
+    return statusMap[status] || { 
+      icon: Info, 
+      color: 'text-muted-foreground', 
+      bgColor: 'bg-muted/50' 
+    };
   };
 
   // Função para calcular rentabilidade ponderada automaticamente
@@ -2665,6 +2753,167 @@ interface VerificationResult {
               <FileCheck className="h-4 w-4" />
               Prova Real
             </Button>
+
+            <Sheet open={isHistorySheetOpen} onOpenChange={setIsHistorySheetOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 bg-card/50 border-primary/20 hover:bg-primary/10"
+                >
+                  <History className="h-4 w-4" />
+                  Histórico de Extratos
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full sm:max-w-2xl">
+                <SheetHeader>
+                  <SheetTitle className="text-xl font-bold">
+                    Histórico de Extratos - {decodedClientName}
+                  </SheetTitle>
+                  <SheetDescription>
+                    Timeline completo dos status de processamento de extratos recebidos via webhook
+                  </SheetDescription>
+                </SheetHeader>
+                
+                <ScrollArea className="h-[calc(100vh-120px)] mt-6 pr-4">
+                  {loadingHistory ? (
+                    <div className="space-y-4">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="bg-muted/30 rounded-lg p-4 animate-pulse">
+                          <div className="h-4 bg-muted rounded w-1/3 mb-2"></div>
+                          <div className="h-3 bg-muted rounded w-1/2"></div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : historyData.length === 0 ? (
+                    <div className="text-center py-12">
+                      <History className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                      <h3 className="text-lg font-semibold text-foreground mb-2">
+                        Nenhum histórico encontrado
+                      </h3>
+                      <p className="text-muted-foreground">
+                        Este cliente ainda não possui registros de status de extratos.
+                      </p>
+                      <div className="mt-6 p-4 bg-muted/50 rounded-lg text-sm text-left">
+                        <p className="font-semibold mb-2">Como funciona?</p>
+                        <p className="text-muted-foreground">
+                          Sistemas externos enviam atualizações de status via webhook quando processam extratos. 
+                          Os status incluem: Recebido, Processado, Ajustado, Classificado, Enviado e Erro.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {Object.entries(
+                        historyData.reduce((acc, item) => {
+                          const key = `${item.competencia}|${item.instituicao}|${item.tipo_extrato}`;
+                          if (!acc[key]) acc[key] = [];
+                          acc[key].push(item);
+                          return acc;
+                        }, {} as Record<string, any[]>)
+                      ).map(([key, items]: [string, any[]]) => {
+                        const [competencia, instituicao, tipo_extrato] = key.split('|');
+                        return (
+                          <Card key={key} className="border-border/50">
+                            <CardHeader className="pb-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <CardTitle className="text-base font-semibold">
+                                      {instituicao}
+                                    </CardTitle>
+                                    <Badge 
+                                      variant={tipo_extrato === 'Consolidado' ? 'default' : 'secondary'}
+                                      className="text-xs"
+                                    >
+                                      {tipo_extrato || 'N/A'}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    Competência: {competencia}
+                                  </p>
+                                </div>
+                                <Badge variant="outline" className="ml-2">
+                                  {items.length} {items.length === 1 ? 'evento' : 'eventos'}
+                                </Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                              <div className="space-y-2">
+                                {items.map((item, idx) => {
+                                  const statusInfo = getStatusInfo(item.status);
+                                  const StatusIcon = statusInfo.icon;
+                                  
+                                  return (
+                                    <div 
+                                      key={item.id}
+                                      className={`flex gap-3 p-3 rounded-lg transition-colors ${statusInfo.bgColor} ${
+                                        idx === 0 ? 'border-l-4 border-primary' : ''
+                                      }`}
+                                    >
+                                      <div className="flex-shrink-0 mt-0.5">
+                                        <StatusIcon className={`h-5 w-5 ${statusInfo.color}`} />
+                                      </div>
+                                      
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div className="flex-1">
+                                            <p className={`font-semibold ${statusInfo.color}`}>
+                                              {item.status}
+                                            </p>
+                                            {item.mensagem && (
+                                              <p className="text-sm text-foreground/80 mt-1">
+                                                {item.mensagem}
+                                              </p>
+                                            )}
+                                          </div>
+                                          
+                                          <div className="text-right flex-shrink-0">
+                                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                              <Clock className="h-3 w-3" />
+                                              {new Date(item.created_at).toLocaleString('pt-BR', {
+                                                day: '2-digit',
+                                                month: '2-digit',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                              })}
+                                            </div>
+                                          </div>
+                                        </div>
+                                        
+                                        {item.detalhes && Object.keys(item.detalhes).length > 0 && (
+                                          <div className="mt-2 text-xs bg-background/50 rounded p-2">
+                                            <p className="font-medium text-foreground/70 mb-1">Detalhes:</p>
+                                            <div className="space-y-0.5 text-muted-foreground">
+                                              {Object.entries(item.detalhes).map(([key, value]) => (
+                                                <div key={key} className="flex justify-between">
+                                                  <span>{key}:</span>
+                                                  <span className="font-mono">{JSON.stringify(value)}</span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                        
+                                        {item.sistema_origem && item.sistema_origem !== 'unknown' && (
+                                          <div className="mt-1 text-xs text-muted-foreground">
+                                            Origem: {item.sistema_origem}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+                </ScrollArea>
+              </SheetContent>
+            </Sheet>
             
             <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
               <DialogTrigger asChild>
