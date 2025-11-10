@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import DataManagement from "./pages/DataManagement";
 import ProvaReal from "./pages/ProvaReal";
+import ClientDataStatus from "./pages/ClientDataStatus";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/client/:clientName" element={<Dashboard />} />
               <Route path="/data-management/:clientName" element={<DataManagement />} />
               <Route path="/prova-real/:clientName" element={<ProvaReal />} />
+              <Route path="/client-data-status" element={<ClientDataStatus />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
