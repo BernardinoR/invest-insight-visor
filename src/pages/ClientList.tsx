@@ -386,77 +386,95 @@ export default function ClientList() {
 
             {/* Grid de Clientes com Status */}
             {loadingStatus ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-3">
                 {[...Array(6)].map((_, i) => (
                   <Card key={i} className="bg-gradient-card border-border/50 shadow-elegant-md">
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
-                        <div className="h-5 bg-muted rounded animate-pulse w-2/3" />
-                        <div className="h-4 bg-muted rounded animate-pulse w-1/2" />
-                        <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
-                        <div className="h-10 bg-muted rounded animate-pulse w-full" />
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 flex items-center gap-8">
+                          <div className="h-6 bg-muted rounded animate-pulse w-48" />
+                          <div className="h-5 bg-muted rounded animate-pulse w-32" />
+                          <div className="h-5 bg-muted rounded animate-pulse w-24" />
+                          <div className="h-5 bg-muted rounded animate-pulse w-24" />
+                          <div className="h-5 bg-muted rounded animate-pulse w-32" />
+                        </div>
+                        <div className="h-10 w-40 bg-muted rounded animate-pulse" />
                       </div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-3">
                 {clientsStatus.map((status) => {
                   const IconStatus = status.estaAtualizado ? CheckCircle2 : AlertCircle;
                   const statusColor = status.estaAtualizado ? 'text-success' : 'text-destructive';
-                  const borderColor = status.estaAtualizado ? 'border-success/30' : 'border-destructive/30';
+                  const borderColor = status.estaAtualizado ? 'border-success' : 'border-destructive';
                   
                   return (
                     <Card 
                       key={status.cliente}
-                      className={`bg-gradient-card ${borderColor} shadow-elegant-md hover:shadow-glow transition-all duration-300 cursor-pointer group border-2`}
+                      className={`bg-gradient-card ${borderColor} shadow-elegant-md hover:shadow-glow transition-all duration-300 cursor-pointer group border-l-4`}
                       onClick={() => handleManageDataClick(status.cliente)}
                     >
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
-                              {status.cliente}
-                            </h3>
-                            <div className="flex items-center space-x-2">
-                              <IconStatus className={`h-4 w-4 ${statusColor}`} />
-                              <span className={`text-xs font-medium ${statusColor}`}>
-                                {status.estaAtualizado ? 'Atualizado' : `${status.mesesAtrasados} ${status.mesesAtrasados === 1 ? 'mês' : 'meses'} atrasado`}
-                              </span>
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between gap-6">
+                          {/* Nome do Cliente + Status */}
+                          <div className="flex items-center gap-4 min-w-[280px]">
+                            <div className="flex-1">
+                              <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
+                                {status.cliente}
+                              </h3>
+                              <div className="flex items-center space-x-2">
+                                <IconStatus className={`h-4 w-4 ${statusColor}`} />
+                                <span className={`text-sm font-medium ${statusColor}`}>
+                                  {status.estaAtualizado ? 'Atualizado' : `${status.mesesAtrasados} ${status.mesesAtrasados === 1 ? 'mês' : 'meses'} atrasado`}
+                                </span>
+                              </div>
                             </div>
                           </div>
+
+                          {/* Informações em linha */}
+                          <div className="flex items-center gap-8 flex-1">
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground mb-1">Última Competência</p>
+                              <p className={`text-sm font-semibold ${status.estaAtualizado ? 'text-success' : 'text-foreground'}`}>
+                                {status.ultimaCompetencia || 'N/A'}
+                              </p>
+                            </div>
+
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground mb-1">Esperada</p>
+                              <p className="text-sm font-semibold text-foreground">
+                                {status.competenciaEsperada}
+                              </p>
+                            </div>
+
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground mb-1">Total</p>
+                              <p className="text-sm font-semibold text-foreground">
+                                {status.totalCompetencias}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Botão de Ação */}
+                          <div className="ml-auto">
+                            <Button 
+                              variant="outline" 
+                              size="default"
+                              className="group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleManageDataClick(status.cliente);
+                              }}
+                            >
+                              <Settings2 className="mr-2 h-4 w-4" />
+                              Gerenciar Dados
+                              <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                            </Button>
+                          </div>
                         </div>
-                        
-                        <div className="space-y-2 text-xs">
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Última Competência:</span>
-                            <span className={`font-medium ${status.estaAtualizado ? 'text-success' : 'text-foreground'}`}>
-                              {status.ultimaCompetencia || 'N/A'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Esperada:</span>
-                            <span className="font-medium text-foreground">{status.competenciaEsperada}</span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Total de Competências:</span>
-                            <span className="font-medium text-foreground">{status.totalCompetencias}</span>
-                          </div>
-                        </div>
-                        
-                        <Separator className="my-3" />
-                        
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300"
-                          onClick={() => handleManageDataClick(status.cliente)}
-                        >
-                          <Settings2 className="mr-2 h-3 w-3" />
-                          Gerenciar Dados
-                          <ArrowRight className="ml-2 h-3 w-3 group-hover:translate-x-1 transition-transform" />
-                        </Button>
                       </CardContent>
                     </Card>
                   );
