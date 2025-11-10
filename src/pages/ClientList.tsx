@@ -92,6 +92,8 @@ export default function ClientList() {
 
   const getExpectedCompetencia = (): string => {
     const hoje = new Date();
+    // Subtrai 1 mês para obter a competência esperada (mês anterior)
+    hoje.setMonth(hoje.getMonth() - 1);
     const mes = String(hoje.getMonth() + 1).padStart(2, '0');
     const ano = hoje.getFullYear();
     return `${mes}/${ano}`;
