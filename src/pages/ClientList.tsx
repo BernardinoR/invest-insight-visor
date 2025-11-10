@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, Users, ArrowRight, Search, Database, ChevronDown, ChevronUp, CheckCircle2, AlertCircle, Settings2 } from "lucide-react";
+import { TrendingUp, Users, ArrowRight, Search, Database, ChevronDown, ChevronUp, CheckCircle2, AlertCircle, Settings2, ArrowUpDown, Filter } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Client {
   Cliente: string;
@@ -29,6 +30,10 @@ export default function ClientList() {
   const [viewMode, setViewMode] = useState<'clientes' | 'gestao'>('clientes');
   const [clientsStatus, setClientsStatus] = useState<ClientCompetenciaStatus[]>([]);
   const [loadingStatus, setLoadingStatus] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'todos' | 'atualizados' | 'desatualizados'>('todos');
+  const [sortField, setSortField] = useState<'nome' | 'competencia' | 'status' | 'total'>('status');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [searchStatusTerm, setSearchStatusTerm] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -181,6 +186,56 @@ export default function ClientList() {
 
   const handleManageDataClick = (clientName: string) => {
     navigate(`/data-management/${encodeURIComponent(clientName)}`);
+  };
+
+  const handleSort = (field: 'nome' | 'competencia' | 'status' | 'total') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const getSortedAndFilteredClients = () => {
+    let filtered = [...clientsStatus];
+    
+    if (statusFilter === 'atualizados') {
+      filtered = filtered.filter(c => c.estaAtualizado);
+    } else if (statusFilter === 'desatualizados') {
+      filtered = filtered.filter(c => !c.estaAtualizado);
+    }
+    
+    if (searchStatusTerm) {
+      filtered = filtered.filter(c => 
+        c.cliente.toLowerCase().includes(searchStatusTerm.toLowerCase())
+      );
+    }
+    
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      
+      switch(sortField) {
+        case 'nome':
+          comparison = a.cliente.localeCompare(b.cliente);
+          break;
+        case 'competencia':
+          const [mesA, anoA] = (a.ultimaCompetencia || '00/0000').split('/').map(Number);
+          const [mesB, anoB] = (b.ultimaCompetencia || '00/0000').split('/').map(Number);
+          comparison = (anoA * 12 + mesA) - (anoB * 12 + mesB);
+          break;
+        case 'status':
+          comparison = a.mesesAtrasados - b.mesesAtrasados;
+          break;
+        case 'total':
+          comparison = a.totalCompetencias - b.totalCompetencias;
+          break;
+      }
+      
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+    
+    return filtered;
   };
 
   const handleToggleView = () => {
@@ -384,6 +439,106 @@ export default function ClientList() {
               </div>
             )}
 
+            {/* Barra de Filtros e Busca */}
+            {!loadingStatus && clientsStatus.length > 0 && (
+              <div className="mb-6 space-y-4">
+                {/* Filtros por Status */}
+                <div className="flex items-center gap-4 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">Filtrar por:</span>
+                  </div>
+                  
+                  <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+                    <TabsList>
+                      <TabsTrigger value="todos">
+                        Todos
+                        <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded-full">
+                          {clientsStatus.length}
+                        </span>
+                      </TabsTrigger>
+                      <TabsTrigger value="atualizados">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Atualizados
+                        <span className="ml-2 text-xs bg-success/20 text-success px-2 py-0.5 rounded-full">
+                          {clientsStatus.filter(c => c.estaAtualizado).length}
+                        </span>
+                      </TabsTrigger>
+                      <TabsTrigger value="desatualizados">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        Desatualizados
+                        <span className="ml-2 text-xs bg-destructive/20 text-destructive px-2 py-0.5 rounded-full">
+                          {clientsStatus.filter(c => !c.estaAtualizado).length}
+                        </span>
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+                
+                {/* Busca */}
+                <div className="max-w-md relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Buscar cliente na lista..."
+                    value={searchStatusTerm}
+                    onChange={(e) => setSearchStatusTerm(e.target.value)}
+                    className="pl-10 bg-card/50 border-border/50 focus:border-primary"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Cabeçalho das Colunas */}
+            {!loadingStatus && clientsStatus.length > 0 && (
+              <div className="mb-3 px-6 py-3 bg-muted/30 rounded-lg border border-border/50">
+                <div className="flex items-center justify-between gap-6">
+                  {/* Nome + Status */}
+                  <div className="min-w-[280px]">
+                    <button
+                      onClick={() => handleSort('nome')}
+                      className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Cliente
+                      <ArrowUpDown className={`h-3 w-3 ${sortField === 'nome' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    </button>
+                  </div>
+
+                  {/* Informações */}
+                  <div className="flex items-center gap-8 flex-1">
+                    <div className="text-center min-w-[120px]">
+                      <button
+                        onClick={() => handleSort('competencia')}
+                        className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors mx-auto"
+                      >
+                        Última Competência
+                        <ArrowUpDown className={`h-3 w-3 ${sortField === 'competencia' ? 'text-primary' : 'text-muted-foreground'}`} />
+                      </button>
+                    </div>
+
+                    <div className="text-center min-w-[80px]">
+                      <span className="text-sm font-semibold text-muted-foreground">Esperada</span>
+                    </div>
+
+                    <div className="text-center min-w-[60px]">
+                      <button
+                        onClick={() => handleSort('total')}
+                        className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors mx-auto"
+                      >
+                        Total
+                        <ArrowUpDown className={`h-3 w-3 ${sortField === 'total' ? 'text-primary' : 'text-muted-foreground'}`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Ações */}
+                  <div className="ml-auto min-w-[180px]">
+                    <span className="text-sm font-semibold text-muted-foreground">Ações</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <Separator className="my-8" />
 
             {/* Grid de Clientes com Status */}
@@ -408,7 +563,7 @@ export default function ClientList() {
               </div>
             ) : (
               <div className="space-y-3">
-                {clientsStatus.map((status) => {
+                {getSortedAndFilteredClients().map((status) => {
                   const IconStatus = status.estaAtualizado ? CheckCircle2 : AlertCircle;
                   const statusColor = status.estaAtualizado ? 'text-success' : 'text-destructive';
                   const borderColor = status.estaAtualizado ? 'border-success' : 'border-destructive';
@@ -482,6 +637,21 @@ export default function ClientList() {
                   );
                 })}
               </div>
+            )}
+
+            {!loadingStatus && getSortedAndFilteredClients().length === 0 && clientsStatus.length > 0 && (
+              <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
+                <CardContent className="py-12 text-center">
+                  <Filter className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum cliente encontrado</h3>
+                  <p className="text-muted-foreground">
+                    {searchStatusTerm 
+                      ? `Nenhum cliente corresponde à busca "${searchStatusTerm}" com o filtro "${statusFilter}".`
+                      : `Nenhum cliente ${statusFilter === 'atualizados' ? 'atualizado' : 'desatualizado'} encontrado.`
+                    }
+                  </p>
+                </CardContent>
+              </Card>
             )}
 
             {!loadingStatus && clientsStatus.length === 0 && (
