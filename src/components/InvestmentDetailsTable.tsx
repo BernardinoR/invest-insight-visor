@@ -560,7 +560,55 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     });
     const inceptionReturn = calculateCompoundReturn(monthlyReturns);
     
-    return { monthReturn, yearReturn, inceptionReturn };
+    // 6 Months return: compound return for the last 6 competencias
+    const lastSixCompetencias = sortedCompetencias.slice(-6);
+    const sixMonthReturns = lastSixCompetencias.map(competencia => {
+      const competenciaAssets = competenciaGroups[competencia];
+      let totalPosition = 0;
+      let totalReturn = 0;
+      
+      competenciaAssets.forEach(asset => {
+        if (shouldExcludeFromProfitability(asset.Ativo)) {
+          return;
+        }
+        
+        const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+        const positionConverted = convertValue(asset.Posicao || 0, asset.Competencia, moedaOriginal);
+        const returnAdjusted = adjustReturnWithFX(asset.Rendimento || 0, asset.Competencia, moedaOriginal);
+        
+        totalPosition += positionConverted;
+        totalReturn += returnAdjusted * positionConverted;
+      });
+      
+      return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
+    });
+    const sixMonthReturn = calculateCompoundReturn(sixMonthReturns);
+
+    // 12 Months return: compound return for the last 12 competencias
+    const lastTwelveCompetencias = sortedCompetencias.slice(-12);
+    const twelveMonthReturns = lastTwelveCompetencias.map(competencia => {
+      const competenciaAssets = competenciaGroups[competencia];
+      let totalPosition = 0;
+      let totalReturn = 0;
+      
+      competenciaAssets.forEach(asset => {
+        if (shouldExcludeFromProfitability(asset.Ativo)) {
+          return;
+        }
+        
+        const moedaOriginal = asset.Moeda === 'Dolar' ? 'USD' : 'BRL';
+        const positionConverted = convertValue(asset.Posicao || 0, asset.Competencia, moedaOriginal);
+        const returnAdjusted = adjustReturnWithFX(asset.Rendimento || 0, asset.Competencia, moedaOriginal);
+        
+        totalPosition += positionConverted;
+        totalReturn += returnAdjusted * positionConverted;
+      });
+      
+      return totalPosition > 0 ? (totalReturn / totalPosition) : 0;
+    });
+    const twelveMonthReturn = calculateCompoundReturn(twelveMonthReturns);
+    
+    return { monthReturn, yearReturn, sixMonthReturn, twelveMonthReturn, inceptionReturn };
   };
 
   const consolidatedData = Object.values(strategyData)
@@ -572,6 +620,8 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
         percentage: totalPatrimonio > 0 ? (item.value / totalPatrimonio) * 100 : 0,
         avgReturn: strategyReturns.monthReturn * 100, // Month return
         yearReturn: strategyReturns.yearReturn * 100, // Year return
+        sixMonthReturn: strategyReturns.sixMonthReturn * 100, // 6 Month return
+        twelveMonthReturn: strategyReturns.twelveMonthReturn * 100, // 12 Month return
         inceptionReturn: strategyReturns.inceptionReturn * 100, // Inception return
       };
     })
@@ -718,8 +768,12 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
                         <TableCell className={`text-center py-2 ${item.yearReturn >= 0 ? "text-success" : "text-destructive"}`}>
                           {item.yearReturn >= 0 ? "+" : ""}{item.yearReturn.toFixed(2)}%
                         </TableCell>
-                        <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
-                        <TableCell className="text-center text-muted-foreground py-2">-</TableCell>
+                        <TableCell className={`text-center py-2 ${item.sixMonthReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                          {item.sixMonthReturn >= 0 ? "+" : ""}{item.sixMonthReturn.toFixed(2)}%
+                        </TableCell>
+                        <TableCell className={`text-center py-2 ${item.twelveMonthReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                          {item.twelveMonthReturn >= 0 ? "+" : ""}{item.twelveMonthReturn.toFixed(2)}%
+                        </TableCell>
                         <TableCell className={`text-center py-2 ${item.inceptionReturn >= 0 ? "text-success" : "text-destructive"}`}>
                           {item.inceptionReturn >= 0 ? "+" : ""}{item.inceptionReturn.toFixed(2)}%
                         </TableCell>
