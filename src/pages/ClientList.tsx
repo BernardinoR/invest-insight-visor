@@ -539,23 +539,22 @@ export default function ClientList() {
               </div>
             )}
 
-            <Separator className="my-8" />
+            <Separator className="my-6" />
 
             {/* Grid de Clientes com Status */}
             {loadingStatus ? (
               <div className="space-y-3">
                 {[...Array(6)].map((_, i) => (
-                  <Card key={i} className="bg-gradient-card border-border/50 shadow-elegant-md">
-                    <CardContent className="p-6">
+                  <Card key={i} className="bg-gradient-card border-border/50 shadow-sm animate-pulse">
+                    <CardContent className="p-4">
                       <div className="flex items-center justify-between">
-                        <div className="flex-1 flex items-center gap-8">
-                          <div className="h-6 bg-muted rounded animate-pulse w-48" />
-                          <div className="h-5 bg-muted rounded animate-pulse w-32" />
-                          <div className="h-5 bg-muted rounded animate-pulse w-24" />
-                          <div className="h-5 bg-muted rounded animate-pulse w-24" />
-                          <div className="h-5 bg-muted rounded animate-pulse w-32" />
+                        <div className="flex-1 flex items-center gap-6">
+                          <div className="h-5 bg-muted rounded w-48" />
+                          <div className="h-5 bg-muted rounded w-24" />
+                          <div className="h-5 bg-muted rounded w-20" />
+                          <div className="h-5 bg-muted rounded w-16" />
                         </div>
-                        <div className="h-10 w-40 bg-muted rounded animate-pulse" />
+                        <div className="h-9 w-28 bg-muted rounded" />
                       </div>
                     </CardContent>
                   </Card>
@@ -571,63 +570,66 @@ export default function ClientList() {
                   return (
                     <Card 
                       key={status.cliente}
-                      className={`bg-gradient-card ${borderColor} shadow-elegant-md hover:shadow-glow transition-all duration-300 cursor-pointer group border-l-4`}
+                      className={`bg-gradient-card ${borderColor} shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group border-l-2`}
                       onClick={() => handleManageDataClick(status.cliente)}
                     >
-                      <CardContent className="p-6">
-                        <div className="flex items-center justify-between gap-6">
-                          {/* Nome do Cliente + Status */}
-                          <div className="flex items-center gap-4 min-w-[280px]">
-                            <div className="flex-1">
-                              <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
-                                {status.cliente}
-                              </h3>
-                              <div className="flex items-center space-x-2">
-                                <IconStatus className={`h-4 w-4 ${statusColor}`} />
-                                <span className={`text-sm font-medium ${statusColor}`}>
-                                  {status.estaAtualizado ? 'Atualizado' : `${status.mesesAtrasados} ${status.mesesAtrasados === 1 ? 'mês' : 'meses'} atrasado`}
-                                </span>
-                              </div>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between gap-4">
+                          {/* Nome + Status */}
+                          <div className="min-w-[280px]">
+                            <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors mb-0.5">
+                              {status.cliente}
+                            </h3>
+                            <div className="flex items-center gap-2">
+                              {status.estaAtualizado ? (
+                                <>
+                                  <CheckCircle2 className="h-4 w-4 text-success" />
+                                  <span className="text-sm text-success font-medium">Atualizado</span>
+                                </>
+                              ) : (
+                                <>
+                                  <AlertCircle className="h-4 w-4 text-destructive" />
+                                  <span className="text-sm text-destructive font-medium">
+                                    {status.mesesAtrasados} {status.mesesAtrasados === 1 ? 'mês atrasado' : 'meses atrasados'}
+                                  </span>
+                                </>
+                              )}
                             </div>
                           </div>
 
-                          {/* Informações em linha */}
-                          <div className="flex items-center gap-8 flex-1">
-                            <div className="text-center">
-                              <p className="text-xs text-muted-foreground mb-1">Última Competência</p>
-                              <p className={`text-sm font-semibold ${status.estaAtualizado ? 'text-success' : 'text-foreground'}`}>
+                          {/* Informações */}
+                          <div className="flex items-center gap-6 flex-1">
+                            <div className="text-center min-w-[120px]">
+                              <p className={`text-sm font-medium ${status.estaAtualizado ? 'text-success' : 'text-foreground'}`}>
                                 {status.ultimaCompetencia || 'N/A'}
                               </p>
                             </div>
 
-                            <div className="text-center">
-                              <p className="text-xs text-muted-foreground mb-1">Esperada</p>
-                              <p className="text-sm font-semibold text-foreground">
+                            <div className="text-center min-w-[80px]">
+                              <p className="text-sm font-medium text-foreground">
                                 {status.competenciaEsperada}
                               </p>
                             </div>
 
-                            <div className="text-center">
-                              <p className="text-xs text-muted-foreground mb-1">Total</p>
-                              <p className="text-sm font-semibold text-foreground">
+                            <div className="text-center min-w-[60px]">
+                              <p className="text-sm font-medium text-foreground">
                                 {status.totalCompetencias}
                               </p>
                             </div>
                           </div>
 
-                          {/* Botão de Ação */}
-                          <div className="ml-auto">
+                          {/* Ações */}
+                          <div className="ml-auto min-w-[180px] flex justify-end">
                             <Button 
-                              variant="outline" 
-                              size="default"
-                              className="group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300"
+                              variant="ghost" 
+                              size="sm"
+                              className="group-hover:bg-primary/10 group-hover:text-primary transition-all duration-300"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleManageDataClick(status.cliente);
                               }}
                             >
-                              <Settings2 className="mr-2 h-4 w-4" />
-                              Gerenciar Dados
+                              Gerenciar
                               <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                             </Button>
                           </div>
