@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, History, Clock } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, History, Clock, BookOpen, Code2 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -348,6 +348,7 @@ export default function DataManagement() {
   const [isHistorySheetOpen, setIsHistorySheetOpen] = useState(false);
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [isWebhookDocsOpen, setIsWebhookDocsOpen] = useState(false);
 
   // Mapeamento de colunas para campos do banco - Dados Consolidados
   const getFieldKeyFromColumn = (column: string): string | null => {
@@ -673,6 +674,330 @@ export default function DataManagement() {
       color: 'text-muted-foreground', 
       bgColor: 'bg-muted/50' 
     };
+  };
+
+  // Componente de Documentação do Webhook
+  const WebhookDocumentation = () => {
+    const [copiedSection, setCopiedSection] = useState<string | null>(null);
+    
+    const copyToClipboard = (text: string, section: string) => {
+      navigator.clipboard.writeText(text);
+      setCopiedSection(section);
+      setTimeout(() => setCopiedSection(null), 2000);
+      toast({
+        title: "Copiado!",
+        description: "Código copiado para a área de transferência",
+      });
+    };
+
+    const webhookUrl = "https://iqoxnxhwqurpeventpjp.supabase.co/functions/v1/extrato-webhook";
+
+    return (
+      <Dialog open={isWebhookDocsOpen} onOpenChange={setIsWebhookDocsOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+              <BookOpen className="h-6 w-6 text-primary" />
+              Documentação do Webhook de Extratos
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6 mt-4">
+            {/* Endpoint */}
+            <div>
+              <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                <Code2 className="h-5 w-5" />
+                Endpoint
+              </h3>
+              <div className="bg-muted/50 rounded-lg p-4 relative">
+                <code className="text-sm break-all">POST {webhookUrl}</code>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={() => copyToClipboard(webhookUrl, 'endpoint')}
+                >
+                  {copiedSection === 'endpoint' ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            {/* Campos Obrigatórios */}
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Campos Obrigatórios</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-muted/50 rounded p-3">
+                  <Badge variant="destructive" className="mb-1">Obrigatório</Badge>
+                  <p className="font-mono text-sm">cliente</p>
+                  <p className="text-xs text-muted-foreground">Nome do cliente</p>
+                </div>
+                <div className="bg-muted/50 rounded p-3">
+                  <Badge variant="destructive" className="mb-1">Obrigatório</Badge>
+                  <p className="font-mono text-sm">instituicao</p>
+                  <p className="text-xs text-muted-foreground">Nome da instituição</p>
+                </div>
+                <div className="bg-muted/50 rounded p-3">
+                  <Badge variant="destructive" className="mb-1">Obrigatório</Badge>
+                  <p className="font-mono text-sm">competencia</p>
+                  <p className="text-xs text-muted-foreground">Ex: "10/2025"</p>
+                </div>
+                <div className="bg-muted/50 rounded p-3">
+                  <Badge variant="destructive" className="mb-1">Obrigatório</Badge>
+                  <p className="font-mono text-sm">tipo_extrato</p>
+                  <p className="text-xs text-muted-foreground">"Consolidado" ou "Ativos"</p>
+                </div>
+                <div className="bg-muted/50 rounded p-3 col-span-2">
+                  <Badge variant="destructive" className="mb-1">Obrigatório</Badge>
+                  <p className="font-mono text-sm">status</p>
+                  <p className="text-xs text-muted-foreground">Um dos status válidos (veja abaixo)</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Válidos */}
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Status Válidos</h3>
+              <div className="space-y-2">
+                {[
+                  { status: 'Extrato Recebido', desc: 'Arquivo recebido pelo sistema', color: 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300' },
+                  { status: 'Processado', desc: 'Dados extraídos e processados', color: 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300' },
+                  { status: 'Ajustado', desc: 'Correções ou ajustes aplicados', color: 'bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-300' },
+                  { status: 'Classificado', desc: 'Ativos classificados corretamente', color: 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300' },
+                  { status: 'Enviado', desc: 'Dados enviados com sucesso', color: 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300' },
+                  { status: 'Erro', desc: 'Falha no processamento', color: 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300' }
+                ].map(({ status, desc, color }) => (
+                  <div key={status} className={`${color} rounded p-2 flex justify-between items-center`}>
+                    <div>
+                      <p className="font-semibold text-sm">"{status}"</p>
+                      <p className="text-xs opacity-80">{desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Payload Mínimo */}
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Payload Mínimo</h3>
+              <div className="bg-muted/50 rounded-lg p-4 relative">
+                <pre className="text-sm overflow-x-auto">
+{`{
+  "cliente": "Fernanda Carolina De Faria",
+  "instituicao": "BTG Pactual",
+  "competencia": "10/2025",
+  "tipo_extrato": "Consolidado",
+  "status": "Processado"
+}`}
+                </pre>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={() => copyToClipboard(`{
+  "cliente": "Fernanda Carolina De Faria",
+  "instituicao": "BTG Pactual",
+  "competencia": "10/2025",
+  "tipo_extrato": "Consolidado",
+  "status": "Processado"
+}`, 'minimal')}
+                >
+                  {copiedSection === 'minimal' ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            {/* Payload Completo */}
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Payload Completo (com campos opcionais)</h3>
+              <div className="bg-muted/50 rounded-lg p-4 relative">
+                <pre className="text-sm overflow-x-auto">
+{`{
+  "cliente": "Fernanda Carolina De Faria",
+  "instituicao": "BTG Pactual",
+  "competencia": "10/2025",
+  "tipo_extrato": "Ativos",
+  "status": "Classificado",
+  "submission_id": "uuid-opcional",
+  "mensagem": "125 ativos classificados com sucesso",
+  "detalhes": {
+    "total_ativos": 125,
+    "total_posicao": 1250000.50,
+    "tempo_processamento": "3.2s"
+  },
+  "sistema_origem": "Sistema XYZ v2.0"
+}`}
+                </pre>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={() => copyToClipboard(`{
+  "cliente": "Fernanda Carolina De Faria",
+  "instituicao": "BTG Pactual",
+  "competencia": "10/2025",
+  "tipo_extrato": "Ativos",
+  "status": "Classificado",
+  "submission_id": "uuid-opcional",
+  "mensagem": "125 ativos classificados com sucesso",
+  "detalhes": {
+    "total_ativos": 125,
+    "total_posicao": 1250000.50,
+    "tempo_processamento": "3.2s"
+  },
+  "sistema_origem": "Sistema XYZ v2.0"
+}`, 'complete')}
+                >
+                  {copiedSection === 'complete' ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            {/* Exemplo cURL */}
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Exemplo cURL</h3>
+              <div className="bg-muted/50 rounded-lg p-4 relative">
+                <pre className="text-sm overflow-x-auto">
+{`curl -X POST \\
+  ${webhookUrl} \\
+  -H 'Content-Type: application/json' \\
+  -d '{
+    "cliente": "Fernanda Carolina De Faria",
+    "instituicao": "BTG Pactual",
+    "competencia": "10/2025",
+    "tipo_extrato": "Consolidado",
+    "status": "Processado",
+    "mensagem": "Extrato processado com sucesso"
+  }'`}
+                </pre>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={() => copyToClipboard(`curl -X POST \\
+  ${webhookUrl} \\
+  -H 'Content-Type: application/json' \\
+  -d '{
+    "cliente": "Fernanda Carolina De Faria",
+    "instituicao": "BTG Pactual",
+    "competencia": "10/2025",
+    "tipo_extrato": "Consolidado",
+    "status": "Processado",
+    "mensagem": "Extrato processado com sucesso"
+  }'`, 'curl')}
+                >
+                  {copiedSection === 'curl' ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            {/* Exemplo JavaScript */}
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Exemplo JavaScript</h3>
+              <div className="bg-muted/50 rounded-lg p-4 relative">
+                <pre className="text-sm overflow-x-auto">
+{`const enviarStatus = async (dados) => {
+  const response = await fetch(
+    '${webhookUrl}',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        cliente: dados.cliente,
+        instituicao: dados.instituicao,
+        competencia: dados.competencia,
+        tipo_extrato: dados.tipo_extrato,
+        status: dados.status,
+        mensagem: dados.mensagem
+      })
+    }
+  );
+  
+  return await response.json();
+};
+
+// Uso
+await enviarStatus({
+  cliente: "Fernanda Carolina De Faria",
+  instituicao: "BTG Pactual",
+  competencia: "10/2025",
+  tipo_extrato: "Consolidado",
+  status: "Processado"
+});`}
+                </pre>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={() => copyToClipboard(`const enviarStatus = async (dados) => {
+  const response = await fetch(
+    '${webhookUrl}',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        cliente: dados.cliente,
+        instituicao: dados.instituicao,
+        competencia: dados.competencia,
+        tipo_extrato: dados.tipo_extrato,
+        status: dados.status,
+        mensagem: dados.mensagem
+      })
+    }
+  );
+  
+  return await response.json();
+};`, 'js')}
+                >
+                  {copiedSection === 'js' ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            {/* Respostas */}
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Respostas do Webhook</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <Badge className="mb-2 bg-green-600">200 - Sucesso</Badge>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <pre className="text-xs overflow-x-auto">
+{`{
+  "success": true,
+  "mensagem": "Status recebido e processado com sucesso",
+  "log_id": "uuid-do-log",
+  "status": "Processado",
+  "timestamp": "2025-11-10T15:30:00Z"
+}`}
+                    </pre>
+                  </div>
+                </div>
+
+                <div>
+                  <Badge variant="destructive" className="mb-2">400 - Erro de Validação</Badge>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <pre className="text-xs overflow-x-auto">
+{`{
+  "error": "Campos obrigatórios ausentes",
+  "campos_obrigatorios": [
+    "cliente", "instituicao", "competencia", 
+    "tipo_extrato", "status"
+  ],
+  "recebido": {...}
+}`}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
   };
 
   // Função para calcular rentabilidade ponderada automaticamente
@@ -2766,12 +3091,25 @@ interface VerificationResult {
               </SheetTrigger>
               <SheetContent side="right" className="w-full sm:max-w-2xl">
                 <SheetHeader>
-                  <SheetTitle className="text-xl font-bold">
-                    Histórico de Extratos - {decodedClientName}
-                  </SheetTitle>
-                  <SheetDescription>
-                    Timeline completo dos status de processamento de extratos recebidos via webhook
-                  </SheetDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <SheetTitle className="text-xl font-bold">
+                        Histórico de Extratos - {decodedClientName}
+                      </SheetTitle>
+                      <SheetDescription>
+                        Timeline completo dos status de processamento de extratos recebidos via webhook
+                      </SheetDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsWebhookDocsOpen(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <BookOpen className="h-4 w-4" />
+                      Documentação
+                    </Button>
+                  </div>
                 </SheetHeader>
                 
                 <ScrollArea className="h-[calc(100vh-120px)] mt-6 pr-4">
@@ -2914,6 +3252,9 @@ interface VerificationResult {
                 </ScrollArea>
               </SheetContent>
             </Sheet>
+
+            {/* Dialog de Documentação do Webhook */}
+            <WebhookDocumentation />
             
             <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
               <DialogTrigger asChild>
