@@ -4,11 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, Users, ArrowRight, Search, Database } from "lucide-react";
+import { TrendingUp, Users, ArrowRight, Search, Database, ChevronDown, ChevronUp, CheckCircle2, AlertCircle, Settings2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 interface Client {
   Cliente: string;
   "Meta de Retorno": string;
+}
+
+interface ClientCompetenciaStatus {
+  cliente: string;
+  ultimaCompetencia: string | null;
+  totalCompetencias: number;
+  estaAtualizado: boolean;
+  competenciaEsperada: string;
+  mesesAtrasados: number;
 }
 
 export default function ClientList() {
@@ -16,6 +26,9 @@ export default function ClientList() {
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'clientes' | 'gestao'>('clientes');
+  const [clientsStatus, setClientsStatus] = useState<ClientCompetenciaStatus[]>([]);
+  const [loadingStatus, setLoadingStatus] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -77,8 +90,106 @@ export default function ClientList() {
     navigate(`/dashboard/${encodeURIComponent(clientName)}`);
   };
 
-  const handleDataStatusClick = () => {
-    navigate('/client-data-status');
+  const getExpectedCompetencia = (): string => {
+    const hoje = new Date();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const ano = hoje.getFullYear();
+    return `${mes}/${ano}`;
+  };
+
+  const calculateMonthsDifference = (competencia: string, expectedCompetencia: string): number => {
+    if (!competencia) return 999;
+    
+    const [mesComp, anoComp] = competencia.split('/').map(Number);
+    const [mesExp, anoExp] = expectedCompetencia.split('/').map(Number);
+    
+    const diffAnos = anoExp - anoComp;
+    const diffMeses = mesExp - mesComp;
+    
+    return (diffAnos * 12) + diffMeses;
+  };
+
+  const fetchClientsCompetenciaStatus = async () => {
+    setLoadingStatus(true);
+    try {
+      const { data, error } = await supabase
+        .from('ConsolidadoPerformance')
+        .select('Nome, Competencia');
+      
+      if (error) {
+        console.error('Erro ao buscar status de competências:', error);
+        setLoadingStatus(false);
+        return;
+      }
+      
+      const clientesMap = new Map<string, { competencias: string[] }>();
+      
+      data?.forEach((row: any) => {
+        const cliente = row.Nome;
+        const competencia = row.Competencia;
+        
+        if (!clientesMap.has(cliente)) {
+          clientesMap.set(cliente, { competencias: [] });
+        }
+        
+        clientesMap.get(cliente)!.competencias.push(competencia);
+      });
+      
+      const competenciaEsperada = getExpectedCompetencia();
+      
+      const statusList: ClientCompetenciaStatus[] = Array.from(clientesMap.entries()).map(([cliente, data]) => {
+        const competencias = data.competencias;
+        const totalCompetencias = new Set(competencias).size;
+        
+        const sortedCompetencias = Array.from(new Set(competencias)).sort((a, b) => {
+          const [mesA, anoA] = a.split('/').map(Number);
+          const [mesB, anoB] = b.split('/').map(Number);
+          return (anoA * 12 + mesA) - (anoB * 12 + mesB);
+        });
+        
+        const ultimaCompetencia = sortedCompetencias[sortedCompetencias.length - 1] || null;
+        const estaAtualizado = ultimaCompetencia === competenciaEsperada;
+        const mesesAtrasados = ultimaCompetencia 
+          ? calculateMonthsDifference(ultimaCompetencia, competenciaEsperada)
+          : 999;
+        
+        return {
+          cliente,
+          ultimaCompetencia,
+          totalCompetencias,
+          estaAtualizado,
+          competenciaEsperada,
+          mesesAtrasados
+        };
+      });
+      
+      statusList.sort((a, b) => {
+        if (a.estaAtualizado && !b.estaAtualizado) return 1;
+        if (!a.estaAtualizado && b.estaAtualizado) return -1;
+        return b.mesesAtrasados - a.mesesAtrasados;
+      });
+      
+      setClientsStatus(statusList);
+      setLoadingStatus(false);
+    } catch (error) {
+      console.error('Erro ao processar status de competências:', error);
+      setLoadingStatus(false);
+    }
+  };
+
+  const handleManageDataClick = (clientName: string) => {
+    navigate(`/data-management/${encodeURIComponent(clientName)}`);
+  };
+
+  const handleToggleView = () => {
+    if (viewMode === 'clientes') {
+      if (clientsStatus.length === 0) {
+        fetchClientsCompetenciaStatus();
+      }
+      setViewMode('gestao');
+    } else {
+      setViewMode('clientes');
+    }
   };
 
   return (
@@ -101,58 +212,50 @@ export default function ClientList() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <div className="mb-8">
-          <div className="flex items-center space-x-3 mb-4">
-            <Users className="h-6 w-6 text-primary" />
-            <h2 className="text-3xl font-bold text-foreground">Lista de Clientes</h2>
+          <div className="flex items-center justify-between mb-4">
+            <div 
+              className="flex items-center space-x-3 cursor-pointer group"
+              onClick={handleToggleView}
+            >
+              {viewMode === 'clientes' ? (
+                <Users className="h-6 w-6 text-primary" />
+              ) : (
+                <Database className="h-6 w-6 text-primary" />
+              )}
+              <h2 className="text-3xl font-bold text-foreground group-hover:text-primary transition-colors">
+                {viewMode === 'clientes' ? 'Lista de Clientes' : 'Gestão de Dados dos Clientes'}
+              </h2>
+              {viewMode === 'clientes' ? (
+                <ChevronDown className="h-6 w-6 text-primary group-hover:translate-y-1 transition-transform" />
+              ) : (
+                <ChevronUp className="h-6 w-6 text-primary group-hover:-translate-y-1 transition-transform" />
+              )}
+            </div>
           </div>
           <p className="text-muted-foreground mb-6">
-            Clique em um cliente para acessar seu relatório detalhado de investimentos
+            {viewMode === 'clientes' 
+              ? 'Clique em um cliente para acessar seu relatório detalhado de investimentos'
+              : 'Acompanhe o status de atualização dos dados e gerencie as competências de cada cliente'
+            }
           </p>
-          
-          {/* Search Input */}
-          <div className="max-w-md relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Buscar cliente..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-card/50 border-border/50 focus:border-primary"
-            />
-          </div>
         </div>
 
-      <div className="mb-8">
-        <Card className="bg-gradient-card border-primary/30 shadow-elegant-md hover:shadow-glow transition-all duration-300">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="h-12 w-12 rounded-lg bg-gradient-accent flex items-center justify-center">
-                  <Database className="h-6 w-6 text-primary-foreground" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-foreground mb-1">Gestão de Dados dos Clientes</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Visualize e gerencie o status de atualização das competências
-                  </p>
-                </div>
-              </div>
-              <Button 
-                onClick={handleDataStatusClick}
-                className="bg-gradient-accent hover:opacity-90 transition-all duration-300"
-                size="lg"
-              >
-                <Database className="mr-2 h-5 w-5" />
-                Acessar Gestão de Dados
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+        {/* Conteúdo da Lista de Clientes */}
+        {viewMode === 'clientes' && (
+          <>
+            {/* Search Input */}
+            <div className="max-w-md relative mb-8">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Buscar cliente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-card/50 border-border/50 focus:border-primary"
+              />
             </div>
-          </CardContent>
-        </Card>
-      </div>
 
-
-        {loading ? (
+            {loading ? (
           <div className="max-w-4xl space-y-4">
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="bg-gradient-card border-border/50 shadow-elegant-md">
@@ -227,6 +330,152 @@ export default function ClientList() {
             </CardContent>
             </Card>
           </div>
+        )}
+          </>
+        )}
+
+        {/* Conteúdo da Gestão de Dados */}
+        {viewMode === 'gestao' && (
+          <>
+            {/* Estatísticas */}
+            {!loadingStatus && clientsStatus.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Total de Clientes</p>
+                        <p className="text-3xl font-bold text-foreground">{clientsStatus.length}</p>
+                      </div>
+                      <Database className="h-8 w-8 text-primary opacity-50" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-card border-success/30 shadow-elegant-md">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Atualizados</p>
+                        <p className="text-3xl font-bold text-success">
+                          {clientsStatus.filter(c => c.estaAtualizado).length}
+                        </p>
+                      </div>
+                      <CheckCircle2 className="h-8 w-8 text-success opacity-50" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-card border-destructive/30 shadow-elegant-md">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Desatualizados</p>
+                        <p className="text-3xl font-bold text-destructive">
+                          {clientsStatus.length - clientsStatus.filter(c => c.estaAtualizado).length}
+                        </p>
+                      </div>
+                      <AlertCircle className="h-8 w-8 text-destructive opacity-50" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            <Separator className="my-8" />
+
+            {/* Grid de Clientes com Status */}
+            {loadingStatus ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[...Array(6)].map((_, i) => (
+                  <Card key={i} className="bg-gradient-card border-border/50 shadow-elegant-md">
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <div className="h-5 bg-muted rounded animate-pulse w-2/3" />
+                        <div className="h-4 bg-muted rounded animate-pulse w-1/2" />
+                        <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
+                        <div className="h-10 bg-muted rounded animate-pulse w-full" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {clientsStatus.map((status) => {
+                  const IconStatus = status.estaAtualizado ? CheckCircle2 : AlertCircle;
+                  const statusColor = status.estaAtualizado ? 'text-success' : 'text-destructive';
+                  const borderColor = status.estaAtualizado ? 'border-success/30' : 'border-destructive/30';
+                  
+                  return (
+                    <Card 
+                      key={status.cliente}
+                      className={`bg-gradient-card ${borderColor} shadow-elegant-md hover:shadow-glow transition-all duration-300 cursor-pointer group border-2`}
+                      onClick={() => handleManageDataClick(status.cliente)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
+                              {status.cliente}
+                            </h3>
+                            <div className="flex items-center space-x-2">
+                              <IconStatus className={`h-4 w-4 ${statusColor}`} />
+                              <span className={`text-xs font-medium ${statusColor}`}>
+                                {status.estaAtualizado ? 'Atualizado' : `${status.mesesAtrasados} ${status.mesesAtrasados === 1 ? 'mês' : 'meses'} atrasado`}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2 text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Última Competência:</span>
+                            <span className={`font-medium ${status.estaAtualizado ? 'text-success' : 'text-foreground'}`}>
+                              {status.ultimaCompetencia || 'N/A'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Esperada:</span>
+                            <span className="font-medium text-foreground">{status.competenciaEsperada}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Total de Competências:</span>
+                            <span className="font-medium text-foreground">{status.totalCompetencias}</span>
+                          </div>
+                        </div>
+                        
+                        <Separator className="my-3" />
+                        
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300"
+                          onClick={() => handleManageDataClick(status.cliente)}
+                        >
+                          <Settings2 className="mr-2 h-3 w-3" />
+                          Gerenciar Dados
+                          <ArrowRight className="ml-2 h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+
+            {!loadingStatus && clientsStatus.length === 0 && (
+              <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
+                <CardContent className="py-12 text-center">
+                  <Database className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum dado encontrado</h3>
+                  <p className="text-muted-foreground">
+                    Não há dados de competências cadastrados no momento.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
       </main>
     </div>
