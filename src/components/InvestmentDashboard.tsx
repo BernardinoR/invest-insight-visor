@@ -1150,64 +1150,70 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       return { monthReturn, yearReturn, inceptionReturn };
                     };
 
-                    // Calculate returns for individual assets
-                    const calculateAssetReturns = (assetName: string) => {
-                      // Get all data for this asset from filtered data
-                      const allAssetData = filteredDadosData.filter(item => item.Ativo === assetName);
+                    // Pre-compute asset returns for all assets ONCE (performance optimization)
+                    const precomputedAssetReturns = useMemo(() => {
+                      console.time('⏱️ Pré-cálculo de retornos dos ativos');
                       
-                      if (allAssetData.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
+                      const returns = new Map<string, { monthReturn: number; yearReturn: number; inceptionReturn: number }>();
                       
-                      // Convert competencia string to date for proper comparison
-                      const competenciaToDate = (competencia: string) => {
-                        const [month, year] = competencia.split('/');
-                        return new Date(parseInt(year), parseInt(month) - 1);
-                      };
+                      // Get unique asset names from filtered data
+                      const uniqueAssets = Array.from(new Set(filteredDadosData.map(item => item.Ativo)));
                       
-                      // Find the most recent competencia using date comparison
-                      const mostRecentCompetencia = allAssetData.reduce((latest, current) => {
-                        const latestDate = competenciaToDate(latest.Competencia);
-                        const currentDate = competenciaToDate(current.Competencia);
-                        return currentDate > latestDate ? current : latest;
-                      }).Competencia;
+                      uniqueAssets.forEach(assetName => {
+                        // Get all data for this asset (across all competencias in the filtered period)
+                        const allAssetData = filteredDadosData.filter(item => item.Ativo === assetName);
+                        
+                        if (allAssetData.length === 0) {
+                          returns.set(assetName, { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 });
+                          return;
+                        }
+                        
+                        // Find most recent competencia for this asset
+                        const competenciaToDate = (competencia: string) => {
+                          const [month, year] = competencia.split('/');
+                          return new Date(parseInt(year), parseInt(month) - 1);
+                        };
+                        
+                        const mostRecentCompetencia = allAssetData.reduce((latest, current) => {
+                          const latestDate = competenciaToDate(latest.Competencia);
+                          const currentDate = competenciaToDate(current.Competencia);
+                          return currentDate > latestDate ? current : latest;
+                        }).Competencia;
+                        
+                        // Month return: return from most recent competencia
+                        const lastMonthData = allAssetData.find(item => item.Competencia === mostRecentCompetencia);
+                        const moedaOriginal = lastMonthData?.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                        const monthReturn = lastMonthData 
+                          ? adjustReturnWithFX(lastMonthData.Rendimento || 0, mostRecentCompetencia, moedaOriginal)
+                          : 0;
+                        
+                        // Year return: compound return for the year of most recent competencia
+                        const lastYear = mostRecentCompetencia.substring(3);
+                        const yearData = allAssetData.filter(item => item.Competencia.endsWith(lastYear));
+                        const sortedYearData = yearData.sort((a, b) => a.Competencia.localeCompare(b.Competencia));
+                        
+                        const yearMonthlyReturns = sortedYearData.map(item => {
+                          const moeda = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                          return adjustReturnWithFX(item.Rendimento || 0, item.Competencia, moeda);
+                        });
+                        const yearReturn = calculateCompoundReturn(yearMonthlyReturns);
+                        
+                        // Inception return: compound return since first competencia
+                        const sortedAllData = allAssetData.sort((a, b) => a.Competencia.localeCompare(b.Competencia));
+                        const monthlyReturns = sortedAllData.map(item => {
+                          const moeda = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
+                          return adjustReturnWithFX(item.Rendimento || 0, item.Competencia, moeda);
+                        });
+                        const inceptionReturn = calculateCompoundReturn(monthlyReturns);
+                        
+                        returns.set(assetName, { monthReturn, yearReturn, inceptionReturn });
+                      });
                       
-                      // Get data from the most recent competencia for "Mês"
-                      const lastMonthData = allAssetData.find(item => item.Competencia === mostRecentCompetencia);
-                      if (!lastMonthData) {
-                        return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
-                      }
+                      console.timeEnd('⏱️ Pré-cálculo de retornos dos ativos');
+                      console.log(`✅ Retornos calculados para ${returns.size} ativos`);
                       
-                      const moedaOriginal = lastMonthData.Moeda === 'Dolar' ? 'USD' : 'BRL';
-                      const monthReturn = adjustReturnWithFX(lastMonthData.Rendimento || 0, mostRecentCompetencia, moedaOriginal);
-                      
-                       const sortedCompetencias = [...new Set(allAssetData.map(item => item.Competencia))].sort();
-                       
-                       if (sortedCompetencias.length === 0) return { monthReturn, yearReturn: 0, inceptionReturn: 0 };
-                       
-                       // Year return: compound return for the year of the most recent competencia
-                       const lastYear = mostRecentCompetencia.substring(3);
-                       const yearCompetenciasInFilter = sortedCompetencias.filter(comp => comp.endsWith(lastYear));
-                       
-                       const yearReturns = yearCompetenciasInFilter.map(competencia => {
-                         const assetData = allAssetData.find(item => item.Competencia === competencia);
-                         if (!assetData) return 0;
-                         
-                         const moedaOriginal = assetData.Moeda === 'Dolar' ? 'USD' : 'BRL';
-                         return adjustReturnWithFX(assetData.Rendimento || 0, competencia, moedaOriginal);
-                       });
-                       const yearReturn = calculateCompoundReturn(yearReturns);
-                       
-                       // Inception return: compound return for all competencias in filter
-                       const monthlyReturns = sortedCompetencias.map(competencia => {
-                         const assetData = allAssetData.find(item => item.Competencia === competencia);
-                         if (!assetData) return 0;
-                         
-                         const moedaOriginal = assetData.Moeda === 'Dolar' ? 'USD' : 'BRL';
-                         return adjustReturnWithFX(assetData.Rendimento || 0, competencia, moedaOriginal);
-                       });
-                       const inceptionReturn = calculateCompoundReturn(monthlyReturns);
-                       
-                       return { monthReturn, yearReturn, inceptionReturn };
-                    };
+                      return returns;
+                    }, [filteredDadosData, adjustReturnWithFX, calculateCompoundReturn]);
 
                     // Calculate totals for each strategy
                     const strategyTotals = Object.entries(groupedData).map(([strategy, assets]) => {
@@ -1392,7 +1398,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
 
                                  {/* Individual Assets */}
                                  {assets.map((item, index) => {
-                                   const assetReturns = calculateAssetReturns(item.Ativo);
+                                   const assetReturns = precomputedAssetReturns.get(item.Ativo) || { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
                                    return (
                                    <div key={item.id}>
                                       <div className={`grid gap-4 p-3 hover:bg-muted/20 transition-colors text-sm`} style={{ gridTemplateColumns: getGridTemplateColumns() }}>
