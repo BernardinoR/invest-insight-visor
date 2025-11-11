@@ -928,6 +928,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     });
                   })()} 
                   margin={{ top: 20, right: 20, left: 0, bottom: 80 }}
+                  barGap={-50}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
                   <XAxis 
@@ -1007,25 +1008,25 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     strokeWidth={1.5}
                   />
                   
-                  <Bar 
-                    dataKey="metaValue"
-                    fill="hsl(45, 60%, 75%)"
-                    radius={[8, 8, 8, 8]}
-                    maxBarSize={50}
-                    opacity={0.6}
-                    animationBegin={0}
-                    animationDuration={800}
-                    animationEasing="ease-out"
-                  />
+              <Bar 
+                dataKey="metaValue"
+                fill="hsl(45, 60%, 75%)"
+                radius={[8, 8, 8, 8]}
+                maxBarSize={60}
+                opacity={0.5}
+                animationBegin={0}
+                animationDuration={800}
+                animationEasing="ease-out"
+              />
                   
-                  <Bar 
-                    dataKey="realizadoValue"
-                    radius={[8, 8, 8, 8]}
-                    maxBarSize={50}
-                    animationBegin={200}
-                    animationDuration={800}
-                    animationEasing="ease-out"
-                  >
+              <Bar 
+                dataKey="realizadoValue"
+                radius={[8, 8, 8, 8]}
+                maxBarSize={60}
+                animationBegin={200}
+                animationDuration={800}
+                animationEasing="ease-out"
+              >
                     {targetComparisonData.slice(-12).map((entry, index) => {
                       const marketDataForCompetencia = marketData?.find(m => m.competencia === entry.competencia);
                       const monthlyTarget = (marketDataForCompetencia?.clientTarget || clientTarget) * 100;
