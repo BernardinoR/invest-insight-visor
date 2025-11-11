@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie, Area, AreaChart, ComposedChart, ReferenceLine } from 'recharts';
 import { useMemo, useState } from "react";
-import { TrendingDown, TrendingUp, Activity, AlertTriangle, Target, Calendar, Settings, Rocket, Check, X, TrendingUp as TrendingUpIcon } from "lucide-react";
+import { TrendingDown, TrendingUp, Activity, AlertTriangle, Target, Calendar, Settings, Rocket, Check, X, TrendingUp as TrendingUpIcon, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -979,28 +979,82 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
 
             {/* Bloco Inferior - Métricas em Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-success/5 border border-success/10 rounded-xl p-4 hover:bg-success/8 transition-colors">
-                <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Melhor mês</p>
-                <p className="text-2xl font-bold text-success mb-1">+{riskMetrics.bestMonth.return.toFixed(2)}%</p>
-                <p className="text-xs text-muted-foreground">{riskMetrics.bestMonth.competencia}</p>
+              <div className="group bg-gradient-to-br from-success/5 to-success/10 border-2 border-success/20 rounded-2xl p-6 hover:-translate-y-1 hover:shadow-2xl hover:shadow-success/10 transition-all duration-300">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 bg-success/10 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                    <TrendingUp className="h-6 w-6 text-success" />
+                  </div>
+                  <Badge variant="outline" className="border-success/30 text-success text-[10px] uppercase tracking-wider">
+                    Recorde
+                  </Badge>
+                </div>
+                <h3 className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2">
+                  Melhor Mês
+                </h3>
+                <p className="text-4xl font-bold text-success mb-1 tabular-nums">
+                  +{riskMetrics.bestMonth.return.toFixed(2)}%
+                </p>
+                <p className="text-xs text-muted-foreground font-medium">
+                  {riskMetrics.bestMonth.competencia}
+                </p>
               </div>
               
-              <div className="bg-destructive/5 border border-destructive/10 rounded-xl p-4 hover:bg-destructive/8 transition-colors">
-                <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Pior mês</p>
-                <p className="text-2xl font-bold text-destructive mb-1">{riskMetrics.worstMonth.return.toFixed(2)}%</p>
-                <p className="text-xs text-muted-foreground">{riskMetrics.worstMonth.competencia}</p>
+              <div className="group bg-gradient-to-br from-destructive/5 to-destructive/10 border-2 border-destructive/20 rounded-2xl p-6 hover:-translate-y-1 hover:shadow-2xl hover:shadow-destructive/10 transition-all duration-300">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 bg-destructive/10 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                    <TrendingDown className="h-6 w-6 text-destructive" />
+                  </div>
+                  <Badge variant="outline" className="border-destructive/30 text-destructive text-[10px] uppercase tracking-wider">
+                    Piso
+                  </Badge>
+                </div>
+                <h3 className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2">
+                  Pior Mês
+                </h3>
+                <p className="text-4xl font-bold text-destructive mb-1 tabular-nums">
+                  {riskMetrics.worstMonth.return.toFixed(2)}%
+                </p>
+                <p className="text-xs text-muted-foreground font-medium">
+                  {riskMetrics.worstMonth.competencia}
+                </p>
               </div>
               
-              <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 hover:bg-primary/8 transition-colors">
-                <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Consistência</p>
-                <p className="text-2xl font-bold text-foreground mb-1">{riskMetrics.hitRate.positivePercent}%</p>
-                <p className="text-xs text-muted-foreground">meses positivos</p>
+              <div className="group bg-gradient-to-br from-primary/5 to-primary/10 border-2 border-primary/20 rounded-2xl p-6 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 bg-primary/10 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                    <BarChart3 className="h-6 w-6 text-primary" />
+                  </div>
+                  <Badge variant="outline" className="border-primary/30 text-primary text-[10px] uppercase tracking-wider">
+                    Estável
+                  </Badge>
+                </div>
+                <h3 className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2">
+                  Consistência
+                </h3>
+                <p className="text-4xl font-bold text-foreground mb-1 tabular-nums">
+                  {riskMetrics.hitRate.positivePercent}%
+                </p>
+                <p className="text-xs text-muted-foreground font-medium">
+                  meses positivos
+                </p>
               </div>
               
-              <div className="bg-success/5 border border-success/10 rounded-xl p-4 hover:bg-success/8 transition-colors">
-                <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Acima da meta</p>
-                <p className="text-2xl font-bold text-success mb-1">{riskMetrics.monthsAboveTarget}</p>
-                <p className="text-xs text-muted-foreground">
+              <div className="group bg-gradient-to-br from-success/5 to-success/10 border-2 border-success/20 rounded-2xl p-6 hover:-translate-y-1 hover:shadow-2xl hover:shadow-success/10 transition-all duration-300">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 bg-success/10 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                    <Target className="h-6 w-6 text-success" />
+                  </div>
+                  <Badge variant="outline" className="border-success/30 text-success text-[10px] uppercase tracking-wider">
+                    Meta
+                  </Badge>
+                </div>
+                <h3 className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2">
+                  Acima da Meta
+                </h3>
+                <p className="text-4xl font-bold text-success mb-1 tabular-nums">
+                  {riskMetrics.monthsAboveTarget}
+                </p>
+                <p className="text-xs text-muted-foreground font-medium">
                   {filteredConsolidatedData.length > 0 
                     ? Math.round((riskMetrics.monthsAboveTarget / filteredConsolidatedData.length) * 100)
                     : 0}% do período

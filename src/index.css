@@ -35,21 +35,33 @@
     --input: 214 32% 91%;
     --ring: 45 95% 55%;
     
-    /* Investment specific colors */
-    --success: 120 60% 50%;
-    --success-foreground: 45 100% 95%;
+    /* Investment specific colors - Premium Financial Palette */
+    --success: 155 65% 48%;
+    --success-foreground: 155 60% 92%;
     
-    --warning: 35 95% 60%;
-    --warning-foreground: 160 25% 8%;
+    --warning: 38 92% 52%;
+    --warning-foreground: 38 85% 95%;
     
     --info: 200 95% 60%;
     --info-foreground: 160 25% 8%;
+    
+    --finance-success: 155 65% 48%;
+    --finance-success-light: 155 60% 92%;
+    --finance-warning: 38 92% 52%;
+    --finance-warning-light: 38 85% 95%;
+    --finance-alert: 4 85% 58%;
+    --finance-alert-light: 4 80% 96%;
+    --finance-neutral: 215 16% 47%;
+    --finance-accent: 222 47% 11%;
     
     /* Light sophisticated gradients */
     --gradient-primary: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 40% 96%));
     --gradient-accent: linear-gradient(135deg, hsl(45 95% 85%), hsl(35 85% 80%));
     --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 40% 98%));
     --gradient-hero: linear-gradient(135deg, hsl(0 0% 98%) 0%, hsl(210 40% 95%) 50%, hsl(0 0% 96%) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(155 65% 48%) 0%, hsl(155 60% 42%) 100%);
+    --gradient-warning: linear-gradient(135deg, hsl(38 92% 52%) 0%, hsl(32 88% 48%) 100%);
+    --gradient-hero-premium: linear-gradient(135deg, hsl(222 47% 11%) 0%, hsl(215 28% 17%) 100%);
     
     /* Light elegant shadows */
     --shadow-sm: 0 2px 8px hsl(210 15% 60% / 0.08);
@@ -115,6 +127,9 @@
     --gradient-accent: linear-gradient(135deg, hsl(45 95% 65%), hsl(35 85% 55%));
     --gradient-card: linear-gradient(135deg, hsl(160 20% 12%), hsl(160 15% 15%));
     --gradient-hero: linear-gradient(135deg, hsl(160 25% 8%) 0%, hsl(170 30% 12%) 50%, hsl(160 20% 10%) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(155 65% 55%) 0%, hsl(155 60% 48%) 100%);
+    --gradient-warning: linear-gradient(135deg, hsl(38 92% 60%) 0%, hsl(32 88% 55%) 100%);
+    --gradient-hero-premium: linear-gradient(135deg, hsl(222 47% 15%) 0%, hsl(215 28% 22%) 100%);
     
     --shadow-sm: 0 2px 8px hsl(160 25% 5% / 0.2);
     --shadow-md: 0 8px 32px hsl(160 25% 5% / 0.3);
