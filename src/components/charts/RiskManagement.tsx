@@ -1066,27 +1066,27 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               {/* Legenda Visual */}
               <div className="flex items-center justify-center gap-6 mt-4 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-[hsl(var(--muted)/0.3)]"></div>
-                  <span className="text-xs text-muted-foreground font-medium">Meta Base</span>
+                  <div className="w-4 h-4 rounded bg-[hsl(45,60%,75%)]"></div>
+                  <span className="text-xs text-muted-foreground font-medium">Base (Meta)</span>
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-[hsl(142,71%,45%)]"></div>
+                  <div className="w-4 h-4 rounded bg-[hsl(142,60%,55%)]"></div>
                   <span className="text-xs text-muted-foreground font-medium">🚀 Home Run</span>
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-[hsl(215,70%,60%)]"></div>
+                  <div className="w-4 h-4 rounded bg-[hsl(215,65%,65%)]"></div>
                   <span className="text-xs text-muted-foreground font-medium">✓ Acerto</span>
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-[hsl(40,85%,55%)]"></div>
+                  <div className="w-4 h-4 rounded bg-[hsl(40,75%,65%)]"></div>
                   <span className="text-xs text-muted-foreground font-medium">⚠ Quase lá</span>
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-[hsl(0,70%,60%)]"></div>
+                  <div className="w-4 h-4 rounded bg-[hsl(0,65%,65%)]"></div>
                   <span className="text-xs text-muted-foreground font-medium">✗ Miss</span>
                 </div>
               </div>
