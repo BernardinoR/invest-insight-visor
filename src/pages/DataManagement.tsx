@@ -741,20 +741,16 @@ export default function DataManagement() {
                   <p className="font-mono text-sm">competencia</p>
                   <p className="text-xs text-muted-foreground">Ex: "10/2025"</p>
                 </div>
-              <div className="bg-muted/50 rounded p-3 col-span-2">
-                <Badge variant="destructive" className="mb-1">Obrigatório</Badge>
-                <p className="font-mono text-sm">status</p>
-                <p className="text-xs text-muted-foreground">Um dos status válidos (veja abaixo)</p>
-              </div>
-            </div>
-
-            <h4 className="font-semibold text-sm mt-4 mb-2">Campos Opcionais</h4>
-            <div className="grid grid-cols-1 gap-3">
-              <div className="bg-muted/50 rounded p-3">
-                <Badge variant="secondary" className="mb-1">Opcional</Badge>
-                <p className="font-mono text-sm">tipo_extrato</p>
-                <p className="text-xs text-muted-foreground">"Consolidado" ou "Ativos" (se não informado, será NULL)</p>
-              </div>
+                <div className="bg-muted/50 rounded p-3">
+                  <Badge variant="destructive" className="mb-1">Obrigatório</Badge>
+                  <p className="font-mono text-sm">tipo_extrato</p>
+                  <p className="text-xs text-muted-foreground">"Consolidado" ou "Ativos"</p>
+                </div>
+                <div className="bg-muted/50 rounded p-3 col-span-2">
+                  <Badge variant="destructive" className="mb-1">Obrigatório</Badge>
+                  <p className="font-mono text-sm">status</p>
+                  <p className="text-xs text-muted-foreground">Um dos status válidos (veja abaixo)</p>
+                </div>
               </div>
             </div>
 
@@ -780,63 +776,35 @@ export default function DataManagement() {
               </div>
             </div>
 
-          {/* Payload Mínimo */}
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Payload Mínimo (sem tipo_extrato)</h3>
-            <div className="bg-muted/50 rounded-lg p-4 relative">
-              <pre className="text-sm overflow-x-auto">
+            {/* Payload Mínimo */}
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Payload Mínimo</h3>
+              <div className="bg-muted/50 rounded-lg p-4 relative">
+                <pre className="text-sm overflow-x-auto">
 {`{
   "cliente": "Fernanda Carolina De Faria",
   "instituicao": "BTG Pactual",
   "competencia": "10/2025",
+  "tipo_extrato": "Consolidado",
   "status": "Processado"
 }`}
-              </pre>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute top-2 right-2"
-                onClick={() => copyToClipboard(`{
+                </pre>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={() => copyToClipboard(`{
   "cliente": "Fernanda Carolina De Faria",
   "instituicao": "BTG Pactual",
   "competencia": "10/2025",
+  "tipo_extrato": "Consolidado",
   "status": "Processado"
 }`, 'minimal')}
-              >
-                {copiedSection === 'minimal' ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
+                >
+                  {copiedSection === 'minimal' ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
-          </div>
-
-          {/* Payload com tipo_extrato */}
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Payload com tipo_extrato (opcional)</h3>
-            <div className="bg-muted/50 rounded-lg p-4 relative">
-              <pre className="text-sm overflow-x-auto">
-{`{
-  "cliente": "Fernanda Carolina De Faria",
-  "instituicao": "BTG Pactual",
-  "competencia": "10/2025",
-  "tipo_extrato": "Consolidado",
-  "status": "Processado"
-}`}
-              </pre>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute top-2 right-2"
-                onClick={() => copyToClipboard(`{
-  "cliente": "Fernanda Carolina De Faria",
-  "instituicao": "BTG Pactual",
-  "competencia": "10/2025",
-  "tipo_extrato": "Consolidado",
-  "status": "Processado"
-}`, 'with-tipo')}
-              >
-                {copiedSection === 'with-tipo' ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
 
             {/* Payload Completo */}
             <div>
@@ -3192,10 +3160,7 @@ interface VerificationResult {
                                       {instituicao}
                                     </CardTitle>
                                     <Badge 
-                                      variant={
-                                        !tipo_extrato ? 'outline' :
-                                        tipo_extrato === 'Consolidado' ? 'default' : 'secondary'
-                                      }
+                                      variant={tipo_extrato === 'Consolidado' ? 'default' : 'secondary'}
                                       className="text-xs"
                                     >
                                       {tipo_extrato || 'N/A'}

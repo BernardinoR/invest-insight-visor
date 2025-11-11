@@ -24,7 +24,7 @@ interface WebhookPayload {
   cliente: string;
   instituicao: string;
   competencia: string;
-  tipo_extrato?: ValidTipo;
+  tipo_extrato: ValidTipo;
   status: ValidStatus;
   mensagem?: string;
   detalhes?: Record<string, any>;
@@ -66,11 +66,11 @@ serve(async (req) => {
     });
 
     // Validação dos campos obrigatórios
-    if (!payload.cliente || !payload.instituicao || !payload.competencia || !payload.status) {
+    if (!payload.cliente || !payload.instituicao || !payload.competencia || !payload.tipo_extrato || !payload.status) {
       return new Response(
         JSON.stringify({ 
           error: 'Campos obrigatórios ausentes',
-          campos_obrigatorios: ['cliente', 'instituicao', 'competencia', 'status'],
+          campos_obrigatorios: ['cliente', 'instituicao', 'competencia', 'tipo_extrato', 'status'],
           recebido: payload
         }), 
         { 
@@ -95,8 +95,8 @@ serve(async (req) => {
       );
     }
 
-    // Validação do tipo_extrato (apenas se fornecido)
-    if (payload.tipo_extrato && !VALID_TIPOS.includes(payload.tipo_extrato as ValidTipo)) {
+    // Validação do tipo_extrato
+    if (!VALID_TIPOS.includes(payload.tipo_extrato as ValidTipo)) {
       return new Response(
         JSON.stringify({ 
           error: 'Tipo de extrato inválido',
@@ -166,7 +166,7 @@ serve(async (req) => {
         mensagem: 'Status recebido e processado com sucesso',
         log_id: logData.id,
         status: payload.status,
-        ...(payload.tipo_extrato && { tipo_extrato: payload.tipo_extrato }),
+        tipo_extrato: payload.tipo_extrato,
         timestamp: new Date().toISOString()
       }), 
       { 

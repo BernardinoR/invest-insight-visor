@@ -132,7 +132,7 @@ export type Database = {
           sistema_origem: string | null
           status: string
           submission_id: string | null
-          tipo_extrato: string | null
+          tipo_extrato: string
           webhook_timestamp: string | null
         }
         Insert: {
@@ -147,7 +147,7 @@ export type Database = {
           sistema_origem?: string | null
           status: string
           submission_id?: string | null
-          tipo_extrato?: string | null
+          tipo_extrato: string
           webhook_timestamp?: string | null
         }
         Update: {
@@ -162,7 +162,7 @@ export type Database = {
           sistema_origem?: string | null
           status?: string
           submission_id?: string | null
-          tipo_extrato?: string | null
+          tipo_extrato?: string
           webhook_timestamp?: string | null
         }
         Relationships: [
