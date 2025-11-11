@@ -162,7 +162,7 @@ export default function DataManagement() {
   // Calculator dialog state
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [calculatorContext, setCalculatorContext] = useState<'bulk' | 'single'>('bulk');
-  const [calculatorMode, setCalculatorMode] = useState<'auto' | 'manual' | 'custom'>('auto');
+  const [calculatorMode, setCalculatorMode] = useState<'auto' | 'manual' | 'custom' | 'market'>('auto');
   const [manualCalcData, setManualCalcData] = useState({
     competencia: '',
     indexador: 'CDI',
@@ -182,6 +182,17 @@ export default function DataManagement() {
     ganhoFinanceiro: 0,
     valorFinal: 0,
   });
+  const [marketCalcData, setMarketCalcData] = useState({
+    competencia: '',
+    ticker: '',
+  });
+  const [marketCalcLoading, setMarketCalcLoading] = useState(false);
+  const [marketCalcResult, setMarketCalcResult] = useState<{
+    monthlyReturn: number;
+    startPrice: number;
+    endPrice: number;
+    ticker: string;
+  } | null>(null);
   
   // Estado para armazenar valores de texto dos campos numéricos durante edição
   const [numericFieldsText, setNumericFieldsText] = useState<{
@@ -962,6 +973,57 @@ export default function DataManagement() {
     };
   };
 
+  // Função para buscar dados do mercado usando Yahoo Finance
+  const handleFetchMarketData = async () => {
+    if (!marketCalcData.ticker || !marketCalcData.competencia) {
+      toast({
+        title: "Dados incompletos",
+        description: "Preencha o ticker e a competência",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setMarketCalcLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('get-stock-return', {
+        body: {
+          ticker: marketCalcData.ticker,
+          competencia: marketCalcData.competencia,
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setMarketCalcResult({
+        monthlyReturn: data.monthlyReturn,
+        startPrice: data.startPrice,
+        endPrice: data.endPrice,
+        ticker: data.ticker,
+      });
+
+      toast({
+        title: "Dados obtidos com sucesso!",
+        description: `Rentabilidade de ${data.ticker}: ${data.monthlyReturn.toFixed(2)}%`,
+      });
+
+    } catch (error: any) {
+      toast({
+        title: "Erro ao buscar dados",
+        description: error.message || "Verifique o ticker e tente novamente",
+        variant: "destructive",
+      });
+      setMarketCalcResult(null);
+    } finally {
+      setMarketCalcLoading(false);
+    }
+  };
+
+
   // Função para confirmar e aplicar o cálculo ao campo Rendimento
   const handleCalculatorConfirm = () => {
     let calculatedReturn: number | null = null;
@@ -977,7 +1039,20 @@ export default function DataManagement() {
         calculatedReturn = result.taxaMensal;
         customData = result; // Armazena todos os dados calculados
       }
+    } else if (calculatorMode === 'market') {
+      // Usar o resultado já buscado
+      if (marketCalcResult) {
+        calculatedReturn = marketCalcResult.monthlyReturn / 100; // Converter de % para decimal
+      } else {
+        toast({
+          title: "Busque os dados primeiro",
+          description: "Clique em 'Buscar Rentabilidade' antes de confirmar",
+          variant: "destructive",
+        });
+        return;
+      }
     }
+
 
     if (calculatedReturn !== null) {
       // Arredondar para 4 casas decimais (resultará em 2 casas quando exibido como %)
@@ -5197,27 +5272,30 @@ interface VerificationResult {
           
           <div className="space-y-4">
             {/* Seleção do modo */}
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 variant={calculatorMode === 'auto' ? 'default' : 'outline'}
                 onClick={() => setCalculatorMode('auto')}
-                className="flex-1"
               >
                 Automático
               </Button>
               <Button
                 variant={calculatorMode === 'manual' ? 'default' : 'outline'}
                 onClick={() => setCalculatorMode('manual')}
-                className="flex-1"
               >
                 Manual
               </Button>
               <Button
                 variant={calculatorMode === 'custom' ? 'default' : 'outline'}
                 onClick={() => setCalculatorMode('custom')}
-                className="flex-1"
               >
                 Personalizado
+              </Button>
+              <Button
+                variant={calculatorMode === 'market' ? 'default' : 'outline'}
+                onClick={() => setCalculatorMode('market')}
+              >
+                Mercado
               </Button>
             </div>
 
@@ -5522,6 +5600,97 @@ interface VerificationResult {
                         </p>
                       </div>
                     </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Modo Mercado */}
+            {calculatorMode === 'market' && (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Busca automaticamente a rentabilidade real de um ativo em um mês específico usando dados de mercado do Yahoo Finance.
+                </p>
+                
+                <div>
+                  <Label htmlFor="calc-market-competencia">Competência</Label>
+                  <Input
+                    id="calc-market-competencia"
+                    value={marketCalcData.competencia}
+                    onChange={(e) => {
+                      let value = e.target.value.replace(/\D/g, '');
+                      if (value.length >= 2) {
+                        value = value.substring(0, 2) + '/' + value.substring(2, 6);
+                      }
+                      setMarketCalcData({...marketCalcData, competencia: value});
+                    }}
+                    placeholder="MM/YYYY"
+                    maxLength={7}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ex: 10/2024 para outubro de 2024
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="calc-market-ticker">Ativo (Ticker)</Label>
+                  <Input
+                    id="calc-market-ticker"
+                    value={marketCalcData.ticker}
+                    onChange={(e) => setMarketCalcData({...marketCalcData, ticker: e.target.value.toUpperCase()})}
+                    placeholder="Ex: PETR4.SA, AAPL, ^BVSP"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Para ações BR use .SA (ex: PETR4.SA). Para EUA apenas o símbolo (ex: AAPL)
+                  </p>
+                </div>
+
+                {/* Botão Buscar */}
+                <Button
+                  onClick={handleFetchMarketData}
+                  disabled={!marketCalcData.ticker || !marketCalcData.competencia || marketCalcLoading}
+                  className="w-full"
+                  variant="secondary"
+                >
+                  {marketCalcLoading ? 'Buscando...' : 'Buscar Rentabilidade'}
+                </Button>
+
+                {/* Exibir resultados se já buscados */}
+                {marketCalcResult && (
+                  <div className="bg-muted p-4 rounded-md space-y-2 border border-primary/20">
+                    <h4 className="font-semibold text-sm">Resultado da Consulta:</h4>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Ticker:</p>
+                        <p className="font-medium">{marketCalcResult.ticker}</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-muted-foreground">Rentabilidade:</p>
+                        <p className="font-medium text-green-600">
+                          {marketCalcResult.monthlyReturn.toFixed(4)}%
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-muted-foreground">Preço Inicial:</p>
+                        <p className="font-medium">
+                          ${marketCalcResult.startPrice.toFixed(2)}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-muted-foreground">Preço Final:</p>
+                        <p className="font-medium">
+                          ${marketCalcResult.endPrice.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground italic mt-2">
+                      ℹ️ Ao confirmar, este valor será usado como Rendimento
+                    </p>
                   </div>
                 )}
               </div>
