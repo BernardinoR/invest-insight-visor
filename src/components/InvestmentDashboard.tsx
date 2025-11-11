@@ -792,7 +792,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                     .filter(item => item.vencimentoDate >= now)
                     .sort((a, b) => a.vencimentoDate.getTime() - b.vencimentoDate.getTime());
                      
-                  return validVencimentos.length > 0 && validVencimentos[0].Posicao != null
+                  return validVencimentos.length > 0 
                     ? `R$ ${validVencimentos[0].Posicao.toLocaleString('pt-BR')}`
                     : "Nenhum vencimento futuro";
                 })()}

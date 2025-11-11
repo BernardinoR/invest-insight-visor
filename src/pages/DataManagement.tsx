@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useCDIData } from '@/hooks/useCDIData';
 import { usePTAXData } from '@/hooks/usePTAXData';
 import { useMarketIndicators } from '@/hooks/useMarketIndicators';
-import { useExtratoNotifications } from '@/hooks/useExtratoNotifications';
 import {
   Table,
   TableBody,
@@ -156,9 +155,6 @@ export default function DataManagement() {
   const { marketData: marketIndicators } = useMarketIndicators();
   
   const decodedClientName = clientName ? decodeURIComponent(clientName) : "";
-  
-  // Ativar notificações de novos extratos
-  useExtratoNotifications(decodedClientName);
   
   const [consolidadoData, setConsolidadoData] = useState<ConsolidadoData[]>([]);
   const [dadosData, setDadosData] = useState<DadosData[]>([]);
