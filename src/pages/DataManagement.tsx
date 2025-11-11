@@ -26,6 +26,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -353,6 +363,9 @@ export default function DataManagement() {
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [isWebhookDocsOpen, setIsWebhookDocsOpen] = useState(false);
+  
+  // Estado para controlar o delete de histórico
+  const [deleteHistoryItemId, setDeleteHistoryItemId] = useState<string | null>(null);
 
   // Mapeamento de colunas para campos do banco - Dados Consolidados
   const getFieldKeyFromColumn = (column: string): string | null => {
@@ -3216,14 +3229,14 @@ interface VerificationResult {
                             </CardHeader>
                             <CardContent className="pt-0">
                               <div className="space-y-2">
-                                {items.map((item, idx) => {
+                                 {items.map((item, idx) => {
                                   const statusInfo = getStatusInfo(item.status);
                                   const StatusIcon = statusInfo.icon;
                                   
                                   return (
                                     <div 
                                       key={item.id}
-                                      className={`flex gap-3 p-3 rounded-lg transition-colors ${statusInfo.bgColor} ${
+                                      className={`group relative flex gap-3 p-3 rounded-lg transition-colors ${statusInfo.bgColor} ${
                                         idx === 0 ? 'border-l-4 border-primary' : ''
                                       }`}
                                     >
@@ -3244,7 +3257,7 @@ interface VerificationResult {
                                             )}
                                           </div>
                                           
-                                          <div className="text-right flex-shrink-0">
+                                          <div className="text-right flex-shrink-0 flex items-center gap-2">
                                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                               <Clock className="h-3 w-3" />
                                               {new Date(item.created_at).toLocaleString('pt-BR', {
@@ -3255,6 +3268,15 @@ interface VerificationResult {
                                                 minute: '2-digit'
                                               })}
                                             </div>
+                                            
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20 hover:text-destructive"
+                                              onClick={() => setDeleteHistoryItemId(item.id)}
+                                            >
+                                              <X className="h-4 w-4" />
+                                            </Button>
                                           </div>
                                         </div>
                                         
@@ -3294,6 +3316,55 @@ interface VerificationResult {
 
             {/* Dialog de Documentação do Webhook */}
             <WebhookDocumentation />
+            
+            {/* AlertDialog para confirmar delete de histórico */}
+            <AlertDialog open={deleteHistoryItemId !== null} onOpenChange={(open) => !open && setDeleteHistoryItemId(null)}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir registro do histórico?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Este registro será permanentemente removido do histórico de extratos.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={async () => {
+                      if (!deleteHistoryItemId) return;
+                      
+                      try {
+                        const { error } = await supabase
+                          .from('extrato_status_log')
+                          .delete()
+                          .eq('id', deleteHistoryItemId);
+                        
+                        if (error) throw error;
+                        
+                        // Atualizar o estado local removendo o item deletado
+                        setHistoryData(prev => prev.filter(item => item.id !== deleteHistoryItemId));
+                        
+                        toast({
+                          title: "Registro excluído",
+                          description: "O registro foi removido do histórico.",
+                        });
+                      } catch (error) {
+                        console.error('Erro ao deletar registro:', error);
+                        toast({
+                          title: "Erro ao excluir",
+                          description: "Não foi possível excluir o registro. Verifique suas permissões.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setDeleteHistoryItemId(null);
+                      }
+                    }}
+                  >
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             
             <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
               <DialogTrigger asChild>
