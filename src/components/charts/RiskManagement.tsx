@@ -797,32 +797,32 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
             {/* Linha Superior - Hit Rate Geral + Distribuição de Performance */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Hit Rate Geral */}
-              <div className="text-center bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-8">
-                <p className="text-xs text-muted-foreground mb-3 font-medium tracking-wider uppercase">Hit Rate Geral</p>
-                <p className="text-7xl font-bold text-foreground mb-3 tracking-tight">{riskMetrics.hitRate.hitRatePercent}%</p>
-                <p className="text-sm text-muted-foreground">
+              <div className="text-center bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-4">
+                <p className="text-xs text-muted-foreground mb-1 font-medium tracking-wider uppercase">Hit Rate Geral</p>
+                <p className="text-5xl font-bold text-foreground mb-2 tracking-tight">{riskMetrics.hitRate.hitRatePercent}%</p>
+                <p className="text-xs text-muted-foreground">
                   <span className="font-semibold text-foreground">{riskMetrics.hitRate.homeRun + riskMetrics.hitRate.acerto}</span> de <span className="font-semibold text-foreground">{filteredConsolidatedData.length}</span> meses atingiram a meta
                 </p>
               </div>
 
               {/* Distribuição de Performance - Cards Compactos */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-foreground mb-4">Distribuição de Performance</h3>
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-foreground mb-2">Distribuição de Performance</h3>
                 
                 {/* Home Run */}
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-success/10 to-transparent border border-success/20 rounded-xl hover:from-success/15 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-success/20 p-2 rounded-lg">
-                      <Rocket className="h-4 w-4 text-success" />
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-success/10 to-transparent border border-success/20 rounded-xl hover:from-success/15 transition-all">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-success/20 p-1.5 rounded-lg">
+                      <Rocket className="h-3.5 w-3.5 text-success" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-foreground">Home Run</p>
-                      <p className="text-xs text-muted-foreground">Acima da meta</p>
+                      <p className="text-xs font-semibold text-foreground">Home Run</p>
+                      <p className="text-[10px] text-muted-foreground">Acima da meta</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-success">{riskMetrics.hitRate.homeRun}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xl font-bold text-success">{riskMetrics.hitRate.homeRun}</p>
+                    <p className="text-[10px] text-muted-foreground">
                       {filteredConsolidatedData.length > 0 
                         ? Math.round((riskMetrics.hitRate.homeRun / filteredConsolidatedData.length) * 100)
                         : 0}%
@@ -831,19 +831,19 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 </div>
 
                 {/* Acerto */}
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/10 to-transparent border border-primary/20 rounded-xl hover:from-primary/15 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-primary/20 p-2 rounded-lg">
-                      <Check className="h-4 w-4 text-primary" />
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-primary/10 to-transparent border border-primary/20 rounded-xl hover:from-primary/15 transition-all">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-primary/20 p-1.5 rounded-lg">
+                      <Check className="h-3.5 w-3.5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-foreground">Acerto</p>
-                      <p className="text-xs text-muted-foreground">Dentro da meta</p>
+                      <p className="text-xs font-semibold text-foreground">Acerto</p>
+                      <p className="text-[10px] text-muted-foreground">Dentro da meta</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-primary">{riskMetrics.hitRate.acerto}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xl font-bold text-primary">{riskMetrics.hitRate.acerto}</p>
+                    <p className="text-[10px] text-muted-foreground">
                       {filteredConsolidatedData.length > 0 
                         ? Math.round((riskMetrics.hitRate.acerto / filteredConsolidatedData.length) * 100)
                         : 0}%
@@ -852,19 +852,19 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 </div>
 
                 {/* Quase lá */}
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-warning/10 to-transparent border border-warning/20 rounded-xl hover:from-warning/15 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-warning/20 p-2 rounded-lg">
-                      <TrendingUpIcon className="h-4 w-4 text-warning" />
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-warning/10 to-transparent border border-warning/20 rounded-xl hover:from-warning/15 transition-all">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-warning/20 p-1.5 rounded-lg">
+                      <TrendingUpIcon className="h-3.5 w-3.5 text-warning" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-foreground">Quase lá</p>
-                      <p className="text-xs text-muted-foreground">Próximo da meta</p>
+                      <p className="text-xs font-semibold text-foreground">Quase lá</p>
+                      <p className="text-[10px] text-muted-foreground">Próximo da meta</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-warning">{riskMetrics.hitRate.quaseLa}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xl font-bold text-warning">{riskMetrics.hitRate.quaseLa}</p>
+                    <p className="text-[10px] text-muted-foreground">
                       {filteredConsolidatedData.length > 0 
                         ? Math.round((riskMetrics.hitRate.quaseLa / filteredConsolidatedData.length) * 100)
                         : 0}%
@@ -873,19 +873,19 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 </div>
 
                 {/* Miss */}
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-destructive/10 to-transparent border border-destructive/20 rounded-xl hover:from-destructive/15 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-destructive/20 p-2 rounded-lg">
-                      <X className="h-4 w-4 text-destructive" />
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-destructive/10 to-transparent border border-destructive/20 rounded-xl hover:from-destructive/15 transition-all">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-destructive/20 p-1.5 rounded-lg">
+                      <X className="h-3.5 w-3.5 text-destructive" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-foreground">Miss</p>
-                      <p className="text-xs text-muted-foreground">Abaixo da meta</p>
+                      <p className="text-xs font-semibold text-foreground">Miss</p>
+                      <p className="text-[10px] text-muted-foreground">Abaixo da meta</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-destructive">{riskMetrics.hitRate.miss}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xl font-bold text-destructive">{riskMetrics.hitRate.miss}</p>
+                    <p className="text-[10px] text-muted-foreground">
                       {filteredConsolidatedData.length > 0 
                         ? Math.round((riskMetrics.hitRate.miss / filteredConsolidatedData.length) * 100)
                         : 0}%
@@ -896,9 +896,9 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
             </div>
 
             {/* Gráfico Central - Performance Mensal */}
-            <div className="bg-background/50 rounded-xl p-6 border border-border/30">
-              <h3 className="text-sm font-semibold text-foreground mb-4">Performance Mensal vs Meta</h3>
-              <ResponsiveContainer width="100%" height={500}>
+            <div className="bg-background/50 rounded-xl p-8 border-2 border-border/40 shadow-lg">
+              <h3 className="text-base font-semibold text-foreground mb-6">Performance Mensal vs Meta</h3>
+              <ResponsiveContainer width="100%" height={550}>
                 <ComposedChart 
                   data={(() => {
                     return targetComparisonData.slice(-12).map(entry => {
