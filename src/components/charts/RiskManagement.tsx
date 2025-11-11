@@ -899,7 +899,43 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
             <div className="bg-background/50 rounded-xl p-6 border border-border/30">
               <h3 className="text-sm font-semibold text-foreground mb-4">Performance Mensal vs Meta</h3>
               <ResponsiveContainer width="100%" height={500}>
-                <ComposedChart data={targetComparisonData.slice(-12)} margin={{ top: 20, right: 20, left: 0, bottom: 60 }}>
+                <ComposedChart 
+                  data={(() => {
+                    // Preparar dados para barras empilhadas
+                    return targetComparisonData.slice(-12).map(entry => {
+                      const marketDataForCompetencia = marketData?.find(m => m.competencia === entry.competencia);
+                      const monthlyTarget = (marketDataForCompetencia?.clientTarget || clientTarget) * 100;
+                      const volatility = riskMetrics.volatility;
+                      const homeRunThreshold = monthlyTarget + volatility;
+                      
+                      let categoria: 'homeRun' | 'acerto' | 'quaseLa' | 'miss';
+                      let excedente = 0;
+                      
+                      if (entry.retorno >= homeRunThreshold) {
+                        categoria = 'homeRun';
+                        excedente = entry.retorno - monthlyTarget;
+                      } else if (entry.retorno >= monthlyTarget) {
+                        categoria = 'acerto';
+                        excedente = entry.retorno - monthlyTarget;
+                      } else if (entry.retorno > 0) {
+                        categoria = 'quaseLa';
+                        excedente = entry.retorno;
+                      } else {
+                        categoria = 'miss';
+                        excedente = entry.retorno;
+                      }
+                      
+                      return {
+                        competencia: entry.competencia,
+                        meta: monthlyTarget,
+                        excedente: excedente,
+                        retornoTotal: entry.retorno,
+                        categoria: categoria
+                      };
+                    });
+                  })()} 
+                  margin={{ top: 20, right: 20, left: 0, bottom: 80 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
                   <XAxis 
                     dataKey="competencia" 
@@ -915,52 +951,94 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     tickFormatter={(value) => `${value.toFixed(1)}%`}
                   />
                   <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--background))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '12px',
-                      padding: '12px'
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload || !payload.length) return null;
+                      
+                      const data = payload[0].payload;
+                      
+                      return (
+                        <div className="bg-background/95 backdrop-blur-md border-2 border-border rounded-xl p-4 shadow-xl">
+                          <p className="font-bold text-foreground mb-2">{label}</p>
+                          
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-sm text-muted-foreground">Meta:</span>
+                              <span className="font-semibold text-primary">{data.meta.toFixed(2)}%</span>
+                            </div>
+                            
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-sm text-muted-foreground">Realizado:</span>
+                              <span className={`font-semibold ${
+                                data.categoria === 'homeRun' ? 'text-[hsl(142,71%,45%)]' :
+                                data.categoria === 'acerto' ? 'text-[hsl(215,70%,60%)]' :
+                                data.categoria === 'quaseLa' ? 'text-[hsl(40,85%,55%)]' :
+                                'text-[hsl(0,70%,60%)]'
+                              }`}>
+                                {data.retornoTotal.toFixed(2)}%
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center justify-between gap-4 pt-1 border-t border-border/50">
+                              <span className="text-sm text-muted-foreground">Diferença:</span>
+                              <span className={`font-bold ${data.categoria === 'homeRun' || data.categoria === 'acerto' ? 'text-[hsl(142,71%,45%)]' : data.categoria === 'quaseLa' ? 'text-[hsl(40,85%,55%)]' : 'text-[hsl(0,70%,60%)]'}`}>
+                                {data.retornoTotal >= data.meta ? '+' : ''}{(data.retornoTotal - data.meta).toFixed(2)}%
+                              </span>
+                            </div>
+                            
+                            <div className="mt-2 pt-2 border-t border-border/50">
+                              <Badge variant={
+                                data.categoria === 'homeRun' ? 'default' :
+                                data.categoria === 'acerto' ? 'secondary' :
+                                data.categoria === 'quaseLa' ? 'outline' :
+                                'destructive'
+                              } className="text-xs">
+                                {data.categoria === 'homeRun' ? '🚀 Home Run' :
+                                 data.categoria === 'acerto' ? '✓ Acerto' :
+                                 data.categoria === 'quaseLa' ? '⚠ Quase lá' :
+                                 '✗ Miss'}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      );
                     }}
-                    formatter={(value: any, name: string) => {
-                      if (name === 'retorno') return [`${value.toFixed(2)}%`, 'Retorno Real'];
-                      if (name === 'meta') return [`${value.toFixed(2)}%`, 'Meta'];
-                      return [value, name];
-                    }}
-                    labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600, marginBottom: '4px' }}
                   />
                   
-                  {/* Linha da Meta com marcadores */}
-                  <Line 
-                    type="monotone"
-                    dataKey="meta" 
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth={3}
-                    strokeDasharray="5 5"
-                    dot={{ fill: 'hsl(var(--primary))', r: 5, strokeWidth: 2, stroke: 'hsl(var(--background))' }}
-                    activeDot={{ r: 7 }}
-                  />
-                  
-                  {/* Barras com cores dinâmicas */}
+                  {/* Barra Base - Meta (sempre presente em cinza) */}
                   <Bar 
-                    dataKey="retorno" 
-                    radius={[12, 12, 0, 0]}
+                    dataKey="meta" 
+                    stackId="performance"
+                    radius={[0, 0, 8, 8]}
+                    fill="hsl(var(--muted) / 0.3)"
                     maxBarSize={60}
+                    animationBegin={0}
+                    animationDuration={800}
+                    animationEasing="ease-out"
+                  />
+                  
+                  {/* Barra Empilhada - Excedente com cores dinâmicas */}
+                  <Bar 
+                    dataKey="excedente" 
+                    stackId="performance"
+                    radius={[8, 8, 0, 0]}
+                    maxBarSize={60}
+                    animationBegin={400}
+                    animationDuration={800}
+                    animationEasing="ease-out"
                   >
                     {targetComparisonData.slice(-12).map((entry, index) => {
-                      let color;
-                      
-                      // Buscar meta e volatilidade corretas para esta competência
                       const marketDataForCompetencia = marketData?.find(m => m.competencia === entry.competencia);
                       const monthlyTarget = (marketDataForCompetencia?.clientTarget || clientTarget) * 100;
                       const volatility = riskMetrics.volatility;
                       const homeRunThreshold = monthlyTarget + volatility;
                       
+                      let color;
                       if (entry.retorno >= homeRunThreshold) {
                         color = 'hsl(142, 71%, 45%)'; // Home Run - verde vibrante
                       } else if (entry.retorno >= monthlyTarget) {
                         color = 'hsl(215, 70%, 60%)'; // Acerto - azul
                       } else if (entry.retorno > 0) {
-                        color = 'hsl(40, 85%, 55%)'; // Quase lá - amarelo/laranja
+                        color = 'hsl(40, 85%, 55%)'; // Quase lá - âmbar
                       } else {
                         color = 'hsl(0, 70%, 60%)'; // Miss - vermelho
                       }
@@ -969,12 +1047,49 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                         <Cell 
                           key={`cell-${index}`} 
                           fill={color}
+                          className="hover:opacity-80 transition-opacity cursor-pointer"
                         />
                       );
                     })}
                   </Bar>
+                  
+                  {/* Linha de Referência no zero */}
+                  <ReferenceLine 
+                    y={0} 
+                    stroke="hsl(var(--muted-foreground))" 
+                    strokeWidth={1}
+                    strokeDasharray="3 3"
+                  />
                 </ComposedChart>
               </ResponsiveContainer>
+              
+              {/* Legenda Visual */}
+              <div className="flex items-center justify-center gap-6 mt-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-[hsl(var(--muted)/0.3)]"></div>
+                  <span className="text-xs text-muted-foreground font-medium">Meta Base</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-[hsl(142,71%,45%)]"></div>
+                  <span className="text-xs text-muted-foreground font-medium">🚀 Home Run</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-[hsl(215,70%,60%)]"></div>
+                  <span className="text-xs text-muted-foreground font-medium">✓ Acerto</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-[hsl(40,85%,55%)]"></div>
+                  <span className="text-xs text-muted-foreground font-medium">⚠ Quase lá</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-[hsl(0,70%,60%)]"></div>
+                  <span className="text-xs text-muted-foreground font-medium">✗ Miss</span>
+                </div>
+              </div>
             </div>
 
             {/* Bloco Inferior - Métricas em Grid */}
