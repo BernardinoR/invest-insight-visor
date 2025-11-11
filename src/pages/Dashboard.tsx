@@ -3,6 +3,7 @@ import { InvestmentDashboard } from "@/components/InvestmentDashboard";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useExtratoNotifications } from "@/hooks/useExtratoNotifications";
 
 export default function Dashboard() {
   const { clientName } = useParams<{ clientName: string }>();
@@ -34,6 +35,9 @@ export default function Dashboard() {
   console.log('Dashboard - Current location pathname:', location.pathname);
   
   const isClientView = location.pathname.startsWith('/client/');
+  
+  // Ativar notificações de novos extratos
+  useExtratoNotifications(decodedClientName);
 
   // Redirect to home if no client name is provided
   if (!decodedClientName || decodedClientName.trim() === "") {
