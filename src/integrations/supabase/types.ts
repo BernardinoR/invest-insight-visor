@@ -462,7 +462,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_old_extrato_logs: { Args: never; Returns: undefined }
       get_unique_clients: {
         Args: never
         Returns: {
