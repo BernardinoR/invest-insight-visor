@@ -265,7 +265,10 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
         typeof item.Competencia === 'string' && 
         item.Competencia.endsWith(lastYear)
       );
-      const sortedYearData = yearData.sort((a, b) => a.Competencia.localeCompare(b.Competencia));
+      const sortedYearData = yearData.sort((a, b) => {
+        if (!a.Competencia || !b.Competencia) return 0;
+        return a.Competencia.localeCompare(b.Competencia);
+      });
       
       const yearMonthlyReturns = sortedYearData.map(item => {
         const moeda = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
@@ -274,7 +277,10 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       const yearReturn = calculateCompoundReturn(yearMonthlyReturns);
       
       // Inception return: compound return since first competencia
-      const sortedAllData = allAssetData.sort((a, b) => a.Competencia.localeCompare(b.Competencia));
+      const sortedAllData = allAssetData.sort((a, b) => {
+        if (!a.Competencia || !b.Competencia) return 0;
+        return a.Competencia.localeCompare(b.Competencia);
+      });
       const monthlyReturns = sortedAllData.map(item => {
         const moeda = item.Moeda === 'Dolar' ? 'USD' : 'BRL';
         return adjustReturnWithFX(item.Rendimento || 0, item.Competencia, moeda);
