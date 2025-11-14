@@ -1435,7 +1435,8 @@ export default function DataManagement() {
       // Tratamento especial para campo Competencia (formato MM/YYYY)
       if (sortConfig.field === 'Competencia') {
         // Converter MM/YYYY para formato comparável YYYYMM
-        const parseCompetencia = (comp: string) => {
+        const parseCompetencia = (comp: string | null | undefined) => {
+          if (!comp) return '000000'; // Return a default value for null/undefined
           const [month, year] = String(comp).split('/');
           return `${year}${month.padStart(2, '0')}`;
         };
