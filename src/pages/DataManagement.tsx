@@ -1595,13 +1595,19 @@ interface VerificationResult {
       // Verificar se está vazio, null, undefined, ou é apenas "-"
       if (rendimento == null) return true;
       
-      // Se for string, verificar se está vazia ou é apenas "-"
+      // Se for string, verificar se está vazia, é "-", ou é "0"
       if (typeof rendimento === 'string') {
         const trimmed = rendimento.trim();
         if (trimmed === '' || trimmed === '-') return true;
+        
+        // Verificar se é "0", "0.0", "0.00", etc
+        const numValue = parseFloat(trimmed);
+        if (!isNaN(numValue) && numValue === 0) return true;
       }
       
-      // Se for número, aceitar qualquer valor (incluindo 0)
+      // Se for número, verificar se é exatamente 0
+      if (typeof rendimento === 'number' && rendimento === 0) return true;
+      
       return false;
     }).length;
     
@@ -1744,11 +1750,23 @@ interface VerificationResult {
         const isUnclassified = showOnlyUnclassified && !isValidAssetClass(item["Classe do ativo"]);
         const hasMissingYield = showOnlyMissingYield && (() => {
           const rendimento = item.Rendimento;
+          
+          // Verificar se está vazio, null, undefined
           if (rendimento == null) return true;
+          
+          // Se for string
           if (typeof rendimento === 'string') {
             const trimmed = rendimento.trim();
             if (trimmed === '' || trimmed === '-') return true;
+            
+            // Verificar se é "0", "0.0", "0.00", etc
+            const numValue = parseFloat(trimmed);
+            if (!isNaN(numValue) && numValue === 0) return true;
           }
+          
+          // Se for número, verificar se é exatamente 0
+          if (typeof rendimento === 'number' && rendimento === 0) return true;
+          
           return false;
         })();
         
@@ -1822,11 +1840,23 @@ interface VerificationResult {
     
     return data.filter(item => {
       const rendimento = item.Rendimento;
+      
+      // Verificar se está vazio, null, undefined
       if (rendimento == null) return true;
+      
+      // Se for string
       if (typeof rendimento === 'string') {
         const trimmed = rendimento.trim();
         if (trimmed === '' || trimmed === '-') return true;
+        
+        // Verificar se é "0", "0.0", "0.00", etc
+        const numValue = parseFloat(trimmed);
+        if (!isNaN(numValue) && numValue === 0) return true;
       }
+      
+      // Se for número, verificar se é exatamente 0
+      if (typeof rendimento === 'number' && rendimento === 0) return true;
+      
       return false;
     }).length;
   }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo]);
