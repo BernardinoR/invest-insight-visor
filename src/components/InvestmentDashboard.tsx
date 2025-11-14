@@ -113,6 +113,7 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   const uniqueCompetencias = useMemo(() => {
     if (dadosData.length === 0) return [];
     return Array.from(new Set(dadosData.map(item => item.Competencia)))
+      .filter(comp => comp != null && typeof comp === 'string' && comp.includes('/'))
       .sort((a, b) => {
         const [monthA, yearA] = a.split('/');
         const [monthB, yearB] = b.split('/');
