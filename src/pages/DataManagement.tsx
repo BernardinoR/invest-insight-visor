@@ -4,6 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -187,6 +197,10 @@ export default function DataManagement() {
     competencia: '',
     ticker: '',
   });
+
+  // Estado para o AlertDialog de exclusão de consolidado
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [consolidadoToDelete, setConsolidadoToDelete] = useState<ConsolidadoData | null>(null);
   const [marketCalcLoading, setMarketCalcLoading] = useState(false);
   const [marketCalcResult, setMarketCalcResult] = useState<{
     monthlyReturn: number;
@@ -1239,13 +1253,22 @@ export default function DataManagement() {
   };
 
   const handleDelete = async (id: number, type: 'consolidado' | 'dados') => {
+    // Se for consolidado, abrir o AlertDialog ao invés de confirmar diretamente
+    if (type === 'consolidado') {
+      const item = consolidadoData.find(c => c.id === id);
+      if (item) {
+        setConsolidadoToDelete(item);
+        setDeleteDialogOpen(true);
+      }
+      return;
+    }
+
+    // Para dados detalhados, manter o comportamento atual
     if (!confirm('Tem certeza que deseja excluir este registro?')) return;
 
     try {
-      const tableName = type === 'consolidado' ? 'ConsolidadoPerformance' : 'DadosPerformance';
-      
       const { error } = await supabase
-        .from(tableName)
+        .from('DadosPerformance')
         .delete()
         .eq('id', id);
 
@@ -1262,6 +1285,58 @@ export default function DataManagement() {
       toast({
         title: "Erro",
         description: "Erro ao excluir registro",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteConsolidado = async (deleteRelated: boolean) => {
+    if (!consolidadoToDelete) return;
+
+    try {
+      // Se deleteRelated = true, excluir os ativos detalhados vinculados primeiro
+      if (deleteRelated) {
+        const { error: dadosError } = await supabase
+          .from('DadosPerformance')
+          .delete()
+          .eq('Competencia', consolidadoToDelete.Competencia)
+          .eq('Instituicao', consolidadoToDelete.Instituicao)
+          .eq('nomeConta', consolidadoToDelete.nomeConta)
+          .eq('Nome', consolidadoToDelete.Nome);
+
+        if (dadosError) throw dadosError;
+      }
+
+      // Excluir o registro consolidado
+      const { error: consolidadoError } = await supabase
+        .from('ConsolidadoPerformance')
+        .delete()
+        .eq('id', consolidadoToDelete.id);
+
+      if (consolidadoError) throw consolidadoError;
+
+      const ativosVinculados = dadosData.filter(dado => 
+        dado.Competencia === consolidadoToDelete.Competencia &&
+        dado.Instituicao === consolidadoToDelete.Instituicao &&
+        dado.nomeConta === consolidadoToDelete.nomeConta &&
+        dado.Nome === consolidadoToDelete.Nome
+      ).length;
+
+      toast({
+        title: "Sucesso",
+        description: deleteRelated 
+          ? `Dado consolidado e ${ativosVinculados} ativo(s) detalhado(s) excluídos com sucesso`
+          : "Dado consolidado excluído com sucesso",
+      });
+      
+      fetchData();
+      setDeleteDialogOpen(false);
+      setConsolidadoToDelete(null);
+    } catch (error) {
+      console.error('Erro ao excluir:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir registro(s)",
         variant: "destructive",
       });
     }
@@ -5819,6 +5894,70 @@ interface VerificationResult {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* AlertDialog para confirmação de exclusão de consolidado */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Dado Consolidado</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Você está prestes a excluir o dado consolidado:
+              </p>
+              {consolidadoToDelete && (
+                <div className="bg-muted p-3 rounded-md text-sm">
+                  <div><strong>Competência:</strong> {consolidadoToDelete.Competencia}</div>
+                  <div><strong>Instituição:</strong> {consolidadoToDelete.Instituicao}</div>
+                  <div><strong>Conta:</strong> {consolidadoToDelete.nomeConta || '-'}</div>
+                </div>
+              )}
+              {consolidadoToDelete && (() => {
+                const ativosVinculados = dadosData.filter(dado => 
+                  dado.Competencia === consolidadoToDelete.Competencia &&
+                  dado.Instituicao === consolidadoToDelete.Instituicao &&
+                  dado.nomeConta === consolidadoToDelete.nomeConta &&
+                  dado.Nome === consolidadoToDelete.Nome
+                ).length;
+                
+                return ativosVinculados > 0 ? (
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-3 rounded-md">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium text-yellow-800 dark:text-yellow-200 mb-1">
+                          Este consolidado possui {ativosVinculados} ativo(s) detalhado(s) vinculado(s)
+                        </p>
+                        <p className="text-yellow-700 dark:text-yellow-300">
+                          Escolha se deseja excluir apenas o consolidado ou também os ativos vinculados.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">
+                    Este consolidado não possui ativos detalhados vinculados.
+                  </p>
+                );
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <Button
+              variant="outline"
+              onClick={() => handleDeleteConsolidado(false)}
+            >
+              Excluir Apenas Consolidado
+            </Button>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => handleDeleteConsolidado(true)}
+            >
+              Excluir Consolidado + Ativos
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
