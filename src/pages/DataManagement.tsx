@@ -547,7 +547,7 @@ export default function DataManagement() {
     }
   };
 
-  // Verifica se o ativo tem rentabilidade preenchida
+  // Verifica se o ativo tem rentabilidade preenchida e diferente de zero
   const hasValidYield = (rendimento: any): boolean => {
     // Verificar se está vazio, null, undefined
     if (rendimento == null) return false;
@@ -558,7 +558,14 @@ export default function DataManagement() {
       if (trimmed === '' || trimmed === '-') return false;
     }
     
-    // Se chegou aqui, tem rentabilidade válida (incluindo 0)
+    // Converter para número se for string
+    const numericValue = typeof rendimento === 'string' 
+      ? parseBrazilianNumber(rendimento) 
+      : rendimento;
+    
+    // Se for zero, considerar como inválido (sem rentabilidade)
+    if (numericValue === 0) return false;
+    
     return true;
   };
 
