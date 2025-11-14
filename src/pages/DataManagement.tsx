@@ -1790,27 +1790,7 @@ interface VerificationResult {
     if (showOnlyUnclassified || showOnlyMissingYield) {
       data = data.filter(item => {
         const isUnclassified = showOnlyUnclassified && !isValidAssetClass(item["Classe do ativo"]);
-        const hasMissingYield = showOnlyMissingYield && (() => {
-          const rendimento = item.Rendimento;
-          
-          // Verificar se está vazio, null, undefined
-          if (rendimento == null) return true;
-          
-          // Se for string
-          if (typeof rendimento === 'string') {
-            const trimmed = rendimento.trim();
-            if (trimmed === '' || trimmed === '-') return true;
-            
-            // Verificar se é "0", "0.0", "0.00", etc
-            const numValue = parseFloat(trimmed);
-            if (!isNaN(numValue) && numValue === 0) return true;
-          }
-          
-          // Se for número, verificar se é exatamente 0
-          if (typeof rendimento === 'number' && rendimento === 0) return true;
-          
-          return false;
-        })();
+        const hasMissingYield = showOnlyMissingYield && !hasValidYield(item.Rendimento, item.rentabilidade_validada);
         
         // Se ambos filtros estão ativos, mostrar itens que atendem pelo menos um
         if (showOnlyUnclassified && showOnlyMissingYield) {
@@ -1825,7 +1805,7 @@ interface VerificationResult {
     data = applySortingGeneric(data, sortConfig);
     
     return data;
-  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo, showOnlyUnclassified, showOnlyMissingYield, activeFilters, sortConfig, isValidAssetClass]);
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo, showOnlyUnclassified, showOnlyMissingYield, activeFilters, sortConfig, isValidAssetClass, hasValidYield]);
 
   // Contador de ativos não classificados na view atual (antes do filtro showOnlyUnclassified)
   const unclassifiedInCurrentView = useMemo(() => {
