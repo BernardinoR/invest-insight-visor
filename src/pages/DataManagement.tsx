@@ -552,20 +552,13 @@ export default function DataManagement() {
     // Verificar se está vazio, null, undefined
     if (rendimento == null) return false;
     
-    // Se for string
+    // Se for string, verificar se está vazia ou é apenas "-"
     if (typeof rendimento === 'string') {
       const trimmed = rendimento.trim();
       if (trimmed === '' || trimmed === '-') return false;
-      
-      // Verificar se é "0", "0.0", "0.00", etc
-      const numValue = parseFloat(trimmed);
-      if (!isNaN(numValue) && numValue === 0) return false;
     }
     
-    // Se for número, verificar se é exatamente 0
-    if (typeof rendimento === 'number' && rendimento === 0) return false;
-    
-    // Se chegou aqui, tem rentabilidade válida (> 0)
+    // Se chegou aqui, tem rentabilidade válida (incluindo 0)
     return true;
   };
 
@@ -1435,17 +1428,13 @@ export default function DataManagement() {
       // Tratamento especial para campo Competencia (formato MM/YYYY)
       if (sortConfig.field === 'Competencia') {
         // Converter MM/YYYY para formato comparável YYYYMM
-        const parseCompetencia = (comp: any) => {
-          if (!comp || comp === null || comp === undefined) return '000000';
-          const compStr = String(comp);
-          if (!compStr.includes('/')) return '000000';
-          const [month, year] = compStr.split('/');
-          if (!month || !year) return '000000';
+        const parseCompetencia = (comp: string) => {
+          const [month, year] = String(comp).split('/');
           return `${year}${month.padStart(2, '0')}`;
         };
         
-        const aComp = parseCompetencia(aValue);
-        const bComp = parseCompetencia(bValue);
+        const aComp = parseCompetencia(String(aValue));
+        const bComp = parseCompetencia(String(bValue));
         comparison = aComp.localeCompare(bComp);
       } else if (typeof aValue === 'number' && typeof bValue === 'number') {
         comparison = aValue - bValue;
