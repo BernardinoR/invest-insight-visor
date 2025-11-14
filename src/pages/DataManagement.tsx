@@ -552,13 +552,20 @@ export default function DataManagement() {
     // Verificar se está vazio, null, undefined
     if (rendimento == null) return false;
     
-    // Se for string, verificar se está vazia ou é apenas "-"
+    // Se for string
     if (typeof rendimento === 'string') {
       const trimmed = rendimento.trim();
       if (trimmed === '' || trimmed === '-') return false;
+      
+      // Verificar se é "0", "0.0", "0.00", etc
+      const numValue = parseFloat(trimmed);
+      if (!isNaN(numValue) && numValue === 0) return false;
     }
     
-    // Se chegou aqui, tem rentabilidade válida (incluindo 0)
+    // Se for número, verificar se é exatamente 0
+    if (typeof rendimento === 'number' && rendimento === 0) return false;
+    
+    // Se chegou aqui, tem rentabilidade válida (> 0)
     return true;
   };
 
