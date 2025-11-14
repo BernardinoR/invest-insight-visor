@@ -3666,8 +3666,10 @@ interface VerificationResult {
                                                   verification.hasMissingYield ? 'text-red-500' : 'text-green-500'
                                                 }`}>
                                                   {verification.missingYieldCount}
-                                                  {verification.hasMissingYield && (
+                                                  {verification.hasMissingYield ? (
                                                     <XCircle className="h-3 w-3 ml-1 inline" />
+                                                  ) : (
+                                                    <CheckCircle2 className="h-3 w-3 ml-1 inline" />
                                                   )}
                                                 </span>
                                               </div>
