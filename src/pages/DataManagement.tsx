@@ -4902,18 +4902,23 @@ interface VerificationResult {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          setCalculatorContext('single');
-                          // Preencher automaticamente os campos da calculadora personalizada
-                          if (editingItem["Patrimonio Inicial"]) {
-                            setCustomCalcData({
-                              ...customCalcData,
-                              valorInicial: editingItem["Patrimonio Inicial"] || 0,
-                              competencia: editingItem.Competencia || ''
-                            });
-                          }
-                          setIsCalculatorOpen(true);
-                        }}
+                onClick={() => {
+                  setCalculatorContext('single');
+                  // Preencher automaticamente os campos da calculadora personalizada
+                  if (editingItem["Patrimonio Inicial"]) {
+                    setCustomCalcData({
+                      ...customCalcData,
+                      valorInicial: editingItem["Patrimonio Inicial"] || 0,
+                      competencia: editingItem.Competencia || ''
+                    });
+                  }
+                  // Preencher automaticamente os campos da calculadora de mercado
+                  setMarketCalcData({
+                    competencia: editingItem.Competencia || '',
+                    ticker: editingItem.Ativo || ''
+                  });
+                  setIsCalculatorOpen(true);
+                }}
                         className="mt-2 w-full"
                       >
                         Calcular
@@ -5074,17 +5079,22 @@ interface VerificationResult {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        setCalculatorContext('single');
-                        if (editingItem.Posicao) {
-                          setCustomCalcData({
-                            ...customCalcData,
-                            valorInicial: editingItem.Posicao || 0,
-                            competencia: editingItem.Competencia || ''
-                          });
-                        }
-                        setIsCalculatorOpen(true);
-                      }}
+                onClick={() => {
+                  setCalculatorContext('single');
+                  if (editingItem.Posicao) {
+                    setCustomCalcData({
+                      ...customCalcData,
+                      valorInicial: editingItem.Posicao || 0,
+                      competencia: editingItem.Competencia || ''
+                    });
+                  }
+                  // Preencher automaticamente os campos da calculadora de mercado
+                  setMarketCalcData({
+                    competencia: editingItem.Competencia || '',
+                    ticker: editingItem.Ativo || ''
+                  });
+                  setIsCalculatorOpen(true);
+                }}
                       className="mt-2 w-full"
                     >
                       Calcular
