@@ -80,6 +80,7 @@ export type Database = {
           nomeConta: string | null
           Posicao: number | null
           Rendimento: number | null
+          rentabilidade_validada: boolean | null
           Taxa: string | null
           Vencimento: string | null
         }
@@ -97,6 +98,7 @@ export type Database = {
           nomeConta?: string | null
           Posicao?: number | null
           Rendimento?: number | null
+          rentabilidade_validada?: boolean | null
           Taxa?: string | null
           Vencimento?: string | null
         }
@@ -114,6 +116,7 @@ export type Database = {
           nomeConta?: string | null
           Posicao?: number | null
           Rendimento?: number | null
+          rentabilidade_validada?: boolean | null
           Taxa?: string | null
           Vencimento?: string | null
         }

@@ -135,6 +135,7 @@ interface DadosData {
   "Instituicao": string;
   "Moeda": string;
   "nomeConta": string;
+  "rentabilidade_validada"?: boolean;
 }
 
 export default function DataManagement() {
@@ -548,7 +549,8 @@ export default function DataManagement() {
   };
 
   // Verifica se o ativo tem rentabilidade preenchida e diferente de zero
-  const hasValidYield = (rendimento: any): boolean => {
+  // OU se tem 0% mas foi validado manualmente
+  const hasValidYield = (rendimento: any, rentabilidadeValidada?: boolean): boolean => {
     // Verificar se está vazio, null, undefined
     if (rendimento == null) return false;
     
@@ -563,8 +565,10 @@ export default function DataManagement() {
       ? parseBrazilianNumber(rendimento) 
       : rendimento;
     
-    // Se for zero, considerar como inválido (sem rentabilidade)
-    if (numericValue === 0) return false;
+    // Se for zero, verificar se foi validado manualmente
+    if (numericValue === 0) {
+      return rentabilidadeValidada === true;
+    }
     
     return true;
   };
@@ -4550,7 +4554,7 @@ interface VerificationResult {
                                     )}
                                     
                                     {/* Verificação da Rentabilidade */}
-                                    {!hasValidYield(item.Rendimento) ? (
+                                    {!hasValidYield(item.Rendimento, item.rentabilidade_validada) ? (
                                       <div title="Rentabilidade não preenchida">
                                         <XCircle className="h-4 w-4 text-red-500" />
                                       </div>
@@ -5089,7 +5093,6 @@ interface VerificationResult {
                       size="sm"
                       onClick={() => {
                         setCalculatorContext('single');
-                        // Preencher automaticamente os campos da calculadora personalizada para Dados Detalhados
                         if (editingItem.Posicao) {
                           setCustomCalcData({
                             ...customCalcData,
@@ -5103,6 +5106,40 @@ interface VerificationResult {
                     >
                       Calcular
                     </Button>
+                    
+                    {editingItem.Rendimento === 0 && (
+                      <Button
+                        variant={editingItem.rentabilidade_validada ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          const novoValor = !editingItem.rentabilidade_validada;
+                          setEditingItem({
+                            ...editingItem, 
+                            rentabilidade_validada: novoValor
+                          });
+                          
+                          toast({
+                            title: novoValor ? "Rentabilidade validada" : "Validação removida",
+                            description: novoValor 
+                              ? "Este ativo não será mais classificado como 'rentabilidade faltante'"
+                              : "Este ativo voltará a ser classificado como 'rentabilidade faltante'",
+                          });
+                        }}
+                        className="mt-2 w-full"
+                      >
+                        {editingItem.rentabilidade_validada ? (
+                          <>
+                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                            Rentabilidade Validada ✓
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="mr-2 h-4 w-4" />
+                            Marcar Rentabilidade como Validada
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </>
               )}
