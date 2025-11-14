@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3 } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -625,6 +625,26 @@ export default function DataManagement() {
       toast({
         title: "Erro",
         description: "Erro ao carregar dados",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefreshData = async () => {
+    try {
+      setLoading(true);
+      await fetchData();
+      toast({
+        title: "Dados Atualizados",
+        description: "Os dados foram recarregados com sucesso",
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar dados:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar os dados",
         variant: "destructive",
       });
     } finally {
@@ -2838,6 +2858,16 @@ interface VerificationResult {
             >
               <FileCheck className="h-4 w-4" />
               Prova Real
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleRefreshData}
+              disabled={loading}
+              className="flex items-center gap-2 bg-card/50 border-primary/20 hover:bg-primary/10"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Atualizar Dados
             </Button>
             
             <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
