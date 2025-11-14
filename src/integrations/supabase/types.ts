@@ -119,50 +119,61 @@ export type Database = {
         }
         Relationships: []
       }
-      documents: {
+      extrato_status_log: {
         Row: {
-          content: string | null
-          embedding: string | null
-          id: number
-          metadata: Json | null
+          cliente: string
+          competencia: string
+          created_at: string | null
+          detalhes: Json | null
+          id: string
+          instituicao: string
+          ip_origem: string | null
+          mensagem: string | null
+          sistema_origem: string | null
+          status: string
+          submission_id: string | null
+          tipo_extrato: string | null
+          webhook_timestamp: string | null
         }
         Insert: {
-          content?: string | null
-          embedding?: string | null
-          id?: number
-          metadata?: Json | null
+          cliente: string
+          competencia: string
+          created_at?: string | null
+          detalhes?: Json | null
+          id?: string
+          instituicao: string
+          ip_origem?: string | null
+          mensagem?: string | null
+          sistema_origem?: string | null
+          status: string
+          submission_id?: string | null
+          tipo_extrato?: string | null
+          webhook_timestamp?: string | null
         }
         Update: {
-          content?: string | null
-          embedding?: string | null
-          id?: number
-          metadata?: Json | null
+          cliente?: string
+          competencia?: string
+          created_at?: string | null
+          detalhes?: Json | null
+          id?: string
+          instituicao?: string
+          ip_origem?: string | null
+          mensagem?: string | null
+          sistema_origem?: string | null
+          status?: string
+          submission_id?: string | null
+          tipo_extrato?: string | null
+          webhook_timestamp?: string | null
         }
-        Relationships: []
-      }
-      gastos: {
-        Row: {
-          created_at: string
-          id: number
-          nome: string | null
-          tipo: Database["public"]["Enums"]["tipo"] | null
-          valor: number | null
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-          nome?: string | null
-          tipo?: Database["public"]["Enums"]["tipo"] | null
-          valor?: number | null
-        }
-        Update: {
-          created_at?: string
-          id?: number
-          nome?: string | null
-          tipo?: Database["public"]["Enums"]["tipo"] | null
-          valor?: number | null
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "extrato_status_log_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       institutions: {
         Row: {
@@ -206,99 +217,6 @@ export type Database = {
           alive?: boolean | null
           created_at?: string
           id?: number
-        }
-        Relationships: []
-      }
-      lead_sdr: {
-        Row: {
-          created_at: string
-          email: string | null
-          followUP: string | null
-          id: number
-          mensagem: string | null
-          nome: string | null
-          status: string | null
-          telefone: string | null
-          ultima_msg: string | null
-        }
-        Insert: {
-          created_at?: string
-          email?: string | null
-          followUP?: string | null
-          id?: number
-          mensagem?: string | null
-          nome?: string | null
-          status?: string | null
-          telefone?: string | null
-          ultima_msg?: string | null
-        }
-        Update: {
-          created_at?: string
-          email?: string | null
-          followUP?: string | null
-          id?: number
-          mensagem?: string | null
-          nome?: string | null
-          status?: string | null
-          telefone?: string | null
-          ultima_msg?: string | null
-        }
-        Relationships: []
-      }
-      Leads: {
-        Row: {
-          created_at: string
-          id: number
-          lead_id: string | null
-          lead_nome: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-          lead_id?: string | null
-          lead_nome?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: number
-          lead_id?: string | null
-          lead_nome?: string | null
-        }
-        Relationships: []
-      }
-      n8n_chat_histories: {
-        Row: {
-          id: number
-          message: Json
-          session_id: string
-        }
-        Insert: {
-          id?: number
-          message: Json
-          session_id: string
-        }
-        Update: {
-          id?: number
-          message?: Json
-          session_id?: string
-        }
-        Relationships: []
-      }
-      n8n_chat_nocodeaula: {
-        Row: {
-          id: number
-          message: Json
-          session_id: string
-        }
-        Insert: {
-          id?: number
-          message: Json
-          session_id: string
-        }
-        Update: {
-          id?: number
-          message?: Json
-          session_id?: string
         }
         Relationships: []
       }
@@ -383,6 +301,30 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       RAG_Processador: {
         Row: {
           Ativo: string | null
@@ -401,6 +343,75 @@ export type Database = {
           Classificacao?: string | null
           created_at?: string
           id?: number
+        }
+        Relationships: []
+      }
+      submissions: {
+        Row: {
+          cliente: string
+          competencia: string
+          created_at: string
+          id: string
+          instituicao: string
+          moeda: string
+          nome_conta: string | null
+          status: string | null
+          tipos: Json
+          ultimo_status: string | null
+          ultimo_status_at: string | null
+          user_id: string
+          webhook_response: Json | null
+        }
+        Insert: {
+          cliente: string
+          competencia: string
+          created_at?: string
+          id?: string
+          instituicao: string
+          moeda: string
+          nome_conta?: string | null
+          status?: string | null
+          tipos: Json
+          ultimo_status?: string | null
+          ultimo_status_at?: string | null
+          user_id: string
+          webhook_response?: Json | null
+        }
+        Update: {
+          cliente?: string
+          competencia?: string
+          created_at?: string
+          id?: string
+          instituicao?: string
+          moeda?: string
+          nome_conta?: string | null
+          status?: string | null
+          tipos?: Json
+          ultimo_status?: string | null
+          ultimo_status_at?: string | null
+          user_id?: string
+          webhook_response?: Json | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -451,12 +462,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_extrato_logs: { Args: never; Returns: undefined }
       get_unique_clients: {
         Args: never
         Returns: {
           Cliente: string
           "Meta de Retorno": string
         }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
       }
       match_documents: {
         Args: { filter?: Json; match_count?: number; query_embedding: string }
@@ -469,6 +488,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "user"
       tipo: "Supermarcado" | "Diversão" | "Saúde" | "Educação"
     }
     CompositeTypes: {
@@ -597,6 +617,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
       tipo: ["Supermarcado", "Diversão", "Saúde", "Educação"],
     },
   },

@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCDIData } from "@/hooks/useCDIData";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { parseCompetenciaToDate, isValidCompetencia } from "@/lib/utils";
 
 const COLORS = [
   'hsl(210 16% 82%)', // Light blue-gray
@@ -315,17 +316,19 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
             });
 
             // Sort by competencia and apply compound interest
-            monthlyReturns.sort((a, b) => {
-              const [monthA, yearA] = a.competencia.split('/');
-              const [monthB, yearB] = b.competencia.split('/');
-              const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-              const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
-              return dateA.getTime() - dateB.getTime();
-            });
+            const sortedMonthlyReturns = monthlyReturns
+              .filter(item => isValidCompetencia(item.competencia))
+              .sort((a, b) => {
+                const [monthA, yearA] = a.competencia.split('/');
+                const [monthB, yearB] = b.competencia.split('/');
+                const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+                const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+                return dateA.getTime() - dateB.getTime();
+              });
 
             // Apply compound interest across months
             let accumulatedMultiplier = 1;
-            monthlyReturns.forEach(({ competencia, return: monthReturn }) => {
+            sortedMonthlyReturns.forEach(({ competencia, return: monthReturn }) => {
               accumulatedMultiplier *= (1 + monthReturn);
               console.log(`${strategy} - ${competencia}: ${(monthReturn * 100).toFixed(2)}%, accumulated: ${((accumulatedMultiplier - 1) * 100).toFixed(2)}%`);
             });

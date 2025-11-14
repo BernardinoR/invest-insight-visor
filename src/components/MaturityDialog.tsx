@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { isValidCompetencia } from "@/lib/utils";
 
 interface MaturityDialogProps {
   open: boolean;
@@ -14,12 +15,14 @@ interface MaturityDialogProps {
 export function MaturityDialog({ open, onOpenChange, dadosData }: MaturityDialogProps) {
   // Get most recent competencia
   const mostRecentCompetencia = dadosData.length > 0
-    ? [...new Set(dadosData.map(item => item.Competencia))].sort((a, b) => {
-        const [monthA, yearA] = a.split('/').map(Number);
-        const [monthB, yearB] = b.split('/').map(Number);
-        if (yearA !== yearB) return yearB - yearA;
-        return monthB - monthA;
-      })[0]
+    ? [...new Set(dadosData.map(item => item.Competencia))]
+        .filter(isValidCompetencia)
+        .sort((a, b) => {
+          const [monthA, yearA] = a.split('/').map(Number);
+          const [monthB, yearB] = b.split('/').map(Number);
+          if (yearA !== yearB) return yearB - yearA;
+          return monthB - monthA;
+        })[0]
     : null;
 
   // Filter data for most recent competencia

@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { isValidCompetencia } from "@/lib/utils";
 
 interface DiversificationDialogProps {
   open: boolean;
@@ -75,12 +76,14 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
   };
 
   // Get all unique competencias and sort them
-  const allCompetencias = [...new Set(dadosData.map(item => item.Competencia))].sort((a, b) => {
-    const [monthA, yearA] = a.split('/').map(Number);
-    const [monthB, yearB] = b.split('/').map(Number);
-    if (yearA !== yearB) return yearA - yearB;
-    return monthA - monthB;
-  });
+  const allCompetencias = [...new Set(dadosData.map(item => item.Competencia))]
+    .filter(isValidCompetencia)
+    .sort((a, b) => {
+      const [monthA, yearA] = a.split('/').map(Number);
+      const [monthB, yearB] = b.split('/').map(Number);
+      if (yearA !== yearB) return yearA - yearB;
+      return monthA - monthB;
+    });
 
   // Get all unique strategies across all time (using grouped strategies)
   const allStrategies = [...new Set(
