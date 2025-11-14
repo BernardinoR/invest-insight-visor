@@ -102,7 +102,10 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
   }, []);
 
   // Helper function to convert competencia string to comparable date
-  const competenciaToDate = (competencia: string) => {
+  const competenciaToDate = (competencia: string | null | undefined) => {
+    if (!competencia || typeof competencia !== 'string' || !competencia.includes('/')) {
+      return new Date(0); // Return epoch date for invalid competencias
+    }
     const [month, year] = competencia.split('/');
     // Tratar anos de 2 dígitos corretamente (ex: 25 -> 2025)
     const fullYear = parseInt(year) < 100 ? 2000 + parseInt(year) : parseInt(year);
@@ -242,6 +245,12 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
         return currentDate > latestDate ? current : latest;
       }).Competencia;
       
+      // Validate mostRecentCompetencia before using
+      if (!mostRecentCompetencia || typeof mostRecentCompetencia !== 'string' || !mostRecentCompetencia.includes('/')) {
+        returns.set(assetName, { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 });
+        return;
+      }
+      
       // Month return: return from most recent competencia
       const lastMonthData = allAssetData.find(item => item.Competencia === mostRecentCompetencia);
       const moedaOriginal = lastMonthData?.Moeda === 'Dolar' ? 'USD' : 'BRL';
@@ -251,7 +260,11 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
       
       // Year return: compound return for the year of most recent competencia
       const lastYear = mostRecentCompetencia.substring(3);
-      const yearData = allAssetData.filter(item => item.Competencia.endsWith(lastYear));
+      const yearData = allAssetData.filter(item => 
+        item.Competencia && 
+        typeof item.Competencia === 'string' && 
+        item.Competencia.endsWith(lastYear)
+      );
       const sortedYearData = yearData.sort((a, b) => a.Competencia.localeCompare(b.Competencia));
       
       const yearMonthlyReturns = sortedYearData.map(item => {
@@ -318,7 +331,10 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     }
     
     // Find the most recent competencia from filtered data
-    const allCompetencias = dataToUse.map(item => item.Competencia).filter(Boolean);
+    const allCompetencias = dataToUse
+      .map(item => item.Competencia)
+      .filter(comp => comp && typeof comp === 'string' && comp.includes('/'));
+    
     if (allCompetencias.length === 0) {
       return totalRendimento;
     }
@@ -452,11 +468,13 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     }
 
     // Get all unique competencias and sort them CORRECTLY by date
-    const allCompetencias = [...new Set(dataToUse.map(item => item.Competencia))].sort((a, b) => {
-      const [monthA, yearA] = a.split('/').map(Number);
-      const [monthB, yearB] = b.split('/').map(Number);
-      if (yearA !== yearB) return yearA - yearB;
-      return monthA - monthB;
+    const allCompetencias = [...new Set(dataToUse.map(item => item.Competencia))]
+      .filter(comp => comp && typeof comp === 'string' && comp.includes('/'))
+      .sort((a, b) => {
+        const [monthA, yearA] = a.split('/').map(Number);
+        const [monthB, yearB] = b.split('/').map(Number);
+        if (yearA !== yearB) return yearA - yearB;
+        return monthA - monthB;
     });
     
     // Determine which competencia to use (filtered or latest available)
@@ -588,15 +606,18 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                  {(() => {
                    if (!hasData || filteredConsolidadoData.length === 0) return "--%";
                    
-                   // Use filtered range end date if available, otherwise get most recent from filtered data
-                   const targetCompetencia = filteredRange.fim || (() => {
-                     const allCompetencias = filteredConsolidadoData.map(item => item.Competencia).filter(Boolean);
-                     if (allCompetencias.length === 0) return null;
-                     
-                     return allCompetencias.sort((a, b) => {
-                       const [monthA, yearA] = a.split('/').map(Number);
-                       const [monthB, yearB] = b.split('/').map(Number);
-                       if (yearA !== yearB) return yearB - yearA;
+                    // Use filtered range end date if available, otherwise get most recent from filtered data
+                    const targetCompetencia = filteredRange.fim || (() => {
+                      const allCompetencias = filteredConsolidadoData
+                        .map(item => item.Competencia)
+                        .filter(comp => comp && typeof comp === 'string' && comp.includes('/'));
+                      
+                      if (allCompetencias.length === 0) return null;
+                      
+                      return allCompetencias.sort((a, b) => {
+                        const [monthA, yearA] = a.split('/').map(Number);
+                        const [monthB, yearB] = b.split('/').map(Number);
+                        if (yearA !== yearB) return yearB - yearA;
                        return monthB - monthA;
                      })[0];
                    })();
@@ -646,7 +667,10 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                     
                     // Use filtered range end date if available, otherwise get most recent from filtered data
                     const targetCompetencia = filteredRange.fim || (() => {
-                      const allCompetencias = filteredConsolidadoData.map(item => item.Competencia).filter(Boolean);
+                      const allCompetencias = filteredConsolidadoData
+                        .map(item => item.Competencia)
+                        .filter(comp => comp && typeof comp === 'string' && comp.includes('/'));
+                      
                       if (allCompetencias.length === 0) return null;
                       
                       return allCompetencias.sort((a, b) => {
@@ -1081,7 +1105,10 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       if (data.length === 0) return [];
                       
                       // Convert competencia string to date for proper comparison
-                      const competenciaToDate = (competencia: string) => {
+                      const competenciaToDate = (competencia: string | null | undefined) => {
+                        if (!competencia || typeof competencia !== 'string' || !competencia.includes('/')) {
+                          return new Date(0); // Return epoch date for invalid competencias
+                        }
                         const [month, year] = competencia.split('/');
                         return new Date(parseInt(year), parseInt(month) - 1);
                       };
@@ -1127,7 +1154,10 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                       if (allStrategyData.length === 0) return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
                       
                       // Convert competencia string to date for proper comparison
-                      const competenciaToDate = (competencia: string) => {
+                      const competenciaToDate = (competencia: string | null | undefined) => {
+                        if (!competencia || typeof competencia !== 'string' || !competencia.includes('/')) {
+                          return new Date(0); // Return epoch date for invalid competencias
+                        }
                         const [month, year] = competencia.split('/');
                         return new Date(parseInt(year), parseInt(month) - 1);
                       };
@@ -1138,6 +1168,11 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                         const currentDate = competenciaToDate(current.Competencia);
                         return currentDate > latestDate ? current : latest;
                       }).Competencia;
+                      
+                      // Validate mostRecentCompetencia before using
+                      if (!mostRecentCompetencia || typeof mostRecentCompetencia !== 'string' || !mostRecentCompetencia.includes('/')) {
+                        return { monthReturn: 0, yearReturn: 0, inceptionReturn: 0 };
+                      }
                       
                       // Get only assets from the most recent competencia for monthly return calculation
                       const lastMonthAssets = allStrategyData.filter(item => item.Competencia === mostRecentCompetencia);
@@ -1166,7 +1201,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
                         return acc;
                       }, {} as Record<string, typeof allStrategyData>);
                       
-                      const sortedCompetencias = Object.keys(competenciaGroups).sort();
+                      const sortedCompetencias = Object.keys(competenciaGroups)
+                        .filter(comp => comp && typeof comp === 'string' && comp.includes('/'))
+                        .sort();
                       
                       if (sortedCompetencias.length === 0) return { monthReturn, yearReturn: 0, inceptionReturn: 0 };
                       
