@@ -1630,28 +1630,10 @@ interface VerificationResult {
       !isValidAssetClass(item["Classe do ativo"])
     ).length;
     
-    // Contar ativos sem rentabilidade preenchida
-    const missingYieldCount = relatedDetails.filter(item => {
-      const rendimento = item.Rendimento;
-      
-      // Verificar se está vazio, null, undefined, ou é apenas "-"
-      if (rendimento == null) return true;
-      
-      // Se for string, verificar se está vazia, é "-", ou é "0"
-      if (typeof rendimento === 'string') {
-        const trimmed = rendimento.trim();
-        if (trimmed === '' || trimmed === '-') return true;
-        
-        // Verificar se é "0", "0.0", "0.00", etc
-        const numValue = parseFloat(trimmed);
-        if (!isNaN(numValue) && numValue === 0) return true;
-      }
-      
-      // Se for número, verificar se é exatamente 0
-      if (typeof rendimento === 'number' && rendimento === 0) return true;
-      
-      return false;
-    }).length;
+    // Contar ativos sem rentabilidade válida (considerando validação manual)
+    const missingYieldCount = relatedDetails.filter(item => 
+      !hasValidYield(item.Rendimento, item.rentabilidade_validada)
+    ).length;
     
     // Calcular diferença
     const difference = Math.abs(patrimonioFinal - detailedSum);
@@ -1679,7 +1661,7 @@ interface VerificationResult {
       missingYieldCount,
       hasMissingYield: missingYieldCount > 0
     };
-  }, [dadosIndex, correctThreshold, toleranceValue]);
+  }, [dadosIndex, correctThreshold, toleranceValue, hasValidYield]);
 
   // FASE 1: CACHE - Pré-calcular todas as verificações UMA ÚNICA VEZ
   const verificationsCache = useMemo(() => {
