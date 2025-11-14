@@ -550,7 +550,16 @@ export default function DataManagement() {
 
   // Verifica se o ativo tem rentabilidade preenchida e diferente de zero
   // OU se tem 0% mas foi validado manualmente
-  const hasValidYield = (rendimento: any, rentabilidadeValidada?: boolean): boolean => {
+  // OU se o nome do ativo é "Caixa" ou "Proventos" (auto-validado)
+  const hasValidYield = (rendimento: any, rentabilidadeValidada?: boolean, nomeAtivo?: string): boolean => {
+    // Verificar se o ativo é "Caixa" ou "Proventos" (auto-validado)
+    if (nomeAtivo) {
+      const nomeNormalizado = nomeAtivo.toLowerCase().trim();
+      if (nomeNormalizado.includes('caixa') || nomeNormalizado.includes('proventos')) {
+        return true; // Auto-validado
+      }
+    }
+    
     // Verificar se está vazio, null, undefined
     if (rendimento == null) return false;
     
@@ -1632,7 +1641,7 @@ interface VerificationResult {
     
     // Contar ativos sem rentabilidade válida (considerando validação manual)
     const missingYieldCount = relatedDetails.filter(item => 
-      !hasValidYield(item.Rendimento, item.rentabilidade_validada)
+      !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo)
     ).length;
     
     // Calcular diferença
@@ -1772,7 +1781,7 @@ interface VerificationResult {
     if (showOnlyUnclassified || showOnlyMissingYield) {
       data = data.filter(item => {
         const isUnclassified = showOnlyUnclassified && !isValidAssetClass(item["Classe do ativo"]);
-        const hasMissingYield = showOnlyMissingYield && !hasValidYield(item.Rendimento, item.rentabilidade_validada);
+        const hasMissingYield = showOnlyMissingYield && !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo);
         
         // Se ambos filtros estão ativos, mostrar itens que atendem pelo menos um
         if (showOnlyUnclassified && showOnlyMissingYield) {
@@ -1843,7 +1852,7 @@ interface VerificationResult {
     }
     
     // Usar hasValidYield para consistência com o resto do sistema
-    return data.filter(item => !hasValidYield(item.Rendimento, item.rentabilidade_validada)).length;
+    return data.filter(item => !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo)).length;
   }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo, hasValidYield]);
 
   // Função para abrir o dialog de exportação
@@ -4528,7 +4537,7 @@ interface VerificationResult {
                                     )}
                                     
                                     {/* Verificação da Rentabilidade */}
-                                    {!hasValidYield(item.Rendimento, item.rentabilidade_validada) ? (
+                                    {!hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo) ? (
                                       <div title="Rentabilidade não preenchida">
                                         <XCircle className="h-4 w-4 text-red-500" />
                                       </div>
