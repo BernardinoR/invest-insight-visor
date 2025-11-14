@@ -37,7 +37,10 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
     if (data.length === 0) return [];
     
     // Convert competencia string to date for proper comparison
-    const competenciaToDate = (competencia: string) => {
+    const competenciaToDate = (competencia: string | null | undefined) => {
+      if (!competencia || typeof competencia !== 'string' || !competencia.includes('/')) {
+        return new Date(0); // Return epoch date for invalid competencias
+      }
       const [month, year] = competencia.split('/');
       return new Date(parseInt(year), parseInt(month) - 1);
     };
@@ -48,6 +51,11 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
       const currentDate = competenciaToDate(current.Competencia);
       return currentDate > latestDate ? current : latest;
     }).Competencia;
+    
+    // Validate mostRecentCompetencia before using
+    if (!mostRecentCompetencia || typeof mostRecentCompetencia !== 'string') {
+      return [];
+    }
     
     // Return all records with the most recent competencia
     return data.filter(item => item.Competencia === mostRecentCompetencia);
