@@ -5320,6 +5320,41 @@ interface VerificationResult {
                       />
                       <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
                     </div>
+                    
+                    {/* Botão "Rentabilidade validada" - Só aparece se rendimento = 0 */}
+                    {bulkEditData.Rendimento === 0 && (
+                      <Button
+                        variant={bulkEditData.rentabilidade_validada ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          const novoValor = !bulkEditData.rentabilidade_validada;
+                          setBulkEditData({
+                            ...bulkEditData, 
+                            rentabilidade_validada: novoValor
+                          });
+                          
+                          toast({
+                            title: novoValor ? "Rentabilidade validada" : "Validação removida",
+                            description: novoValor 
+                              ? `${selectedItems.size} ativos serão marcados como rentabilidade validada`
+                              : `${selectedItems.size} ativos terão a validação removida`,
+                          });
+                        }}
+                        className="mt-2 w-full"
+                      >
+                        {bulkEditData.rentabilidade_validada ? (
+                          <>
+                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                            Rentabilidade Validada ✓
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="mr-2 h-4 w-4" />
+                            Marcar Rentabilidade como Validada
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </div>
               </>
