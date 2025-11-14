@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
+import { parseCompetenciaToDate, isValidCompetencia } from "@/lib/utils";
 
 interface MaturityTimelineProps {
   selectedClient?: string;
@@ -69,21 +70,19 @@ export function MaturityTimeline({ selectedClient, dadosData: propDadosData }: M
   const getMostRecentData = (data: typeof dadosData) => {
     if (data.length === 0) return [];
     
-    // Convert competencia string to date for proper comparison
-    const competenciaToDate = (competencia: string) => {
-      const [month, year] = competencia.split('/');
-      return new Date(parseInt(year), parseInt(month) - 1);
-    };
+    // Filter valid competencias first
+    const validData = data.filter(item => isValidCompetencia(item.Competencia));
+    if (validData.length === 0) return [];
     
     // Find the most recent competencia using date comparison
-    const mostRecentCompetencia = data.reduce((latest, current) => {
-      const latestDate = competenciaToDate(latest.Competencia);
-      const currentDate = competenciaToDate(current.Competencia);
+    const mostRecentCompetencia = validData.reduce((latest, current) => {
+      const latestDate = parseCompetenciaToDate(latest.Competencia);
+      const currentDate = parseCompetenciaToDate(current.Competencia);
       return currentDate > latestDate ? current : latest;
     }).Competencia;
     
     // Return all records with the most recent competencia
-    return data.filter(item => item.Competencia === mostRecentCompetencia);
+    return validData.filter(item => item.Competencia === mostRecentCompetencia);
   };
 
   // Use the most recent data within the filtered period

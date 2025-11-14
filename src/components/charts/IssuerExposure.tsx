@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useClientData } from "@/hooks/useClientData";
 import { useState, useMemo } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { parseCompetenciaToDate, isValidCompetencia } from "@/lib/utils";
 
 interface IssuerData {
   name: string;
@@ -48,21 +49,19 @@ export function IssuerExposure({ clientName, dadosData: propDadosData }: {
   const getMostRecentData = (data: typeof rawData) => {
     if (data.length === 0) return [];
     
-    // Convert competencia string to date for proper comparison
-    const competenciaToDate = (competencia: string) => {
-      const [month, year] = competencia.split('/');
-      return new Date(parseInt(year), parseInt(month) - 1);
-    };
+    // Filter valid competencias first
+    const validData = data.filter(item => isValidCompetencia(item.Competencia));
+    if (validData.length === 0) return [];
     
     // Find the most recent competencia using date comparison
-    const mostRecentCompetencia = data.reduce((latest, current) => {
-      const latestDate = competenciaToDate(latest.Competencia);
-      const currentDate = competenciaToDate(current.Competencia);
+    const mostRecentCompetencia = validData.reduce((latest, current) => {
+      const latestDate = parseCompetenciaToDate(latest.Competencia);
+      const currentDate = parseCompetenciaToDate(current.Competencia);
       return currentDate > latestDate ? current : latest;
     }).Competencia;
     
     // Return all records with the most recent competencia
-    return data.filter(item => item.Competencia === mostRecentCompetencia);
+    return validData.filter(item => item.Competencia === mostRecentCompetencia);
   };
 
   const filteredData = getMostRecentData(rawData);
