@@ -1277,8 +1277,39 @@ export default function DataManagement() {
   }, []);
 
   const handleBulkEdit = () => {
+    const items = activeTab === 'consolidado' 
+      ? filteredConsolidadoData.filter(item => selectedItems.has(item.id))
+      : filteredDadosData.filter(item => selectedItems.has(item.id));
+    
+    if (items.length === 0) return;
+    
+    // Detectar valores comuns entre todos os itens selecionados
+    const commonValues: any = {};
+    
+    // Lista de campos para verificar
+    const fieldsToCheck = [
+      'Rendimento', 
+      'Competencia', 
+      'Instituicao', 
+      'Classe do ativo', 
+      'Emissor', 
+      'Taxa', 
+      'Moeda', 
+      'nomeConta',
+      'rentabilidade_validada'
+    ];
+    
+    fieldsToCheck.forEach(field => {
+      const firstValue = items[0][field];
+      const allSame = items.every(item => item[field] === firstValue);
+      
+      if (allSame && firstValue !== null && firstValue !== undefined) {
+        commonValues[field] = firstValue;
+      }
+    });
+    
     setIsBulkEditOpen(true);
-    setBulkEditData({});
+    setBulkEditData(commonValues);
   };
 
   const handleBulkSave = async () => {
