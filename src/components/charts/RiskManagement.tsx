@@ -795,8 +795,8 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
         </CardHeader>
         <CardContent className="p-6">
           <div className="space-y-6">
-            {/* Linha Superior - 3 Colunas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[320px_1fr_320px] gap-4 items-start">
+            {/* Linha Superior - 2 Colunas */}
+            <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 items-start">
 
               {/* Coluna 1: Hit Rate Geral */}
               <div className="flex items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '100ms' }}>
@@ -821,7 +821,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               </div>
 
               {/* Coluna 2: Distribuição de Performance */}
-              <div className="space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '200ms' }}>
+              <div className="space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '150ms' }}>
                 <div className="flex items-center gap-2 mb-3 pb-1.5 border-b border-border/50">
                   <BarChart3 className="h-3.5 w-3.5 text-foreground/70" />
                   <h3 className="text-xs font-bold text-foreground uppercase tracking-wide">Distribuição de Performance</h3>
@@ -964,81 +964,6 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 </div>
               </div>
 
-              {/* Coluna 3: Métricas Adicionais */}
-              <div className="space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '300ms' }}>
-                <div className="flex items-center gap-2 mb-3 pb-1.5 border-b border-border/50">
-                  <TrendingUp className="h-3.5 w-3.5 text-foreground/70" />
-                  <h3 className="text-xs font-bold text-foreground uppercase tracking-wide">Métricas Adicionais</h3>
-                </div>
-                
-                {/* Melhor Mês */}
-                <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-success/10 to-transparent border border-success/20 rounded-lg hover:from-success/15 hover:shadow-sm transition-all duration-200">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-success/20 p-1.5 rounded-md">
-                      <TrendingUp className="h-3.5 w-3.5 text-success" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-foreground">Melhor Mês</p>
-                      <p className="text-[10px] text-muted-foreground">{riskMetrics.bestMonth.competencia}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xl font-bold text-success">+{riskMetrics.bestMonth.return.toFixed(2)}%</p>
-                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-success/40 text-success font-semibold tracking-wide">RECORDE</Badge>
-                  </div>
-                </div>
-                
-                {/* Pior Mês */}
-                <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-destructive/10 to-transparent border border-destructive/20 rounded-lg hover:from-destructive/15 hover:shadow-sm transition-all duration-200">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-destructive/20 p-1.5 rounded-md">
-                      <TrendingDown className="h-3.5 w-3.5 text-destructive" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-foreground">Pior Mês</p>
-                      <p className="text-[10px] text-muted-foreground">{riskMetrics.worstMonth.competencia}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xl font-bold text-destructive">{riskMetrics.worstMonth.return.toFixed(2)}%</p>
-                    <Badge variant="destructive" className="text-[9px] px-1.5 py-0 font-semibold tracking-wide">PISO</Badge>
-                  </div>
-                </div>
-                
-                {/* Consistência */}
-                <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-warning/10 to-transparent border border-warning/20 rounded-lg hover:from-warning/15 hover:shadow-sm transition-all duration-200">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-warning/20 p-1.5 rounded-md">
-                      <BarChart3 className="h-3.5 w-3.5 text-warning" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-foreground">Consistência</p>
-                      <p className="text-[10px] text-muted-foreground">meses positivos</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xl font-bold text-warning">{riskMetrics.hitRate.positivePercent}%</p>
-                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-warning/40 text-warning font-semibold tracking-wide">ESTÁVEL</Badge>
-                  </div>
-                </div>
-                
-                {/* Acima da Meta */}
-                <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-primary/10 to-transparent border border-primary/20 rounded-lg hover:from-primary/15 hover:shadow-sm transition-all duration-200">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-primary/20 p-1.5 rounded-md">
-                      <Target className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-foreground">Acima da Meta</p>
-                      <p className="text-[10px] text-muted-foreground">{riskMetrics.hitRate.hitRatePercent}% do período</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xl font-bold text-primary">{riskMetrics.hitRate.homeRun + riskMetrics.hitRate.acerto}</p>
-                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 font-semibold tracking-wide">META</Badge>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Gráfico Central - Performance Mensal */}
