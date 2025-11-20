@@ -996,7 +996,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                     return targetComparisonData.map(entry => {
                       const marketDataForCompetencia = marketData?.find(m => m.competencia === entry.competencia);
                       const monthlyTarget = (marketDataForCompetencia?.clientTarget || clientTarget) * 100;
-                      const volatility = riskMetrics.volatility;
+                      const volatility = riskMetrics.targetMetrics.targetVolatility;
                       const homeRunThreshold = monthlyTarget + volatility;
                       
                       let categoria: 'homeRun' | 'acerto' | 'quaseLa' | 'miss';
@@ -1126,7 +1126,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                         : clientTarget 
                           ? (clientTarget * 100) 
                           : 0;
-                      const volatility = riskMetrics.volatility;
+                      const volatility = riskMetrics.targetMetrics.targetVolatility;
                       const homeRunThreshold = monthlyTarget + volatility;
                       
                       let color;
