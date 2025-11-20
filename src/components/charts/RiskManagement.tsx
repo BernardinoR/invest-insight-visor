@@ -296,6 +296,23 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
       }
     });
     
+    // Calcular volatilidade da meta ANTES do hit rate analysis
+    const allTargets: number[] = [];
+    filteredConsolidatedData.forEach((item) => {
+      const mData = marketData.find(m => m.competencia === item.Competencia);
+      const target = mData?.clientTarget || clientTarget;
+      allTargets.push(target * 100); // Em %
+    });
+    
+    const avgTarget = allTargets.length > 0
+      ? allTargets.reduce((sum, t) => sum + t, 0) / allTargets.length
+      : 0;
+    
+    const targetVariance = allTargets.length > 0
+      ? allTargets.reduce((sum, t) => sum + Math.pow(t - avgTarget, 2), 0) / allTargets.length
+      : 0;
+    const targetVolatility = Math.sqrt(targetVariance);
+    
     // Melhor e pior mês
     const maxReturn = Math.max(...returns);
     const minReturn = Math.min(...returns);
@@ -310,7 +327,8 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
     
     console.log('🎯 === HIT RATE ANÁLISE DETALHADA (META MENSAL) ===');
     console.log('📊 Total de períodos únicos consolidados:', returns.length);
-    console.log('📈 Volatilidade mensal (σ):', volatility.toFixed(4) + '%');
+    console.log('📈 Volatilidade da meta (σ):', targetVolatility.toFixed(4) + '%');
+    console.log('📈 Volatilidade da carteira:', volatility.toFixed(4) + '%');
     console.log('');
     console.log('📅 Análise mês a mês (usando meta mensal de cada competência):');
     
@@ -321,7 +339,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
       const marketDataForCompetencia = marketData.find(m => m.competencia === competencia);
       const monthlyTarget = marketDataForCompetencia?.clientTarget || 0;
       const targetPercent = monthlyTarget * 100; // Converter para %
-      const homeRunThreshold = targetPercent + volatility; // Meta mensal + 1σ
+      const homeRunThreshold = targetPercent + targetVolatility; // Meta mensal + 1σ da meta
       
       let category = '';
       let emoji = '';
@@ -365,23 +383,6 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
     const positivePercent = returns.length > 0
       ? Math.round((positiveMonths / returns.length) * 100)
       : 0;
-    
-    // Calcular métricas da meta
-    const allTargets: number[] = [];
-    filteredConsolidatedData.forEach((item) => {
-      const mData = marketData.find(m => m.competencia === item.Competencia);
-      const target = mData?.clientTarget || clientTarget;
-      allTargets.push(target * 100); // Em %
-    });
-    
-    const avgTarget = allTargets.length > 0
-      ? allTargets.reduce((sum, t) => sum + t, 0) / allTargets.length
-      : 0;
-    
-    const targetVariance = allTargets.length > 0
-      ? allTargets.reduce((sum, t) => sum + Math.pow(t - avgTarget, 2), 0) / allTargets.length
-      : 0;
-    const targetVolatility = Math.sqrt(targetVariance);
     
     return {
       sharpe,
