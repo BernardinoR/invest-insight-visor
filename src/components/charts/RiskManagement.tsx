@@ -1119,9 +1119,13 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
                 animationDuration={800}
                 animationEasing="ease-out"
               >
-                    {targetComparisonData.slice(-12).map((entry, index) => {
+                    {targetComparisonData.map((entry, index) => {
                       const marketDataForCompetencia = marketData?.find(m => m.competencia === entry.competencia);
-                      const monthlyTarget = (marketDataForCompetencia?.clientTarget || clientTarget) * 100;
+                      const monthlyTarget = marketDataForCompetencia?.clientTarget 
+                        ? (marketDataForCompetencia.clientTarget * 100)
+                        : clientTarget 
+                          ? (clientTarget * 100) 
+                          : 0;
                       const volatility = riskMetrics.volatility;
                       const homeRunThreshold = monthlyTarget + volatility;
                       
