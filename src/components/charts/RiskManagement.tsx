@@ -993,7 +993,7 @@ export function RiskManagement({ consolidadoData, clientTarget = 0.7, marketData
               <ResponsiveContainer width="100%" height={550}>
                 <ComposedChart 
                   data={(() => {
-                    return targetComparisonData.slice(-12).map(entry => {
+                    return targetComparisonData.map(entry => {
                       const marketDataForCompetencia = marketData?.find(m => m.competencia === entry.competencia);
                       const monthlyTarget = (marketDataForCompetencia?.clientTarget || clientTarget) * 100;
                       const volatility = riskMetrics.volatility;
