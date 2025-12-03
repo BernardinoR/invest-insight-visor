@@ -316,6 +316,35 @@ export default function DataManagement() {
     }
   }, [editingItem, isDialogOpen]);
 
+  // Helper para extrair tipo de título do nome do ativo
+  const extractTreasuryTypeFromAtivo = (ativo: string): string => {
+    if (!ativo) return 'Tesouro Prefixado';
+    const upperAtivo = ativo.toUpperCase();
+    if (upperAtivo.includes('EDUCA')) return 'Tesouro Educa+';
+    if (upperAtivo.includes('RENDA')) return 'Tesouro Renda+';
+    if (upperAtivo.includes('SELIC') || upperAtivo.includes('LFT')) return 'Tesouro Selic';
+    if (upperAtivo.includes('IPCA') || upperAtivo.includes('NTN-B')) {
+      return upperAtivo.includes('JUROS') || upperAtivo.includes('SEMESTRAL') 
+        ? 'Tesouro IPCA+ com Juros Semestrais' 
+        : 'Tesouro IPCA+';
+    }
+    if (upperAtivo.includes('PREFIXADO') || upperAtivo.includes('LTN') || upperAtivo.includes('NTN-F')) {
+      return upperAtivo.includes('JUROS') || upperAtivo.includes('NTN-F')
+        ? 'Tesouro Prefixado com Juros Semestrais'
+        : 'Tesouro Prefixado';
+    }
+    return 'Tesouro Prefixado';
+  };
+
+  // Helper para extrair ano de uma data (YYYY-MM-DD ou DD/MM/YYYY)
+  const extractYearFromDate = (dateStr: string): string => {
+    if (!dateStr) return '';
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr.substring(0, 4);
+    if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) return dateStr.substring(6, 10);
+    const yearMatch = dateStr.match(/(\d{4})/);
+    return yearMatch ? yearMatch[1] : '';
+  };
+
   // Todas as colunas disponíveis
   const availableColumns = [
     'Competência',
@@ -5090,6 +5119,12 @@ interface VerificationResult {
                     competencia: editingItem.Competencia || '',
                     ticker: editingItem.Ativo || ''
                   });
+                  // Preencher automaticamente os campos da calculadora do Tesouro
+                  setTreasuryCalcData({
+                    competencia: editingItem.Competencia || '',
+                    tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
+                    vencimento: extractYearFromDate(editingItem.Vencimento || ''),
+                  });
                   setIsCalculatorOpen(true);
                 }}
                         className="mt-2 w-full"
@@ -5265,6 +5300,12 @@ interface VerificationResult {
                   setMarketCalcData({
                     competencia: editingItem.Competencia || '',
                     ticker: editingItem.Ativo || ''
+                  });
+                  // Preencher automaticamente os campos da calculadora do Tesouro
+                  setTreasuryCalcData({
+                    competencia: editingItem.Competencia || '',
+                    tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
+                    vencimento: extractYearFromDate(editingItem.Vencimento || ''),
                   });
                   setIsCalculatorOpen(true);
                 }}
