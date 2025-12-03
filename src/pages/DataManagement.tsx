@@ -6014,13 +6014,15 @@ interface VerificationResult {
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Tesouro Prefixado">Tesouro Prefixado (LTN)</SelectItem>
-                      <SelectItem value="Tesouro Prefixado com Juros Semestrais">Tesouro Prefixado c/ Juros (NTN-F)</SelectItem>
-                      <SelectItem value="Tesouro IPCA+">Tesouro IPCA+ (NTN-B Principal)</SelectItem>
-                      <SelectItem value="Tesouro IPCA+ com Juros Semestrais">Tesouro IPCA+ c/ Juros (NTN-B)</SelectItem>
-                      <SelectItem value="Tesouro Selic">Tesouro Selic (LFT)</SelectItem>
-                    </SelectContent>
+                <SelectContent>
+                  <SelectItem value="Tesouro Prefixado">Tesouro Prefixado (LTN)</SelectItem>
+                  <SelectItem value="Tesouro Prefixado com Juros Semestrais">Tesouro Prefixado c/ Juros (NTN-F)</SelectItem>
+                  <SelectItem value="Tesouro IPCA+">Tesouro IPCA+ (NTN-B Principal)</SelectItem>
+                  <SelectItem value="Tesouro IPCA+ com Juros Semestrais">Tesouro IPCA+ c/ Juros (NTN-B)</SelectItem>
+                  <SelectItem value="Tesouro Selic">Tesouro Selic (LFT)</SelectItem>
+                  <SelectItem value="Tesouro Educa+">Tesouro Educa+</SelectItem>
+                  <SelectItem value="Tesouro Renda+">Tesouro Renda+</SelectItem>
+                </SelectContent>
                   </Select>
                 </div>
 
