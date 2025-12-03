@@ -173,7 +173,7 @@ export default function DataManagement() {
   // Calculator dialog state
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [calculatorContext, setCalculatorContext] = useState<'bulk' | 'single'>('bulk');
-  const [calculatorMode, setCalculatorMode] = useState<'auto' | 'manual' | 'custom' | 'market'>('auto');
+  const [calculatorMode, setCalculatorMode] = useState<'auto' | 'manual' | 'custom' | 'market' | 'treasury'>('auto');
   const [manualCalcData, setManualCalcData] = useState({
     competencia: '',
     indexador: 'CDI',
@@ -197,6 +197,22 @@ export default function DataManagement() {
     competencia: '',
     ticker: '',
   });
+  
+  // Treasury calculator state
+  const [treasuryCalcData, setTreasuryCalcData] = useState({
+    competencia: '',
+    tipoTitulo: 'Tesouro Prefixado',
+    vencimento: '',
+  });
+  const [treasuryCalcLoading, setTreasuryCalcLoading] = useState(false);
+  const [treasuryCalcResult, setTreasuryCalcResult] = useState<{
+    titulo: string;
+    rentabilidadeMensal: number;
+    puInicial: number;
+    puFinal: number;
+    vencimento: string;
+    diasUteis: number;
+  } | null>(null);
 
   // Estado para o AlertDialog de exclusão de consolidado
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -1077,6 +1093,46 @@ export default function DataManagement() {
     }
   };
 
+  // Função para buscar dados do Tesouro Direto
+  const handleFetchTreasuryData = async () => {
+    if (!treasuryCalcData.tipoTitulo || !treasuryCalcData.competencia) {
+      toast({
+        title: "Dados incompletos",
+        description: "Preencha o tipo de título e a competência",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTreasuryCalcLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('get-treasury-return', {
+        body: {
+          tipoTitulo: treasuryCalcData.tipoTitulo,
+          vencimento: treasuryCalcData.vencimento,
+          competencia: treasuryCalcData.competencia,
+        }
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      setTreasuryCalcResult(data);
+      toast({
+        title: "Dados obtidos!",
+        description: `${data.titulo}: ${data.rentabilidadeMensal.toFixed(4)}%`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao buscar dados",
+        description: error.message,
+        variant: "destructive",
+      });
+      setTreasuryCalcResult(null);
+    } finally {
+      setTreasuryCalcLoading(false);
+    }
+  };
 
   // Função para confirmar e aplicar o cálculo ao campo Rendimento
   const handleCalculatorConfirm = () => {
@@ -1097,6 +1153,18 @@ export default function DataManagement() {
       // Usar o resultado já buscado
       if (marketCalcResult) {
         calculatedReturn = marketCalcResult.monthlyReturn / 100; // Converter de % para decimal
+      } else {
+        toast({
+          title: "Busque os dados primeiro",
+          description: "Clique em 'Buscar Rentabilidade' antes de confirmar",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else if (calculatorMode === 'treasury') {
+      // Usar o resultado do Tesouro Direto
+      if (treasuryCalcResult) {
+        calculatedReturn = treasuryCalcResult.rentabilidadeMensal / 100; // Converter de % para decimal
       } else {
         toast({
           title: "Busque os dados primeiro",
@@ -5506,6 +5574,13 @@ interface VerificationResult {
               >
                 Mercado
               </Button>
+              <Button
+                variant={calculatorMode === 'treasury' ? 'default' : 'outline'}
+                onClick={() => setCalculatorMode('treasury')}
+              >
+                <BarChart3 className="h-4 w-4 mr-1" />
+                Tesouro
+              </Button>
             </div>
 
             {/* Modo Automático */}
@@ -5894,6 +5969,114 @@ interface VerificationResult {
                         <p className="font-medium">
                           ${marketCalcResult.endPrice.toFixed(2)}
                         </p>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground italic mt-2">
+                      ℹ️ Ao confirmar, este valor será usado como Rendimento
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Modo Tesouro */}
+            {calculatorMode === 'treasury' && (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Busca automaticamente a rentabilidade mensal de títulos públicos 
+                  usando dados oficiais do Tesouro Nacional.
+                </p>
+                
+                <div>
+                  <Label htmlFor="calc-treasury-competencia">Competência</Label>
+                  <Input
+                    id="calc-treasury-competencia"
+                    value={treasuryCalcData.competencia}
+                    onChange={(e) => {
+                      let value = e.target.value.replace(/\D/g, '');
+                      if (value.length >= 2) {
+                        value = value.substring(0, 2) + '/' + value.substring(2, 6);
+                      }
+                      setTreasuryCalcData({...treasuryCalcData, competencia: value});
+                    }}
+                    placeholder="MM/YYYY"
+                    maxLength={7}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="calc-treasury-tipo">Tipo de Título</Label>
+                  <Select
+                    value={treasuryCalcData.tipoTitulo}
+                    onValueChange={(value) => setTreasuryCalcData({...treasuryCalcData, tipoTitulo: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Tesouro Prefixado">Tesouro Prefixado (LTN)</SelectItem>
+                      <SelectItem value="Tesouro Prefixado com Juros Semestrais">Tesouro Prefixado c/ Juros (NTN-F)</SelectItem>
+                      <SelectItem value="Tesouro IPCA+">Tesouro IPCA+ (NTN-B Principal)</SelectItem>
+                      <SelectItem value="Tesouro IPCA+ com Juros Semestrais">Tesouro IPCA+ c/ Juros (NTN-B)</SelectItem>
+                      <SelectItem value="Tesouro Selic">Tesouro Selic (LFT)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="calc-treasury-vencimento">Ano de Vencimento (opcional)</Label>
+                  <Input
+                    id="calc-treasury-vencimento"
+                    value={treasuryCalcData.vencimento}
+                    onChange={(e) => setTreasuryCalcData({...treasuryCalcData, vencimento: e.target.value})}
+                    placeholder="Ex: 2028"
+                    maxLength={4}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Deixe em branco para buscar qualquer vencimento
+                  </p>
+                </div>
+
+                <Button
+                  onClick={handleFetchTreasuryData}
+                  disabled={!treasuryCalcData.tipoTitulo || !treasuryCalcData.competencia || treasuryCalcLoading}
+                  className="w-full"
+                  variant="secondary"
+                >
+                  {treasuryCalcLoading ? 'Buscando...' : 'Buscar Rentabilidade'}
+                </Button>
+
+                {treasuryCalcResult && (
+                  <div className="bg-muted p-4 rounded-md space-y-2 border border-primary/20">
+                    <h4 className="font-semibold text-sm">Resultado da Consulta:</h4>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="col-span-2">
+                        <p className="text-muted-foreground">Título:</p>
+                        <p className="font-medium">{treasuryCalcResult.titulo}</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-muted-foreground">Rentabilidade:</p>
+                        <p className={`font-medium ${treasuryCalcResult.rentabilidadeMensal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {treasuryCalcResult.rentabilidadeMensal.toFixed(4)}%
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-muted-foreground">Vencimento:</p>
+                        <p className="font-medium">{treasuryCalcResult.vencimento}</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-muted-foreground">PU Inicial:</p>
+                        <p className="font-medium">R$ {treasuryCalcResult.puInicial.toFixed(2)}</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-muted-foreground">PU Final:</p>
+                        <p className="font-medium">R$ {treasuryCalcResult.puFinal.toFixed(2)}</p>
                       </div>
                     </div>
 
