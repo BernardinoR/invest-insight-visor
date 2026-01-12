@@ -18,13 +18,18 @@ serve(async (req) => {
     
     // Parse competencia (MM/YYYY) para datas
     const [month, year] = competencia.split('/')
-    const startDate = new Date(parseInt(year), parseInt(month) - 1, 1)
-    const endDate = new Date(parseInt(year), parseInt(month), 0) // último dia do mês
+    // Último dia do mês ANTERIOR (para pegar preço de fechamento anterior)
+    const startDate = new Date(parseInt(year), parseInt(month) - 1, 0) // Dia 0 = último dia do mês anterior
+    const endDate = new Date(parseInt(year), parseInt(month), 0) // Último dia do mês atual
     
     const startTimestamp = Math.floor(startDate.getTime() / 1000)
     const endTimestamp = Math.floor(endDate.getTime() / 1000)
     
-    console.log('Date range:', { startDate: startDate.toISOString(), endDate: endDate.toISOString() })
+    console.log('Date range:', { 
+      startDate: startDate.toISOString(), 
+      endDate: endDate.toISOString(),
+      note: 'startDate = último dia do mês anterior, endDate = último dia do mês atual'
+    })
     
     // Chamar Yahoo Finance API
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${startTimestamp}&period2=${endTimestamp}&interval=1d`
