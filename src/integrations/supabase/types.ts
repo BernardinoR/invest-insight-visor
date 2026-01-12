@@ -65,6 +65,27 @@ export type Database = {
         }
         Relationships: []
       }
+      conversas: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string
+          role: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          role?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          role?: string | null
+        }
+        Relationships: []
+      }
       DadosPerformance: {
         Row: {
           Ativo: string | null
@@ -223,6 +244,69 @@ export type Database = {
         }
         Relationships: []
       }
+      milestones: {
+        Row: {
+          created_at: string | null
+          id: string
+          ordem: number | null
+          pode_regredir: boolean | null
+          projeto_id: string | null
+          status: string | null
+          tipo: string
+          titulo: string
+          unidade: string | null
+          updated_at: string | null
+          user_id: string | null
+          valor_alvo: number
+          valor_atual: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ordem?: number | null
+          pode_regredir?: boolean | null
+          projeto_id?: string | null
+          status?: string | null
+          tipo: string
+          titulo: string
+          unidade?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          valor_alvo: number
+          valor_atual?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ordem?: number | null
+          pode_regredir?: boolean | null
+          projeto_id?: string | null
+          status?: string | null
+          tipo?: string
+          titulo?: string
+          unidade?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          valor_alvo?: number
+          valor_atual?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestones_projeto_id_fkey"
+            columns: ["projeto_id"]
+            isOneToOne: false
+            referencedRelation: "projetos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "milestones_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       PoliticaInvestimentos: {
         Row: {
           "Ações - Ativos": number | null
@@ -328,6 +412,62 @@ export type Database = {
         }
         Relationships: []
       }
+      projetos: {
+        Row: {
+          atingivel: string | null
+          created_at: string | null
+          data_limite: string | null
+          descricao: string | null
+          especifico: string | null
+          id: string
+          mensuravel: string | null
+          progresso_percentual: number | null
+          relevante: string | null
+          status: string | null
+          titulo: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          atingivel?: string | null
+          created_at?: string | null
+          data_limite?: string | null
+          descricao?: string | null
+          especifico?: string | null
+          id?: string
+          mensuravel?: string | null
+          progresso_percentual?: number | null
+          relevante?: string | null
+          status?: string | null
+          titulo: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          atingivel?: string | null
+          created_at?: string | null
+          data_limite?: string | null
+          descricao?: string | null
+          especifico?: string | null
+          id?: string
+          mensuravel?: string | null
+          progresso_percentual?: number | null
+          relevante?: string | null
+          status?: string | null
+          titulo?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projetos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       RAG_Processador: {
         Row: {
           Ativo: string | null
@@ -348,6 +488,82 @@ export type Database = {
           id?: number
         }
         Relationships: []
+      }
+      reflexoes: {
+        Row: {
+          ajuste_aceito: boolean | null
+          created_at: string | null
+          id: string
+          o_que_aconteceu: string | null
+          sugestao_ajuste: string | null
+          tarefa_id: string | null
+        }
+        Insert: {
+          ajuste_aceito?: boolean | null
+          created_at?: string | null
+          id?: string
+          o_que_aconteceu?: string | null
+          sugestao_ajuste?: string | null
+          tarefa_id?: string | null
+        }
+        Update: {
+          ajuste_aceito?: boolean | null
+          created_at?: string | null
+          id?: string
+          o_que_aconteceu?: string | null
+          sugestao_ajuste?: string | null
+          tarefa_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reflexoes_tarefa_id_fkey"
+            columns: ["tarefa_id"]
+            isOneToOne: false
+            referencedRelation: "tarefas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registros_milestone: {
+        Row: {
+          created_at: string | null
+          data_registro: string | null
+          id: string
+          milestone_id: string | null
+          observacao: string | null
+          valor_anterior: number | null
+          valor_novo: number | null
+          variacao: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_registro?: string | null
+          id?: string
+          milestone_id?: string | null
+          observacao?: string | null
+          valor_anterior?: number | null
+          valor_novo?: number | null
+          variacao?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          data_registro?: string | null
+          id?: string
+          milestone_id?: string | null
+          observacao?: string | null
+          valor_anterior?: number | null
+          valor_novo?: number | null
+          variacao?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registros_milestone_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "milestones"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       submissions: {
         Row: {
@@ -397,6 +613,115 @@ export type Database = {
         }
         Relationships: []
       }
+      tarefas: {
+        Row: {
+          created_at: string | null
+          data_agendada: string | null
+          descricao: string | null
+          duracao_minutos: number | null
+          evento_calendar_id: string | null
+          horario_fim: string | null
+          horario_inicio: string | null
+          id: string
+          is_backlog: boolean | null
+          is_prioridade_dia: boolean | null
+          milestone_id: string | null
+          projeto_id: string | null
+          status: string | null
+          titulo: string
+          updated_at: string | null
+          user_id: string | null
+          vezes_nao_cumprida: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_agendada?: string | null
+          descricao?: string | null
+          duracao_minutos?: number | null
+          evento_calendar_id?: string | null
+          horario_fim?: string | null
+          horario_inicio?: string | null
+          id?: string
+          is_backlog?: boolean | null
+          is_prioridade_dia?: boolean | null
+          milestone_id?: string | null
+          projeto_id?: string | null
+          status?: string | null
+          titulo: string
+          updated_at?: string | null
+          user_id?: string | null
+          vezes_nao_cumprida?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          data_agendada?: string | null
+          descricao?: string | null
+          duracao_minutos?: number | null
+          evento_calendar_id?: string | null
+          horario_fim?: string | null
+          horario_inicio?: string | null
+          id?: string
+          is_backlog?: boolean | null
+          is_prioridade_dia?: boolean | null
+          milestone_id?: string | null
+          projeto_id?: string | null
+          status?: string | null
+          titulo?: string
+          updated_at?: string | null
+          user_id?: string | null
+          vezes_nao_cumprida?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tarefas_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tarefas_projeto_id_fkey"
+            columns: ["projeto_id"]
+            isOneToOne: false
+            referencedRelation: "projetos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tarefas_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_coach: {
+        Row: {
+          created_at: string | null
+          id: string
+          nome: string | null
+          phone: string
+          timezone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nome?: string | null
+          phone: string
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nome?: string | null
+          phone?: string
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -418,22 +743,55 @@ export type Database = {
         }
         Relationships: []
       }
+      user_tokens: {
+        Row: {
+          access_token: string | null
+          created_at: string | null
+          email: string | null
+          expires_at: number | null
+          id: number
+          refresh_token: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string | null
+          email?: string | null
+          expires_at?: number | null
+          id?: number
+          refresh_token: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string | null
+          email?: string | null
+          expires_at?: number | null
+          id?: number
+          refresh_token?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       usuarios: {
         Row: {
           created_at: string
-          id: number
+          id: string
           nome: string | null
           whatsapp: string | null
         }
         Insert: {
           created_at?: string
-          id?: number
+          id?: string
           nome?: string | null
           whatsapp?: string | null
         }
         Update: {
           created_at?: string
-          id?: number
+          id?: string
           nome?: string | null
           whatsapp?: string | null
         }
