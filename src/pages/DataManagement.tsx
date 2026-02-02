@@ -698,7 +698,13 @@ export default function DataManagement() {
   };
 
   // Função para calcular rentabilidade ponderada automaticamente
-  const calculateWeightedReturn = () => {
+  // Retorna objeto com todos os valores calculados
+  const calculateWeightedReturn = (): {
+    rendimentoPonderado: number;
+    patrimonioFinal: number;
+    patrimonioInicial: number;
+    ganhoFinanceiro: number;
+  } | null => {
     let registrosParaCalcular: any[] = [];
     
     // Determinar quais registros consolidados usar baseado no contexto
@@ -759,12 +765,27 @@ export default function DataManagement() {
 
     const rendimentoPonderado = weightedRendimento / totalPosicao;
     
+    // Patrimônio Final = soma das posições dos ativos
+    const patrimonioFinal = totalPosicao;
+    
+    // Patrimônio Inicial = Patrimônio Final / (1 + rendimento)
+    // Se rendimento = 5% (0.05), então PI = PF / 1.05
+    const patrimonioInicial = patrimonioFinal / (1 + rendimentoPonderado);
+    
+    // Ganho Financeiro = Patrimônio Final - Patrimônio Inicial
+    const ganhoFinanceiro = patrimonioFinal - patrimonioInicial;
+    
     toast({
       title: "Cálculo Realizado",
-      description: `${totalAtivosEncontrados} ativo${totalAtivosEncontrados !== 1 ? 's' : ''} encontrado${totalAtivosEncontrados !== 1 ? 's' : ''}. Rentabilidade ponderada: ${(rendimentoPonderado * 100).toFixed(4)}%`,
+      description: `${totalAtivosEncontrados} ativo${totalAtivosEncontrados !== 1 ? 's' : ''} encontrado${totalAtivosEncontrados !== 1 ? 's' : ''}. Rent: ${(rendimentoPonderado * 100).toFixed(4)}%, PF: ${patrimonioFinal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}`,
     });
 
-    return rendimentoPonderado;
+    return {
+      rendimentoPonderado,
+      patrimonioFinal,
+      patrimonioInicial,
+      ganhoFinanceiro
+    };
   };
 
   // Função auxiliar para contar ativos vinculados
@@ -1166,10 +1187,19 @@ export default function DataManagement() {
   // Função para confirmar e aplicar o cálculo ao campo Rendimento
   const handleCalculatorConfirm = () => {
     let calculatedReturn: number | null = null;
-    let customData: any = null; // Para armazenar dados extras do modo Personalizado
+    let customData: any = null; // Para armazenar dados extras do modo Personalizado/Automático
 
     if (calculatorMode === 'auto') {
-      calculatedReturn = calculateWeightedReturn();
+      const autoResult = calculateWeightedReturn();
+      if (autoResult) {
+        calculatedReturn = autoResult.rendimentoPonderado;
+        customData = {
+          rendimento: autoResult.rendimentoPonderado,
+          patrimonioFinal: autoResult.patrimonioFinal,
+          patrimonioInicial: autoResult.patrimonioInicial,
+          ganhoFinanceiro: autoResult.ganhoFinanceiro
+        };
+      }
     } else if (calculatorMode === 'manual') {
       calculatedReturn = calculateManualReturn();
     } else if (calculatorMode === 'custom') {
@@ -1212,43 +1242,75 @@ export default function DataManagement() {
       // Atualizar dependendo do contexto
       if (calculatorContext === 'bulk') {
         // Para edição em lote
-        if (calculatorMode === 'custom' && customData) {
-          setBulkEditData({
-            ...bulkEditData, 
-            Rendimento: roundedReturn,
-            Competencia: customData.competencia,
-            "Patrimonio Inicial": customData.valorInicial,
-            "Ganho Financeiro": customData.ganhoFinanceiro,
-            "Patrimonio Final": customData.valorFinal
-          });
-        } else {
-          setBulkEditData({...bulkEditData, Rendimento: roundedReturn});
-        }
-        
-      } else if (calculatorContext === 'single') {
-        // Para edição/criação individual
-        if (calculatorMode === 'custom' && customData) {
-          // Verificar se estamos no formulário Consolidado ou Dados Detalhados
-          const hasConsolidadoFields = 'Patrimonio Inicial' in editingItem || editingItem.type === 'consolidado';
-          
-          if (hasConsolidadoFields) {
-            // Formulário Consolidado: preenche todos os campos
-            setEditingItem({
-              ...editingItem, 
+        if ((calculatorMode === 'custom' || calculatorMode === 'auto') && customData) {
+          if (calculatorMode === 'auto') {
+            setBulkEditData({
+              ...bulkEditData, 
+              Rendimento: roundedReturn,
+              "Patrimonio Inicial": customData.patrimonioInicial,
+              "Ganho Financeiro": customData.ganhoFinanceiro,
+              "Patrimonio Final": customData.patrimonioFinal
+            });
+          } else {
+            setBulkEditData({
+              ...bulkEditData, 
               Rendimento: roundedReturn,
               Competencia: customData.competencia,
               "Patrimonio Inicial": customData.valorInicial,
               "Ganho Financeiro": customData.ganhoFinanceiro,
               "Patrimonio Final": customData.valorFinal
             });
+          }
+        } else {
+          setBulkEditData({...bulkEditData, Rendimento: roundedReturn});
+        }
+        
+      } else if (calculatorContext === 'single') {
+        // Para edição/criação individual
+        if ((calculatorMode === 'custom' || calculatorMode === 'auto') && customData) {
+          // Verificar se estamos no formulário Consolidado ou Dados Detalhados
+          const hasConsolidadoFields = 'Patrimonio Inicial' in editingItem || editingItem.type === 'consolidado';
+          
+          if (hasConsolidadoFields) {
+            if (calculatorMode === 'auto') {
+              // Modo automático: preenche Rendimento, PI, PF, GF
+              setEditingItem({
+                ...editingItem, 
+                Rendimento: roundedReturn,
+                "Patrimonio Inicial": customData.patrimonioInicial,
+                "Ganho Financeiro": customData.ganhoFinanceiro,
+                "Patrimonio Final": customData.patrimonioFinal
+              });
+              // Atualizar também os campos de texto numérico
+              setNumericFieldsText(prev => ({
+                ...prev,
+                "Patrimonio Inicial": formatBrazilianNumber(customData.patrimonioInicial),
+                "Patrimonio Final": formatBrazilianNumber(customData.patrimonioFinal),
+                "Ganho Financeiro": formatBrazilianNumber(customData.ganhoFinanceiro)
+              }));
+            } else {
+              // Formulário Consolidado modo custom: preenche todos os campos
+              setEditingItem({
+                ...editingItem, 
+                Rendimento: roundedReturn,
+                Competencia: customData.competencia,
+                "Patrimonio Inicial": customData.valorInicial,
+                "Ganho Financeiro": customData.ganhoFinanceiro,
+                "Patrimonio Final": customData.valorFinal
+              });
+            }
           } else {
             // Formulário Dados Detalhados: preenche Rendimento, Competência e Posição
-            setEditingItem({
-              ...editingItem, 
-              Rendimento: roundedReturn,
-              Competencia: customData.competencia,
-              Posicao: customData.valorFinal
-            });
+            if (calculatorMode === 'custom') {
+              setEditingItem({
+                ...editingItem, 
+                Rendimento: roundedReturn,
+                Competencia: customData.competencia,
+                Posicao: customData.valorFinal
+              });
+            } else {
+              setEditingItem({...editingItem, Rendimento: roundedReturn});
+            }
           }
         } else {
           setEditingItem({...editingItem, Rendimento: roundedReturn});
