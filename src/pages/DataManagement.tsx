@@ -2238,12 +2238,37 @@ interface VerificationResult {
           return;
         }
 
-        // Parse CSV
-        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+        // Parse CSV com suporte a campos com aspas
+        const parseCSVLine = (line: string): string[] => {
+          const values: string[] = [];
+          let current = "";
+          let inQuotes = false;
+
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+                current += '"';
+                i++;
+              } else {
+                inQuotes = !inQuotes;
+              }
+            } else if (char === ',' && !inQuotes) {
+              values.push(current.trim());
+              current = "";
+            } else {
+              current += char;
+            }
+          }
+          values.push(current.trim());
+          return values;
+        };
+
+        const headers = parseCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, '').replace(/^\uFEFF/, ''));
         const data = [];
 
         for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+          const values = parseCSVLine(lines[i]).map(v => v.replace(/^"|"$/g, ''));
           const row: any = {};
           
           headers.forEach((header, index) => {
@@ -2253,14 +2278,57 @@ interface VerificationResult {
           data.push(row);
         }
 
-        // Aqui você pode adicionar lógica para inserir os dados no Supabase
-        // Por enquanto, vamos apenas mostrar um toast com o número de linhas
+        console.log('Dados importados:', data);
+
+        // Preparar dados para inserção no Supabase
+        const recordsToInsert = data.map(row => ({
+          Nome: row['Nome'] || decodedClientName,
+          Instituicao: row['Instituicao'] || row['Instituição'] || null,
+          Data: row['Data'] || null,
+          Ativo: row['Ativo'] || null,
+          Posicao: row['Posicao'] || row['Posição'] ? parseFloat(String(row['Posicao'] || row['Posição']).replace(',', '.')) : null,
+          "Classe do ativo": row['Classe do ativo'] || row['Classe do Ativo'] || null,
+          Taxa: row['Taxa'] || null,
+          Vencimento: row['Vencimento'] || null,
+          Emissor: row['Emissor'] || null,
+          Competencia: row['Competencia'] || row['Competência'] || null,
+          Rendimento: row['Rendimento'] ? parseFloat(String(row['Rendimento']).replace(',', '.')) : null,
+          Moeda: row['Moeda'] || 'Real',
+          nomeConta: row['Nome da conta'] || row['nomeConta'] || null,
+        })).filter(record => record.Ativo && record.Competencia);
+
+        if (recordsToInsert.length === 0) {
+          toast({
+            title: "Nenhum dado válido",
+            description: "O arquivo não contém dados válidos para importar. Verifique se as colunas 'Ativo' e 'Competencia' estão preenchidas.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Inserir no Supabase
+        const { data: insertedData, error: insertError } = await supabase
+          .from('DadosPerformance')
+          .insert(recordsToInsert)
+          .select();
+
+        if (insertError) {
+          console.error('Erro ao inserir dados:', insertError);
+          toast({
+            title: "Erro ao importar",
+            description: `Erro ao inserir dados: ${insertError.message}`,
+            variant: "destructive",
+          });
+          return;
+        }
+
         toast({
-          title: "CSV carregado",
-          description: `${data.length} registro(s) encontrado(s). Implementar lógica de importação no Supabase.`,
+          title: "Importação concluída",
+          description: `${insertedData?.length || recordsToInsert.length} ativo(s) importado(s) com sucesso!`,
         });
 
-        console.log('Dados importados:', data);
+        // Atualizar dados na tela
+        await fetchData();
         
       } catch (error) {
         console.error('Erro ao processar CSV:', error);
