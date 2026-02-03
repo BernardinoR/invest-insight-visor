@@ -32,16 +32,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 interface InvestmentDashboardProps {
   selectedClient: string;
+  initialSelectedRows?: string[];
 }
 
-export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps) {
+export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }: InvestmentDashboardProps) {
   const { consolidadoData, dadosData, loading, error, totalPatrimonio, totalRendimento, hasData } = useClientData(selectedClient);
   const { marketData, clientTarget } = useMarketIndicators(selectedClient);
   const { currency, convertValue, adjustReturnWithFX, getCurrencySymbol, formatCurrency } = useCurrency();
   const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
   const [filteredRange, setFilteredRange] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
   const [yearTotals, setYearTotals] = useState<{ totalPatrimonio: number; totalRendimento: number } | null>(null);
-  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [selectedRows, setSelectedRows] = useState<string[]>(initialSelectedRows);
   const [institutionCardData, setInstitutionCardData] = useState<any>(null);
   const [maturityDialogOpen, setMaturityDialogOpen] = useState(false);
   const [diversificationDialogOpen, setDiversificationDialogOpen] = useState(false);
@@ -428,28 +429,26 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
     const currentHost = window.location.origin;
     
     try {
-      // Encode the client name properly for URL
       const encodedClient = encodeURIComponent(selectedClient);
-      const shareUrl = `${currentHost}/client/${encodedClient}`;
+      let shareUrl = `${currentHost}/client/${encodedClient}`;
       
-      console.log('InvestmentDashboard - Original client name:', selectedClient);
-      console.log('InvestmentDashboard - Encoded client name:', encodedClient);
-      console.log('InvestmentDashboard - Generated share URL:', shareUrl);
-      
-      // Test the URL by creating a test URL object
-      const testUrl = new URL(shareUrl);
-      console.log('InvestmentDashboard - URL validation successful');
+      // Adicionar contas selecionadas como query params
+      if (selectedRows.length > 0) {
+        const accountsParam = selectedRows
+          .map(row => encodeURIComponent(row))
+          .join(',');
+        shareUrl += `?accounts=${accountsParam}`;
+      }
       
       navigator.clipboard.writeText(shareUrl).then(() => {
         toast.success("Link copiado para o clipboard!");
-        console.log('InvestmentDashboard - Link copied successfully');
       }).catch((err) => {
-        console.error('InvestmentDashboard - Erro ao copiar o link:', err);
+        console.error('Erro ao copiar o link:', err);
         toast.error("Erro ao copiar o link");
       });
       
     } catch (error) {
-      console.error('InvestmentDashboard - Error generating share link:', error);
+      console.error('Error generating share link:', error);
       toast.error("Erro ao gerar o link de compartilhamento");
     }
   };
@@ -539,7 +538,9 @@ export function InvestmentDashboard({ selectedClient }: InvestmentDashboardProps
               onClick={copyShareLink}
             >
               <Share2 className="mr-2 h-4 w-4" />
-              Compartilhar Link
+              {selectedRows.length > 0 
+                ? `Compartilhar (${selectedRows.length} conta${selectedRows.length > 1 ? 's' : ''})` 
+                : 'Compartilhar Link'}
             </Button>
           </div>
         </div>
