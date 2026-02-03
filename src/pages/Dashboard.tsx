@@ -1,4 +1,4 @@
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { InvestmentDashboard } from "@/components/InvestmentDashboard";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Settings } from "lucide-react";
@@ -6,8 +6,15 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function Dashboard() {
   const { clientName } = useParams<{ clientName: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Extrair contas selecionadas da URL
+  const accountsFromUrl = searchParams.get('accounts');
+  const initialSelectedRows = accountsFromUrl 
+    ? accountsFromUrl.split(',').map(decodeURIComponent) 
+    : [];
 
   // Handle URL decoding more safely
   let decodedClientName = "";
@@ -73,7 +80,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-      <InvestmentDashboard selectedClient={decodedClientName} />
+      <InvestmentDashboard selectedClient={decodedClientName} initialSelectedRows={initialSelectedRows} />
     </div>
   );
 }
