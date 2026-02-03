@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, LabelList } from 'recharts';
 import { TrendingUp, Calendar as CalendarIcon, Settings, ArrowLeftRight, Wallet, BarChart3 } from "lucide-react";
 import { useState, useMemo } from "react";
@@ -57,6 +58,10 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
     target: true,
     ipca: true
   });
+  
+  // Carteira Antiga benchmark states
+  const [showOldPortfolio, setShowOldPortfolio] = useState(false);
+  const [oldPortfolioCDI, setOldPortfolioCDI] = useState(100);
   
   const { cdiData, loading: cdiLoading, error: cdiError } = useCDIData();
   
@@ -477,11 +482,18 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
         }
       }
       
+      // Carteira Antiga - baseada no percentual do CDI
+      let oldPortfolioRetorno = null;
+      if (cdiRetorno !== null) {
+        oldPortfolioRetorno = cdiRetorno * (oldPortfolioCDI / 100);
+      }
+      
       return {
         ...point,
         cdiRetorno,
         targetRetorno,
-        ipcaRetorno
+        ipcaRetorno,
+        oldPortfolioRetorno
       };
     }
   });
@@ -494,11 +506,14 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
   const targetValues = chartDataWithIndicators.map(item => item.targetRetorno).filter(v => v !== null) as number[];
   const ipcaValues = chartDataWithIndicators.map(item => item.ipcaRetorno).filter(v => v !== null) as number[];
   
+  const oldPortfolioValues = chartDataWithIndicators.map(item => item.oldPortfolioRetorno).filter(v => v !== null) as number[];
+  
   // Only include values from selected indicators
   let allValues = [...portfolioValues];
   if (selectedIndicators.cdi) allValues = [...allValues, ...cdiValues];
   if (selectedIndicators.target) allValues = [...allValues, ...targetValues];
   if (selectedIndicators.ipca) allValues = [...allValues, ...ipcaValues];
+  if (showOldPortfolio) allValues = [...allValues, ...oldPortfolioValues];
   
   const minValue = Math.min(...allValues, 0);
   const maxValue = Math.max(...allValues);
@@ -621,6 +636,33 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
                           }
                         />
                         <label htmlFor="ipca" className="text-sm">IPCA</label>
+                      </div>
+                      
+                      {/* Carteira Antiga benchmark */}
+                      <div className="border-t pt-3 mt-3">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Checkbox 
+                            id="oldPortfolio" 
+                            checked={showOldPortfolio}
+                            onCheckedChange={(checked) => 
+                              setShowOldPortfolio(checked as boolean)
+                            }
+                          />
+                          <label htmlFor="oldPortfolio" className="text-sm font-medium">Carteira Antiga</label>
+                        </div>
+                        {showOldPortfolio && (
+                          <div className="flex items-center gap-2 ml-6">
+                            <Input 
+                              type="number"
+                              value={oldPortfolioCDI}
+                              onChange={(e) => setOldPortfolioCDI(Number(e.target.value))}
+                              className="w-20 h-8 text-sm"
+                              min={0}
+                              max={200}
+                            />
+                            <span className="text-sm text-muted-foreground">% do CDI</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -990,6 +1032,9 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
                     if (name === 'ipcaRetorno') {
                       return [`${value.toFixed(2)}%`, 'IPCA'];
                     }
+                    if (name === 'oldPortfolioRetorno') {
+                      return [`${value.toFixed(2)}%`, `Carteira Antiga (${oldPortfolioCDI}% CDI)`];
+                    }
                     return [`${value.toFixed(2)}%`, name];
                   }}
                   labelStyle={{ 
@@ -1075,6 +1120,28 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
                     activeDot={{ 
                       r: 5, 
                       fill: 'hsl(var(--info))', 
+                      strokeWidth: 2, 
+                      stroke: 'hsl(var(--background))'
+                    }}
+                  />
+                )}
+                {showOldPortfolio && (
+                  <Line 
+                    type="monotone" 
+                    dataKey="oldPortfolioRetorno" 
+                    stroke="hsl(38 92% 50%)"
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    connectNulls={false}
+                    dot={{ 
+                      fill: 'hsl(38 92% 50%)', 
+                      strokeWidth: 1, 
+                      stroke: 'hsl(var(--background))',
+                      r: 3
+                    }}
+                    activeDot={{ 
+                      r: 5, 
+                      fill: 'hsl(38 92% 50%)', 
                       strokeWidth: 2, 
                       stroke: 'hsl(var(--background))'
                     }}
@@ -1409,6 +1476,34 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
                         </div>
                       </div>
                     )}
+                    
+                    {showOldPortfolio && filteredData.length > 0 && (() => {
+                      const portfolioReturnDecimal = portfolioReturn / 100;
+                      const oldPortfolioReturn = (lastDataPoint.oldPortfolioRetorno || 0) / 100;
+                      
+                      const patrimonioInicial = filteredData[0]["Patrimonio Inicial"] || 0;
+                      const patrimonioCarteira = patrimonioInicial * (1 + portfolioReturnDecimal);
+                      const patrimonioCarteiraAntiga = patrimonioInicial * (1 + oldPortfolioReturn);
+                      const diferenca = patrimonioCarteira - patrimonioCarteiraAntiga;
+                      
+                      return (
+                        <div className="bg-card border border-border rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-muted-foreground">vs Carteira Antiga ({oldPortfolioCDI}% CDI)</p>
+                              <p className="text-2xl font-semibold text-foreground">
+                                {diferenca >= 0 ? '+' : ''}R$ {Math.abs(diferenca).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </p>
+                            </div>
+                            <div className={`text-sm px-2 py-1 rounded ${
+                              diferenca >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                            }`}>
+                              {diferenca >= 0 ? '↑' : '↓'}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </>
                 );
               })()}
