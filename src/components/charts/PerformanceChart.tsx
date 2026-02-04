@@ -380,7 +380,8 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
         ...point,
         cdiRetorno: 0,
         targetRetorno: 0,
-        ipcaRetorno: 0
+        ipcaRetorno: 0,
+        oldPortfolioRetorno: 0
       };
     } else {
       const firstCompetencia = chartData[1]?.competencia;
@@ -1033,7 +1034,7 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
                       return [`${value.toFixed(2)}%`, 'IPCA'];
                     }
                     if (name === 'oldPortfolioRetorno') {
-                      return [`${value.toFixed(2)}%`, `Carteira Antiga (${oldPortfolioCDI}% CDI)`];
+                      return [`${value.toFixed(2)}%`, 'Carteira Antiga'];
                     }
                     return [`${value.toFixed(2)}%`, name];
                   }}
@@ -1490,7 +1491,7 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
                         <div className="bg-card border border-border rounded-lg p-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm text-muted-foreground">vs Carteira Antiga ({oldPortfolioCDI}% CDI)</p>
+                              <p className="text-sm text-muted-foreground">vs Carteira Antiga</p>
                               <p className="text-2xl font-semibold text-foreground">
                                 {diferenca >= 0 ? '+' : ''}R$ {Math.abs(diferenca).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                               </p>
