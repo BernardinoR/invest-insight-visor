@@ -34,10 +34,28 @@ serve(async (req) => {
     // Chamar Yahoo Finance API
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${startTimestamp}&period2=${endTimestamp}&interval=1d`
     
-    const response = await fetch(url)
-    const data = await response.json()
+    // Fetch com headers e verificação de status
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    })
     
     console.log('Yahoo Finance response status:', response.status)
+    
+    // Verificar status antes de parsear JSON
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Yahoo Finance API error:', response.status, errorText)
+      
+      if (response.status === 429) {
+        throw new Error('Limite de requisições excedido. Aguarde alguns minutos e tente novamente.')
+      }
+      
+      throw new Error(`Erro na API Yahoo Finance: ${response.status}`)
+    }
+    
+    const data = await response.json()
     
     if (!data.chart?.result?.[0]) {
       throw new Error('Ticker não encontrado ou sem dados para o período')
