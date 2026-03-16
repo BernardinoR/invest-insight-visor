@@ -22,10 +22,10 @@ export function useCDIData() {
         setLoading(true);
         setError(null);
 
-        // Buscar dados dos últimos 2 anos para garantir cobertura
+        // Buscar dados dos últimos 6 anos para garantir cobertura em todos os períodos
         const endDate = new Date();
         const startDate = new Date();
-        startDate.setFullYear(endDate.getFullYear() - 2);
+        startDate.setFullYear(endDate.getFullYear() - 6);
 
         const formatDateForAPI = (date: Date) => {
           const day = date.getDate().toString().padStart(2, '0');
