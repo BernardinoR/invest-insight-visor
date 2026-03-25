@@ -1476,13 +1476,20 @@ export default function DataManagement() {
     try {
       // Se deleteRelated = true, excluir os ativos detalhados vinculados primeiro
       if (deleteRelated) {
-        const { error: dadosError } = await supabase
+        let deleteQuery = supabase
           .from('DadosPerformance')
           .delete()
           .eq('Competencia', consolidadoToDelete.Competencia)
           .eq('Instituicao', consolidadoToDelete.Instituicao)
-          .eq('nomeConta', consolidadoToDelete.nomeConta)
           .eq('Nome', consolidadoToDelete.Nome);
+        
+        if (consolidadoToDelete.nomeConta) {
+          deleteQuery = deleteQuery.eq('nomeConta', consolidadoToDelete.nomeConta);
+        } else {
+          deleteQuery = deleteQuery.is('nomeConta', null);
+        }
+
+        const { error: dadosError } = await deleteQuery;
 
         if (dadosError) throw dadosError;
       }
@@ -1498,7 +1505,7 @@ export default function DataManagement() {
       const ativosVinculados = dadosData.filter(dado => 
         dado.Competencia === consolidadoToDelete.Competencia &&
         dado.Instituicao === consolidadoToDelete.Instituicao &&
-        dado.nomeConta === consolidadoToDelete.nomeConta &&
+        (dado.nomeConta || '') === (consolidadoToDelete.nomeConta || '') &&
         dado.Nome === consolidadoToDelete.Nome
       ).length;
 
@@ -6314,7 +6321,7 @@ interface VerificationResult {
                 const ativosVinculados = dadosData.filter(dado => 
                   dado.Competencia === consolidadoToDelete.Competencia &&
                   dado.Instituicao === consolidadoToDelete.Instituicao &&
-                  dado.nomeConta === consolidadoToDelete.nomeConta &&
+                  (dado.nomeConta || '') === (consolidadoToDelete.nomeConta || '') &&
                   dado.Nome === consolidadoToDelete.Nome
                 ).length;
                 
