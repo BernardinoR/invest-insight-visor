@@ -562,6 +562,7 @@ export default function DataManagement() {
 
   const [selectedCompetencias, setSelectedCompetencias] = useState<string[]>([]);
   const [selectedInstituicoes, setSelectedInstituicoes] = useState<string[]>([]);
+  const [selectedNomesConta, setSelectedNomesConta] = useState<string[]>([]);
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [selectedEmissores, setSelectedEmissores] = useState<string[]>([]);
   const [searchAtivo, setSearchAtivo] = useState<string>("");
@@ -2009,6 +2010,9 @@ interface VerificationResult {
     if (selectedInstituicoes.length > 0) {
       data = data.filter(item => selectedInstituicoes.includes(item.Instituicao));
     }
+    if (selectedNomesConta.length > 0) {
+      data = data.filter(item => selectedNomesConta.includes(item.nomeConta || ''));
+    }
 
     // Apply additional filters for dados detalhados
     if (selectedClasses.length > 0) {
@@ -2050,7 +2054,7 @@ interface VerificationResult {
     data = applySortingGeneric(data, sortConfig);
     
     return data;
-  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo, showOnlyUnclassified, showOnlyMissingYield, activeFilters, sortConfig, isValidAssetClass, hasValidYield]);
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo, showOnlyUnclassified, showOnlyMissingYield, activeFilters, sortConfig, isValidAssetClass, hasValidYield]);
 
   // Contador de ativos não classificados na view atual (antes do filtro showOnlyUnclassified)
   const unclassifiedInCurrentView = useMemo(() => {
@@ -2061,6 +2065,9 @@ interface VerificationResult {
     }
     if (selectedInstituicoes.length > 0) {
       data = data.filter(item => selectedInstituicoes.includes(item.Instituicao));
+    }
+    if (selectedNomesConta.length > 0) {
+      data = data.filter(item => selectedNomesConta.includes(item.nomeConta || ''));
     }
     if (selectedClasses.length > 0) {
       data = data.filter(item => selectedClasses.includes(item["Classe do ativo"]));
@@ -2078,7 +2085,7 @@ interface VerificationResult {
     }
     
     return data.filter(item => !isValidAssetClass(item["Classe do ativo"])).length;
-  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo, isValidAssetClass]);
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo, isValidAssetClass]);
 
   // Contador de ativos com rentabilidade faltando na view atual
   const missingYieldInCurrentView = useMemo(() => {
@@ -2089,6 +2096,9 @@ interface VerificationResult {
     }
     if (selectedInstituicoes.length > 0) {
       data = data.filter(item => selectedInstituicoes.includes(item.Instituicao));
+    }
+    if (selectedNomesConta.length > 0) {
+      data = data.filter(item => selectedNomesConta.includes(item.nomeConta || ''));
     }
     if (selectedClasses.length > 0) {
       data = data.filter(item => selectedClasses.includes(item["Classe do ativo"]));
@@ -2107,7 +2117,7 @@ interface VerificationResult {
     
     // Usar hasValidYield para consistência com o resto do sistema
     return data.filter(item => !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo)).length;
-  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo, hasValidYield]);
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo, hasValidYield]);
 
   // Função para abrir o dialog de exportação
   const exportToCSV = () => {
@@ -3355,6 +3365,7 @@ interface VerificationResult {
             setSelectedConsolidado(null);
             setSelectedCompetencias([]);
             setSelectedInstituicoes([]);
+            setSelectedNomesConta([]);
           }
         }}>
           <TabsList className="grid w-full grid-cols-2">
@@ -4031,6 +4042,7 @@ interface VerificationResult {
                                             setActiveTab('detalhados');
                                             setSelectedCompetencias([item.Competencia]);
                                             setSelectedInstituicoes([item.Instituicao]);
+                                            setSelectedNomesConta(item.nomeConta ? [item.nomeConta] : []);
                                             setTimeout(() => {
                                               document.querySelector('[value="detalhados"]')?.scrollIntoView({ 
                                                 behavior: 'smooth' 
@@ -4182,6 +4194,7 @@ interface VerificationResult {
                               setSelectedConsolidado(null);
                               setSelectedCompetencias([]);
                               setSelectedInstituicoes([]);
+                              setSelectedNomesConta([]);
                             }}
                             title="Limpar comparação"
                           >
