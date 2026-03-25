@@ -2066,6 +2066,9 @@ interface VerificationResult {
     if (selectedInstituicoes.length > 0) {
       data = data.filter(item => selectedInstituicoes.includes(item.Instituicao));
     }
+    if (selectedNomesConta.length > 0) {
+      data = data.filter(item => selectedNomesConta.includes(item.nomeConta || ''));
+    }
     if (selectedClasses.length > 0) {
       data = data.filter(item => selectedClasses.includes(item["Classe do ativo"]));
     }
@@ -2082,7 +2085,7 @@ interface VerificationResult {
     }
     
     return data.filter(item => !isValidAssetClass(item["Classe do ativo"])).length;
-  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo, isValidAssetClass]);
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo, isValidAssetClass]);
 
   // Contador de ativos com rentabilidade faltando na view atual
   const missingYieldInCurrentView = useMemo(() => {
@@ -2093,6 +2096,9 @@ interface VerificationResult {
     }
     if (selectedInstituicoes.length > 0) {
       data = data.filter(item => selectedInstituicoes.includes(item.Instituicao));
+    }
+    if (selectedNomesConta.length > 0) {
+      data = data.filter(item => selectedNomesConta.includes(item.nomeConta || ''));
     }
     if (selectedClasses.length > 0) {
       data = data.filter(item => selectedClasses.includes(item["Classe do ativo"]));
@@ -2111,7 +2117,7 @@ interface VerificationResult {
     
     // Usar hasValidYield para consistência com o resto do sistema
     return data.filter(item => !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo)).length;
-  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedClasses, selectedEmissores, searchAtivo, hasValidYield]);
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo, hasValidYield]);
 
   // Função para abrir o dialog de exportação
   const exportToCSV = () => {
