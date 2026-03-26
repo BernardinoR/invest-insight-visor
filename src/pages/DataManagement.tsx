@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -217,6 +217,16 @@ export default function DataManagement() {
   // Estado para o AlertDialog de exclusão de consolidado
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [consolidadoToDelete, setConsolidadoToDelete] = useState<ConsolidadoData | null>(null);
+
+  // Estado para o dialog de conflito de classificação RAG
+  const [ragConflictDialog, setRagConflictDialog] = useState<{
+    open: boolean;
+    ativo: string;
+    classeNova: string;
+    classeExistente: string;
+  } | null>(null);
+  const [ragUpdateExisting, setRagUpdateExisting] = useState(true);
+  const [ragSaving, setRagSaving] = useState(false);
   const [marketCalcLoading, setMarketCalcLoading] = useState(false);
   const [marketCalcResult, setMarketCalcResult] = useState<{
     monthlyReturn: number;
