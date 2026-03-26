@@ -6472,6 +6472,36 @@ interface VerificationResult {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* RAG Classification Conflict Dialog */}
+      <AlertDialog open={ragConflictDialog?.open || false} onOpenChange={(open) => !open && setRagConflictDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Classificação diferente encontrada</AlertDialogTitle>
+            <AlertDialogDescription>
+              O ativo <strong>"{ragConflictDialog?.ativo}"</strong> está gravado como{' '}
+              <strong>"{ragConflictDialog?.classeExistente}"</strong>. Deseja atualizar para{' '}
+              <strong>"{ragConflictDialog?.classeNova}"</strong>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-center space-x-2 py-2">
+            <Checkbox 
+              id="ragUpdateExisting" 
+              checked={ragUpdateExisting}
+              onCheckedChange={(checked) => setRagUpdateExisting(checked === true)}
+            />
+            <label htmlFor="ragUpdateExisting" className="text-sm text-muted-foreground cursor-pointer">
+              Atualizar também todos os registros existentes com este ativo
+            </label>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Manter atual</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmRagUpdate} disabled={ragSaving}>
+              {ragSaving ? 'Atualizando...' : 'Atualizar classificação'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
