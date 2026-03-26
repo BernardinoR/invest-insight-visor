@@ -326,6 +326,26 @@ export default function DataManagement() {
     }
   }, [editingItem, isDialogOpen]);
 
+  // Helper para auto-preencher .SA no ticker para classes específicas
+  const shouldAppendSA = (classeAtivo: string): boolean => {
+    const classes = [
+      'imobiliário - ativos',
+      'exterior - ações',
+      'exterior - renda fixa',
+      'ações - ativos',
+      'ações - etfs',
+    ];
+    return classes.includes((classeAtivo || '').toLowerCase());
+  };
+
+  const getTickerWithSuffix = (ativo: string, classeAtivo: string): string => {
+    const ticker = ativo || '';
+    if (shouldAppendSA(classeAtivo) && !ticker.toUpperCase().endsWith('.SA')) {
+      return ticker ? `${ticker}.SA` : '';
+    }
+    return ticker;
+  };
+
   // Helper para extrair tipo de título do nome do ativo
   const extractTreasuryTypeFromAtivo = (ativo: string): string => {
     if (!ativo) return 'Tesouro Prefixado';
@@ -5362,16 +5382,16 @@ interface VerificationResult {
                     });
                   }
                   // Preencher automaticamente os campos da calculadora de mercado
-                  setMarketCalcData({
+                   setMarketCalcData({
                     competencia: editingItem.Competencia || '',
-                    ticker: editingItem.Ativo || ''
+                    ticker: getTickerWithSuffix(editingItem.Ativo || '', editingItem["Classe do ativo"] || '')
                   });
-                  // Preencher automaticamente os campos da calculadora do Tesouro
-                  setTreasuryCalcData({
-                    competencia: editingItem.Competencia || '',
-                    tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
-                    vencimento: extractYearFromDate(editingItem.Vencimento || ''),
-                  });
+                   // Preencher automaticamente os campos da calculadora do Tesouro
+                   setTreasuryCalcData({
+                     competencia: editingItem.Competencia || '',
+                     tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
+                     vencimento: extractYearFromDate(editingItem.Vencimento || ''),
+                   });
                   setIsCalculatorOpen(true);
                 }}
                         className="mt-2 w-full"
@@ -5555,16 +5575,16 @@ interface VerificationResult {
                     });
                   }
                   // Preencher automaticamente os campos da calculadora de mercado
-                  setMarketCalcData({
+                   setMarketCalcData({
                     competencia: editingItem.Competencia || '',
-                    ticker: editingItem.Ativo || ''
+                    ticker: getTickerWithSuffix(editingItem.Ativo || '', editingItem["Classe do ativo"] || '')
                   });
-                  // Preencher automaticamente os campos da calculadora do Tesouro
-                  setTreasuryCalcData({
-                    competencia: editingItem.Competencia || '',
-                    tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
-                    vencimento: extractYearFromDate(editingItem.Vencimento || ''),
-                  });
+                   // Preencher automaticamente os campos da calculadora do Tesouro
+                   setTreasuryCalcData({
+                     competencia: editingItem.Competencia || '',
+                     tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
+                     vencimento: extractYearFromDate(editingItem.Vencimento || ''),
+                   });
                   setIsCalculatorOpen(true);
                 }}
                       className="mt-2 w-full"
