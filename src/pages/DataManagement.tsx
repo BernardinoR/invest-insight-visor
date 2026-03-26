@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -217,6 +217,16 @@ export default function DataManagement() {
   // Estado para o AlertDialog de exclusão de consolidado
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [consolidadoToDelete, setConsolidadoToDelete] = useState<ConsolidadoData | null>(null);
+
+  // Estado para o dialog de conflito de classificação RAG
+  const [ragConflictDialog, setRagConflictDialog] = useState<{
+    open: boolean;
+    ativo: string;
+    classeNova: string;
+    classeExistente: string;
+  } | null>(null);
+  const [ragUpdateExisting, setRagUpdateExisting] = useState(true);
+  const [ragSaving, setRagSaving] = useState(false);
   const [marketCalcLoading, setMarketCalcLoading] = useState(false);
   const [marketCalcResult, setMarketCalcResult] = useState<{
     monthlyReturn: number;
@@ -1366,6 +1376,93 @@ export default function DataManagement() {
     setEditingItem(newItem);
     setIsDialogOpen(true);
   };
+
+  // Função para gravar classificação no RAG_Processador
+  const handleSaveClassificacao = async () => {
+    if (!editingItem || !editingItem.Ativo || !editingItem["Classe do ativo"]) {
+      toast({ title: "Preencha o Ativo e a Classe do Ativo antes de gravar.", variant: "destructive" });
+      return;
+    }
+    
+    setRagSaving(true);
+    try {
+      const ativo = editingItem.Ativo.trim();
+      const classeNova = editingItem["Classe do ativo"].trim();
+      
+      // Buscar se já existe no RAG_Processador
+      const { data: existing, error: fetchError } = await supabase
+        .from('RAG_Processador')
+        .select('*')
+        .eq('Ativo', ativo);
+      
+      if (fetchError) throw fetchError;
+      
+      if (!existing || existing.length === 0) {
+        // Não existe — inserir novo
+        const { error: insertError } = await supabase
+          .from('RAG_Processador')
+          .insert({ Ativo: ativo, Classificacao: classeNova });
+        if (insertError) throw insertError;
+        toast({ title: "Classificação gravada!", description: `"${ativo}" → ${classeNova}` });
+      } else if (existing[0].Classificacao === classeNova) {
+        toast({ title: "Classificação já gravada", description: `"${ativo}" já está como ${classeNova}.` });
+      } else {
+        // Conflito — abrir dialog
+        setRagConflictDialog({
+          open: true,
+          ativo,
+          classeNova,
+          classeExistente: existing[0].Classificacao || '(sem classe)',
+        });
+        setRagUpdateExisting(true);
+      }
+    } catch (error: any) {
+      toast({ title: "Erro ao gravar classificação", description: error.message, variant: "destructive" });
+    } finally {
+      setRagSaving(false);
+    }
+  };
+
+  // Confirmar atualização de classificação com conflito
+  const handleConfirmRagUpdate = async () => {
+    if (!ragConflictDialog) return;
+    setRagSaving(true);
+    try {
+      const { ativo, classeNova } = ragConflictDialog;
+      
+      // Update RAG_Processador
+      const { error: updateError } = await supabase
+        .from('RAG_Processador')
+        .update({ Classificacao: classeNova })
+        .eq('Ativo', ativo);
+      if (updateError) throw updateError;
+      
+      if (ragUpdateExisting) {
+        // Update todos DadosPerformance com mesmo Ativo
+        const { error: dadosError } = await supabase
+          .from('DadosPerformance')
+          .update({ "Classe do ativo": classeNova })
+          .eq('Ativo', ativo);
+        if (dadosError) throw dadosError;
+        
+        // Atualizar o editingItem também
+        if (editingItem && editingItem.Ativo === ativo) {
+          setEditingItem({ ...editingItem, "Classe do ativo": classeNova });
+        }
+        
+        await fetchData();
+        toast({ title: "Classificação atualizada!", description: `"${ativo}" → ${classeNova} (todos os registros atualizados)` });
+      } else {
+        toast({ title: "Classificação atualizada!", description: `"${ativo}" → ${classeNova} (apenas RAG)` });
+      }
+    } catch (error: any) {
+      toast({ title: "Erro ao atualizar classificação", description: error.message, variant: "destructive" });
+    } finally {
+      setRagSaving(false);
+      setRagConflictDialog(null);
+    }
+  };
+
 
   const handleSave = async () => {
     if (!editingItem) return;
@@ -5379,6 +5476,17 @@ interface VerificationResult {
                           )}
                         </SelectContent>
                       </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 w-full gap-2"
+                        disabled={!editingItem.Ativo || !editingItem["Classe do ativo"] || ragSaving}
+                        onClick={handleSaveClassificacao}
+                        title="Salvar esta classificação para uso automático futuro"
+                      >
+                        <BookmarkPlus className="h-4 w-4" />
+                        {ragSaving ? 'Gravando...' : 'Gravar Classificação'}
+                      </Button>
                     </div>
                     <div>
                       <Label htmlFor="posicao">Posição</Label>
@@ -6360,6 +6468,36 @@ interface VerificationResult {
               onClick={() => handleDeleteConsolidado(true)}
             >
               Excluir Consolidado + Ativos
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* RAG Classification Conflict Dialog */}
+      <AlertDialog open={ragConflictDialog?.open || false} onOpenChange={(open) => !open && setRagConflictDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Classificação diferente encontrada</AlertDialogTitle>
+            <AlertDialogDescription>
+              O ativo <strong>"{ragConflictDialog?.ativo}"</strong> está gravado como{' '}
+              <strong>"{ragConflictDialog?.classeExistente}"</strong>. Deseja atualizar para{' '}
+              <strong>"{ragConflictDialog?.classeNova}"</strong>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-center space-x-2 py-2">
+            <Checkbox 
+              id="ragUpdateExisting" 
+              checked={ragUpdateExisting}
+              onCheckedChange={(checked) => setRagUpdateExisting(checked === true)}
+            />
+            <label htmlFor="ragUpdateExisting" className="text-sm text-muted-foreground cursor-pointer">
+              Atualizar também todos os registros existentes com este ativo
+            </label>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Manter atual</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmRagUpdate} disabled={ragSaving}>
+              {ragSaving ? 'Atualizando...' : 'Atualizar classificação'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
