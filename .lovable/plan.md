@@ -1,52 +1,61 @@
 
 
-# Plano: Corrigir exclusão de ativos vinculados ao consolidado
+# Plano: Botão "Gravar Classificação" no Modal de Edição
 
-## Problema
-Quando `nomeConta` é `null` (consolidados sem nome de conta), a query Supabase usa `.eq('nomeConta', null)` que **não funciona** — SQL requer `IS NULL` para comparações com null. O Supabase exige `.is('nomeConta', null)` nesse caso. Isso faz com que a exclusão dos ativos vinculados não encontre nenhum registro para deletar.
+## Objetivo
+Adicionar um botão ao lado do campo "Classe do Ativo" no modal de edição de ativos que salva a classificação na tabela `RAG_Processador` do Supabase. Quando o ativo já existir na tabela com outra classe, exibir um dialog de confirmação.
 
-O mesmo bug afeta a **contagem de ativos vinculados** no dialog (linhas 6314-6318) e na função de exclusão (linhas 1498-1502), onde o filtro JavaScript `dado.nomeConta === null` funciona, mas pode não bater se um lado for `undefined` e o outro `null`.
+## Alterações em `src/pages/DataManagement.tsx`
 
-## Solução
-
-**Arquivo:** `src/pages/DataManagement.tsx`
-
-### 1. Corrigir a query de exclusão (linhas 1479-1485)
-
-Usar `.is('nomeConta', null)` quando `nomeConta` for null/undefined, e `.eq()` quando tiver valor:
-
+### 1. Novo state para o dialog de conflito
 ```typescript
-if (deleteRelated) {
-  let query = supabase
-    .from('DadosPerformance')
-    .delete()
-    .eq('Competencia', consolidadoToDelete.Competencia)
-    .eq('Instituicao', consolidadoToDelete.Instituicao)
-    .eq('Nome', consolidadoToDelete.Nome);
-  
-  if (consolidadoToDelete.nomeConta) {
-    query = query.eq('nomeConta', consolidadoToDelete.nomeConta);
-  } else {
-    query = query.is('nomeConta', null);
-  }
-
-  const { error: dadosError } = await query;
-  if (dadosError) throw dadosError;
-}
+const [ragConflictDialog, setRagConflictDialog] = useState<{
+  open: boolean;
+  ativo: string;
+  classeNova: string;
+  classeExistente: string;
+} | null>(null);
 ```
 
-### 2. Corrigir contagem de ativos no dialog (linhas 6314-6318) e na mensagem de sucesso (linhas 1498-1502)
+### 2. Função `handleSaveClassificacao`
+- Recebe o nome do ativo e a classe selecionada
+- Consulta `RAG_Processador` com `.eq('Ativo', ativo)`
+- Se **não existir**: insere `{ Ativo, Classificacao }` e mostra toast de sucesso
+- Se **existir com a mesma classe**: mostra toast informando que já está gravado
+- Se **existir com classe diferente**: abre dialog de conflito com opções:
+  - "Manter atual" (fecha sem alterar)
+  - "Atualizar classificação" — faz update no registro existente E atualiza todos os registros de `DadosPerformance` com o mesmo `Ativo` para a nova classe
 
-Normalizar a comparação de `nomeConta` para tratar `null`, `undefined` e `''` como equivalentes:
+### 3. Botão na UI (após o Select de Classe do Ativo, linha ~5382)
+Adicionar um botão compacto com ícone de "salvar/gravar" logo abaixo do Select, no mesmo grid cell. Estilo:
+- Botão `variant="outline"` com tamanho `sm`, largura total
+- Ícone `BookmarkPlus` (ou `Save`) + texto "Gravar Classificação"
+- Desabilitado se `Ativo` ou `Classe do ativo` estiverem vazios
+- Tooltip explicando: "Salvar esta classificação para uso automático futuro"
 
+### 4. Dialog de conflito de classificação
+Um `AlertDialog` separado que aparece quando há conflito:
+- Título: "Classificação diferente encontrada"
+- Descrição: "O ativo X está gravado como Y. Deseja atualizar para Z?"
+- Checkbox opcional: "Atualizar também todos os registros existentes com este ativo"
+- Botões: "Manter atual" / "Atualizar classificação"
+
+### 5. Lógica de update em massa (quando confirmado)
 ```typescript
-const ativosVinculados = dadosData.filter(dado => 
-  dado.Competencia === consolidadoToDelete.Competencia &&
-  dado.Instituicao === consolidadoToDelete.Instituicao &&
-  (dado.nomeConta || '') === (consolidadoToDelete.nomeConta || '') &&
-  dado.Nome === consolidadoToDelete.Nome
-).length;
+// Update RAG_Processador
+await supabase.from('RAG_Processador')
+  .update({ Classificacao: classeNova })
+  .eq('Ativo', ativo);
+
+// Update todos DadosPerformance com mesmo Ativo
+await supabase.from('DadosPerformance')
+  .update({ "Classe do ativo": classeNova })
+  .eq('Ativo', ativo);
+
+// Refresh data
+await fetchData();
 ```
 
-Aplicar esta mesma normalização nos dois locais onde essa contagem aparece (dialog e mensagem de sucesso).
+## Resultado Visual
+O campo "Classe do Ativo" no modal ficará com o Select seguido de um botão estilizado "Gravar Classificação" que indica ao usuário a possibilidade de persistir a classificação para uso futuro pelo outro software.
 
