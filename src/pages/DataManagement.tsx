@@ -1377,7 +1377,93 @@ export default function DataManagement() {
     setIsDialogOpen(true);
   };
 
-  const handleSave = async () => {
+  // Função para gravar classificação no RAG_Processador
+  const handleSaveClassificacao = async () => {
+    if (!editingItem || !editingItem.Ativo || !editingItem["Classe do ativo"]) {
+      toast({ title: "Preencha o Ativo e a Classe do Ativo antes de gravar.", variant: "destructive" });
+      return;
+    }
+    
+    setRagSaving(true);
+    try {
+      const ativo = editingItem.Ativo.trim();
+      const classeNova = editingItem["Classe do ativo"].trim();
+      
+      // Buscar se já existe no RAG_Processador
+      const { data: existing, error: fetchError } = await supabase
+        .from('RAG_Processador')
+        .select('*')
+        .eq('Ativo', ativo);
+      
+      if (fetchError) throw fetchError;
+      
+      if (!existing || existing.length === 0) {
+        // Não existe — inserir novo
+        const { error: insertError } = await supabase
+          .from('RAG_Processador')
+          .insert({ Ativo: ativo, Classificacao: classeNova });
+        if (insertError) throw insertError;
+        toast({ title: "Classificação gravada!", description: `"${ativo}" → ${classeNova}` });
+      } else if (existing[0].Classificacao === classeNova) {
+        toast({ title: "Classificação já gravada", description: `"${ativo}" já está como ${classeNova}.` });
+      } else {
+        // Conflito — abrir dialog
+        setRagConflictDialog({
+          open: true,
+          ativo,
+          classeNova,
+          classeExistente: existing[0].Classificacao || '(sem classe)',
+        });
+        setRagUpdateExisting(true);
+      }
+    } catch (error: any) {
+      toast({ title: "Erro ao gravar classificação", description: error.message, variant: "destructive" });
+    } finally {
+      setRagSaving(false);
+    }
+  };
+
+  // Confirmar atualização de classificação com conflito
+  const handleConfirmRagUpdate = async () => {
+    if (!ragConflictDialog) return;
+    setRagSaving(true);
+    try {
+      const { ativo, classeNova } = ragConflictDialog;
+      
+      // Update RAG_Processador
+      const { error: updateError } = await supabase
+        .from('RAG_Processador')
+        .update({ Classificacao: classeNova })
+        .eq('Ativo', ativo);
+      if (updateError) throw updateError;
+      
+      if (ragUpdateExisting) {
+        // Update todos DadosPerformance com mesmo Ativo
+        const { error: dadosError } = await supabase
+          .from('DadosPerformance')
+          .update({ "Classe do ativo": classeNova })
+          .eq('Ativo', ativo);
+        if (dadosError) throw dadosError;
+        
+        // Atualizar o editingItem também
+        if (editingItem && editingItem.Ativo === ativo) {
+          setEditingItem({ ...editingItem, "Classe do ativo": classeNova });
+        }
+        
+        await fetchData();
+        toast({ title: "Classificação atualizada!", description: `"${ativo}" → ${classeNova} (todos os registros atualizados)` });
+      } else {
+        toast({ title: "Classificação atualizada!", description: `"${ativo}" → ${classeNova} (apenas RAG)` });
+      }
+    } catch (error: any) {
+      toast({ title: "Erro ao atualizar classificação", description: error.message, variant: "destructive" });
+    } finally {
+      setRagSaving(false);
+      setRagConflictDialog(null);
+    }
+  };
+
+
     if (!editingItem) return;
 
     try {
