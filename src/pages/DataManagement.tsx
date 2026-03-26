@@ -5476,6 +5476,17 @@ interface VerificationResult {
                           )}
                         </SelectContent>
                       </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 w-full gap-2"
+                        disabled={!editingItem.Ativo || !editingItem["Classe do ativo"] || ragSaving}
+                        onClick={handleSaveClassificacao}
+                        title="Salvar esta classificação para uso automático futuro"
+                      >
+                        <BookmarkPlus className="h-4 w-4" />
+                        {ragSaving ? 'Gravando...' : 'Gravar Classificação'}
+                      </Button>
                     </div>
                     <div>
                       <Label htmlFor="posicao">Posição</Label>
