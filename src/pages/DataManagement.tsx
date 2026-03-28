@@ -1600,10 +1600,11 @@ export default function DataManagement() {
           .eq('Instituicao', consolidadoToDelete.Instituicao)
           .eq('Nome', consolidadoToDelete.Nome);
         
-        if (consolidadoToDelete.nomeConta) {
-          deleteQuery = deleteQuery.eq('nomeConta', consolidadoToDelete.nomeConta);
+        const conta = consolidadoToDelete.nomeConta;
+        if (conta && conta.trim() !== '') {
+          deleteQuery = deleteQuery.eq('nomeConta', conta);
         } else {
-          deleteQuery = deleteQuery.is('nomeConta', null);
+          deleteQuery = deleteQuery.or('nomeConta.is.null,nomeConta.eq.');
         }
 
         const { error: dadosError } = await deleteQuery;
