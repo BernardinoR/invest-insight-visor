@@ -551,7 +551,11 @@ export default function DataManagement() {
     [...new Set([
       ...consolidadoData.map(item => item.Competencia),
       ...dadosData.map(item => item.Competencia)
-    ])].filter(comp => comp && comp.trim() !== '').sort().reverse(),
+])].filter(comp => comp && comp.trim() !== '').sort((a, b) => {
+      const dateA = parseCompetenciaToDate(a);
+      const dateB = parseCompetenciaToDate(b);
+      return dateB.getTime() - dateA.getTime();
+    }),
     [consolidadoData, dadosData]
   );
 
