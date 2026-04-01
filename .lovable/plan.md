@@ -1,50 +1,34 @@
 
+Objetivo: corrigir a ordenação padrão ao abrir **Gerenciar Dados** para que a competência mais recente apareça primeiro (ex.: `02/2026` antes de `12/2025`).
 
-# Plano: Corrigir ordenação de competências em Gerenciar Dados
+Diagnóstico confirmado:
+- A conversão de competência para data já está correta (`parseCompetenciaToDate`).
+- O problema persiste no “default” porque a tabela só aplica ordenação cronológica quando `sortConfig` está ativo.
+- No carregamento inicial, `sortConfig` fica `null`, então a tela respeita a ordem original da query (lexicográfica de string `MM/YYYY`), gerando a lista “bagunçada”.
 
-## Problema
-A lista de competências usa `.sort().reverse()` (lexicográfico), fazendo `12/2025` aparecer antes de `02/2026` porque `"12"` > `"02"` como string — o ano é ignorado na comparação.
+Plano de implementação (1 arquivo: `src/pages/DataManagement.tsx`):
+1. Definir um sort padrão de competência
+- Criar constante local:
+  - `DEFAULT_COMPETENCIA_SORT = { field: 'Competencia', direction: 'desc' }`.
 
-## Solução
+2. Aplicar esse padrão sempre que não houver ordenação manual
+- Em `filteredConsolidadoData`, trocar:
+  - `applySortingGeneric(data, sortConfig)`
+  por:
+  - `applySortingGeneric(data, sortConfig ?? DEFAULT_COMPETENCIA_SORT)`.
+- Fazer o mesmo em `filteredDadosData`.
 
-Alterar **1 arquivo**: `src/pages/DataManagement.tsx`
+3. Manter comportamento atual para ordenação manual
+- Quando o usuário escolher outra coluna/direção, continua valendo `sortConfig`.
+- Se “limpar” ordenação (voltar para `null`), a tela retorna automaticamente para o padrão correto por competência mais recente.
 
-### 1. Criar helper de comparação de competências (usar `parseCompetenciaToDate` já existente em `src/lib/utils.ts`)
+4. Validação funcional
+- Abrir `/data-management/Adriana de Farias` e validar ordem inicial (sem clicar em ordenar):
+  - `02/2026` acima de `12/2025`, `11/2025`, etc.
+- Trocar abas (Consolidado/Ativos) e confirmar que o padrão continua correto.
+- Aplicar ordenação manual em outra coluna e depois remover para validar retorno ao default cronológico.
 
-### 2. Corrigir ordenação do dropdown de competências (linha 553)
-```typescript
-// ANTES:
-.filter(comp => comp && comp.trim() !== '').sort().reverse()
-
-// DEPOIS:
-.filter(comp => comp && comp.trim() !== '')
-.sort((a, b) => {
-  const dateA = parseCompetenciaToDate(a);
-  const dateB = parseCompetenciaToDate(b);
-  return dateB.getTime() - dateA.getTime(); // mais recente primeiro
-})
-```
-
-### 3. Corrigir `parseCompetencia` dentro de `applySortingGeneric` (linha 1862-1864)
-O `parseCompetencia` interno não trata anos de 2 dígitos. Substituir por `parseCompetenciaToDate`:
-
-```typescript
-// ANTES:
-const parseCompetencia = (comp: string) => {
-  const [month, year] = String(comp).split('/');
-  return `${year}${month.padStart(2, '0')}`;
-};
-const aComp = parseCompetencia(String(aValue));
-const bComp = parseCompetencia(String(bValue));
-comparison = aComp.localeCompare(bComp);
-
-// DEPOIS:
-const aDate = parseCompetenciaToDate(String(aValue));
-const bDate = parseCompetenciaToDate(String(bValue));
-comparison = aDate.getTime() - bDate.getTime();
-```
-
-### 4. Adicionar import de `parseCompetenciaToDate` no topo do arquivo
-
-Alteração mínima: ~10 linhas modificadas.
-
+Detalhes técnicos:
+- Não envolve migração de banco.
+- Não altera schema/tabelas.
+- Mudança isolada em memoized filters/sorting, de baixo risco e impacto controlado.
