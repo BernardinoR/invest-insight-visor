@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { parseCompetenciaToDate } from "@/lib/utils";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
