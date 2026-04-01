@@ -1864,14 +1864,9 @@ export default function DataManagement() {
       // Tratamento especial para campo Competencia (formato MM/YYYY)
       if (sortConfig.field === 'Competencia') {
         // Converter MM/YYYY para formato comparável YYYYMM
-        const parseCompetencia = (comp: string) => {
-          const [month, year] = String(comp).split('/');
-          return `${year}${month.padStart(2, '0')}`;
-        };
-        
-        const aComp = parseCompetencia(String(aValue));
-        const bComp = parseCompetencia(String(bValue));
-        comparison = aComp.localeCompare(bComp);
+        const aDate = parseCompetenciaToDate(String(aValue));
+        const bDate = parseCompetenciaToDate(String(bValue));
+        comparison = aDate.getTime() - bDate.getTime();
       } else if (typeof aValue === 'number' && typeof bValue === 'number') {
         comparison = aValue - bValue;
       } else {
