@@ -2110,7 +2110,7 @@ interface VerificationResult {
     }
     
     // Apply sorting
-    data = applySortingGeneric(data, sortConfig);
+    data = applySortingGeneric(data, sortConfig ?? DEFAULT_COMPETENCIA_SORT);
     
     return data;
   }, [consolidadoData, selectedCompetencias, selectedInstituicoes, activeFilters, verifFilter, sortConfig, getVerification]);
