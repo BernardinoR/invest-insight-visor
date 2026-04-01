@@ -1,30 +1,50 @@
 
 
-# Plano: Corrigir exclusão de ativos vinculados ao consolidado
+# Plano: Corrigir ordenação de competências em Gerenciar Dados
 
 ## Problema
-Quando `nomeConta` é uma string vazia `''` (existem 58 consolidados e 1226 dados com esse valor), o código trata como falsy e faz `.is('nomeConta', null)`. Porém os registros em DadosPerformance têm `nomeConta = ''`, não `null` — logo o filtro não encontra nada e 0 ativos são deletados.
+A lista de competências usa `.sort().reverse()` (lexicográfico), fazendo `12/2025` aparecer antes de `02/2026` porque `"12"` > `"02"` como string — o ano é ignorado na comparação.
 
 ## Solução
-Em `src/pages/DataManagement.tsx`, na função `handleDeleteConsolidado` (~linha 1603-1607), substituir a lógica de filtro do `nomeConta` para cobrir **ambos** os casos (null e string vazia):
+
+Alterar **1 arquivo**: `src/pages/DataManagement.tsx`
+
+### 1. Criar helper de comparação de competências (usar `parseCompetenciaToDate` já existente em `src/lib/utils.ts`)
+
+### 2. Corrigir ordenação do dropdown de competências (linha 553)
+```typescript
+// ANTES:
+.filter(comp => comp && comp.trim() !== '').sort().reverse()
+
+// DEPOIS:
+.filter(comp => comp && comp.trim() !== '')
+.sort((a, b) => {
+  const dateA = parseCompetenciaToDate(a);
+  const dateB = parseCompetenciaToDate(b);
+  return dateB.getTime() - dateA.getTime(); // mais recente primeiro
+})
+```
+
+### 3. Corrigir `parseCompetencia` dentro de `applySortingGeneric` (linha 1862-1864)
+O `parseCompetencia` interno não trata anos de 2 dígitos. Substituir por `parseCompetenciaToDate`:
 
 ```typescript
 // ANTES:
-if (consolidadoToDelete.nomeConta) {
-  deleteQuery = deleteQuery.eq('nomeConta', consolidadoToDelete.nomeConta);
-} else {
-  deleteQuery = deleteQuery.is('nomeConta', null);
-}
+const parseCompetencia = (comp: string) => {
+  const [month, year] = String(comp).split('/');
+  return `${year}${month.padStart(2, '0')}`;
+};
+const aComp = parseCompetencia(String(aValue));
+const bComp = parseCompetencia(String(bValue));
+comparison = aComp.localeCompare(bComp);
 
 // DEPOIS:
-const conta = consolidadoToDelete.nomeConta;
-if (conta && conta.trim() !== '') {
-  deleteQuery = deleteQuery.eq('nomeConta', conta);
-} else {
-  // Match both null AND empty string
-  deleteQuery = deleteQuery.or('nomeConta.is.null,nomeConta.eq.');
-}
+const aDate = parseCompetenciaToDate(String(aValue));
+const bDate = parseCompetenciaToDate(String(bValue));
+comparison = aDate.getTime() - bDate.getTime();
 ```
 
-Alteração em 1 arquivo, ~4 linhas modificadas.
+### 4. Adicionar import de `parseCompetenciaToDate` no topo do arquivo
+
+Alteração mínima: ~10 linhas modificadas.
 
