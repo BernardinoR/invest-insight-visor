@@ -410,6 +410,7 @@ export default function DataManagement() {
     direction: 'asc' | 'desc';
   }
 
+  const DEFAULT_COMPETENCIA_SORT: SortConfig = { field: 'Competencia', direction: 'desc' };
   const [activeFilters, setActiveFilters] = useState<Filter[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   const [verifFilter, setVerifFilter] = useState<string>('all');
@@ -2109,7 +2110,7 @@ interface VerificationResult {
     }
     
     // Apply sorting
-    data = applySortingGeneric(data, sortConfig);
+    data = applySortingGeneric(data, sortConfig ?? DEFAULT_COMPETENCIA_SORT);
     
     return data;
   }, [consolidadoData, selectedCompetencias, selectedInstituicoes, activeFilters, verifFilter, sortConfig, getVerification]);
@@ -2176,7 +2177,7 @@ interface VerificationResult {
     }
     
     // Apply sorting
-    data = applySortingGeneric(data, sortConfig);
+    data = applySortingGeneric(data, sortConfig ?? DEFAULT_COMPETENCIA_SORT);
     
     return data;
   }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo, showOnlyUnclassified, showOnlyMissingYield, activeFilters, sortConfig, isValidAssetClass, hasValidYield]);
