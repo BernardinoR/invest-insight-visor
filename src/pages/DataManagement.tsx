@@ -410,6 +410,7 @@ export default function DataManagement() {
     direction: 'asc' | 'desc';
   }
 
+  const DEFAULT_COMPETENCIA_SORT: SortConfig = { field: 'Competencia', direction: 'desc' };
   const [activeFilters, setActiveFilters] = useState<Filter[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   const [verifFilter, setVerifFilter] = useState<string>('all');
