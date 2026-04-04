@@ -89,6 +89,7 @@ export type Database = {
       DadosPerformance: {
         Row: {
           Ativo: string | null
+          ativo_novo: boolean | null
           "Classe do ativo": string | null
           Competencia: string | null
           created_at: string
@@ -107,6 +108,7 @@ export type Database = {
         }
         Insert: {
           Ativo?: string | null
+          ativo_novo?: boolean | null
           "Classe do ativo"?: string | null
           Competencia?: string | null
           created_at?: string
@@ -125,6 +127,7 @@ export type Database = {
         }
         Update: {
           Ativo?: string | null
+          ativo_novo?: boolean | null
           "Classe do ativo"?: string | null
           Competencia?: string | null
           created_at?: string

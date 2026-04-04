@@ -148,6 +148,7 @@ interface DadosData {
   "Moeda": string;
   "nomeConta": string;
   "rentabilidade_validada"?: boolean;
+  "ativo_novo"?: boolean;
 }
 
 export default function DataManagement() {
@@ -420,6 +421,7 @@ export default function DataManagement() {
   );
   const [showOnlyUnclassified, setShowOnlyUnclassified] = useState(false);
   const [showOnlyMissingYield, setShowOnlyMissingYield] = useState(false);
+  const [showOnlyNewAssets, setShowOnlyNewAssets] = useState(false);
 
   // Ref para o input de upload de CSV
   const csvFileInputRef = useRef<HTMLInputElement>(null);
@@ -648,7 +650,10 @@ export default function DataManagement() {
   // Verifica se o ativo tem rentabilidade preenchida e diferente de zero
   // OU se tem 0% mas foi validado manualmente
   // OU se o nome do ativo é "Caixa" ou "Proventos" (auto-validado)
-  const hasValidYield = (rendimento: any, rentabilidadeValidada?: boolean, nomeAtivo?: string): boolean => {
+  const hasValidYield = (rendimento: any, rentabilidadeValidada?: boolean, nomeAtivo?: string, ativoNovo?: boolean): boolean => {
+    // Ativo novo — não tem rentabilidade esperada, está OK
+    if (ativoNovo === true) return true;
+    
     // Verificar se o ativo é "Caixa" ou "Proventos" (auto-validado)
     if (nomeAtivo) {
       const nomeNormalizado = nomeAtivo.toLowerCase().trim();
@@ -1692,7 +1697,8 @@ export default function DataManagement() {
       'Taxa', 
       'Moeda', 
       'nomeConta',
-      'rentabilidade_validada'
+      'rentabilidade_validada',
+      'ativo_novo'
     ];
     
     fieldsToCheck.forEach(field => {
@@ -1984,6 +1990,8 @@ interface VerificationResult {
   hasUnclassified: boolean;
   missingYieldCount: number;
   hasMissingYield: boolean;
+  newAssetCount: number;
+  hasNewAssets: boolean;
 }
 
   // OPTIMIZED: Create index of assets by composite key - HUGE PERFORMANCE GAIN
@@ -2023,8 +2031,11 @@ interface VerificationResult {
     
     // Contar ativos sem rentabilidade válida (considerando validação manual)
     const missingYieldCount = relatedDetails.filter(item => 
-      !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo)
+      !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo)
     ).length;
+    
+    // Contar ativos novos
+    const newAssetCount = relatedDetails.filter(item => item.ativo_novo === true).length;
     
     // Calcular diferença
     const difference = Math.abs(patrimonioFinal - detailedSum);
@@ -2050,7 +2061,9 @@ interface VerificationResult {
       unclassifiedCount,
       hasUnclassified: unclassifiedCount > 0,
       missingYieldCount,
-      hasMissingYield: missingYieldCount > 0
+      hasMissingYield: missingYieldCount > 0,
+      newAssetCount,
+      hasNewAssets: newAssetCount > 0
     };
   }, [dadosIndex, correctThreshold, toleranceValue, hasValidYield]);
 
@@ -2083,7 +2096,9 @@ interface VerificationResult {
       unclassifiedCount: 0,
       hasUnclassified: false,
       missingYieldCount: 0,
-      hasMissingYield: false
+      hasMissingYield: false,
+      newAssetCount: 0,
+      hasNewAssets: false
     };
   }, [verificationsCache]);
 
@@ -2163,17 +2178,13 @@ interface VerificationResult {
     }
     
     // Filter for quality issues
-    if (showOnlyUnclassified || showOnlyMissingYield) {
+    if (showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets) {
       data = data.filter(item => {
         const isUnclassified = showOnlyUnclassified && !isValidAssetClass(item["Classe do ativo"]);
-        const hasMissingYield = showOnlyMissingYield && !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo);
+        const hasMissingYield = showOnlyMissingYield && !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo);
+        const isNewAsset = showOnlyNewAssets && item.ativo_novo === true;
         
-        // Se ambos filtros estão ativos, mostrar itens que atendem pelo menos um
-        if (showOnlyUnclassified && showOnlyMissingYield) {
-          return isUnclassified || hasMissingYield;
-        }
-        // Se apenas um filtro está ativo, retornar apenas esse
-        return isUnclassified || hasMissingYield;
+        return isUnclassified || hasMissingYield || isNewAsset;
       });
     }
     
@@ -2181,7 +2192,7 @@ interface VerificationResult {
     data = applySortingGeneric(data, sortConfig ?? DEFAULT_COMPETENCIA_SORT);
     
     return data;
-  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo, showOnlyUnclassified, showOnlyMissingYield, activeFilters, sortConfig, isValidAssetClass, hasValidYield]);
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo, showOnlyUnclassified, showOnlyMissingYield, showOnlyNewAssets, activeFilters, sortConfig, isValidAssetClass, hasValidYield]);
 
   // Contador de ativos não classificados na view atual (antes do filtro showOnlyUnclassified)
   const unclassifiedInCurrentView = useMemo(() => {
@@ -2243,8 +2254,39 @@ interface VerificationResult {
     }
     
     // Usar hasValidYield para consistência com o resto do sistema
-    return data.filter(item => !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo)).length;
+    return data.filter(item => !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo)).length;
   }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo, hasValidYield]);
+
+  // Contador de ativos novos na view atual
+  const newAssetsInCurrentView = useMemo(() => {
+    let data = dadosData;
+    
+    if (selectedCompetencias.length > 0) {
+      data = data.filter(item => selectedCompetencias.includes(item.Competencia));
+    }
+    if (selectedInstituicoes.length > 0) {
+      data = data.filter(item => selectedInstituicoes.includes(item.Instituicao));
+    }
+    if (selectedNomesConta.length > 0) {
+      data = data.filter(item => selectedNomesConta.includes(item.nomeConta || ''));
+    }
+    if (selectedClasses.length > 0) {
+      data = data.filter(item => selectedClasses.includes(item["Classe do ativo"]));
+    }
+    if (selectedEmissores.length > 0) {
+      data = data.filter(item => selectedEmissores.includes(item.Emissor));
+    }
+    if (searchAtivo.trim()) {
+      const searchLower = searchAtivo.toLowerCase();
+      data = data.filter(item => 
+        item.Ativo?.toLowerCase().includes(searchLower) ||
+        item.Emissor?.toLowerCase().includes(searchLower) ||
+        item["Classe do ativo"]?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return data.filter(item => item.ativo_novo === true).length;
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo]);
 
   // Função para abrir o dialog de exportação
   const exportToCSV = () => {
@@ -4262,6 +4304,9 @@ interface VerificationResult {
                     return false;
                   }).length;
 
+                  // Calcular ativos novos nos dados filtrados
+                  const newAssetsInComparison = filteredDadosData.filter(item => item.ativo_novo === true).length;
+
                   const consolidadoValue = selectedConsolidado["Patrimonio Final"] || 0;
                   const difference = Math.abs(consolidadoValue - assetsSum);
                   const percentDiff = consolidadoValue !== 0 
@@ -4384,7 +4429,7 @@ interface VerificationResult {
                           )}
                           
                           {/* Seção de Verificações Adicionais */}
-                          {(unclassifiedInComparison > 0 || missingYieldInComparison > 0) && (
+                          {(unclassifiedInComparison > 0 || missingYieldInComparison > 0 || newAssetsInComparison > 0) && (
                             <div className="mt-4 pt-4 border-t">
                               <p className="text-xs font-medium text-muted-foreground mb-3">Alertas de Qualidade dos Dados</p>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -4419,6 +4464,21 @@ interface VerificationResult {
                                   </div>
                                 )}
                                 
+                                {/* Ativos Novos */}
+                                {newAssetsInComparison > 0 && (
+                                  <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                                    <BookmarkPlus className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                                        {newAssetsInComparison} {newAssetsInComparison === 1 ? 'ativo novo' : 'ativos novos'}
+                                      </p>
+                                      <p className="text-xs text-blue-700 dark:text-blue-300">
+                                        Sem rentabilidade anterior
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                                
                               </div>
                             </div>
                           )}
@@ -4436,18 +4496,18 @@ interface VerificationResult {
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button 
-                        variant={(showOnlyUnclassified || showOnlyMissingYield) ? "default" : "outline"}
+                        variant={(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets) ? "default" : "outline"}
                         size="sm" 
                         className="h-8"
                       >
                         <AlertTriangle className="mr-2 h-4 w-4" />
                         Filtros de Qualidade
-                        {(unclassifiedInCurrentView > 0 || missingYieldInCurrentView > 0) && (
+                        {(unclassifiedInCurrentView > 0 || missingYieldInCurrentView > 0 || newAssetsInCurrentView > 0) && (
                           <Badge 
-                            variant={(showOnlyUnclassified || showOnlyMissingYield) ? "secondary" : "destructive"} 
+                            variant={(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets) ? "secondary" : "destructive"} 
                             className="ml-2 px-1.5 py-0 text-[10px]"
                           >
-                            {unclassifiedInCurrentView + missingYieldInCurrentView}
+                            {unclassifiedInCurrentView + missingYieldInCurrentView + newAssetsInCurrentView}
                           </Badge>
                         )}
                         <ChevronDown className="ml-1 h-3 w-3" />
@@ -4513,8 +4573,35 @@ interface VerificationResult {
                           </div>
                         </div>
                         
+                        {/* Ativos Novos */}
+                        <div className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors">
+                          <Checkbox 
+                            id="filter-new-assets"
+                            checked={showOnlyNewAssets}
+                            onCheckedChange={(checked) => setShowOnlyNewAssets(checked as boolean)}
+                            className="mt-0.5"
+                          />
+                          <div className="flex-1 space-y-1">
+                            <label 
+                              htmlFor="filter-new-assets" 
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
+                            >
+                              <BookmarkPlus className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                              Ativos novos
+                              {newAssetsInCurrentView > 0 && (
+                                <Badge variant="outline" className="ml-auto px-1.5 py-0 text-[10px] bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300">
+                                  {newAssetsInCurrentView}
+                                </Badge>
+                              )}
+                            </label>
+                            <p className="text-xs text-muted-foreground">
+                              Ativos novos sem rentabilidade anterior
+                            </p>
+                          </div>
+                        </div>
+                        
                         {/* Ações */}
-                        {(showOnlyUnclassified || showOnlyMissingYield) && (
+                        {(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets) && (
                           <>
                             <Separator className="my-2" />
                             <Button 
@@ -4524,6 +4611,7 @@ interface VerificationResult {
                               onClick={() => {
                                 setShowOnlyUnclassified(false);
                                 setShowOnlyMissingYield(false);
+                                setShowOnlyNewAssets(false);
                               }}
                             >
                               <X className="mr-1 h-3 w-3" />
@@ -5009,13 +5097,20 @@ interface VerificationResult {
                                     )}
                                     
                                     {/* Verificação da Rentabilidade */}
-                                    {!hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo) ? (
+                                    {!hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo) ? (
                                       <div title="Rentabilidade não preenchida">
                                         <XCircle className="h-4 w-4 text-red-500" />
                                       </div>
                                     ) : (
                                       <div title="Rentabilidade preenchida">
                                         <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                      </div>
+                                    )}
+                                    
+                                    {/* Verificação de Ativo Novo */}
+                                    {item.ativo_novo === true && (
+                                      <div title="Ativo novo — sem rentabilidade anterior">
+                                        <Info className="h-4 w-4 text-blue-500" />
                                       </div>
                                     )}
                                   </div>
@@ -5628,6 +5723,39 @@ interface VerificationResult {
                         )}
                       </Button>
                     )}
+                    
+                    {/* Toggle Ativo Novo */}
+                    <Button
+                      variant={editingItem.ativo_novo ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        const novoValor = !editingItem.ativo_novo;
+                        setEditingItem({
+                          ...editingItem, 
+                          ativo_novo: novoValor
+                        });
+                        
+                        toast({
+                          title: novoValor ? "Marcado como ativo novo" : "Marcação removida",
+                          description: novoValor 
+                            ? "Este ativo será identificado como novo (sem rentabilidade anterior)"
+                            : "Este ativo não será mais identificado como novo",
+                        });
+                      }}
+                      className="mt-2 w-full"
+                    >
+                      {editingItem.ativo_novo ? (
+                        <>
+                          <Info className="mr-2 h-4 w-4" />
+                          Ativo Novo ✓
+                        </>
+                      ) : (
+                        <>
+                          <BookmarkPlus className="mr-2 h-4 w-4" />
+                          Marcar como Ativo Novo
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </>
               )}
