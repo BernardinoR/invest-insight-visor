@@ -440,6 +440,7 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     'Ações',
     'Ações - Long Bias',
     'Private Equity',
+    'Alternativo',
     'Exterior - Renda Fixa',
     'Exterior - Ações',
     'COE',
