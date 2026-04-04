@@ -1103,6 +1103,9 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
                       if (strategyLower.includes('criptoativos')) {
                         return 'Criptoativos';
                       }
+                      if (strategyLower.includes('alternativo')) {
+                        return 'Alternativo';
+                      }
                       
                       return strategy;
                     };
