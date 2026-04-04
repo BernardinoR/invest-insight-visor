@@ -106,6 +106,7 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
     'Ações',
     'Ações - Long Bias',
     'Private Equity',
+    'Alternativo',
     'Exterior - Renda Fixa',
     'Exterior - Ações',
     'COE',
