@@ -1697,7 +1697,8 @@ export default function DataManagement() {
       'Taxa', 
       'Moeda', 
       'nomeConta',
-      'rentabilidade_validada'
+      'rentabilidade_validada',
+      'ativo_novo'
     ];
     
     fieldsToCheck.forEach(field => {
