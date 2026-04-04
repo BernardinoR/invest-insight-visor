@@ -92,6 +92,7 @@ export function InvestmentPolicyCompliance({ dadosData, selectedClient }: Invest
     if (strategyLower.includes('imobiliário')) return 'Imobiliário';
     if (strategyLower.includes('ações') || strategyLower.includes('long bias')) return 'Ações';
     if (strategyLower.includes('exterior')) return 'Exterior';
+    if (strategyLower.includes('alternativo')) return 'Alternativo';
     
     return 'Outros';
   };
