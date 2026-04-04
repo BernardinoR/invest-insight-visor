@@ -1,0 +1,1 @@
+ALTER TABLE public."DadosPerformance" ADD COLUMN "ativo_novo" boolean DEFAULT false;
