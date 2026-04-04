@@ -650,7 +650,10 @@ export default function DataManagement() {
   // Verifica se o ativo tem rentabilidade preenchida e diferente de zero
   // OU se tem 0% mas foi validado manualmente
   // OU se o nome do ativo é "Caixa" ou "Proventos" (auto-validado)
-  const hasValidYield = (rendimento: any, rentabilidadeValidada?: boolean, nomeAtivo?: string): boolean => {
+  const hasValidYield = (rendimento: any, rentabilidadeValidada?: boolean, nomeAtivo?: string, ativoNovo?: boolean): boolean => {
+    // Ativo novo — não tem rentabilidade esperada, está OK
+    if (ativoNovo === true) return true;
+    
     // Verificar se o ativo é "Caixa" ou "Proventos" (auto-validado)
     if (nomeAtivo) {
       const nomeNormalizado = nomeAtivo.toLowerCase().trim();
