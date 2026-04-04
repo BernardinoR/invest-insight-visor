@@ -1,64 +1,30 @@
 
 
-# Plano: Nova bolinha de verificação para "Ativo Novo (sem rentabilidade esperada)"
+# Plano: Adicionar 4a bolinha "Ativos Novos" no verificador do Consolidado
 
-## Contexto atual
-A coluna "Verificação" na tabela de ativos detalhados já exibe 2 bolinhas:
-1. **Classe** — verde/vermelha conforme classe válida ou não
-2. **Rentabilidade** — verde/vermelha conforme rendimento preenchido ou não
+## Contexto
+O verificador do consolidado já tem 3 bolinhas:
+1. Integridade numérica (patrimônio vs soma)
+2. Classificação (classes válidas)
+3. Rentabilidade (rendimento preenchido)
 
-## O que será adicionado
-Uma **3a bolinha** (azul/amarela) indicando que o ativo é novo e por isso não possui rentabilidade — diferente de "faltando rentabilidade" (vermelho).
+O `verifyIntegrity` já calcula `newAssetCount` e `hasNewAssets` — só falta exibir na UI.
 
-## Flag recomendada para o n8n
+## Alterações — 1 arquivo: `src/pages/DataManagement.tsx`
 
-Adicionar um campo booleano na tabela `DadosPerformance`:
-
+### 1. Adicionar 4a bolinha no botão (após linha ~4068)
+Após a terceira bolinha (rentabilidade), adicionar:
 ```
-ativo_novo  (boolean, default: false)
+{verification.hasNewAssets ? (
+  <Info className="h-4 w-4 text-blue-500" />
+) : null}
 ```
+Só aparece quando há ativos novos (azul informativo), não exibe nada quando não há.
 
-**No n8n**, ao enviar dados para o banco, incluir `ativo_novo: true` quando o ativo:
-- Aparece pela primeira vez naquela competência (não existia na competência anterior)
-- Ou foi adquirido naquele mês e portanto não tem histórico de rentabilidade
-
-Isso é mais semântico que reutilizar `rentabilidade_validada`, pois distingue:
-- `ativo_novo = true` → "é novo, não tem rentabilidade e está tudo bem" (bolinha azul)
-- `rentabilidade_validada = true` → "tem 0% mas foi validado manualmente" (bolinha verde)
-- Nenhum dos dois e sem rendimento → "faltando rentabilidade" (bolinha vermelha)
-
-## Alterações
-
-### 1. Migration — nova coluna
-```sql
-ALTER TABLE public."DadosPerformance" ADD COLUMN "ativo_novo" boolean DEFAULT false;
-```
-
-### 2. `src/integrations/supabase/types.ts`
-Adicionar `ativo_novo` nos tipos Row/Insert/Update de DadosPerformance.
-
-### 3. `src/pages/DataManagement.tsx`
-- Adicionar `'ativo_novo'` ao array de campos da interface e fetch
-- Atualizar `hasValidYield` para considerar `ativo_novo === true` como válido (não é erro)
-- Adicionar a 3a bolinha na coluna Verificação:
-  - **Azul** (`AlertCircle` ou `Info` icon) quando `ativo_novo === true` — tooltip "Ativo novo sem rentabilidade anterior"
-  - **Não exibida** quando `ativo_novo === false`
-- Adicionar filtro opcional "Mostrar apenas ativos novos"
-- No editor, adicionar toggle para marcar/desmarcar `ativo_novo`
-
-### 4. Contadores no cabeçalho
-Adicionar contador de ativos novos ao lado dos contadores existentes (não classificados / sem rentabilidade).
-
-## Resumo da flag para o n8n
-
-| Campo | Tipo | Valor | Significado |
-|-------|------|-------|-------------|
-| `ativo_novo` | boolean | `true` | Ativo entrou na carteira nesta competência, sem rentabilidade esperada |
-| `ativo_novo` | boolean | `false` (default) | Ativo normal, rentabilidade esperada |
-
-No payload JSON do n8n para o Supabase, basta incluir:
-```json
-{ "ativo_novo": true }
-```
-nos registros de ativos identificados como novos.
+### 2. Adicionar seção no PopoverContent (após linha ~4190)
+Novo bloco após "Verificação de Rentabilidade":
+- Separator
+- Título "Ativos Novos" com ícone Info
+- Contador de ativos novos
+- Mensagem informativa azul explicando que são ativos sem rentabilidade esperada
 
