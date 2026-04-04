@@ -100,6 +100,9 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
     if (strategyLower.includes('criptoativos')) {
       return 'Criptoativos';
     }
+    if (strategyLower.includes('alternativo')) {
+      return 'Alternativo';
+    }
     
     return strategy;
   };
