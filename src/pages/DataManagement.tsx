@@ -4066,6 +4066,11 @@ interface VerificationResult {
                               ) : (
                                 <CheckCircle2 className="h-4 w-4 text-green-500" />
                               )}
+                              
+                              {/* QUARTA BOLINHA: Ativos Novos */}
+                              {verification.hasNewAssets && (
+                                <Info className="h-4 w-4 text-blue-500" />
+                              )}
                             </Button>
                           </PopoverTrigger>
                                        <PopoverContent className="w-80">
@@ -4188,6 +4193,30 @@ interface VerificationResult {
                                                 </div>
                                               )}
                                             </div>
+                                            
+                                            {verification.hasNewAssets && (
+                                              <>
+                                                <Separator />
+                                                <div>
+                                                  <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                                                    <Info className="h-4 w-4 text-blue-500" />
+                                                    Ativos Novos
+                                                  </h4>
+                                                  <div className="text-sm space-y-1">
+                                                    <div className="flex justify-between">
+                                                      <span className="text-muted-foreground">Ativos novos identificados:</span>
+                                                      <span className="font-medium text-blue-600">{verification.newAssetCount}</span>
+                                                    </div>
+                                                  </div>
+                                                  <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-xs text-blue-700 dark:text-blue-400">
+                                                    ℹ️ {verification.newAssetCount} ativo{verification.newAssetCount > 1 ? 's' : ''} novo{verification.newAssetCount > 1 ? 's' : ''} na carteira sem rentabilidade esperada.
+                                                    <div className="mt-1 text-[10px] opacity-80">
+                                                      Estes ativos entraram na carteira nesta competência e não possuem histórico de rentabilidade.
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </>
+                                            )}
                                          </div>
                                        </PopoverContent>
                                      </Popover>
