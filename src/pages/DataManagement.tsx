@@ -1990,6 +1990,8 @@ interface VerificationResult {
   hasUnclassified: boolean;
   missingYieldCount: number;
   hasMissingYield: boolean;
+  newAssetCount: number;
+  hasNewAssets: boolean;
 }
 
   // OPTIMIZED: Create index of assets by composite key - HUGE PERFORMANCE GAIN
