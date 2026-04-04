@@ -71,6 +71,9 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
     if (strategyLower.includes('criptoativos')) {
       return 'Criptoativos';
     }
+    if (strategyLower.includes('alternativo')) {
+      return 'Alternativo';
+    }
     
     return strategy;
   };
