@@ -2061,7 +2061,9 @@ interface VerificationResult {
       unclassifiedCount,
       hasUnclassified: unclassifiedCount > 0,
       missingYieldCount,
-      hasMissingYield: missingYieldCount > 0
+      hasMissingYield: missingYieldCount > 0,
+      newAssetCount,
+      hasNewAssets: newAssetCount > 0
     };
   }, [dadosIndex, correctThreshold, toleranceValue, hasValidYield]);
 
