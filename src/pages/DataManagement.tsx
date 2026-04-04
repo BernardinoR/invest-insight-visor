@@ -4865,6 +4865,8 @@ interface VerificationResult {
                 {/* Filtros Ativos */}
                 <ActiveFilters filters={activeFilters} onRemoveFilter={handleRemoveFilter} />
 
+                  // Calcular ativos novos nos dados filtrados
+                  const newAssetsInComparison = filteredDadosData.filter(item => item.ativo_novo === true).length;
 
                 {/* Informações de Seleção */}
                 {activeTab === 'detalhados' && selectedItems.size > 0 && (
