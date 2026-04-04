@@ -4426,7 +4426,7 @@ interface VerificationResult {
                           )}
                           
                           {/* Seção de Verificações Adicionais */}
-                          {(unclassifiedInComparison > 0 || missingYieldInComparison > 0) && (
+                          {(unclassifiedInComparison > 0 || missingYieldInComparison > 0 || newAssetsInComparison > 0) && (
                             <div className="mt-4 pt-4 border-t">
                               <p className="text-xs font-medium text-muted-foreground mb-3">Alertas de Qualidade dos Dados</p>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
