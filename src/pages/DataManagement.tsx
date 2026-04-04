@@ -2178,17 +2178,13 @@ interface VerificationResult {
     }
     
     // Filter for quality issues
-    if (showOnlyUnclassified || showOnlyMissingYield) {
+    if (showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets) {
       data = data.filter(item => {
         const isUnclassified = showOnlyUnclassified && !isValidAssetClass(item["Classe do ativo"]);
-        const hasMissingYield = showOnlyMissingYield && !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo);
+        const hasMissingYield = showOnlyMissingYield && !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo);
+        const isNewAsset = showOnlyNewAssets && item.ativo_novo === true;
         
-        // Se ambos filtros estão ativos, mostrar itens que atendem pelo menos um
-        if (showOnlyUnclassified && showOnlyMissingYield) {
-          return isUnclassified || hasMissingYield;
-        }
-        // Se apenas um filtro está ativo, retornar apenas esse
-        return isUnclassified || hasMissingYield;
+        return isUnclassified || hasMissingYield || isNewAsset;
       });
     }
     
@@ -2196,7 +2192,7 @@ interface VerificationResult {
     data = applySortingGeneric(data, sortConfig ?? DEFAULT_COMPETENCIA_SORT);
     
     return data;
-  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo, showOnlyUnclassified, showOnlyMissingYield, activeFilters, sortConfig, isValidAssetClass, hasValidYield]);
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo, showOnlyUnclassified, showOnlyMissingYield, showOnlyNewAssets, activeFilters, sortConfig, isValidAssetClass, hasValidYield]);
 
   // Contador de ativos não classificados na view atual (antes do filtro showOnlyUnclassified)
   const unclassifiedInCurrentView = useMemo(() => {
