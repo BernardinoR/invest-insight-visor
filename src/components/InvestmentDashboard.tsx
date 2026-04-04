@@ -1035,6 +1035,7 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
                       'Ações',
                       'Ações - Long Bias',
                       'Private Equity',
+                      'Alternativo',
                       'Exterior - Renda Fixa',
                       'Exterior - Ações',
                       'COE',
