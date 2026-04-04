@@ -4066,6 +4066,11 @@ interface VerificationResult {
                               ) : (
                                 <CheckCircle2 className="h-4 w-4 text-green-500" />
                               )}
+                              
+                              {/* QUARTA BOLINHA: Ativos Novos */}
+                              {verification.hasNewAssets && (
+                                <Info className="h-4 w-4 text-blue-500" />
+                              )}
                             </Button>
                           </PopoverTrigger>
                                        <PopoverContent className="w-80">
