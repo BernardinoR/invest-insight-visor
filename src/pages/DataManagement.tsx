@@ -2096,7 +2096,9 @@ interface VerificationResult {
       unclassifiedCount: 0,
       hasUnclassified: false,
       missingYieldCount: 0,
-      hasMissingYield: false
+      hasMissingYield: false,
+      newAssetCount: 0,
+      hasNewAssets: false
     };
   }, [verificationsCache]);
 
