@@ -4478,18 +4478,18 @@ interface VerificationResult {
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button 
-                        variant={(showOnlyUnclassified || showOnlyMissingYield) ? "default" : "outline"}
+                        variant={(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets) ? "default" : "outline"}
                         size="sm" 
                         className="h-8"
                       >
                         <AlertTriangle className="mr-2 h-4 w-4" />
                         Filtros de Qualidade
-                        {(unclassifiedInCurrentView > 0 || missingYieldInCurrentView > 0) && (
+                        {(unclassifiedInCurrentView > 0 || missingYieldInCurrentView > 0 || newAssetsInCurrentView > 0) && (
                           <Badge 
-                            variant={(showOnlyUnclassified || showOnlyMissingYield) ? "secondary" : "destructive"} 
+                            variant={(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets) ? "secondary" : "destructive"} 
                             className="ml-2 px-1.5 py-0 text-[10px]"
                           >
-                            {unclassifiedInCurrentView + missingYieldInCurrentView}
+                            {unclassifiedInCurrentView + missingYieldInCurrentView + newAssetsInCurrentView}
                           </Badge>
                         )}
                         <ChevronDown className="ml-1 h-3 w-3" />
@@ -4555,8 +4555,35 @@ interface VerificationResult {
                           </div>
                         </div>
                         
+                        {/* Ativos Novos */}
+                        <div className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors">
+                          <Checkbox 
+                            id="filter-new-assets"
+                            checked={showOnlyNewAssets}
+                            onCheckedChange={(checked) => setShowOnlyNewAssets(checked as boolean)}
+                            className="mt-0.5"
+                          />
+                          <div className="flex-1 space-y-1">
+                            <label 
+                              htmlFor="filter-new-assets" 
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
+                            >
+                              <BookmarkPlus className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                              Ativos novos
+                              {newAssetsInCurrentView > 0 && (
+                                <Badge variant="outline" className="ml-auto px-1.5 py-0 text-[10px] bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300">
+                                  {newAssetsInCurrentView}
+                                </Badge>
+                              )}
+                            </label>
+                            <p className="text-xs text-muted-foreground">
+                              Ativos novos sem rentabilidade anterior
+                            </p>
+                          </div>
+                        </div>
+                        
                         {/* Ações */}
-                        {(showOnlyUnclassified || showOnlyMissingYield) && (
+                        {(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets) && (
                           <>
                             <Separator className="my-2" />
                             <Button 
@@ -4566,6 +4593,7 @@ interface VerificationResult {
                               onClick={() => {
                                 setShowOnlyUnclassified(false);
                                 setShowOnlyMissingYield(false);
+                                setShowOnlyNewAssets(false);
                               }}
                             >
                               <X className="mr-1 h-3 w-3" />
