@@ -162,6 +162,7 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
     'Ações',
     'Ações - Long Bias',
     'Private Equity',
+    'Alternativo',
     'Exterior - Renda Fixa',
     'Exterior - Ações',
     'COE',
