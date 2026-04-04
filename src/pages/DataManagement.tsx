@@ -5079,13 +5079,20 @@ interface VerificationResult {
                                     )}
                                     
                                     {/* Verificação da Rentabilidade */}
-                                    {!hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo) ? (
+                                    {!hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo) ? (
                                       <div title="Rentabilidade não preenchida">
                                         <XCircle className="h-4 w-4 text-red-500" />
                                       </div>
                                     ) : (
                                       <div title="Rentabilidade preenchida">
                                         <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                      </div>
+                                    )}
+                                    
+                                    {/* Verificação de Ativo Novo */}
+                                    {item.ativo_novo === true && (
+                                      <div title="Ativo novo — sem rentabilidade anterior">
+                                        <Info className="h-4 w-4 text-blue-500" />
                                       </div>
                                     )}
                                   </div>
