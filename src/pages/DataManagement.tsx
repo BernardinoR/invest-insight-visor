@@ -148,6 +148,7 @@ interface DadosData {
   "Moeda": string;
   "nomeConta": string;
   "rentabilidade_validada"?: boolean;
+  "ativo_novo"?: boolean;
 }
 
 export default function DataManagement() {
