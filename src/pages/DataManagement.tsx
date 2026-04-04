@@ -80,12 +80,12 @@ const VALID_ASSET_CLASSES = [
   'Ações - Fundos',
   'Ações - Long Biased',
   'Private Equity/Venture Capital/Special Sits',
-  'Alternativo',
   'Exterior - Renda Fixa',
   'Exterior - Ações',
   'COE',
   'Criptoativos',
-  'Ouro'
+  'Ouro',
+  'Alternativo'
 ] as const;
 
 // Helper function to parse Brazilian number format
