@@ -2029,8 +2029,11 @@ interface VerificationResult {
     
     // Contar ativos sem rentabilidade válida (considerando validação manual)
     const missingYieldCount = relatedDetails.filter(item => 
-      !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo)
+      !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo)
     ).length;
+    
+    // Contar ativos novos
+    const newAssetCount = relatedDetails.filter(item => item.ativo_novo === true).length;
     
     // Calcular diferença
     const difference = Math.abs(patrimonioFinal - detailedSum);
