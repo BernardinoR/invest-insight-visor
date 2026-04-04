@@ -77,6 +77,13 @@ export function InvestmentPolicyCompliance({ dadosData, selectedClient }: Invest
       percentualMaximo: 15,
       percentualIdeal: 10,
       percentualAtual: 0
+    },
+    "Alternativo": {
+      estrategia: "Alternativo",
+      percentualMinimo: 0,
+      percentualMaximo: 10,
+      percentualIdeal: 5,
+      percentualAtual: 0
     }
   };
 

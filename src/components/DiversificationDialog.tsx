@@ -186,6 +186,7 @@ export function DiversificationDialog({ open, onOpenChange, dadosData }: Diversi
     'hsl(210 14% 53%)', // Medium blue-gray
     'hsl(35 31% 65%)',  // Warm beige
     'hsl(210 24% 40%)', // Darker blue-gray
+    'hsl(280 30% 55%)', // Purple - Alternativo
   ];
 
   // Assign colors based on strategy order
