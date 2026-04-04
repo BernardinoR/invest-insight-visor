@@ -109,6 +109,9 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
     if (strategyLower.includes('criptoativos')) {
       return 'Criptoativos';
     }
+    if (strategyLower.includes('alternativo')) {
+      return 'Alternativo';
+    }
     
     return strategy;
   };
