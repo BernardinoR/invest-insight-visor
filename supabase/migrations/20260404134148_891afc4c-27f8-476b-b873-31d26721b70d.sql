@@ -1,0 +1,1 @@
+ALTER TABLE public."PoliticaInvestimentos" ADD COLUMN "Alternativo" numeric NULL;
