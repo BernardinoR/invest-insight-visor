@@ -1,34 +1,46 @@
 
-Objetivo: corrigir a ordenação padrão ao abrir **Gerenciar Dados** para que a competência mais recente apareça primeiro (ex.: `02/2026` antes de `12/2025`).
 
-Diagnóstico confirmado:
-- A conversão de competência para data já está correta (`parseCompetenciaToDate`).
-- O problema persiste no “default” porque a tabela só aplica ordenação cronológica quando `sortConfig` está ativo.
-- No carregamento inicial, `sortConfig` fica `null`, então a tela respeita a ordem original da query (lexicográfica de string `MM/YYYY`), gerando a lista “bagunçada”.
+# Plano: Adicionar classe de ativo "Alternativo"
 
-Plano de implementação (1 arquivo: `src/pages/DataManagement.tsx`):
-1. Definir um sort padrão de competência
-- Criar constante local:
-  - `DEFAULT_COMPETENCIA_SORT = { field: 'Competencia', direction: 'desc' }`.
+## Resumo
+Adicionar "Alternativo" como nova classe de ativo em todos os locais necessários do sistema.
 
-2. Aplicar esse padrão sempre que não houver ordenação manual
-- Em `filteredConsolidadoData`, trocar:
-  - `applySortingGeneric(data, sortConfig)`
-  por:
-  - `applySortingGeneric(data, sortConfig ?? DEFAULT_COMPETENCIA_SORT)`.
-- Fazer o mesmo em `filteredDadosData`.
+## Alterações necessárias
 
-3. Manter comportamento atual para ordenação manual
-- Quando o usuário escolher outra coluna/direção, continua valendo `sortConfig`.
-- Se “limpar” ordenação (voltar para `null`), a tela retorna automaticamente para o padrão correto por competência mais recente.
+### 1. `src/pages/DataManagement.tsx`
+- Adicionar `'Alternativo'` ao array `VALID_ASSET_CLASSES` (linha 87, antes de `'COE'`)
 
-4. Validação funcional
-- Abrir `/data-management/Adriana de Farias` e validar ordem inicial (sem clicar em ordenar):
-  - `02/2026` acima de `12/2025`, `11/2025`, etc.
-- Trocar abas (Consolidado/Ativos) e confirmar que o padrão continua correto.
-- Aplicar ordenação manual em outra coluna e depois remover para validar retorno ao default cronológico.
+### 2. `groupStrategy` — 5 arquivos
+Adicionar mapeamento para "alternativo" em cada cópia da função `groupStrategy`:
+- `src/components/InvestmentDetailsTable.tsx` (~linha 100)
+- `src/components/InvestmentDashboard.tsx` (~linha 1060)
+- `src/components/charts/StrategyBreakdown.tsx` (~linha 67)
+- `src/components/DiversificationDialog.tsx` (~linha 29)
+- `src/components/charts/InvestmentPolicyCompliance.tsx` (~linha 84)
 
-Detalhes técnicos:
-- Não envolve migração de banco.
-- Não altera schema/tabelas.
-- Mudança isolada em memoized filters/sorting, de baixo risco e impacto controlado.
+Adicionar antes do `return strategy` / `return 'Outros'`:
+```typescript
+if (strategyLower.includes('alternativo')) return 'Alternativo';
+```
+
+### 3. `strategyOrder` — 4 arquivos
+Adicionar `'Alternativo'` ao array de ordenação (depois de 'Private Equity'):
+- `src/components/InvestmentDetailsTable.tsx`
+- `src/components/InvestmentDashboard.tsx`
+- `src/components/charts/StrategyBreakdown.tsx`
+- `src/components/DiversificationDialog.tsx`
+
+### 4. `COLORS` arrays
+Adicionar uma cor extra nos arrays de cores nos mesmos 4 arquivos para que 'Alternativo' tenha cor própria.
+
+### 5. Tabela `PoliticaInvestimentos` (Supabase)
+Criar migration para adicionar coluna `"Alternativo"` (numeric, nullable) à tabela `PoliticaInvestimentos`.
+
+### 6. `src/components/charts/InvestmentPolicyCompliance.tsx`
+Adicionar mapeamento de 'Alternativo' no `investmentPolicy` que lê da tabela `PoliticaInvestimentos`.
+
+### 7. `src/integrations/supabase/types.ts`
+Adicionar `Alternativo` nos tipos Row/Insert/Update da tabela PoliticaInvestimentos.
+
+Total: ~7 arquivos + 1 migration.
+
