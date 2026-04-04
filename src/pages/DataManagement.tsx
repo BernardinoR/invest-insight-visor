@@ -4304,6 +4304,9 @@ interface VerificationResult {
                     return false;
                   }).length;
 
+                  // Calcular ativos novos nos dados filtrados
+                  const newAssetsInComparison = filteredDadosData.filter(item => item.ativo_novo === true).length;
+
                   const consolidadoValue = selectedConsolidado["Patrimonio Final"] || 0;
                   const difference = Math.abs(consolidadoValue - assetsSum);
                   const percentDiff = consolidadoValue !== 0 
