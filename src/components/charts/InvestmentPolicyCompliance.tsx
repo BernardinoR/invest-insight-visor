@@ -77,6 +77,13 @@ export function InvestmentPolicyCompliance({ dadosData, selectedClient }: Invest
       percentualMaximo: 15,
       percentualIdeal: 10,
       percentualAtual: 0
+    },
+    "Alternativo": {
+      estrategia: "Alternativo",
+      percentualMinimo: 0,
+      percentualMaximo: 10,
+      percentualIdeal: 5,
+      percentualAtual: 0
     }
   };
 
@@ -92,6 +99,7 @@ export function InvestmentPolicyCompliance({ dadosData, selectedClient }: Invest
     if (strategyLower.includes('imobiliário')) return 'Imobiliário';
     if (strategyLower.includes('ações') || strategyLower.includes('long bias')) return 'Ações';
     if (strategyLower.includes('exterior')) return 'Exterior';
+    if (strategyLower.includes('alternativo')) return 'Alternativo';
     
     return 'Outros';
   };

@@ -17,6 +17,7 @@ const COLORS = [
   'hsl(210 14% 53%)', // Medium blue-gray
   'hsl(35 31% 65%)',  // Warm beige
   'hsl(210 24% 40%)', // Darker blue-gray
+  'hsl(280 30% 55%)', // Purple - Alternativo
 ];
 
 interface StrategyBreakdownProps {
@@ -109,6 +110,9 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
     if (strategyLower.includes('criptoativos')) {
       return 'Criptoativos';
     }
+    if (strategyLower.includes('alternativo')) {
+      return 'Alternativo';
+    }
     
     return strategy;
   };
@@ -159,6 +163,7 @@ export function StrategyBreakdown({ dadosData }: StrategyBreakdownProps) {
     'Ações',
     'Ações - Long Bias',
     'Private Equity',
+    'Alternativo',
     'Exterior - Renda Fixa',
     'Exterior - Ações',
     'COE',

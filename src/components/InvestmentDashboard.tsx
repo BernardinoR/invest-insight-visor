@@ -1023,6 +1023,7 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
                       'hsl(210 14% 53%)', // Medium blue-gray
                       'hsl(35 31% 65%)',  // Warm beige
                       'hsl(210 24% 40%)', // Darker blue-gray
+                      'hsl(280 30% 55%)', // Purple - Alternativo
                     ];
 
                     const strategyOrder = [
@@ -1035,6 +1036,7 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
                       'Ações',
                       'Ações - Long Bias',
                       'Private Equity',
+                      'Alternativo',
                       'Exterior - Renda Fixa',
                       'Exterior - Ações',
                       'COE',
@@ -1102,6 +1104,9 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
                       }
                       if (strategyLower.includes('criptoativos')) {
                         return 'Criptoativos';
+                      }
+                      if (strategyLower.includes('alternativo')) {
+                        return 'Alternativo';
                       }
                       
                       return strategy;

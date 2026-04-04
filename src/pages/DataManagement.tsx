@@ -80,6 +80,7 @@ const VALID_ASSET_CLASSES = [
   'Ações - Fundos',
   'Ações - Long Biased',
   'Private Equity/Venture Capital/Special Sits',
+  'Alternativo',
   'Exterior - Renda Fixa',
   'Exterior - Ações',
   'COE',

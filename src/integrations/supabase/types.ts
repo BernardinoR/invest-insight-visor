@@ -313,6 +313,7 @@ export type Database = {
           "Ações - ETFs": number | null
           "Ações - Fundos": number | null
           "Ações - Long Biased": number | null
+          Alternativo: number | null
           "CDI - Fundos": number | null
           "CDI - Liquidez": number | null
           "CDI - Titulos": number | null
@@ -339,6 +340,7 @@ export type Database = {
           "Ações - ETFs"?: number | null
           "Ações - Fundos"?: number | null
           "Ações - Long Biased"?: number | null
+          Alternativo?: number | null
           "CDI - Fundos"?: number | null
           "CDI - Liquidez"?: number | null
           "CDI - Titulos"?: number | null
@@ -365,6 +367,7 @@ export type Database = {
           "Ações - ETFs"?: number | null
           "Ações - Fundos"?: number | null
           "Ações - Long Biased"?: number | null
+          Alternativo?: number | null
           "CDI - Fundos"?: number | null
           "CDI - Liquidez"?: number | null
           "CDI - Titulos"?: number | null
