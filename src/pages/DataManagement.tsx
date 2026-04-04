@@ -5705,6 +5705,39 @@ interface VerificationResult {
                         )}
                       </Button>
                     )}
+                    
+                    {/* Toggle Ativo Novo */}
+                    <Button
+                      variant={editingItem.ativo_novo ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        const novoValor = !editingItem.ativo_novo;
+                        setEditingItem({
+                          ...editingItem, 
+                          ativo_novo: novoValor
+                        });
+                        
+                        toast({
+                          title: novoValor ? "Marcado como ativo novo" : "Marcação removida",
+                          description: novoValor 
+                            ? "Este ativo será identificado como novo (sem rentabilidade anterior)"
+                            : "Este ativo não será mais identificado como novo",
+                        });
+                      }}
+                      className="mt-2 w-full"
+                    >
+                      {editingItem.ativo_novo ? (
+                        <>
+                          <Info className="mr-2 h-4 w-4" />
+                          Ativo Novo ✓
+                        </>
+                      ) : (
+                        <>
+                          <BookmarkPlus className="mr-2 h-4 w-4" />
+                          Marcar como Ativo Novo
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </>
               )}
