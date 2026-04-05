@@ -55,6 +55,7 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
   const [yearlyAccumulatedData, setYearlyAccumulatedData] = useState<Record<string, number>>({});
   const [accumulatedReturnsData, setAccumulatedReturnsData] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
+  const [selectedStrategies, setSelectedStrategies] = useState<Set<string>>(new Set());
   const { cdiData } = useCDIData();
   
   // Get currency conversion functions
