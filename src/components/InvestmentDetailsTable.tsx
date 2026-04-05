@@ -947,6 +947,30 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
                 </TableRow>
               )}
             </TableBody>
+            {selectedStrategies.size > 0 && (
+              <TableFooter>
+                <TableRow className="border-border/50 bg-muted/30 font-bold">
+                  <TableCell className="text-foreground py-2">
+                    {isAllSelected ? 'Total Carteira' : `Total Filtrado (${selectedStrategies.size} de ${allStrategies.length})`}
+                  </TableCell>
+                  <TableCell className={`text-center py-2 ${filteredPortfolioReturns.monthReturn * 100 >= 0 ? "text-success" : "text-destructive"}`}>
+                    {filteredPortfolioReturns.monthReturn * 100 >= 0 ? "+" : ""}{(filteredPortfolioReturns.monthReturn * 100).toFixed(2)}%
+                  </TableCell>
+                  <TableCell className={`text-center py-2 ${filteredPortfolioReturns.yearReturn * 100 >= 0 ? "text-success" : "text-destructive"}`}>
+                    {filteredPortfolioReturns.yearReturn * 100 >= 0 ? "+" : ""}{(filteredPortfolioReturns.yearReturn * 100).toFixed(2)}%
+                  </TableCell>
+                  <TableCell className={filteredPortfolioReturns.sixMonthReturn !== null ? `text-center py-2 ${filteredPortfolioReturns.sixMonthReturn * 100 >= 0 ? "text-success" : "text-destructive"}` : "text-center text-muted-foreground py-2"}>
+                    {filteredPortfolioReturns.sixMonthReturn !== null ? `${filteredPortfolioReturns.sixMonthReturn * 100 >= 0 ? "+" : ""}${(filteredPortfolioReturns.sixMonthReturn * 100).toFixed(2)}%` : "-"}
+                  </TableCell>
+                  <TableCell className={filteredPortfolioReturns.twelveMonthReturn !== null ? `text-center py-2 ${filteredPortfolioReturns.twelveMonthReturn * 100 >= 0 ? "text-success" : "text-destructive"}` : "text-center text-muted-foreground py-2"}>
+                    {filteredPortfolioReturns.twelveMonthReturn !== null ? `${filteredPortfolioReturns.twelveMonthReturn * 100 >= 0 ? "+" : ""}${(filteredPortfolioReturns.twelveMonthReturn * 100).toFixed(2)}%` : "-"}
+                  </TableCell>
+                  <TableCell className={`text-center py-2 ${filteredPortfolioReturns.inceptionReturn * 100 >= 0 ? "text-success" : "text-destructive"}`}>
+                    {filteredPortfolioReturns.inceptionReturn * 100 >= 0 ? "+" : ""}{(filteredPortfolioReturns.inceptionReturn * 100).toFixed(2)}%
+                  </TableCell>
+                </TableRow>
+              </TableFooter>
+            )}
           </Table>
         </div>
       </CardContent>
