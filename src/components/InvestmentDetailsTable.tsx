@@ -770,9 +770,42 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
 
   return (
     <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
-      <CardHeader>
-        <CardTitle className="text-foreground">Detalhamento dos Investimentos</CardTitle>
-        <p className="text-sm text-muted-foreground">Posições consolidadas por estratégia</p>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="text-foreground">Detalhamento dos Investimentos</CardTitle>
+          <p className="text-sm text-muted-foreground">Posições consolidadas por estratégia</p>
+        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Filter className="h-4 w-4" />
+              Filtrar Classes
+              {isPartialSelection && (
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {selectedStrategies.size}/{allStrategies.length}
+                </Badge>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 p-3" align="end">
+            <div className="space-y-2">
+              <div className="flex gap-2 mb-2">
+                <Button variant="ghost" size="sm" className="text-xs h-7 flex-1" onClick={selectAll}>Todas</Button>
+                <Button variant="ghost" size="sm" className="text-xs h-7 flex-1" onClick={clearAll}>Limpar</Button>
+              </div>
+              {allStrategies.map(strategy => (
+                <label key={strategy} className="flex items-center gap-2 cursor-pointer text-sm">
+                  <Checkbox
+                    checked={selectedStrategies.has(strategy)}
+                    onCheckedChange={() => toggleStrategy(strategy)}
+                  />
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getStrategyColor(strategy) }} />
+                  {strategy}
+                </label>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
