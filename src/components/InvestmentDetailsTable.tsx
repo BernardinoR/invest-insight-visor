@@ -3,12 +3,17 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Filter } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCDIData } from "@/hooks/useCDIData";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -50,6 +55,7 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
   const [yearlyAccumulatedData, setYearlyAccumulatedData] = useState<Record<string, number>>({});
   const [accumulatedReturnsData, setAccumulatedReturnsData] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
+  const [selectedStrategies, setSelectedStrategies] = useState<Set<string>>(new Set());
   const { cdiData } = useCDIData();
   
   // Get currency conversion functions
@@ -654,6 +660,94 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
       return 0;
     });
 
+  // Initialize selectedStrategies with all available strategies
+  const allStrategies = useMemo(() => consolidatedData.map(item => item.name), [consolidatedData]);
+  
+  useEffect(() => {
+    if (allStrategies.length > 0 && selectedStrategies.size === 0) {
+      setSelectedStrategies(new Set(allStrategies));
+    }
+  }, [allStrategies]);
+
+  const toggleStrategy = (strategy: string) => {
+    setSelectedStrategies(prev => {
+      const next = new Set(prev);
+      if (next.has(strategy)) {
+        next.delete(strategy);
+      } else {
+        next.add(strategy);
+      }
+      return next;
+    });
+  };
+
+  const selectAll = () => setSelectedStrategies(new Set(allStrategies));
+  const clearAll = () => setSelectedStrategies(new Set());
+
+  // Calculate filtered portfolio returns
+  const filteredPortfolioReturns = useMemo(() => {
+    if (selectedStrategies.size === 0) return { monthReturn: 0, yearReturn: 0, sixMonthReturn: null as number | null, twelveMonthReturn: null as number | null, inceptionReturn: 0 };
+
+    const filteredData = dadosData.filter(item => {
+      const grouped = groupStrategy(item["Classe do ativo"] || "Outros");
+      return selectedStrategies.has(grouped);
+    });
+
+    if (filteredData.length === 0) return { monthReturn: 0, yearReturn: 0, sixMonthReturn: null as number | null, twelveMonthReturn: null as number | null, inceptionReturn: 0 };
+
+    // Group by competencia
+    const competenciaGroups: Record<string, typeof filteredData> = {};
+    filteredData.forEach(item => {
+      if (!competenciaGroups[item.Competencia]) competenciaGroups[item.Competencia] = [];
+      competenciaGroups[item.Competencia].push(item);
+    });
+
+    const sortedCompetencias = Object.keys(competenciaGroups).sort();
+
+    // Calculate weighted return per competencia
+    const getWeightedReturn = (competencias: string[]) => {
+      const monthlyReturns = competencias.map(comp => {
+        const items = competenciaGroups[comp];
+        let totalPos = 0, totalWeighted = 0;
+        items.forEach(item => {
+          if (shouldExcludeFromProfitability(item.Ativo)) return;
+          const moeda = item.Moeda === 'Dolar' ? 'USD' as const : 'BRL' as const;
+          const pos = convertValue(Number(item.Posicao) || 0, item.Competencia, moeda);
+          const ret = adjustReturnWithFX(Number(item.Rendimento) || 0, item.Competencia, moeda);
+          totalPos += pos;
+          totalWeighted += ret * pos;
+        });
+        return totalPos > 0 ? totalWeighted / totalPos : 0;
+      });
+      return calculateCompoundReturn(monthlyReturns);
+    };
+
+    // Most recent competencia
+    const mostRecent = sortedCompetencias[sortedCompetencias.length - 1];
+    const monthReturn = getWeightedReturn([mostRecent]);
+
+    // Year
+    const lastYear = mostRecent.substring(3);
+    const yearComps = sortedCompetencias.filter(c => c.endsWith(lastYear));
+    const yearReturn = getWeightedReturn(yearComps);
+
+    // 6M
+    const sixMonthReturn = sortedCompetencias.length >= 6 
+      ? getWeightedReturn(sortedCompetencias.slice(-6)) : null;
+
+    // 12M
+    const twelveMonthReturn = sortedCompetencias.length >= 12 
+      ? getWeightedReturn(sortedCompetencias.slice(-12)) : null;
+
+    // Inception
+    const inceptionReturn = getWeightedReturn(sortedCompetencias);
+
+    return { monthReturn, yearReturn, sixMonthReturn, twelveMonthReturn, inceptionReturn };
+  }, [selectedStrategies, dadosData, convertValue, adjustReturnWithFX]);
+
+  const isAllSelected = selectedStrategies.size === allStrategies.length;
+  const isPartialSelection = selectedStrategies.size > 0 && selectedStrategies.size < allStrategies.length;
+
   const getPerformanceBadge = (performance: number) => {
     if (performance > 2) {
       return <Badge className="bg-success/20 text-success border-success/30">Excelente</Badge>;
@@ -676,9 +770,42 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
 
   return (
     <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
-      <CardHeader>
-        <CardTitle className="text-foreground">Detalhamento dos Investimentos</CardTitle>
-        <p className="text-sm text-muted-foreground">Posições consolidadas por estratégia</p>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="text-foreground">Detalhamento dos Investimentos</CardTitle>
+          <p className="text-sm text-muted-foreground">Posições consolidadas por estratégia</p>
+        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Filter className="h-4 w-4" />
+              Filtrar Classes
+              {isPartialSelection && (
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {selectedStrategies.size}/{allStrategies.length}
+                </Badge>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 p-3" align="end">
+            <div className="space-y-2">
+              <div className="flex gap-2 mb-2">
+                <Button variant="ghost" size="sm" className="text-xs h-7 flex-1" onClick={selectAll}>Todas</Button>
+                <Button variant="ghost" size="sm" className="text-xs h-7 flex-1" onClick={clearAll}>Limpar</Button>
+              </div>
+              {allStrategies.map(strategy => (
+                <label key={strategy} className="flex items-center gap-2 cursor-pointer text-sm">
+                  <Checkbox
+                    checked={selectedStrategies.has(strategy)}
+                    onCheckedChange={() => toggleStrategy(strategy)}
+                  />
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getStrategyColor(strategy) }} />
+                  {strategy}
+                </label>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -768,8 +895,13 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
                   
                   return (
                     <>
-                      <TableRow key={item.name} className="border-border/50">
+                      <TableRow key={item.name} className={`border-border/50 ${!selectedStrategies.has(item.name) ? 'opacity-40' : ''}`}>
                         <TableCell className="font-medium text-foreground flex items-center gap-2 py-2">
+                          <Checkbox
+                            checked={selectedStrategies.has(item.name)}
+                            onCheckedChange={() => toggleStrategy(item.name)}
+                            className="mr-1"
+                          />
                           <div 
                             className="w-3 h-3 rounded-full" 
                             style={{ backgroundColor: getStrategyColor(item.name) }}
@@ -815,6 +947,30 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
                 </TableRow>
               )}
             </TableBody>
+            {selectedStrategies.size > 0 && (
+              <TableFooter>
+                <TableRow className="border-border/50 bg-muted/30 font-bold">
+                  <TableCell className="text-foreground py-2">
+                    {isAllSelected ? 'Total Carteira' : `Total Filtrado (${selectedStrategies.size} de ${allStrategies.length})`}
+                  </TableCell>
+                  <TableCell className={`text-center py-2 ${filteredPortfolioReturns.monthReturn * 100 >= 0 ? "text-success" : "text-destructive"}`}>
+                    {filteredPortfolioReturns.monthReturn * 100 >= 0 ? "+" : ""}{(filteredPortfolioReturns.monthReturn * 100).toFixed(2)}%
+                  </TableCell>
+                  <TableCell className={`text-center py-2 ${filteredPortfolioReturns.yearReturn * 100 >= 0 ? "text-success" : "text-destructive"}`}>
+                    {filteredPortfolioReturns.yearReturn * 100 >= 0 ? "+" : ""}{(filteredPortfolioReturns.yearReturn * 100).toFixed(2)}%
+                  </TableCell>
+                  <TableCell className={filteredPortfolioReturns.sixMonthReturn !== null ? `text-center py-2 ${filteredPortfolioReturns.sixMonthReturn * 100 >= 0 ? "text-success" : "text-destructive"}` : "text-center text-muted-foreground py-2"}>
+                    {filteredPortfolioReturns.sixMonthReturn !== null ? `${filteredPortfolioReturns.sixMonthReturn * 100 >= 0 ? "+" : ""}${(filteredPortfolioReturns.sixMonthReturn * 100).toFixed(2)}%` : "-"}
+                  </TableCell>
+                  <TableCell className={filteredPortfolioReturns.twelveMonthReturn !== null ? `text-center py-2 ${filteredPortfolioReturns.twelveMonthReturn * 100 >= 0 ? "text-success" : "text-destructive"}` : "text-center text-muted-foreground py-2"}>
+                    {filteredPortfolioReturns.twelveMonthReturn !== null ? `${filteredPortfolioReturns.twelveMonthReturn * 100 >= 0 ? "+" : ""}${(filteredPortfolioReturns.twelveMonthReturn * 100).toFixed(2)}%` : "-"}
+                  </TableCell>
+                  <TableCell className={`text-center py-2 ${filteredPortfolioReturns.inceptionReturn * 100 >= 0 ? "text-success" : "text-destructive"}`}>
+                    {filteredPortfolioReturns.inceptionReturn * 100 >= 0 ? "+" : ""}{(filteredPortfolioReturns.inceptionReturn * 100).toFixed(2)}%
+                  </TableCell>
+                </TableRow>
+              </TableFooter>
+            )}
           </Table>
         </div>
       </CardContent>
