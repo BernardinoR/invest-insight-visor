@@ -999,6 +999,8 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
                 dadosData={filteredDadosData} 
                 selectedClient={selectedClient} 
                 filteredRange={filteredRange}
+                selectedStrategies={selectedStrategies}
+                onStrategiesChange={handleStrategiesChange}
               />
             </div>
 
