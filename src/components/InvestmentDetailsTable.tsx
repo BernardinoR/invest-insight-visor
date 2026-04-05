@@ -49,13 +49,19 @@ interface InvestmentDetailsTableProps {
   }>;
   selectedClient: string;
   filteredRange?: { inicio: string; fim: string };
+  selectedStrategies?: Set<string>;
+  onStrategiesChange?: (strategies: Set<string>) => void;
 }
 
-export function InvestmentDetailsTable({ dadosData = [], selectedClient, filteredRange }: InvestmentDetailsTableProps) {
+export function InvestmentDetailsTable({ dadosData = [], selectedClient, filteredRange, selectedStrategies: externalSelectedStrategies, onStrategiesChange }: InvestmentDetailsTableProps) {
   const [yearlyAccumulatedData, setYearlyAccumulatedData] = useState<Record<string, number>>({});
   const [accumulatedReturnsData, setAccumulatedReturnsData] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
-  const [selectedStrategies, setSelectedStrategies] = useState<Set<string>>(new Set());
+  const [internalSelectedStrategies, setInternalSelectedStrategies] = useState<Set<string>>(new Set());
+  
+  // Use external state if provided, otherwise use internal
+  const selectedStrategies = externalSelectedStrategies ?? internalSelectedStrategies;
+  const setSelectedStrategies = onStrategiesChange ?? setInternalSelectedStrategies;
   const { cdiData } = useCDIData();
   
   // Get currency conversion functions
@@ -670,15 +676,13 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
   }, [allStrategies]);
 
   const toggleStrategy = (strategy: string) => {
-    setSelectedStrategies(prev => {
-      const next = new Set(prev);
-      if (next.has(strategy)) {
-        next.delete(strategy);
-      } else {
-        next.add(strategy);
-      }
-      return next;
-    });
+    const next = new Set(selectedStrategies);
+    if (next.has(strategy)) {
+      next.delete(strategy);
+    } else {
+      next.add(strategy);
+    }
+    setSelectedStrategies(next);
   };
 
   const selectAll = () => setSelectedStrategies(new Set(allStrategies));

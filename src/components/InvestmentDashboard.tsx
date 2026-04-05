@@ -47,6 +47,7 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
   const [maturityDialogOpen, setMaturityDialogOpen] = useState(false);
   const [diversificationDialogOpen, setDiversificationDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'performance' | 'risk' | 'policy'>('performance');
+  const [selectedStrategies, setSelectedStrategies] = useState<Set<string>>(new Set());
   
   // Visible columns state for "Retorno por Ativo" table
   const [visibleColumns, setVisibleColumns] = useState({
@@ -205,6 +206,122 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
 
   const filteredDadosData = useMemo(() => getFilteredDadosData(dadosData), [dadosData, getFilteredDadosData]);
   const filteredConsolidadoData = useMemo(() => getFilteredConsolidadoData(consolidadoData), [consolidadoData, getFilteredConsolidadoData]);
+
+  // groupStrategy function (same as InvestmentDetailsTable)
+  const groupStrategy = useCallback((strategy: string): string => {
+    const s = strategy.toLowerCase();
+    if (s.includes('cdi - liquidez')) return 'Pós Fixado - Liquidez';
+    if (s.includes('cdi - fundos') || s.includes('cdi - titulos')) return 'Pós Fixado';
+    if (s.includes('inflação - titulos') || s.includes('inflação - fundos')) return 'Inflação';
+    if (s.includes('pré fixado - titulos') || s.includes('pré fixado - títulos') || s.includes('pré fixado - titulo') || s.includes('pré fixado - fundos')) return 'Pré Fixado';
+    if (s.includes('multimercado')) return 'Multimercado';
+    if (s.includes('imobiliário - ativos') || s.includes('imobiliário - fundos')) return 'Imobiliário';
+    if (s.includes('ações - ativos') || s.includes('ações - fundos') || s.includes('ações - etfs')) return 'Ações';
+    if (s.includes('ações - long bias')) return 'Ações - Long Bias';
+    if (s.includes('private equity') || s.includes('venture capital') || s.includes('special sits')) return 'Private Equity';
+    if (s.includes('exterior - ações')) return 'Exterior - Ações';
+    if (s.includes('exterior - renda fixa')) return 'Exterior - Renda Fixa';
+    if (s.includes('coe')) return 'COE';
+    if (s.includes('ouro')) return 'Ouro';
+    if (s.includes('criptoativos')) return 'Criptoativos';
+    if (s.includes('alternativo')) return 'Alternativo';
+    return strategy;
+  }, []);
+
+  // All available strategies from dadosData
+  const allAvailableStrategies = useMemo(() => {
+    const strategies = new Set<string>();
+    filteredDadosData.forEach(item => {
+      strategies.add(groupStrategy(item["Classe do ativo"] || "Outros"));
+    });
+    return Array.from(strategies);
+  }, [filteredDadosData, groupStrategy]);
+
+  // Check if all strategies are selected (or if we should use original consolidado)
+  const isAllStrategiesSelected = useMemo(() => {
+    if (selectedStrategies.size === 0) return true; // not initialized yet
+    return allAvailableStrategies.length > 0 && selectedStrategies.size >= allAvailableStrategies.length;
+  }, [selectedStrategies, allAvailableStrategies]);
+
+  // Synthetic consolidado data: recalculate from dadosData when partial filter
+  const syntheticConsolidadoData = useMemo(() => {
+    if (isAllStrategiesSelected) return filteredConsolidadoData;
+    if (selectedStrategies.size === 0) return filteredConsolidadoData;
+
+    // Filter dadosData by selected strategies
+    const filtered = filteredDadosData.filter(item => {
+      const grouped = groupStrategy(item["Classe do ativo"] || "Outros");
+      return selectedStrategies.has(grouped);
+    });
+
+    if (filtered.length === 0) return [];
+
+    // Group by competencia
+    const compGroups: Record<string, typeof filtered> = {};
+    filtered.forEach(item => {
+      if (!compGroups[item.Competencia]) compGroups[item.Competencia] = [];
+      compGroups[item.Competencia].push(item);
+    });
+
+    // Build synthetic consolidado entries
+    const sortedComps = Object.keys(compGroups).sort();
+    
+    return sortedComps.map((comp, idx) => {
+      const items = compGroups[comp];
+      
+      let totalPosition = 0;
+      let totalWeightedReturn = 0;
+      
+      items.forEach(item => {
+        const pos = Number(item.Posicao) || 0;
+        const ret = Number(item.Rendimento) || 0;
+        const moeda = item.Moeda === 'Dolar' ? 'USD' as const : 'BRL' as const;
+        const posConverted = convertValue(pos, comp, moeda);
+        const retAdjusted = adjustReturnWithFX(ret, comp, moeda);
+        
+        totalPosition += posConverted;
+        // Exclude Caixa/Proventos from return weighting but keep position
+        const ativoLower = (item.Ativo || '').toLowerCase().trim();
+        if (ativoLower !== 'caixa' && ativoLower !== 'proventos') {
+          totalWeightedReturn += retAdjusted * posConverted;
+        }
+      });
+
+      const rendimento = totalPosition > 0 ? totalWeightedReturn / totalPosition : 0;
+      const ganhoFinanceiro = totalWeightedReturn;
+
+      // Approximate Patrimonio Inicial from previous comp or current - ganho
+      const prevComp = idx > 0 ? sortedComps[idx - 1] : null;
+      let patrimonioInicial = totalPosition - ganhoFinanceiro;
+      if (prevComp && compGroups[prevComp]) {
+        patrimonioInicial = compGroups[prevComp].reduce((sum, item) => {
+          const pos = Number(item.Posicao) || 0;
+          const moeda = item.Moeda === 'Dolar' ? 'USD' as const : 'BRL' as const;
+          return sum + convertValue(pos, prevComp, moeda);
+        }, 0);
+      }
+
+      return {
+        id: idx,
+        Data: items[0]?.Data || comp,
+        Competencia: comp,
+        "Patrimonio Inicial": patrimonioInicial,
+        "Movimentação": 0,
+        Impostos: 0,
+        "Patrimonio Final": totalPosition,
+        "Ganho Financeiro": ganhoFinanceiro,
+        Rendimento: rendimento,
+        Nome: items[0]?.Nome || '',
+        Instituicao: 'Carteira Filtrada',
+        Moeda: 'Real',
+        nomeConta: undefined,
+      };
+    });
+  }, [isAllStrategiesSelected, selectedStrategies, filteredDadosData, filteredConsolidadoData, groupStrategy, convertValue, adjustReturnWithFX]);
+
+  const handleStrategiesChange = useCallback((strategies: Set<string>) => {
+    setSelectedStrategies(strategies);
+  }, []);
 
   // Helper function to calculate compound return
   const calculateCompoundReturn = useCallback((returns: number[]) => {
@@ -838,7 +955,7 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
 
         {/* Client Data Display - includes Performance chart, Consolidado Performance, Portfolio Table placeholder, and Institution Allocation placeholder */}
         <ClientDataDisplay 
-          consolidadoData={filteredConsolidadoData}
+          consolidadoData={syntheticConsolidadoData}
           dadosData={filteredDadosData}
           loading={loading}
           clientName={selectedClient}
@@ -882,6 +999,8 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
                 dadosData={filteredDadosData} 
                 selectedClient={selectedClient} 
                 filteredRange={filteredRange}
+                selectedStrategies={selectedStrategies}
+                onStrategiesChange={handleStrategiesChange}
               />
             </div>
 
