@@ -1,53 +1,55 @@
 
 
-# Plano: Filtro de classes no Detalhamento dos Investimentos com retorno consolidado recalculado
+# Plano: Corrigir cálculo ponderado + conectar filtro ao gráfico consolidado
 
-## Objetivo
-Adicionar checkboxes nas estratégias do "Detalhamento dos Investimentos" para selecionar/deselecionar classes. Uma linha "Total Carteira" no rodapé exibe o retorno ponderado consolidado recalculado apenas com as classes selecionadas.
+## Problema
+1. O cálculo do `filteredPortfolioReturns` já pondera por `Posicao` (valor alocado) — parece correto na lógica. Preciso verificar se o valor usado é o da estratégia e não da classe individual.
+2. O filtro de classes não afeta o gráfico de performance consolidado (PerformanceChart) que fica acima.
 
 ## Arquitetura
 
 ```text
-InvestmentDetailsTable
-├── State: selectedStrategies (Set<string>) — todas selecionadas por padrão
-├── Header: botão "Selecionar Classes" com dropdown de checkboxes
-├── Tabela: checkbox em cada linha de estratégia
-├── Cálculo: useMemo recalcula retorno ponderado por competência
-│   └── Para cada competência: média ponderada apenas dos ativos das classes selecionadas
-│   └── Aplica juros compostos mês a mês → retorno Mês/Ano/6M/12M/Início
-└── Footer row: "Total Carteira (filtrado)" com os retornos recalculados
+InvestmentDashboard (state owner)
+├── selectedStrategies: Set<string>  ← lifted from InvestmentDetailsTable
+├── syntheticConsolidadoData ← useMemo: recalcula a partir de dadosData filtrados
+│
+├── ClientDataDisplay
+│   └── PerformanceChart(consolidadoData = synthetic quando filtro parcial)
+│
+└── InvestmentDetailsTable(selectedStrategies, onStrategiesChange)
+    └── Footer: retorno recalculado (usa mesma lógica existente, já pondera por Posicao)
 ```
 
-## Alterações — 1 arquivo: `src/components/InvestmentDetailsTable.tsx`
+## Alterações — 2 arquivos
 
-### 1. Novo state para classes selecionadas
-```typescript
-const [selectedStrategies, setSelectedStrategies] = useState<Set<string>>(new Set());
-```
-Inicializado com todas as estratégias disponíveis via `useEffect`.
+### 1. `src/components/InvestmentDashboard.tsx`
 
-### 2. Header com controles de seleção
-- Botão "Filtrar Classes" ao lado do título do card
-- Dropdown com checkboxes para cada estratégia presente nos dados
-- Botões "Selecionar Todas" / "Limpar"
+- **Novo state**: `selectedStrategies` (Set\<string\>), inicializado vazio, populado via callback do InvestmentDetailsTable
+- **Novo `useMemo`**: `syntheticConsolidadoData`
+  - Quando todas as estratégias selecionadas → usa `filteredConsolidadoData` original (sem recalcular)
+  - Quando filtro parcial → filtra `filteredDadosData` pelas classes selecionadas, agrupa por competência:
+    - `Patrimonio Final = Σ Posicao` (convertido)
+    - `Rendimento = Σ(Rendimento_i × Posicao_i) / Σ(Posicao_i)` (média ponderada pelo valor alocado)
+    - `Ganho Financeiro = Σ(Rendimento_i × Posicao_i)`
+  - Reconstrói o formato `ConsolidadoPerformance[]` para o PerformanceChart
+- **Passa** `syntheticConsolidadoData` ao `ClientDataDisplay` no lugar de `filteredConsolidadoData`
+- **Passa** `selectedStrategies` + `onStrategiesChange` como props ao `InvestmentDetailsTable`
 
-### 3. Checkbox inline em cada linha da tabela
-- Checkbox à esquerda do nome da estratégia (antes da bolinha colorida)
-- Toggle individual por estratégia
+### 2. `src/components/InvestmentDetailsTable.tsx`
 
-### 4. Cálculo do retorno consolidado filtrado (lógica core)
-Um `useMemo` que:
-1. Filtra `dadosData` para manter apenas ativos cujo `groupStrategy(classe)` está em `selectedStrategies`
-2. Para cada competência, calcula a média ponderada (retorno × posição / total posição)
-3. Ordena cronologicamente e aplica juros compostos
-4. Retorna: `{ monthReturn, yearReturn, sixMonthReturn, twelveMonthReturn, inceptionReturn }`
+- **Props novas**: `selectedStrategies`, `onStrategiesChange` (componente controlado)
+- **Remove** state local `selectedStrategies` e funções `selectAll`/`clearAll`/`toggleStrategy`
+- **Usa** props recebidas para controlar checkboxes e cálculos
+- O cálculo `filteredPortfolioReturns` permanece igual — já pondera corretamente por `Posicao` (valor alocado de cada ativo individual dentro da estratégia)
 
-Reutiliza as funções existentes `groupStrategy`, `shouldExcludeFromProfitability`, `convertValue`, `adjustReturnWithFX`.
+### Lógica core do synthetic consolidado
 
-### 5. Linha "Total Carteira" no footer
-- `TableFooter` com linha destacada (bg diferenciado, font-bold)
-- Mostra os retornos consolidados recalculados nas mesmas colunas (Mês, Ano, 6M, 12M, Início)
-- Label dinâmico: "Total Carteira" quando todas selecionadas, "Total Filtrado (X de Y classes)" quando parcial
+Para cada competência nos dadosData filtrados:
+- Filtra ativos onde `groupStrategy(classe)` está em `selectedStrategies`
+- Exclui "Caixa" e "Proventos" da ponderação de rendimento
+- `Patrimonio Final = Σ Posicao`
+- `Rendimento = Σ(rend_i × pos_i) / Σ(pos_i)` — ponderado pelo valor alocado
+- Monta objeto compatível com `ConsolidadoPerformance` para alimentar o gráfico
 
-### Sem alterações em banco de dados ou outros arquivos.
+### Sem mudanças em banco de dados.
 
