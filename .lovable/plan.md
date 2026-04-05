@@ -1,30 +1,53 @@
 
 
-# Plano: Adicionar 4a bolinha "Ativos Novos" no verificador do Consolidado
+# Plano: Filtro de classes no Detalhamento dos Investimentos com retorno consolidado recalculado
 
-## Contexto
-O verificador do consolidado já tem 3 bolinhas:
-1. Integridade numérica (patrimônio vs soma)
-2. Classificação (classes válidas)
-3. Rentabilidade (rendimento preenchido)
+## Objetivo
+Adicionar checkboxes nas estratégias do "Detalhamento dos Investimentos" para selecionar/deselecionar classes. Uma linha "Total Carteira" no rodapé exibe o retorno ponderado consolidado recalculado apenas com as classes selecionadas.
 
-O `verifyIntegrity` já calcula `newAssetCount` e `hasNewAssets` — só falta exibir na UI.
+## Arquitetura
 
-## Alterações — 1 arquivo: `src/pages/DataManagement.tsx`
-
-### 1. Adicionar 4a bolinha no botão (após linha ~4068)
-Após a terceira bolinha (rentabilidade), adicionar:
+```text
+InvestmentDetailsTable
+├── State: selectedStrategies (Set<string>) — todas selecionadas por padrão
+├── Header: botão "Selecionar Classes" com dropdown de checkboxes
+├── Tabela: checkbox em cada linha de estratégia
+├── Cálculo: useMemo recalcula retorno ponderado por competência
+│   └── Para cada competência: média ponderada apenas dos ativos das classes selecionadas
+│   └── Aplica juros compostos mês a mês → retorno Mês/Ano/6M/12M/Início
+└── Footer row: "Total Carteira (filtrado)" com os retornos recalculados
 ```
-{verification.hasNewAssets ? (
-  <Info className="h-4 w-4 text-blue-500" />
-) : null}
-```
-Só aparece quando há ativos novos (azul informativo), não exibe nada quando não há.
 
-### 2. Adicionar seção no PopoverContent (após linha ~4190)
-Novo bloco após "Verificação de Rentabilidade":
-- Separator
-- Título "Ativos Novos" com ícone Info
-- Contador de ativos novos
-- Mensagem informativa azul explicando que são ativos sem rentabilidade esperada
+## Alterações — 1 arquivo: `src/components/InvestmentDetailsTable.tsx`
+
+### 1. Novo state para classes selecionadas
+```typescript
+const [selectedStrategies, setSelectedStrategies] = useState<Set<string>>(new Set());
+```
+Inicializado com todas as estratégias disponíveis via `useEffect`.
+
+### 2. Header com controles de seleção
+- Botão "Filtrar Classes" ao lado do título do card
+- Dropdown com checkboxes para cada estratégia presente nos dados
+- Botões "Selecionar Todas" / "Limpar"
+
+### 3. Checkbox inline em cada linha da tabela
+- Checkbox à esquerda do nome da estratégia (antes da bolinha colorida)
+- Toggle individual por estratégia
+
+### 4. Cálculo do retorno consolidado filtrado (lógica core)
+Um `useMemo` que:
+1. Filtra `dadosData` para manter apenas ativos cujo `groupStrategy(classe)` está em `selectedStrategies`
+2. Para cada competência, calcula a média ponderada (retorno × posição / total posição)
+3. Ordena cronologicamente e aplica juros compostos
+4. Retorna: `{ monthReturn, yearReturn, sixMonthReturn, twelveMonthReturn, inceptionReturn }`
+
+Reutiliza as funções existentes `groupStrategy`, `shouldExcludeFromProfitability`, `convertValue`, `adjustReturnWithFX`.
+
+### 5. Linha "Total Carteira" no footer
+- `TableFooter` com linha destacada (bg diferenciado, font-bold)
+- Mostra os retornos consolidados recalculados nas mesmas colunas (Mês, Ano, 6M, 12M, Início)
+- Label dinâmico: "Total Carteira" quando todas selecionadas, "Total Filtrado (X de Y classes)" quando parcial
+
+### Sem alterações em banco de dados ou outros arquivos.
 
