@@ -895,8 +895,13 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
                   
                   return (
                     <>
-                      <TableRow key={item.name} className="border-border/50">
+                      <TableRow key={item.name} className={`border-border/50 ${!selectedStrategies.has(item.name) ? 'opacity-40' : ''}`}>
                         <TableCell className="font-medium text-foreground flex items-center gap-2 py-2">
+                          <Checkbox
+                            checked={selectedStrategies.has(item.name)}
+                            onCheckedChange={() => toggleStrategy(item.name)}
+                            className="mr-1"
+                          />
                           <div 
                             className="w-3 h-3 rounded-full" 
                             style={{ backgroundColor: getStrategyColor(item.name) }}
