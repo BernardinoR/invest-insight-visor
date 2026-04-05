@@ -660,7 +660,94 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
       return 0;
     });
 
-  const getPerformanceBadge = (performance: number) => {
+  // Initialize selectedStrategies with all available strategies
+  const allStrategies = useMemo(() => consolidatedData.map(item => item.name), [consolidatedData]);
+  
+  useEffect(() => {
+    if (allStrategies.length > 0 && selectedStrategies.size === 0) {
+      setSelectedStrategies(new Set(allStrategies));
+    }
+  }, [allStrategies]);
+
+  const toggleStrategy = (strategy: string) => {
+    setSelectedStrategies(prev => {
+      const next = new Set(prev);
+      if (next.has(strategy)) {
+        next.delete(strategy);
+      } else {
+        next.add(strategy);
+      }
+      return next;
+    });
+  };
+
+  const selectAll = () => setSelectedStrategies(new Set(allStrategies));
+  const clearAll = () => setSelectedStrategies(new Set());
+
+  // Calculate filtered portfolio returns
+  const filteredPortfolioReturns = useMemo(() => {
+    if (selectedStrategies.size === 0) return { monthReturn: 0, yearReturn: 0, sixMonthReturn: null as number | null, twelveMonthReturn: null as number | null, inceptionReturn: 0 };
+
+    const filteredData = dadosData.filter(item => {
+      const grouped = groupStrategy(item["Classe do ativo"] || "Outros");
+      return selectedStrategies.has(grouped);
+    });
+
+    if (filteredData.length === 0) return { monthReturn: 0, yearReturn: 0, sixMonthReturn: null as number | null, twelveMonthReturn: null as number | null, inceptionReturn: 0 };
+
+    // Group by competencia
+    const competenciaGroups: Record<string, typeof filteredData> = {};
+    filteredData.forEach(item => {
+      if (!competenciaGroups[item.Competencia]) competenciaGroups[item.Competencia] = [];
+      competenciaGroups[item.Competencia].push(item);
+    });
+
+    const sortedCompetencias = Object.keys(competenciaGroups).sort();
+
+    // Calculate weighted return per competencia
+    const getWeightedReturn = (competencias: string[]) => {
+      const monthlyReturns = competencias.map(comp => {
+        const items = competenciaGroups[comp];
+        let totalPos = 0, totalWeighted = 0;
+        items.forEach(item => {
+          if (shouldExcludeFromProfitability(item.Ativo)) return;
+          const moeda = item.Moeda === 'Dolar' ? 'USD' as const : 'BRL' as const;
+          const pos = convertValue(Number(item.Posicao) || 0, item.Competencia, moeda);
+          const ret = adjustReturnWithFX(Number(item.Rendimento) || 0, item.Competencia, moeda);
+          totalPos += pos;
+          totalWeighted += ret * pos;
+        });
+        return totalPos > 0 ? totalWeighted / totalPos : 0;
+      });
+      return calculateCompoundReturn(monthlyReturns);
+    };
+
+    // Most recent competencia
+    const mostRecent = sortedCompetencias[sortedCompetencias.length - 1];
+    const monthReturn = getWeightedReturn([mostRecent]);
+
+    // Year
+    const lastYear = mostRecent.substring(3);
+    const yearComps = sortedCompetencias.filter(c => c.endsWith(lastYear));
+    const yearReturn = getWeightedReturn(yearComps);
+
+    // 6M
+    const sixMonthReturn = sortedCompetencias.length >= 6 
+      ? getWeightedReturn(sortedCompetencias.slice(-6)) : null;
+
+    // 12M
+    const twelveMonthReturn = sortedCompetencias.length >= 12 
+      ? getWeightedReturn(sortedCompetencias.slice(-12)) : null;
+
+    // Inception
+    const inceptionReturn = getWeightedReturn(sortedCompetencias);
+
+    return { monthReturn, yearReturn, sixMonthReturn, twelveMonthReturn, inceptionReturn };
+  }, [selectedStrategies, dadosData, convertValue, adjustReturnWithFX]);
+
+  const isAllSelected = selectedStrategies.size === allStrategies.length;
+  const isPartialSelection = selectedStrategies.size > 0 && selectedStrategies.size < allStrategies.length;
+
     if (performance > 2) {
       return <Badge className="bg-success/20 text-success border-success/30">Excelente</Badge>;
     } else if (performance > 0.5) {
