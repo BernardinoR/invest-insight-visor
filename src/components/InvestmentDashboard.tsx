@@ -955,7 +955,7 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
 
         {/* Client Data Display - includes Performance chart, Consolidado Performance, Portfolio Table placeholder, and Institution Allocation placeholder */}
         <ClientDataDisplay 
-          consolidadoData={filteredConsolidadoData}
+          consolidadoData={syntheticConsolidadoData}
           dadosData={filteredDadosData}
           loading={loading}
           clientName={selectedClient}
