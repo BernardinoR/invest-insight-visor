@@ -748,6 +748,7 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
   const isAllSelected = selectedStrategies.size === allStrategies.length;
   const isPartialSelection = selectedStrategies.size > 0 && selectedStrategies.size < allStrategies.length;
 
+  const getPerformanceBadge = (performance: number) => {
     if (performance > 2) {
       return <Badge className="bg-success/20 text-success border-success/30">Excelente</Badge>;
     } else if (performance > 0.5) {
