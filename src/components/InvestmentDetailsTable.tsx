@@ -676,15 +676,13 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
   }, [allStrategies]);
 
   const toggleStrategy = (strategy: string) => {
-    setSelectedStrategies(prev => {
-      const next = new Set(prev);
-      if (next.has(strategy)) {
-        next.delete(strategy);
-      } else {
-        next.add(strategy);
-      }
-      return next;
-    });
+    const next = new Set(selectedStrategies);
+    if (next.has(strategy)) {
+      next.delete(strategy);
+    } else {
+      next.add(strategy);
+    }
+    setSelectedStrategies(next);
   };
 
   const selectAll = () => setSelectedStrategies(new Set(allStrategies));
