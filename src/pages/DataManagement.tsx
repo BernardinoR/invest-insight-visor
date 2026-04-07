@@ -708,6 +708,13 @@ export default function DataManagement() {
 
       setConsolidadoData((consolidadoResponse.data || []) as any[]);
       setDadosData((dadosResponse.data || []) as any[]);
+
+      // Persist verification results to Supabase (fire-and-forget)
+      supabase.rpc('calculate_verification', { p_client_name: decodedClientName })
+        .then(({ error }) => {
+          if (error) console.error('Error persisting verification:', error);
+          else console.log('Verification results persisted for', decodedClientName);
+        });
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
