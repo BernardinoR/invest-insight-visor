@@ -708,6 +708,13 @@ export default function DataManagement() {
 
       setConsolidadoData((consolidadoResponse.data || []) as any[]);
       setDadosData((dadosResponse.data || []) as any[]);
+
+      // Persist verification results to Supabase (fire-and-forget)
+      supabase.rpc('calculate_verification', { p_client_name: decodedClientName })
+        .then(({ error }) => {
+          if (error) console.error('Error persisting verification:', error);
+          else console.log('Verification results persisted for', decodedClientName);
+        });
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -3552,6 +3559,24 @@ interface VerificationResult {
                       Performance consolidada por competência e instituição
                     </p>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const { error } = await supabase.rpc('calculate_verification', { p_client_name: decodedClientName });
+                        if (error) throw error;
+                        toast({ title: "Verificações recalculadas", description: "Resultados gravados no Supabase com sucesso" });
+                      } catch (err) {
+                        console.error('Error recalculating verification:', err);
+                        toast({ title: "Erro", description: "Erro ao recalcular verificações", variant: "destructive" });
+                      }
+                    }}
+                    className="gap-1.5"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Recalcular verificações
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>

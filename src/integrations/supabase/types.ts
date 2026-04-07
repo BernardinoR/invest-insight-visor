@@ -803,6 +803,72 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_results: {
+        Row: {
+          all_green: boolean | null
+          client_name: string
+          competencia: string
+          diferenca: number | null
+          has_missing_yield: boolean | null
+          has_new_assets: boolean | null
+          has_unclassified: boolean | null
+          id: number
+          instituicao: string
+          missing_yield_count: number | null
+          moeda: string | null
+          new_asset_count: number | null
+          nome_conta: string
+          patrimonio_final: number | null
+          patrimonio_status: string
+          soma_posicoes: number | null
+          total_detailed_assets: number | null
+          unclassified_count: number | null
+          verified_at: string | null
+        }
+        Insert: {
+          all_green?: boolean | null
+          client_name: string
+          competencia: string
+          diferenca?: number | null
+          has_missing_yield?: boolean | null
+          has_new_assets?: boolean | null
+          has_unclassified?: boolean | null
+          id?: number
+          instituicao: string
+          missing_yield_count?: number | null
+          moeda?: string | null
+          new_asset_count?: number | null
+          nome_conta: string
+          patrimonio_final?: number | null
+          patrimonio_status: string
+          soma_posicoes?: number | null
+          total_detailed_assets?: number | null
+          unclassified_count?: number | null
+          verified_at?: string | null
+        }
+        Update: {
+          all_green?: boolean | null
+          client_name?: string
+          competencia?: string
+          diferenca?: number | null
+          has_missing_yield?: boolean | null
+          has_new_assets?: boolean | null
+          has_unclassified?: boolean | null
+          id?: number
+          instituicao?: string
+          missing_yield_count?: number | null
+          moeda?: string | null
+          new_asset_count?: number | null
+          nome_conta?: string
+          patrimonio_final?: number | null
+          patrimonio_status?: string
+          soma_posicoes?: number | null
+          total_detailed_assets?: number | null
+          unclassified_count?: number | null
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       verification_settings: {
         Row: {
           correct_threshold: number
@@ -826,9 +892,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      verification_summary: {
+        Row: {
+          client_all_green: boolean | null
+          client_name: string | null
+          green_count: number | null
+          issue_count: number | null
+          last_verified: string | null
+          no_data_count: number | null
+          total_records: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      calculate_verification: {
+        Args: { p_client_name?: string }
+        Returns: number
+      }
       cleanup_old_extrato_logs: { Args: never; Returns: undefined }
       get_unique_clients: {
         Args: never
