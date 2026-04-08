@@ -906,10 +906,12 @@ export type Database = {
       }
     }
     Functions: {
-      calculate_verification: {
-        Args: { p_client_name?: string }
-        Returns: number
-      }
+      calculate_verification:
+        | { Args: { p_client_name?: string }; Returns: number }
+        | {
+            Args: { p_client_name?: string; p_competencia?: string }
+            Returns: number
+          }
       cleanup_old_extrato_logs: { Args: never; Returns: undefined }
       get_unique_clients: {
         Args: never
