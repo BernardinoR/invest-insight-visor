@@ -1,14 +1,12 @@
 
 
-# Plano: Reorganizar campos do modal "Editar Dado Detalhado"
+# Plano: Melhorar layout do modal "Editar Dado Detalhado"
 
-## Problema atual
+## Mudanças
 
-Os campos do modal de dados detalhados (linhas ~5562-5851) estão dispostos sem agrupamento lógico claro. A grid de 2 colunas mistura campos de contextos diferentes e os botões de ação (Gravar Classificação, Calcular Rendimento, validações) estão embutidos junto aos campos, criando visual confuso.
+### Reorganização de seções
 
-## Proposta de layout
-
-Organizar em **seções visuais** com separadores e títulos, usando a seguinte estrutura:
+Mover **Emissor** da seção "Ativo" para a seção "Condições", que passa a ter grid 2x2:
 
 ```text
 ┌─────────────────────────────────────────────┐
@@ -17,35 +15,27 @@ Organizar em **seções visuais** com separadores e títulos, usando a seguinte 
 │  [Moeda ▾]                                  │
 ├─────────────────────────────────────────────┤
 │  ATIVO                                      │
-│  [Nome do Ativo]        [Emissor]           │
-│  [Classe do Ativo ▾]    [Posição]           │
-│  [Gravar Classificação]                     │
+│  [Nome do Ativo]        [Classe do Ativo ▾] │
+│  [Posição]    [Gravar Classificação]        │
 ├─────────────────────────────────────────────┤
 │  CONDIÇÕES                                  │
-│  [Taxa]    [Vencimento]    [Liquidez D+]    │
+│  [Emissor]         [Taxa]                   │
+│  [Vencimento]      [Liquidez D+]            │
 ├─────────────────────────────────────────────┤
 │  RENTABILIDADE                              │
-│  [Rendimento %]                             │
-│  [Calcular]                                 │
-│  [Validar Rentabilidade]  [Marcar Ativo Novo]│
+│  [Rendimento %]  [Calcular]                 │
+│  [Validar Rent.]  [Marcar Ativo Novo]       │
 └─────────────────────────────────────────────┘
 ```
 
-## Alterações — 1 arquivo: `src/pages/DataManagement.tsx`
+### Melhorias visuais
 
-### Seção "Dados Detalhados" do dialog (linhas ~5562-5851)
+- **Seção Ativo**: Grid 2x2 — Ativo + Classe na 1ª linha, Posição + botão Gravar Classificação na 2ª (botão alinhado verticalmente com o campo)
+- **Seção Condições**: Grid 2x2 — Emissor + Taxa na 1ª linha, Vencimento + Liquidez na 2ª
+- **Seção Rentabilidade**: Rendimento e botão Calcular lado a lado (input + botão inline), toggles abaixo em grid 2 colunas
+- Adicionar `py-1` nos separadores para mais respiro entre seções
+- Títulos de seção com `mb-2` para espaçamento consistente
 
-1. **Seção "Identificação"** — Competência, Instituição e Nome da Conta em grid de 3 colunas; Moeda abaixo em largura parcial.
-
-2. **Separator + Seção "Ativo"** — Ativo e Emissor em grid de 2 colunas; Classe e Posição em grid de 2 colunas; botão "Gravar Classificação" abaixo da Classe.
-
-3. **Separator + Seção "Condições"** — Taxa, Vencimento e Liquidez em grid de 3 colunas na mesma linha (o campo Liquidez sai de dentro da grid de Taxa/Vencimento atual onde ficou desalinhado).
-
-4. **Separator + Seção "Rentabilidade"** — Rendimento com botão Calcular; botões de validação (Rentabilidade Validada e Ativo Novo) lado a lado em grid de 2 colunas em vez de empilhados.
-
-### Detalhes visuais
-- Usar `<Separator />` entre seções
-- Títulos de seção: `<h4 className="text-sm font-medium text-muted-foreground">IDENTIFICAÇÃO</h4>`
-- Grid de 3 colunas para Identificação e Condições: `grid grid-cols-3 gap-4`
-- Botões de toggle (Rentabilidade Validada / Ativo Novo) lado a lado: `grid grid-cols-2 gap-2`
+### Arquivo alterado
+`src/pages/DataManagement.tsx` — linhas ~5562-5860
 
