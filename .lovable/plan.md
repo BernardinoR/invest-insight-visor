@@ -1,27 +1,28 @@
 
 
-# Plano: Simplificar "Gravar Classificação"
+# Plano: Melhorar visual dos toggles "Ativo Novo" e "Rentabilidade Validada"
 
-## Mudanças
+## Problema
+Os botões de toggle na seção Rentabilidade são `Button` com `w-full` que mudam entre `default`/`outline`, ficando visualmente pesados e desarmônicos.
 
-### 1. Identificação — grid 2x2
+## Solução
+Trocar os botões por **Switch** (toggle) com label ao lado, mais limpo e padrão para flags booleanas:
+
 ```text
-[Competência]    [Moeda ▾]
-[Instituição]    [Conta]
-```
-Trocar de grid 3 colunas + Moeda separado para grid 2x2 limpo.
-
-### 2. Botão "Gravar Classificação" — simplificar
-Substituir o botão grande que ocupa meia linha por um **ícone pequeno** ao lado do select de "Classe do Ativo", inline no mesmo campo. Será um botão `size="icon"` `variant="ghost"` com o ícone `BookmarkPlus`, posicionado à direita do `SelectTrigger` usando `flex`. Tooltip explica a função.
-
-Layout da seção Ativo:
-```text
-[Nome do Ativo]              [Classe do Ativo ▾ 🔖]
-[Posição]
+RENTABILIDADE
+[Rendimento %]  [Calcular]
+┌──────────────────────────────────────┐
+│ ○── Validar Rentabilidade           │
+│ ○── Ativo Novo                      │
+└──────────────────────────────────────┘
 ```
 
-O botão fica discreto, contextualizado junto à classe (que é o que ele grava), e a Posição fica sozinha na linha abaixo.
+Cada toggle será um `<div className="flex items-center justify-between">` com:
+- Label (`text-sm`) + descrição curta (`text-xs text-muted-foreground`)
+- Componente `<Switch />` do shadcn/ui (já existe no projeto)
+
+O "Validar Rentabilidade" só aparece quando `Rendimento === 0` (mantém lógica atual).
 
 ### Arquivo alterado
-`src/pages/DataManagement.tsx` — seções Identificação e Ativo (~linhas 5563-5688)
+`src/pages/DataManagement.tsx` — linhas ~5814-5877: substituir grid de botões por switches com labels.
 
