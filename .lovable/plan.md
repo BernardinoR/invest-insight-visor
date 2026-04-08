@@ -1,41 +1,27 @@
 
 
-# Plano: Melhorar layout do modal "Editar Dado Detalhado"
+# Plano: Simplificar "Gravar Classificação"
 
 ## Mudanças
 
-### Reorganização de seções
-
-Mover **Emissor** da seção "Ativo" para a seção "Condições", que passa a ter grid 2x2:
-
+### 1. Identificação — grid 2x2
 ```text
-┌─────────────────────────────────────────────┐
-│  IDENTIFICAÇÃO                              │
-│  [Competência]  [Instituição]  [Conta]      │
-│  [Moeda ▾]                                  │
-├─────────────────────────────────────────────┤
-│  ATIVO                                      │
-│  [Nome do Ativo]        [Classe do Ativo ▾] │
-│  [Posição]    [Gravar Classificação]        │
-├─────────────────────────────────────────────┤
-│  CONDIÇÕES                                  │
-│  [Emissor]         [Taxa]                   │
-│  [Vencimento]      [Liquidez D+]            │
-├─────────────────────────────────────────────┤
-│  RENTABILIDADE                              │
-│  [Rendimento %]  [Calcular]                 │
-│  [Validar Rent.]  [Marcar Ativo Novo]       │
-└─────────────────────────────────────────────┘
+[Competência]    [Moeda ▾]
+[Instituição]    [Conta]
+```
+Trocar de grid 3 colunas + Moeda separado para grid 2x2 limpo.
+
+### 2. Botão "Gravar Classificação" — simplificar
+Substituir o botão grande que ocupa meia linha por um **ícone pequeno** ao lado do select de "Classe do Ativo", inline no mesmo campo. Será um botão `size="icon"` `variant="ghost"` com o ícone `BookmarkPlus`, posicionado à direita do `SelectTrigger` usando `flex`. Tooltip explica a função.
+
+Layout da seção Ativo:
+```text
+[Nome do Ativo]              [Classe do Ativo ▾ 🔖]
+[Posição]
 ```
 
-### Melhorias visuais
-
-- **Seção Ativo**: Grid 2x2 — Ativo + Classe na 1ª linha, Posição + botão Gravar Classificação na 2ª (botão alinhado verticalmente com o campo)
-- **Seção Condições**: Grid 2x2 — Emissor + Taxa na 1ª linha, Vencimento + Liquidez na 2ª
-- **Seção Rentabilidade**: Rendimento e botão Calcular lado a lado (input + botão inline), toggles abaixo em grid 2 colunas
-- Adicionar `py-1` nos separadores para mais respiro entre seções
-- Títulos de seção com `mb-2` para espaçamento consistente
+O botão fica discreto, contextualizado junto à classe (que é o que ele grava), e a Posição fica sozinha na linha abaixo.
 
 ### Arquivo alterado
-`src/pages/DataManagement.tsx` — linhas ~5562-5860
+`src/pages/DataManagement.tsx` — seções Identificação e Ativo (~linhas 5563-5688)
 
