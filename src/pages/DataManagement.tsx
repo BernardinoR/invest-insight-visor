@@ -5615,11 +5615,11 @@ interface VerificationResult {
                     </div>
                   </div>
 
-                  <Separator />
+                  <Separator className="my-1" />
 
                   {/* ATIVO */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Ativo</h4>
+                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-2">Ativo</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="ativo">Nome do Ativo</Label>
@@ -5630,12 +5630,26 @@ interface VerificationResult {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="emissor">Emissor</Label>
-                        <Input
-                          id="emissor"
-                          value={editingItem.Emissor || ''}
-                          onChange={(e) => setEditingItem({...editingItem, Emissor: e.target.value})}
-                        />
+                        <Label htmlFor="classe">Classe do Ativo</Label>
+                        <Select 
+                          value={editingItem["Classe do ativo"] || ''} 
+                          onValueChange={(value) => setEditingItem({...editingItem, "Classe do ativo": value})}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecione a classe do ativo" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border-border z-50 max-h-[200px] overflow-y-auto">
+                            {classesAtivo.length > 0 ? classesAtivo.map((classe) => (
+                              <SelectItem key={classe} value={classe}>
+                                {classe}
+                              </SelectItem>
+                            )) : (
+                              <SelectItem value="carregando" disabled>
+                                Carregando classes...
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
