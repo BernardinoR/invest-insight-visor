@@ -1,73 +1,51 @@
 
 
-# Plano: Adicionar campo "Liquidez" (D+N) na tabela e no editar ativo
+# Plano: Reorganizar campos do modal "Editar Dado Detalhado"
 
-## Resumo
+## Problema atual
 
-Adicionar coluna `liquidez TEXT` na tabela `DadosPerformance` e campo de edição no dialog de ativo detalhado. O prefixo "D+" só aparece quando há valor digitado, e o campo pode ser limpo completamente.
+Os campos do modal de dados detalhados (linhas ~5562-5851) estão dispostos sem agrupamento lógico claro. A grid de 2 colunas mistura campos de contextos diferentes e os botões de ação (Gravar Classificação, Calcular Rendimento, validações) estão embutidos junto aos campos, criando visual confuso.
 
-## Alterações
+## Proposta de layout
 
-### 1. Migration — Nova coluna
-```sql
-ALTER TABLE "DadosPerformance" ADD COLUMN liquidez TEXT DEFAULT NULL;
+Organizar em **seções visuais** com separadores e títulos, usando a seguinte estrutura:
+
+```text
+┌─────────────────────────────────────────────┐
+│  IDENTIFICAÇÃO                              │
+│  [Competência]  [Instituição]  [Conta]      │
+│  [Moeda ▾]                                  │
+├─────────────────────────────────────────────┤
+│  ATIVO                                      │
+│  [Nome do Ativo]        [Emissor]           │
+│  [Classe do Ativo ▾]    [Posição]           │
+│  [Gravar Classificação]                     │
+├─────────────────────────────────────────────┤
+│  CONDIÇÕES                                  │
+│  [Taxa]    [Vencimento]    [Liquidez D+]    │
+├─────────────────────────────────────────────┤
+│  RENTABILIDADE                              │
+│  [Rendimento %]                             │
+│  [Calcular]                                 │
+│  [Validar Rentabilidade]  [Marcar Ativo Novo]│
+└─────────────────────────────────────────────┘
 ```
 
-### 2. Frontend — `src/pages/DataManagement.tsx`
+## Alterações — 1 arquivo: `src/pages/DataManagement.tsx`
 
-Adicionar campo entre "Vencimento" (linha ~5701) e "Rendimento" (linha ~5704):
+### Seção "Dados Detalhados" do dialog (linhas ~5562-5851)
 
-```tsx
-<div>
-  <Label htmlFor="liquidez">Liquidez</Label>
-  <div className="flex items-center gap-2">
-    <Input
-      id="liquidez"
-      value={editingItem.liquidez ? editingItem.liquidez.replace(/^D\+/i, '') : ''}
-      onChange={(e) => {
-        const num = e.target.value.replace(/\D/g, '');
-        setEditingItem({
-          ...editingItem,
-          liquidez: num ? `D+${num}` : null
-        });
-      }}
-      placeholder="Ex: 0, 30, 90..."
-    />
-    {editingItem.liquidez && (
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setEditingItem({...editingItem, liquidez: null})}
-      >
-        <X className="h-4 w-4" />
-      </Button>
-    )}
-  </div>
-  {editingItem.liquidez && (
-    <p className="text-xs text-muted-foreground mt-1">
-      Valor salvo: {editingItem.liquidez}
-    </p>
-  )}
-</div>
-```
+1. **Seção "Identificação"** — Competência, Instituição e Nome da Conta em grid de 3 colunas; Moeda abaixo em largura parcial.
 
-**Comportamento:**
-- Campo vazio por padrão (muitos ativos não terão liquidez)
-- Ao digitar um número, salva automaticamente como `D+N` (ex: digitar "30" → salva "D+30")
-- Prefixo "D+" mostrado apenas no preview abaixo do campo quando há valor
-- Botão X ao lado para limpar o campo inteiro (volta a `null`)
-- Aceita apenas números
+2. **Separator + Seção "Ativo"** — Ativo e Emissor em grid de 2 colunas; Classe e Posição em grid de 2 colunas; botão "Gravar Classificação" abaixo da Classe.
 
-### 3. Incluir `liquidez` no save (handleSave)
+3. **Separator + Seção "Condições"** — Taxa, Vencimento e Liquidez em grid de 3 colunas na mesma linha (o campo Liquidez sai de dentro da grid de Taxa/Vencimento atual onde ficou desalinhado).
 
-Garantir que o campo `liquidez` é incluído no objeto enviado ao Supabase no update/insert do `DadosPerformance`.
+4. **Separator + Seção "Rentabilidade"** — Rendimento com botão Calcular; botões de validação (Rentabilidade Validada e Ativo Novo) lado a lado em grid de 2 colunas em vez de empilhados.
 
-### 4. Coluna na tabela de detalhados (opcional mas incluído)
-
-Adicionar "Liquidez" como coluna visível na tabela de dados detalhados, com toggle de visibilidade.
-
-### Flag para o n8n
-```json
-{ "liquidez": "D+30" }
-```
+### Detalhes visuais
+- Usar `<Separator />` entre seções
+- Títulos de seção: `<h4 className="text-sm font-medium text-muted-foreground">IDENTIFICAÇÃO</h4>`
+- Grid de 3 colunas para Identificação e Condições: `grid grid-cols-3 gap-4`
+- Botões de toggle (Rentabilidade Validada / Ativo Novo) lado a lado: `grid grid-cols-2 gap-2`
 
