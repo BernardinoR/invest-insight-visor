@@ -1,61 +1,73 @@
 
 
-# Plano: Persistir verificações no Supabase
+# Plano: Adicionar campo "Liquidez" (D+N) na tabela e no editar ativo
 
 ## Resumo
 
-Criar tabela `verification_results`, view `verification_summary`, função RPC `calculate_verification` no banco, e integrar no frontend para gravar automaticamente os resultados das 4 bolinhas de verificação.
+Adicionar coluna `liquidez TEXT` na tabela `DadosPerformance` e campo de edição no dialog de ativo detalhado. O prefixo "D+" só aparece quando há valor digitado, e o campo pode ser limpo completamente.
 
 ## Alterações
 
-### 1. Migration — Tabela, View, Índices e Função RPC
-
-Uma única migration com:
-
-**Tabela `verification_results`**:
-- Colunas conforme especificado (patrimonio_status, has_unclassified, has_missing_yield, has_new_assets, contadores, all_green computed, etc.)
-- UNIQUE constraint em (client_name, competencia, instituicao, nome_conta)
-- Índices em client_name e (client_name, all_green)
-- RLS habilitado com policy de leitura pública
-
-**View `verification_summary`**:
-- Agregação por client_name com contadores green/issue/no_data e flag client_all_green
-- `WITH (security_invoker=on)`
-
-**Função RPC `calculate_verification(p_client_name TEXT DEFAULT NULL)`**:
-- Itera sobre `ConsolidadoPerformance` (filtrado por p_client_name se fornecido)
-- Para cada registro, busca ativos correspondentes em `DadosPerformance` pela chave (Competencia, Instituicao, nomeConta)
-- Calcula:
-  - `soma_posicoes` = SUM(Posicao)
-  - `diferenca` = ABS("Patrimonio Final" - soma_posicoes)
-  - `patrimonio_status`: no-data / match (< 0.01) / tolerance (< tolerance_value da tabela verification_settings) / mismatch
-  - `unclassified_count`: ativos com classe fora da lista de 21 classes válidas
-  - `missing_yield_count`: ativos sem rendimento válido (excluindo ativo_novo, rentabilidade_validada, e nomes contendo 'caixa'/'proventos')
-  - `new_asset_count`: ativos com ativo_novo = true
-- Faz UPSERT na verification_results
-- Lê `correct_threshold` e `tolerance_value` da tabela `verification_settings`
-- Retorna contagem de registros processados
-
-### 2. RLS Policies
-
-- SELECT público para `verification_results` (para CRM e outros sistemas)
-- INSERT/UPDATE/DELETE restrito (apenas a função RPC opera via SECURITY DEFINER)
-
-### 3. Frontend — `src/pages/DataManagement.tsx`
-
-- Após carregar dados do cliente, chamar `supabase.rpc('calculate_verification', { p_client_name: clientName })`
-- Adicionar botão "Recalcular verificações" que chama a mesma RPC
-- Toast de confirmação após execução
-
-### 4. pg_cron — Recálculo diário
-
-Usar o insert tool para agendar:
+### 1. Migration — Nova coluna
 ```sql
-SELECT cron.schedule('daily-verification', '0 9 * * *', $$SELECT calculate_verification(NULL)$$);
+ALTER TABLE "DadosPerformance" ADD COLUMN liquidez TEXT DEFAULT NULL;
 ```
-Roda diariamente às 9h UTC (6h Brasília).
 
-## Detalhes técnicos da função RPC
+### 2. Frontend — `src/pages/DataManagement.tsx`
 
-A função usará um cursor sobre ConsolidadoPerformance e para cada registro fará uma sub-query agregada em DadosPerformance. A lista de classes válidas será hardcoded na função (as 21 classes). Os thresholds serão lidos de `verification_settings` para manter consistência com o frontend.
+Adicionar campo entre "Vencimento" (linha ~5701) e "Rendimento" (linha ~5704):
+
+```tsx
+<div>
+  <Label htmlFor="liquidez">Liquidez</Label>
+  <div className="flex items-center gap-2">
+    <Input
+      id="liquidez"
+      value={editingItem.liquidez ? editingItem.liquidez.replace(/^D\+/i, '') : ''}
+      onChange={(e) => {
+        const num = e.target.value.replace(/\D/g, '');
+        setEditingItem({
+          ...editingItem,
+          liquidez: num ? `D+${num}` : null
+        });
+      }}
+      placeholder="Ex: 0, 30, 90..."
+    />
+    {editingItem.liquidez && (
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setEditingItem({...editingItem, liquidez: null})}
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    )}
+  </div>
+  {editingItem.liquidez && (
+    <p className="text-xs text-muted-foreground mt-1">
+      Valor salvo: {editingItem.liquidez}
+    </p>
+  )}
+</div>
+```
+
+**Comportamento:**
+- Campo vazio por padrão (muitos ativos não terão liquidez)
+- Ao digitar um número, salva automaticamente como `D+N` (ex: digitar "30" → salva "D+30")
+- Prefixo "D+" mostrado apenas no preview abaixo do campo quando há valor
+- Botão X ao lado para limpar o campo inteiro (volta a `null`)
+- Aceita apenas números
+
+### 3. Incluir `liquidez` no save (handleSave)
+
+Garantir que o campo `liquidez` é incluído no objeto enviado ao Supabase no update/insert do `DadosPerformance`.
+
+### 4. Coluna na tabela de detalhados (opcional mas incluído)
+
+Adicionar "Liquidez" como coluna visível na tabela de dados detalhados, com toggle de visibilidade.
+
+### Flag para o n8n
+```json
+{ "liquidez": "D+30" }
+```
 
