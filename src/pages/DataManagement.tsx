@@ -883,7 +883,7 @@ export default function DataManagement() {
       return null;
     }
 
-    const competenciaRegex = /^d{2}/d{4}$/;
+    const competenciaRegex = /^\d{2}\/\d{4}$/;
     if (!competenciaRegex.test(competencia)) {
       toast({
         title: "Erro",
@@ -1043,7 +1043,7 @@ export default function DataManagement() {
       return null;
     }
     
-    const competenciaRegex = /^d{2}/d{4}$/;
+    const competenciaRegex = /^\d{2}\/\d{4}$/;
     if (!competenciaRegex.test(competencia)) {
       toast({
         title: "Erro",
