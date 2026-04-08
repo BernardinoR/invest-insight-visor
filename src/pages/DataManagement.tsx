@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -5560,133 +5561,138 @@ interface VerificationResult {
                 </>
               ) : (
                 <>
-                  {/* IDENTIFICAÇÃO */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Identificação</h4>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <Label htmlFor="competencia">Competência</Label>
-                        <Input
-                          id="competencia"
-                          value={editingItem.Competencia || ''}
-                          onChange={(e) => {
-                            let value = e.target.value.replace(/D/g, '');
-                            if (value.length >= 2) {
-                              value = value.substring(0, 2) + '/' + value.substring(2, 6);
-                            }
-                            setEditingItem({...editingItem, Competencia: value});
-                          }}
-                          placeholder="MM/YYYY"
-                          maxLength={7}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="instituicao">Instituição</Label>
-                        <Input
-                          id="instituicao"
-                          value={editingItem.Instituicao || ''}
-                          onChange={(e) => setEditingItem({...editingItem, Instituicao: e.target.value})}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="nomeConta">Conta</Label>
-                        <Input
-                          id="nomeConta"
-                          value={editingItem.nomeConta || ''}
-                          onChange={(e) => setEditingItem({...editingItem, nomeConta: e.target.value})}
-                          placeholder="Opcional"
-                        />
-                      </div>
-                    </div>
-                    <div className="w-1/3">
-                      <Label htmlFor="moeda">Moeda</Label>
-                      <Select
-                        value={editingItem.Moeda || 'Real'}
-                        onValueChange={(value) => setEditingItem({...editingItem, Moeda: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a moeda" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Real">Real (BRL)</SelectItem>
-                          <SelectItem value="Dolar">Dólar (USD)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                   {/* IDENTIFICAÇÃO */}
+                   <div className="space-y-3">
+                     <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Identificação</h4>
+                     <div className="grid grid-cols-2 gap-4">
+                       <div>
+                         <Label htmlFor="competencia">Competência</Label>
+                         <Input
+                           id="competencia"
+                           value={editingItem.Competencia || ''}
+                           onChange={(e) => {
+                             let value = e.target.value.replace(/D/g, '');
+                             if (value.length >= 2) {
+                               value = value.substring(0, 2) + '/' + value.substring(2, 6);
+                             }
+                             setEditingItem({...editingItem, Competencia: value});
+                           }}
+                           placeholder="MM/YYYY"
+                           maxLength={7}
+                         />
+                       </div>
+                       <div>
+                         <Label htmlFor="moeda">Moeda</Label>
+                         <Select
+                           value={editingItem.Moeda || 'Real'}
+                           onValueChange={(value) => setEditingItem({...editingItem, Moeda: value})}
+                         >
+                           <SelectTrigger>
+                             <SelectValue placeholder="Selecione a moeda" />
+                           </SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value="Real">Real (BRL)</SelectItem>
+                             <SelectItem value="Dolar">Dólar (USD)</SelectItem>
+                           </SelectContent>
+                         </Select>
+                       </div>
+                       <div>
+                         <Label htmlFor="instituicao">Instituição</Label>
+                         <Input
+                           id="instituicao"
+                           value={editingItem.Instituicao || ''}
+                           onChange={(e) => setEditingItem({...editingItem, Instituicao: e.target.value})}
+                         />
+                       </div>
+                       <div>
+                         <Label htmlFor="nomeConta">Conta</Label>
+                         <Input
+                           id="nomeConta"
+                           value={editingItem.nomeConta || ''}
+                           onChange={(e) => setEditingItem({...editingItem, nomeConta: e.target.value})}
+                           placeholder="Opcional"
+                         />
+                       </div>
+                     </div>
+                   </div>
 
-                  <Separator className="my-1" />
+                   <Separator className="my-1" />
 
-                  {/* ATIVO */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-2">Ativo</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="ativo">Nome do Ativo</Label>
-                        <Input
-                          id="ativo"
-                          value={editingItem.Ativo || ''}
-                          onChange={(e) => setEditingItem({...editingItem, Ativo: e.target.value})}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="classe">Classe do Ativo</Label>
-                        <Select 
-                          value={editingItem["Classe do ativo"] || ''} 
-                          onValueChange={(value) => setEditingItem({...editingItem, "Classe do ativo": value})}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Selecione a classe do ativo" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background border-border z-50 max-h-[200px] overflow-y-auto">
-                            {classesAtivo.length > 0 ? classesAtivo.map((classe) => (
-                              <SelectItem key={classe} value={classe}>
-                                {classe}
-                              </SelectItem>
-                            )) : (
-                              <SelectItem value="carregando" disabled>
-                                Carregando classes...
-                              </SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="posicao">Posição</Label>
-                        <Input
-                          id="posicao"
-                          type="text"
-                          value={numericFieldsText.Posicao}
-                          onChange={(e) => {
-                            const text = e.target.value;
-                            setNumericFieldsText({...numericFieldsText, Posicao: text});
-                          }}
-                          onBlur={() => {
-                            const text = numericFieldsText.Posicao;
-                            const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
-                            setEditingItem({...editingItem, Posicao: numericValue});
-                            const formatted = formatBrazilianNumber(numericValue);
-                            setNumericFieldsText({...numericFieldsText, Posicao: formatted});
-                          }}
-                        />
-                      </div>
-                      <div className="flex items-end">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full gap-2 h-10"
-                          disabled={!editingItem.Ativo || !editingItem["Classe do ativo"] || ragSaving}
-                          onClick={handleSaveClassificacao}
-                          title="Salvar esta classificação para uso automático futuro"
-                        >
-                          <BookmarkPlus className="h-4 w-4" />
-                          {ragSaving ? 'Gravando...' : 'Gravar Classificação'}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+                   {/* ATIVO */}
+                   <div className="space-y-3">
+                     <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-2">Ativo</h4>
+                     <div className="grid grid-cols-2 gap-4">
+                       <div>
+                         <Label htmlFor="ativo">Nome do Ativo</Label>
+                         <Input
+                           id="ativo"
+                           value={editingItem.Ativo || ''}
+                           onChange={(e) => setEditingItem({...editingItem, Ativo: e.target.value})}
+                         />
+                       </div>
+                       <div>
+                         <Label htmlFor="classe">Classe do Ativo</Label>
+                         <div className="flex gap-1">
+                           <Select 
+                             value={editingItem["Classe do ativo"] || ''} 
+                             onValueChange={(value) => setEditingItem({...editingItem, "Classe do ativo": value})}
+                           >
+                             <SelectTrigger className="w-full">
+                               <SelectValue placeholder="Selecione a classe do ativo" />
+                             </SelectTrigger>
+                             <SelectContent className="bg-background border-border z-50 max-h-[200px] overflow-y-auto">
+                               {classesAtivo.length > 0 ? classesAtivo.map((classe) => (
+                                 <SelectItem key={classe} value={classe}>
+                                   {classe}
+                                 </SelectItem>
+                               )) : (
+                                 <SelectItem value="carregando" disabled>
+                                   Carregando classes...
+                                 </SelectItem>
+                               )}
+                             </SelectContent>
+                           </Select>
+                           <TooltipProvider>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <Button
+                                   variant="ghost"
+                                   size="icon"
+                                   className="h-10 w-10 shrink-0"
+                                   disabled={!editingItem.Ativo || !editingItem["Classe do ativo"] || ragSaving}
+                                   onClick={handleSaveClassificacao}
+                                 >
+                                   <BookmarkPlus className="h-4 w-4" />
+                                 </Button>
+                               </TooltipTrigger>
+                               <TooltipContent>
+                                 <p>Gravar classificação para uso automático</p>
+                               </TooltipContent>
+                             </Tooltip>
+                           </TooltipProvider>
+                         </div>
+                       </div>
+                     </div>
+                     <div>
+                       <Label htmlFor="posicao">Posição</Label>
+                       <Input
+                         id="posicao"
+                         type="text"
+                         value={numericFieldsText.Posicao}
+                         onChange={(e) => {
+                           const text = e.target.value;
+                           setNumericFieldsText({...numericFieldsText, Posicao: text});
+                         }}
+                         onBlur={() => {
+                           const text = numericFieldsText.Posicao;
+                           const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
+                           setEditingItem({...editingItem, Posicao: numericValue});
+                           const formatted = formatBrazilianNumber(numericValue);
+                           setNumericFieldsText({...numericFieldsText, Posicao: formatted});
+                         }}
+                       />
+                     </div>
+                   </div>
 
                   <Separator className="my-1" />
 
