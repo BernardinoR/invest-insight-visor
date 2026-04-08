@@ -5654,39 +5654,6 @@ interface VerificationResult {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="classe">Classe do Ativo</Label>
-                        <Select 
-                          value={editingItem["Classe do ativo"] || ''} 
-                          onValueChange={(value) => setEditingItem({...editingItem, "Classe do ativo": value})}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Selecione a classe do ativo" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background border-border z-50 max-h-[200px] overflow-y-auto">
-                            {classesAtivo.length > 0 ? classesAtivo.map((classe) => (
-                              <SelectItem key={classe} value={classe}>
-                                {classe}
-                              </SelectItem>
-                            )) : (
-                              <SelectItem value="carregando" disabled>
-                                Carregando classes...
-                              </SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-2 w-full gap-2"
-                          disabled={!editingItem.Ativo || !editingItem["Classe do ativo"] || ragSaving}
-                          onClick={handleSaveClassificacao}
-                          title="Salvar esta classificação para uso automático futuro"
-                        >
-                          <BookmarkPlus className="h-4 w-4" />
-                          {ragSaving ? 'Gravando...' : 'Gravar Classificação'}
-                        </Button>
-                      </div>
-                      <div>
                         <Label htmlFor="posicao">Posição</Label>
                         <Input
                           id="posicao"
@@ -5705,15 +5672,36 @@ interface VerificationResult {
                           }}
                         />
                       </div>
+                      <div className="flex items-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full gap-2 h-10"
+                          disabled={!editingItem.Ativo || !editingItem["Classe do ativo"] || ragSaving}
+                          onClick={handleSaveClassificacao}
+                          title="Salvar esta classificação para uso automático futuro"
+                        >
+                          <BookmarkPlus className="h-4 w-4" />
+                          {ragSaving ? 'Gravando...' : 'Gravar Classificação'}
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
-                  <Separator />
+                  <Separator className="my-1" />
 
                   {/* CONDIÇÕES */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Condições</h4>
-                    <div className="grid grid-cols-3 gap-4">
+                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-2">Condições</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="emissor">Emissor</Label>
+                        <Input
+                          id="emissor"
+                          value={editingItem.Emissor || ''}
+                          onChange={(e) => setEditingItem({...editingItem, Emissor: e.target.value})}
+                        />
+                      </div>
                       <div>
                         <Label htmlFor="taxa">Taxa</Label>
                         <Input
@@ -5722,6 +5710,8 @@ interface VerificationResult {
                           onChange={(e) => setEditingItem({...editingItem, Taxa: e.target.value})}
                         />
                       </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="vencimento">Vencimento</Label>
                         <Input
@@ -5741,7 +5731,7 @@ interface VerificationResult {
                               const num = e.target.value.replace(/\D/g, '');
                               setEditingItem({
                                 ...editingItem,
-                                liquidez: num ? `D+${num}` : null
+                                liquidez: num ? \`D+\${num}\` : null
                               });
                             }}
                             placeholder="Ex: 0, 30, 90..."
@@ -5750,6 +5740,7 @@ interface VerificationResult {
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="shrink-0"
                               onClick={() => setEditingItem({...editingItem, liquidez: null})}
                             >
                               <X className="h-4 w-4" />
@@ -5765,27 +5756,30 @@ interface VerificationResult {
                     </div>
                   </div>
 
-                  <Separator />
+                  <Separator className="my-1" />
 
                   {/* RENTABILIDADE */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Rentabilidade</h4>
-                    <div>
-                      <Label htmlFor="rendimento">Rendimento (%)</Label>
-                      <div className="relative">
-                        <Input
-                          id="rendimento"
-                          type="number"
-                          step="0.0001"
-                          value={(editingItem.Rendimento || 0) * 100}
-                          onChange={(e) => setEditingItem({...editingItem, Rendimento: (parseFloat(e.target.value) || 0) / 100})}
-                          className="pr-8"
-                        />
-                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-2">Rentabilidade</h4>
+                    <div className="flex items-end gap-3">
+                      <div className="flex-1">
+                        <Label htmlFor="rendimento">Rendimento (%)</Label>
+                        <div className="relative">
+                          <Input
+                            id="rendimento"
+                            type="number"
+                            step="0.0001"
+                            value={(editingItem.Rendimento || 0) * 100}
+                            onChange={(e) => setEditingItem({...editingItem, Rendimento: (parseFloat(e.target.value) || 0) / 100})}
+                            className="pr-8"
+                          />
+                          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                        </div>
                       </div>
                       <Button
                         variant="outline"
                         size="sm"
+                        className="h-10"
                         onClick={() => {
                           setCalculatorContext('single');
                           if (editingItem.Posicao) {
@@ -5806,11 +5800,11 @@ interface VerificationResult {
                           });
                           setIsCalculatorOpen(true);
                         }}
-                        className="mt-2 w-full"
                       >
                         Calcular
                       </Button>
                     </div>
+
                     <div className="grid grid-cols-2 gap-2">
                       {editingItem.Rendimento === 0 && (
                         <Button
