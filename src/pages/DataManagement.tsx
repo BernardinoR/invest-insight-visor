@@ -149,6 +149,7 @@ interface DadosData {
   "nomeConta": string;
   "rentabilidade_validada"?: boolean;
   "ativo_novo"?: boolean;
+  "liquidez"?: string | null;
 }
 
 export default function DataManagement() {
@@ -4865,7 +4866,7 @@ interface VerificationResult {
                       <div className="space-y-2">
                         <h4 className="font-medium text-sm mb-2">Colunas Visíveis</h4>
                         
-                        {['Competência', 'Instituição', 'Nome da Conta', 'Moeda', 'Ativo', 'Emissor', 'Classe', 'Posição', 'Taxa', 'Vencimento', 'Rendimento %', 'Verificação', 'Ações'].map((col) => (
+                        {['Competência', 'Instituição', 'Nome da Conta', 'Moeda', 'Ativo', 'Emissor', 'Classe', 'Posição', 'Taxa', 'Vencimento', 'Liquidez', 'Rendimento %', 'Verificação', 'Ações'].map((col) => (
                           <div key={col} className="flex items-center space-x-2">
                             <Checkbox
                               id={`col-det-${col}`}
@@ -4895,7 +4896,7 @@ interface VerificationResult {
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            onClick={() => setVisibleColumnsDetalhados(new Set(['Competência', 'Instituição', 'Nome da Conta', 'Moeda', 'Ativo', 'Emissor', 'Classe', 'Posição', 'Taxa', 'Vencimento', 'Rendimento %', 'Verificação', 'Ações']))}
+                            onClick={() => setVisibleColumnsDetalhados(new Set(['Competência', 'Instituição', 'Nome da Conta', 'Moeda', 'Ativo', 'Emissor', 'Classe', 'Posição', 'Taxa', 'Vencimento', 'Liquidez', 'Rendimento %', 'Verificação', 'Ações']))}
                             className="flex-1"
                           >
                             Todas
@@ -5084,6 +5085,9 @@ interface VerificationResult {
                             </div>
                           </TableHead>
                         )}
+                        {visibleColumnsDetalhados.has('Liquidez') && (
+                          <TableHead className="whitespace-nowrap">Liquidez</TableHead>
+                        )}
                         {visibleColumnsDetalhados.has('Rendimento %') && (
                           <TableHead 
                             className={`whitespace-nowrap ${isColumnSortableDetalhados('Rendimento %') ? 'cursor-pointer hover:bg-muted/50 select-none' : ''}`}
@@ -5135,6 +5139,7 @@ interface VerificationResult {
                               {visibleColumnsDetalhados.has('Posição') && <TableCell>{formatCurrency(item.Posicao, item.Moeda)}</TableCell>}
                               {visibleColumnsDetalhados.has('Taxa') && <TableCell>{item.Taxa}</TableCell>}
                               {visibleColumnsDetalhados.has('Vencimento') && <TableCell>{item.Vencimento}</TableCell>}
+                              {visibleColumnsDetalhados.has('Liquidez') && <TableCell>{(item as any).liquidez || '-'}</TableCell>}
                               {visibleColumnsDetalhados.has('Rendimento %') && <TableCell>{typeof item.Rendimento === 'number' ? formatPercentage(item.Rendimento) : item.Rendimento || '-'}</TableCell>}
                               {visibleColumnsDetalhados.has('Verificação') && (
                                 <TableCell className="text-center">
@@ -5698,6 +5703,37 @@ interface VerificationResult {
                         value={editingItem.Vencimento || ''}
                         onChange={(e) => setEditingItem({...editingItem, Vencimento: e.target.value})}
                       />
+                    </div>
+                    <div>
+                      <Label htmlFor="liquidez">Liquidez</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="liquidez"
+                          value={editingItem.liquidez ? editingItem.liquidez.replace(/^D\+/i, '') : ''}
+                          onChange={(e) => {
+                            const num = e.target.value.replace(/\D/g, '');
+                            setEditingItem({
+                              ...editingItem,
+                              liquidez: num ? `D+${num}` : null
+                            });
+                          }}
+                          placeholder="Ex: 0, 30, 90..."
+                        />
+                        {editingItem.liquidez && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setEditingItem({...editingItem, liquidez: null})}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      {editingItem.liquidez && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Valor salvo: {editingItem.liquidez}
+                        </p>
+                      )}
                     </div>
                   </div>
                   

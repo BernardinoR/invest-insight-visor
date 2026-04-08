@@ -97,6 +97,7 @@ export type Database = {
           Emissor: string | null
           id: number
           Instituicao: string | null
+          liquidez: string | null
           Moeda: string | null
           Nome: string | null
           nomeConta: string | null
@@ -116,6 +117,7 @@ export type Database = {
           Emissor?: string | null
           id?: number
           Instituicao?: string | null
+          liquidez?: string | null
           Moeda?: string | null
           Nome?: string | null
           nomeConta?: string | null
@@ -135,6 +137,7 @@ export type Database = {
           Emissor?: string | null
           id?: number
           Instituicao?: string | null
+          liquidez?: string | null
           Moeda?: string | null
           Nome?: string | null
           nomeConta?: string | null
