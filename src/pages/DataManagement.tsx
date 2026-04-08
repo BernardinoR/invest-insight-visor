@@ -373,9 +373,9 @@ export default function DataManagement() {
   // Helper para extrair ano de uma data (YYYY-MM-DD ou DD/MM/YYYY)
   const extractYearFromDate = (dateStr: string): string => {
     if (!dateStr) return '';
-    if (dateStr.match(/^d{4}-d{2}-d{2}$/)) return dateStr.substring(0, 4);
-    if (dateStr.match(/^d{2}/d{2}/d{4}$/)) return dateStr.substring(6, 10);
-    const yearMatch = dateStr.match(/(d{4})/);
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr.substring(0, 4);
+    if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) return dateStr.substring(6, 10);
+    const yearMatch = dateStr.match(/(\d{4})/);
     return yearMatch ? yearMatch[1] : '';
   };
 
@@ -883,7 +883,7 @@ export default function DataManagement() {
       return null;
     }
 
-    const competenciaRegex = /^d{2}/d{4}$/;
+    const competenciaRegex = /^\d{2}\/\d{4}$/;
     if (!competenciaRegex.test(competencia)) {
       toast({
         title: "Erro",
@@ -1043,7 +1043,7 @@ export default function DataManagement() {
       return null;
     }
     
-    const competenciaRegex = /^d{2}/d{4}$/;
+    const competenciaRegex = /^\d{2}\/\d{4}$/;
     if (!competenciaRegex.test(competencia)) {
       toast({
         title: "Erro",
