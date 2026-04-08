@@ -98,7 +98,7 @@ const parseBrazilianNumber = (value: string): number => {
   // Se tiver vírgula, assume formato brasileiro
   if (cleaned.includes(',')) {
     // Remove todos os pontos (separadores de milhares)
-    cleaned = cleaned.replace(/\./g, '');
+    cleaned = cleaned.replace(/./g, '');
     // Substitui vírgula por ponto (decimal)
     cleaned = cleaned.replace(',', '.');
   }
@@ -111,7 +111,7 @@ const parseBrazilianNumber = (value: string): number => {
 // Formata número para padrão brasileiro com separador de milhares
 const formatBrazilianNumber = (value: number): string => {
   const parts = value.toFixed(2).split('.');
-  const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const integerPart = parts[0].replace(/B(?=(d{3})+(?!d))/g, '.');
   const decimalPart = parts[1];
   return `${integerPart},${decimalPart}`;
 };
@@ -373,9 +373,9 @@ export default function DataManagement() {
   // Helper para extrair ano de uma data (YYYY-MM-DD ou DD/MM/YYYY)
   const extractYearFromDate = (dateStr: string): string => {
     if (!dateStr) return '';
-    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr.substring(0, 4);
-    if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) return dateStr.substring(6, 10);
-    const yearMatch = dateStr.match(/(\d{4})/);
+    if (dateStr.match(/^d{4}-d{2}-d{2}$/)) return dateStr.substring(0, 4);
+    if (dateStr.match(/^d{2}/d{2}/d{4}$/)) return dateStr.substring(6, 10);
+    const yearMatch = dateStr.match(/(d{4})/);
     return yearMatch ? yearMatch[1] : '';
   };
 
@@ -883,7 +883,7 @@ export default function DataManagement() {
       return null;
     }
 
-    const competenciaRegex = /^\d{2}\/\d{4}$/;
+    const competenciaRegex = /^d{2}/d{4}$/;
     if (!competenciaRegex.test(competencia)) {
       toast({
         title: "Erro",
@@ -1043,7 +1043,7 @@ export default function DataManagement() {
       return null;
     }
     
-    const competenciaRegex = /^\d{2}\/\d{4}$/;
+    const competenciaRegex = /^d{2}/d{4}$/;
     if (!competenciaRegex.test(competencia)) {
       toast({
         title: "Erro",
@@ -2351,7 +2351,7 @@ interface VerificationResult {
           ].map(value => {
             // Escapar vírgulas e aspas
             const stringValue = String(value);
-            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('n')) {
               return `"${stringValue.replace(/"/g, '""')}"`;
             }
             return stringValue;
@@ -2360,14 +2360,14 @@ interface VerificationResult {
       ];
 
       // Criar blob e baixar
-      const csvContent = csvRows.join('\n');
-      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const csvContent = csvRows.join('n');
+      const blob = new Blob(['uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       
       const fileName = exportType === 'filtered' 
-        ? `ativos_filtrados_${decodedClientName?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`
-        : `ativos_completo_${decodedClientName?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+        ? `ativos_filtrados_${decodedClientName?.replace(/s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`
+        : `ativos_completo_${decodedClientName?.replace(/s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
       
       link.setAttribute('href', url);
       link.setAttribute('download', fileName);
@@ -2414,7 +2414,7 @@ interface VerificationResult {
     reader.onload = async (e) => {
       try {
         const text = e.target?.result as string;
-        const lines = text.split('\n').filter(line => line.trim());
+        const lines = text.split('n').filter(line => line.trim());
         
         if (lines.length < 2) {
           toast({
@@ -2451,7 +2451,7 @@ interface VerificationResult {
           return values;
         };
 
-        const headers = parseCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, '').replace(/^\uFEFF/, ''));
+        const headers = parseCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, '').replace(/^uFEFF/, ''));
         const data = [];
 
         for (let i = 1; i < lines.length; i++) {
@@ -2596,7 +2596,7 @@ interface VerificationResult {
           row.map(value => {
             // Escapar valores com vírgulas ou aspas
             const stringValue = String(value);
-            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('n')) {
               return `"${stringValue.replace(/"/g, '""')}"`;
             }
             return stringValue;
@@ -2604,10 +2604,10 @@ interface VerificationResult {
         )
       ];
 
-      const csvContent = csvRows.join('\n');
+      const csvContent = csvRows.join('n');
       
       // Criar blob com BOM para compatibilidade com Excel
-      const blob = new Blob(['\uFEFF' + csvContent], { 
+      const blob = new Blob(['uFEFF' + csvContent], { 
         type: 'text/csv;charset=utf-8;' 
       });
       
@@ -2693,7 +2693,7 @@ interface VerificationResult {
           ].map(value => {
             // Escapar vírgulas e aspas
             const stringValue = String(value);
-            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('n')) {
               return `"${stringValue.replace(/"/g, '""')}"`;
             }
             return stringValue;
@@ -2702,14 +2702,14 @@ interface VerificationResult {
       ];
 
       // Criar blob e baixar
-      const csvContent = csvRows.join('\n');
-      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const csvContent = csvRows.join('n');
+      const blob = new Blob(['uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       
       const fileName = exportType === 'filtered' 
-        ? `consolidado_filtrado_${decodedClientName?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`
-        : `consolidado_completo_${decodedClientName?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+        ? `consolidado_filtrado_${decodedClientName?.replace(/s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`
+        : `consolidado_completo_${decodedClientName?.replace(/s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
       
       link.setAttribute('href', url);
       link.setAttribute('download', fileName);
@@ -2756,7 +2756,7 @@ interface VerificationResult {
     reader.onload = async (e) => {
       try {
         const text = e.target?.result as string;
-        const lines = text.split('\n').filter(line => line.trim());
+        const lines = text.split('n').filter(line => line.trim());
         
         if (lines.length < 2) {
           toast({
@@ -2864,7 +2864,7 @@ interface VerificationResult {
         ...exampleRows.map(row => 
           row.map(value => {
             const stringValue = String(value);
-            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('n')) {
               return `"${stringValue.replace(/"/g, '""')}"`;
             }
             return stringValue;
@@ -2872,8 +2872,8 @@ interface VerificationResult {
         )
       ];
 
-      const csvContent = csvRows.join('\n');
-      const blob = new Blob(['\uFEFF' + csvContent], { 
+      const csvContent = csvRows.join('n');
+      const blob = new Blob(['uFEFF' + csvContent], { 
         type: 'text/csv;charset=utf-8;' 
       });
       
@@ -5365,7 +5365,7 @@ interface VerificationResult {
                         id="competencia"
                         value={editingItem.Competencia || ''}
                         onChange={(e) => {
-                          let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                          let value = e.target.value.replace(/D/g, ''); // Remove non-digits
                           if (value.length >= 2) {
                             value = value.substring(0, 2) + '/' + value.substring(2, 6);
                           }
@@ -5570,7 +5570,7 @@ interface VerificationResult {
                           id="competencia"
                           value={editingItem.Competencia || ''}
                           onChange={(e) => {
-                            let value = e.target.value.replace(/\D/g, '');
+                            let value = e.target.value.replace(/D/g, '');
                             if (value.length >= 2) {
                               value = value.substring(0, 2) + '/' + value.substring(2, 6);
                             }
@@ -5615,11 +5615,11 @@ interface VerificationResult {
                     </div>
                   </div>
 
-                  <Separator />
+                  <Separator className="my-1" />
 
                   {/* ATIVO */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Ativo</h4>
+                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-2">Ativo</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="ativo">Nome do Ativo</Label>
@@ -5629,16 +5629,6 @@ interface VerificationResult {
                           onChange={(e) => setEditingItem({...editingItem, Ativo: e.target.value})}
                         />
                       </div>
-                      <div>
-                        <Label htmlFor="emissor">Emissor</Label>
-                        <Input
-                          id="emissor"
-                          value={editingItem.Emissor || ''}
-                          onChange={(e) => setEditingItem({...editingItem, Emissor: e.target.value})}
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="classe">Classe do Ativo</Label>
                         <Select 
@@ -5660,18 +5650,9 @@ interface VerificationResult {
                             )}
                           </SelectContent>
                         </Select>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-2 w-full gap-2"
-                          disabled={!editingItem.Ativo || !editingItem["Classe do ativo"] || ragSaving}
-                          onClick={handleSaveClassificacao}
-                          title="Salvar esta classificação para uso automático futuro"
-                        >
-                          <BookmarkPlus className="h-4 w-4" />
-                          {ragSaving ? 'Gravando...' : 'Gravar Classificação'}
-                        </Button>
                       </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="posicao">Posição</Label>
                         <Input
@@ -5691,15 +5672,36 @@ interface VerificationResult {
                           }}
                         />
                       </div>
+                      <div className="flex items-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full gap-2 h-10"
+                          disabled={!editingItem.Ativo || !editingItem["Classe do ativo"] || ragSaving}
+                          onClick={handleSaveClassificacao}
+                          title="Salvar esta classificação para uso automático futuro"
+                        >
+                          <BookmarkPlus className="h-4 w-4" />
+                          {ragSaving ? 'Gravando...' : 'Gravar Classificação'}
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
-                  <Separator />
+                  <Separator className="my-1" />
 
                   {/* CONDIÇÕES */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Condições</h4>
-                    <div className="grid grid-cols-3 gap-4">
+                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-2">Condições</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="emissor">Emissor</Label>
+                        <Input
+                          id="emissor"
+                          value={editingItem.Emissor || ''}
+                          onChange={(e) => setEditingItem({...editingItem, Emissor: e.target.value})}
+                        />
+                      </div>
                       <div>
                         <Label htmlFor="taxa">Taxa</Label>
                         <Input
@@ -5708,6 +5710,8 @@ interface VerificationResult {
                           onChange={(e) => setEditingItem({...editingItem, Taxa: e.target.value})}
                         />
                       </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="vencimento">Vencimento</Label>
                         <Input
@@ -5736,6 +5740,7 @@ interface VerificationResult {
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="shrink-0"
                               onClick={() => setEditingItem({...editingItem, liquidez: null})}
                             >
                               <X className="h-4 w-4" />
@@ -5751,27 +5756,30 @@ interface VerificationResult {
                     </div>
                   </div>
 
-                  <Separator />
+                  <Separator className="my-1" />
 
                   {/* RENTABILIDADE */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Rentabilidade</h4>
-                    <div>
-                      <Label htmlFor="rendimento">Rendimento (%)</Label>
-                      <div className="relative">
-                        <Input
-                          id="rendimento"
-                          type="number"
-                          step="0.0001"
-                          value={(editingItem.Rendimento || 0) * 100}
-                          onChange={(e) => setEditingItem({...editingItem, Rendimento: (parseFloat(e.target.value) || 0) / 100})}
-                          className="pr-8"
-                        />
-                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-2">Rentabilidade</h4>
+                    <div className="flex items-end gap-3">
+                      <div className="flex-1">
+                        <Label htmlFor="rendimento">Rendimento (%)</Label>
+                        <div className="relative">
+                          <Input
+                            id="rendimento"
+                            type="number"
+                            step="0.0001"
+                            value={(editingItem.Rendimento || 0) * 100}
+                            onChange={(e) => setEditingItem({...editingItem, Rendimento: (parseFloat(e.target.value) || 0) / 100})}
+                            className="pr-8"
+                          />
+                          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                        </div>
                       </div>
                       <Button
                         variant="outline"
                         size="sm"
+                        className="h-10"
                         onClick={() => {
                           setCalculatorContext('single');
                           if (editingItem.Posicao) {
@@ -5792,11 +5800,11 @@ interface VerificationResult {
                           });
                           setIsCalculatorOpen(true);
                         }}
-                        className="mt-2 w-full"
                       >
                         Calcular
                       </Button>
                     </div>
+
                     <div className="grid grid-cols-2 gap-2">
                       {editingItem.Rendimento === 0 && (
                         <Button
@@ -5903,7 +5911,7 @@ interface VerificationResult {
                       id="bulk-competencia"
                       value={bulkEditData.Competencia || ''}
                       onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, '');
+                        let value = e.target.value.replace(/D/g, '');
                         if (value.length >= 2) {
                           value = value.substring(0, 2) + '/' + value.substring(2, 6);
                         }
@@ -5969,7 +5977,7 @@ interface VerificationResult {
                       id="bulk-competencia"
                       value={bulkEditData.Competencia || ''}
                       onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, '');
+                        let value = e.target.value.replace(/D/g, '');
                         if (value.length >= 2) {
                           value = value.substring(0, 2) + '/' + value.substring(2, 6);
                         }
@@ -6169,7 +6177,7 @@ interface VerificationResult {
                     id="calc-competencia"
                     value={manualCalcData.competencia}
                     onChange={(e) => {
-                      let value = e.target.value.replace(/\D/g, '');
+                      let value = e.target.value.replace(/D/g, '');
                       if (value.length >= 2) {
                         value = value.substring(0, 2) + '/' + value.substring(2, 6);
                       }
@@ -6298,7 +6306,7 @@ interface VerificationResult {
                     id="calc-custom-competencia"
                     value={customCalcData.competencia}
                     onChange={(e) => {
-                      let value = e.target.value.replace(/\D/g, '');
+                      let value = e.target.value.replace(/D/g, '');
                       if (value.length >= 2) {
                         value = value.substring(0, 2) + '/' + value.substring(2, 6);
                       }
@@ -6457,7 +6465,7 @@ interface VerificationResult {
                     id="calc-market-competencia"
                     value={marketCalcData.competencia}
                     onChange={(e) => {
-                      let value = e.target.value.replace(/\D/g, '');
+                      let value = e.target.value.replace(/D/g, '');
                       if (value.length >= 2) {
                         value = value.substring(0, 2) + '/' + value.substring(2, 6);
                       }
@@ -6549,7 +6557,7 @@ interface VerificationResult {
                     id="calc-treasury-competencia"
                     value={treasuryCalcData.competencia}
                     onChange={(e) => {
-                      let value = e.target.value.replace(/\D/g, '');
+                      let value = e.target.value.replace(/D/g, '');
                       if (value.length >= 2) {
                         value = value.substring(0, 2) + '/' + value.substring(2, 6);
                       }
