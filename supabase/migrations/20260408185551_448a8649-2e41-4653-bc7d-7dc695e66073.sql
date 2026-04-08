@@ -1,0 +1,1 @@
+ALTER TABLE "DadosPerformance" ADD COLUMN liquidez TEXT DEFAULT NULL;
