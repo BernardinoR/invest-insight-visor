@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
@@ -5811,69 +5812,51 @@ interface VerificationResult {
                       </Button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-3 pt-2">
                       {editingItem.Rendimento === 0 && (
-                        <Button
-                          variant={editingItem.rentabilidade_validada ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => {
-                            const novoValor = !editingItem.rentabilidade_validada;
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <label className="text-sm font-medium">Validar Rentabilidade</label>
+                            <p className="text-xs text-muted-foreground">Não classificar como rentabilidade faltante</p>
+                          </div>
+                          <Switch
+                            checked={!!editingItem.rentabilidade_validada}
+                            onCheckedChange={(checked) => {
+                              setEditingItem({
+                                ...editingItem,
+                                rentabilidade_validada: checked
+                              });
+                              toast({
+                                title: checked ? "Rentabilidade validada" : "Validação removida",
+                                description: checked
+                                  ? "Este ativo não será mais classificado como 'rentabilidade faltante'"
+                                  : "Este ativo voltará a ser classificado como 'rentabilidade faltante'",
+                              });
+                            }}
+                          />
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <label className="text-sm font-medium">Ativo Novo</label>
+                          <p className="text-xs text-muted-foreground">Sem rentabilidade anterior esperada</p>
+                        </div>
+                        <Switch
+                          checked={!!editingItem.ativo_novo}
+                          onCheckedChange={(checked) => {
                             setEditingItem({
-                              ...editingItem, 
-                              rentabilidade_validada: novoValor
+                              ...editingItem,
+                              ativo_novo: checked
                             });
                             toast({
-                              title: novoValor ? "Rentabilidade validada" : "Validação removida",
-                              description: novoValor 
-                                ? "Este ativo não será mais classificado como 'rentabilidade faltante'"
-                                : "Este ativo voltará a ser classificado como 'rentabilidade faltante'",
+                              title: checked ? "Marcado como ativo novo" : "Marcação removida",
+                              description: checked
+                                ? "Este ativo será identificado como novo (sem rentabilidade anterior)"
+                                : "Este ativo não será mais identificado como novo",
                             });
                           }}
-                          className="w-full"
-                        >
-                          {editingItem.rentabilidade_validada ? (
-                            <>
-                              <CheckCircle2 className="mr-2 h-4 w-4" />
-                              Rentabilidade Validada ✓
-                            </>
-                          ) : (
-                            <>
-                              <AlertCircle className="mr-2 h-4 w-4" />
-                              Validar Rentabilidade
-                            </>
-                          )}
-                        </Button>
-                      )}
-                      <Button
-                        variant={editingItem.ativo_novo ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          const novoValor = !editingItem.ativo_novo;
-                          setEditingItem({
-                            ...editingItem, 
-                            ativo_novo: novoValor
-                          });
-                          toast({
-                            title: novoValor ? "Marcado como ativo novo" : "Marcação removida",
-                            description: novoValor 
-                              ? "Este ativo será identificado como novo (sem rentabilidade anterior)"
-                              : "Este ativo não será mais identificado como novo",
-                          });
-                        }}
-                        className="w-full"
-                      >
-                        {editingItem.ativo_novo ? (
-                          <>
-                            <Info className="mr-2 h-4 w-4" />
-                            Ativo Novo ✓
-                          </>
-                        ) : (
-                          <>
-                            <BookmarkPlus className="mr-2 h-4 w-4" />
-                            Marcar como Ativo Novo
-                          </>
-                        )}
-                      </Button>
+                        />
+                      </div>
                     </div>
                   </div>
                 </>
