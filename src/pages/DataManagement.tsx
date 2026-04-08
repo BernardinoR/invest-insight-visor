@@ -5726,7 +5726,7 @@ interface VerificationResult {
                         <div className="flex items-center gap-2">
                           <Input
                             id="liquidez"
-                            value={editingItem.liquidez ? editingItem.liquidez.replace(/^D+/i, '') : ''}
+                            value={editingItem.liquidez ? editingItem.liquidez.replace(/^D\+/i, '') : ''}
                             onChange={(e) => {
                               const num = e.target.value.replace(/D/g, '');
                               setEditingItem({
