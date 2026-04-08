@@ -5560,292 +5560,307 @@ interface VerificationResult {
                 </>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="competencia">Competência</Label>
-                      <Input
-                        id="competencia"
-                        value={editingItem.Competencia || ''}
-                        onChange={(e) => {
-                          let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-                          if (value.length >= 2) {
-                            value = value.substring(0, 2) + '/' + value.substring(2, 6);
-                          }
-                          setEditingItem({...editingItem, Competencia: value});
-                        }}
-                        placeholder="MM/YYYY"
-                        maxLength={7}
-                      />
+                  {/* IDENTIFICAÇÃO */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Identificação</h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="competencia">Competência</Label>
+                        <Input
+                          id="competencia"
+                          value={editingItem.Competencia || ''}
+                          onChange={(e) => {
+                            let value = e.target.value.replace(/\D/g, '');
+                            if (value.length >= 2) {
+                              value = value.substring(0, 2) + '/' + value.substring(2, 6);
+                            }
+                            setEditingItem({...editingItem, Competencia: value});
+                          }}
+                          placeholder="MM/YYYY"
+                          maxLength={7}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="instituicao">Instituição</Label>
+                        <Input
+                          id="instituicao"
+                          value={editingItem.Instituicao || ''}
+                          onChange={(e) => setEditingItem({...editingItem, Instituicao: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="nomeConta">Conta</Label>
+                        <Input
+                          id="nomeConta"
+                          value={editingItem.nomeConta || ''}
+                          onChange={(e) => setEditingItem({...editingItem, nomeConta: e.target.value})}
+                          placeholder="Opcional"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="instituicao">Instituição</Label>
-                      <Input
-                        id="instituicao"
-                        value={editingItem.Instituicao || ''}
-                        onChange={(e) => setEditingItem({...editingItem, Instituicao: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="nomeConta">Nome da Conta</Label>
-                      <Input
-                        id="nomeConta"
-                        value={editingItem.nomeConta || ''}
-                        onChange={(e) => setEditingItem({...editingItem, nomeConta: e.target.value})}
-                        placeholder="Opcional"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="moeda">Moeda</Label>
-                    <Select
-                      value={editingItem.Moeda || 'Real'}
-                      onValueChange={(value) => setEditingItem({...editingItem, Moeda: value})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a moeda" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Real">Real (BRL)</SelectItem>
-                        <SelectItem value="Dolar">Dólar (USD)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="ativo">Ativo</Label>
-                      <Input
-                        id="ativo"
-                        value={editingItem.Ativo || ''}
-                        onChange={(e) => setEditingItem({...editingItem, Ativo: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="emissor">Emissor</Label>
-                      <Input
-                        id="emissor"
-                        value={editingItem.Emissor || ''}
-                        onChange={(e) => setEditingItem({...editingItem, Emissor: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="classe">Classe do Ativo</Label>
-                      <Select 
-                        value={editingItem["Classe do ativo"] || ''} 
-                        onValueChange={(value) => setEditingItem({...editingItem, "Classe do ativo": value})}
+                    <div className="w-1/3">
+                      <Label htmlFor="moeda">Moeda</Label>
+                      <Select
+                        value={editingItem.Moeda || 'Real'}
+                        onValueChange={(value) => setEditingItem({...editingItem, Moeda: value})}
                       >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione a classe do ativo" />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a moeda" />
                         </SelectTrigger>
-                        <SelectContent className="bg-background border-border z-50 max-h-[200px] overflow-y-auto">
-                          {classesAtivo.length > 0 ? classesAtivo.map((classe) => (
-                            <SelectItem key={classe} value={classe}>
-                              {classe}
-                            </SelectItem>
-                          )) : (
-                            <SelectItem value="carregando" disabled>
-                              Carregando classes...
-                            </SelectItem>
-                          )}
+                        <SelectContent>
+                          <SelectItem value="Real">Real (BRL)</SelectItem>
+                          <SelectItem value="Dolar">Dólar (USD)</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* ATIVO */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Ativo</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="ativo">Nome do Ativo</Label>
+                        <Input
+                          id="ativo"
+                          value={editingItem.Ativo || ''}
+                          onChange={(e) => setEditingItem({...editingItem, Ativo: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="emissor">Emissor</Label>
+                        <Input
+                          id="emissor"
+                          value={editingItem.Emissor || ''}
+                          onChange={(e) => setEditingItem({...editingItem, Emissor: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="classe">Classe do Ativo</Label>
+                        <Select 
+                          value={editingItem["Classe do ativo"] || ''} 
+                          onValueChange={(value) => setEditingItem({...editingItem, "Classe do ativo": value})}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecione a classe do ativo" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border-border z-50 max-h-[200px] overflow-y-auto">
+                            {classesAtivo.length > 0 ? classesAtivo.map((classe) => (
+                              <SelectItem key={classe} value={classe}>
+                                {classe}
+                              </SelectItem>
+                            )) : (
+                              <SelectItem value="carregando" disabled>
+                                Carregando classes...
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2 w-full gap-2"
+                          disabled={!editingItem.Ativo || !editingItem["Classe do ativo"] || ragSaving}
+                          onClick={handleSaveClassificacao}
+                          title="Salvar esta classificação para uso automático futuro"
+                        >
+                          <BookmarkPlus className="h-4 w-4" />
+                          {ragSaving ? 'Gravando...' : 'Gravar Classificação'}
+                        </Button>
+                      </div>
+                      <div>
+                        <Label htmlFor="posicao">Posição</Label>
+                        <Input
+                          id="posicao"
+                          type="text"
+                          value={numericFieldsText.Posicao}
+                          onChange={(e) => {
+                            const text = e.target.value;
+                            setNumericFieldsText({...numericFieldsText, Posicao: text});
+                          }}
+                          onBlur={() => {
+                            const text = numericFieldsText.Posicao;
+                            const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
+                            setEditingItem({...editingItem, Posicao: numericValue});
+                            const formatted = formatBrazilianNumber(numericValue);
+                            setNumericFieldsText({...numericFieldsText, Posicao: formatted});
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* CONDIÇÕES */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Condições</h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="taxa">Taxa</Label>
+                        <Input
+                          id="taxa"
+                          value={editingItem.Taxa || ''}
+                          onChange={(e) => setEditingItem({...editingItem, Taxa: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="vencimento">Vencimento</Label>
+                        <Input
+                          id="vencimento"
+                          type="date"
+                          value={editingItem.Vencimento || ''}
+                          onChange={(e) => setEditingItem({...editingItem, Vencimento: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="liquidez">Liquidez</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            id="liquidez"
+                            value={editingItem.liquidez ? editingItem.liquidez.replace(/^D\+/i, '') : ''}
+                            onChange={(e) => {
+                              const num = e.target.value.replace(/\D/g, '');
+                              setEditingItem({
+                                ...editingItem,
+                                liquidez: num ? `D+${num}` : null
+                              });
+                            }}
+                            placeholder="Ex: 0, 30, 90..."
+                          />
+                          {editingItem.liquidez && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEditingItem({...editingItem, liquidez: null})}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        {editingItem.liquidez && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Valor salvo: {editingItem.liquidez}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* RENTABILIDADE */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Rentabilidade</h4>
+                    <div>
+                      <Label htmlFor="rendimento">Rendimento (%)</Label>
+                      <div className="relative">
+                        <Input
+                          id="rendimento"
+                          type="number"
+                          step="0.0001"
+                          value={(editingItem.Rendimento || 0) * 100}
+                          onChange={(e) => setEditingItem({...editingItem, Rendimento: (parseFloat(e.target.value) || 0) / 100})}
+                          className="pr-8"
+                        />
+                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="mt-2 w-full gap-2"
-                        disabled={!editingItem.Ativo || !editingItem["Classe do ativo"] || ragSaving}
-                        onClick={handleSaveClassificacao}
-                        title="Salvar esta classificação para uso automático futuro"
-                      >
-                        <BookmarkPlus className="h-4 w-4" />
-                        {ragSaving ? 'Gravando...' : 'Gravar Classificação'}
-                      </Button>
-                    </div>
-                    <div>
-                      <Label htmlFor="posicao">Posição</Label>
-                      <Input
-                        id="posicao"
-                        type="text"
-                        value={numericFieldsText.Posicao}
-                        onChange={(e) => {
-                          const text = e.target.value;
-                          setNumericFieldsText({...numericFieldsText, Posicao: text});
-                        }}
-                        onBlur={() => {
-                          const text = numericFieldsText.Posicao;
-                          const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
-                          setEditingItem({...editingItem, Posicao: numericValue});
-                          const formatted = formatBrazilianNumber(numericValue);
-                          setNumericFieldsText({...numericFieldsText, Posicao: formatted});
-                        }}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="taxa">Taxa</Label>
-                      <Input
-                        id="taxa"
-                        value={editingItem.Taxa || ''}
-                        onChange={(e) => setEditingItem({...editingItem, Taxa: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="vencimento">Vencimento</Label>
-                      <Input
-                        id="vencimento"
-                        type="date"
-                        value={editingItem.Vencimento || ''}
-                        onChange={(e) => setEditingItem({...editingItem, Vencimento: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="liquidez">Liquidez</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          id="liquidez"
-                          value={editingItem.liquidez ? editingItem.liquidez.replace(/^D\+/i, '') : ''}
-                          onChange={(e) => {
-                            const num = e.target.value.replace(/\D/g, '');
-                            setEditingItem({
-                              ...editingItem,
-                              liquidez: num ? `D+${num}` : null
-                            });
-                          }}
-                          placeholder="Ex: 0, 30, 90..."
-                        />
-                        {editingItem.liquidez && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setEditingItem({...editingItem, liquidez: null})}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                      {editingItem.liquidez && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Valor salvo: {editingItem.liquidez}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="rendimento">Rendimento (%)</Label>
-                    <div className="relative">
-                      <Input
-                        id="rendimento"
-                        type="number"
-                        step="0.0001"
-                        value={(editingItem.Rendimento || 0) * 100}
-                        onChange={(e) => setEditingItem({...editingItem, Rendimento: (parseFloat(e.target.value) || 0) / 100})}
-                        className="pr-8"
-                      />
-                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                onClick={() => {
-                  setCalculatorContext('single');
-                  if (editingItem.Posicao) {
-                    setCustomCalcData({
-                      ...customCalcData,
-                      valorInicial: editingItem.Posicao || 0,
-                      competencia: editingItem.Competencia || ''
-                    });
-                  }
-                  // Preencher automaticamente os campos da calculadora de mercado
-                   setMarketCalcData({
-                    competencia: editingItem.Competencia || '',
-                    ticker: getTickerWithSuffix(editingItem.Ativo || '', editingItem["Classe do ativo"] || '')
-                  });
-                   // Preencher automaticamente os campos da calculadora do Tesouro
-                   setTreasuryCalcData({
-                     competencia: editingItem.Competencia || '',
-                     tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
-                     vencimento: extractYearFromDate(editingItem.Vencimento || ''),
-                   });
-                  setIsCalculatorOpen(true);
-                }}
-                      className="mt-2 w-full"
-                    >
-                      Calcular
-                    </Button>
-                    
-                    {editingItem.Rendimento === 0 && (
-                      <Button
-                        variant={editingItem.rentabilidade_validada ? "default" : "outline"}
-                        size="sm"
                         onClick={() => {
-                          const novoValor = !editingItem.rentabilidade_validada;
-                          setEditingItem({
-                            ...editingItem, 
-                            rentabilidade_validada: novoValor
+                          setCalculatorContext('single');
+                          if (editingItem.Posicao) {
+                            setCustomCalcData({
+                              ...customCalcData,
+                              valorInicial: editingItem.Posicao || 0,
+                              competencia: editingItem.Competencia || ''
+                            });
+                          }
+                          setMarketCalcData({
+                            competencia: editingItem.Competencia || '',
+                            ticker: getTickerWithSuffix(editingItem.Ativo || '', editingItem["Classe do ativo"] || '')
                           });
-                          
-                          toast({
-                            title: novoValor ? "Rentabilidade validada" : "Validação removida",
-                            description: novoValor 
-                              ? "Este ativo não será mais classificado como 'rentabilidade faltante'"
-                              : "Este ativo voltará a ser classificado como 'rentabilidade faltante'",
+                          setTreasuryCalcData({
+                            competencia: editingItem.Competencia || '',
+                            tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
+                            vencimento: extractYearFromDate(editingItem.Vencimento || ''),
                           });
+                          setIsCalculatorOpen(true);
                         }}
                         className="mt-2 w-full"
                       >
-                        {editingItem.rentabilidade_validada ? (
+                        Calcular
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {editingItem.Rendimento === 0 && (
+                        <Button
+                          variant={editingItem.rentabilidade_validada ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            const novoValor = !editingItem.rentabilidade_validada;
+                            setEditingItem({
+                              ...editingItem, 
+                              rentabilidade_validada: novoValor
+                            });
+                            toast({
+                              title: novoValor ? "Rentabilidade validada" : "Validação removida",
+                              description: novoValor 
+                                ? "Este ativo não será mais classificado como 'rentabilidade faltante'"
+                                : "Este ativo voltará a ser classificado como 'rentabilidade faltante'",
+                            });
+                          }}
+                          className="w-full"
+                        >
+                          {editingItem.rentabilidade_validada ? (
+                            <>
+                              <CheckCircle2 className="mr-2 h-4 w-4" />
+                              Rentabilidade Validada ✓
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="mr-2 h-4 w-4" />
+                              Validar Rentabilidade
+                            </>
+                          )}
+                        </Button>
+                      )}
+                      <Button
+                        variant={editingItem.ativo_novo ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          const novoValor = !editingItem.ativo_novo;
+                          setEditingItem({
+                            ...editingItem, 
+                            ativo_novo: novoValor
+                          });
+                          toast({
+                            title: novoValor ? "Marcado como ativo novo" : "Marcação removida",
+                            description: novoValor 
+                              ? "Este ativo será identificado como novo (sem rentabilidade anterior)"
+                              : "Este ativo não será mais identificado como novo",
+                          });
+                        }}
+                        className="w-full"
+                      >
+                        {editingItem.ativo_novo ? (
                           <>
-                            <CheckCircle2 className="mr-2 h-4 w-4" />
-                            Rentabilidade Validada ✓
+                            <Info className="mr-2 h-4 w-4" />
+                            Ativo Novo ✓
                           </>
                         ) : (
                           <>
-                            <AlertCircle className="mr-2 h-4 w-4" />
-                            Marcar Rentabilidade como Validada
+                            <BookmarkPlus className="mr-2 h-4 w-4" />
+                            Marcar como Ativo Novo
                           </>
                         )}
                       </Button>
-                    )}
-                    
-                    {/* Toggle Ativo Novo */}
-                    <Button
-                      variant={editingItem.ativo_novo ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => {
-                        const novoValor = !editingItem.ativo_novo;
-                        setEditingItem({
-                          ...editingItem, 
-                          ativo_novo: novoValor
-                        });
-                        
-                        toast({
-                          title: novoValor ? "Marcado como ativo novo" : "Marcação removida",
-                          description: novoValor 
-                            ? "Este ativo será identificado como novo (sem rentabilidade anterior)"
-                            : "Este ativo não será mais identificado como novo",
-                        });
-                      }}
-                      className="mt-2 w-full"
-                    >
-                      {editingItem.ativo_novo ? (
-                        <>
-                          <Info className="mr-2 h-4 w-4" />
-                          Ativo Novo ✓
-                        </>
-                      ) : (
-                        <>
-                          <BookmarkPlus className="mr-2 h-4 w-4" />
-                          Marcar como Ativo Novo
-                        </>
-                      )}
-                    </Button>
+                    </div>
                   </div>
                 </>
               )}
