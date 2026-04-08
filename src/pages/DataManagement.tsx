@@ -5728,7 +5728,7 @@ interface VerificationResult {
                             id="liquidez"
                             value={editingItem.liquidez ? editingItem.liquidez.replace(/^D\+/i, '') : ''}
                             onChange={(e) => {
-                              const num = e.target.value.replace(/D/g, '');
+                              const num = e.target.value.replace(/\D/g, '');
                               setEditingItem({
                                 ...editingItem,
                                 liquidez: num ? `D+${num}` : null
