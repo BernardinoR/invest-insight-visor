@@ -98,7 +98,7 @@ const parseBrazilianNumber = (value: string): number => {
   // Se tiver vírgula, assume formato brasileiro
   if (cleaned.includes(',')) {
     // Remove todos os pontos (separadores de milhares)
-    cleaned = cleaned.replace(/\./g, '');
+    cleaned = cleaned.replace(/./g, '');
     // Substitui vírgula por ponto (decimal)
     cleaned = cleaned.replace(',', '.');
   }
@@ -111,7 +111,7 @@ const parseBrazilianNumber = (value: string): number => {
 // Formata número para padrão brasileiro com separador de milhares
 const formatBrazilianNumber = (value: number): string => {
   const parts = value.toFixed(2).split('.');
-  const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const integerPart = parts[0].replace(/B(?=(d{3})+(?!d))/g, '.');
   const decimalPart = parts[1];
   return `${integerPart},${decimalPart}`;
 };
@@ -373,9 +373,9 @@ export default function DataManagement() {
   // Helper para extrair ano de uma data (YYYY-MM-DD ou DD/MM/YYYY)
   const extractYearFromDate = (dateStr: string): string => {
     if (!dateStr) return '';
-    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr.substring(0, 4);
-    if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) return dateStr.substring(6, 10);
-    const yearMatch = dateStr.match(/(\d{4})/);
+    if (dateStr.match(/^d{4}-d{2}-d{2}$/)) return dateStr.substring(0, 4);
+    if (dateStr.match(/^d{2}/d{2}/d{4}$/)) return dateStr.substring(6, 10);
+    const yearMatch = dateStr.match(/(d{4})/);
     return yearMatch ? yearMatch[1] : '';
   };
 
@@ -883,7 +883,7 @@ export default function DataManagement() {
       return null;
     }
 
-    const competenciaRegex = /^\d{2}\/\d{4}$/;
+    const competenciaRegex = /^d{2}/d{4}$/;
     if (!competenciaRegex.test(competencia)) {
       toast({
         title: "Erro",
@@ -1043,7 +1043,7 @@ export default function DataManagement() {
       return null;
     }
     
-    const competenciaRegex = /^\d{2}\/\d{4}$/;
+    const competenciaRegex = /^d{2}/d{4}$/;
     if (!competenciaRegex.test(competencia)) {
       toast({
         title: "Erro",
@@ -2351,7 +2351,7 @@ interface VerificationResult {
           ].map(value => {
             // Escapar vírgulas e aspas
             const stringValue = String(value);
-            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('n')) {
               return `"${stringValue.replace(/"/g, '""')}"`;
             }
             return stringValue;
@@ -2360,14 +2360,14 @@ interface VerificationResult {
       ];
 
       // Criar blob e baixar
-      const csvContent = csvRows.join('\n');
-      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const csvContent = csvRows.join('n');
+      const blob = new Blob(['uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       
       const fileName = exportType === 'filtered' 
-        ? `ativos_filtrados_${decodedClientName?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`
-        : `ativos_completo_${decodedClientName?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+        ? `ativos_filtrados_${decodedClientName?.replace(/s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`
+        : `ativos_completo_${decodedClientName?.replace(/s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
       
       link.setAttribute('href', url);
       link.setAttribute('download', fileName);
@@ -2414,7 +2414,7 @@ interface VerificationResult {
     reader.onload = async (e) => {
       try {
         const text = e.target?.result as string;
-        const lines = text.split('\n').filter(line => line.trim());
+        const lines = text.split('n').filter(line => line.trim());
         
         if (lines.length < 2) {
           toast({
@@ -2451,7 +2451,7 @@ interface VerificationResult {
           return values;
         };
 
-        const headers = parseCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, '').replace(/^\uFEFF/, ''));
+        const headers = parseCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, '').replace(/^uFEFF/, ''));
         const data = [];
 
         for (let i = 1; i < lines.length; i++) {
@@ -2596,7 +2596,7 @@ interface VerificationResult {
           row.map(value => {
             // Escapar valores com vírgulas ou aspas
             const stringValue = String(value);
-            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('n')) {
               return `"${stringValue.replace(/"/g, '""')}"`;
             }
             return stringValue;
@@ -2604,10 +2604,10 @@ interface VerificationResult {
         )
       ];
 
-      const csvContent = csvRows.join('\n');
+      const csvContent = csvRows.join('n');
       
       // Criar blob com BOM para compatibilidade com Excel
-      const blob = new Blob(['\uFEFF' + csvContent], { 
+      const blob = new Blob(['uFEFF' + csvContent], { 
         type: 'text/csv;charset=utf-8;' 
       });
       
@@ -2693,7 +2693,7 @@ interface VerificationResult {
           ].map(value => {
             // Escapar vírgulas e aspas
             const stringValue = String(value);
-            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('n')) {
               return `"${stringValue.replace(/"/g, '""')}"`;
             }
             return stringValue;
@@ -2702,14 +2702,14 @@ interface VerificationResult {
       ];
 
       // Criar blob e baixar
-      const csvContent = csvRows.join('\n');
-      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const csvContent = csvRows.join('n');
+      const blob = new Blob(['uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       
       const fileName = exportType === 'filtered' 
-        ? `consolidado_filtrado_${decodedClientName?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`
-        : `consolidado_completo_${decodedClientName?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+        ? `consolidado_filtrado_${decodedClientName?.replace(/s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`
+        : `consolidado_completo_${decodedClientName?.replace(/s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
       
       link.setAttribute('href', url);
       link.setAttribute('download', fileName);
@@ -2756,7 +2756,7 @@ interface VerificationResult {
     reader.onload = async (e) => {
       try {
         const text = e.target?.result as string;
-        const lines = text.split('\n').filter(line => line.trim());
+        const lines = text.split('n').filter(line => line.trim());
         
         if (lines.length < 2) {
           toast({
@@ -2864,7 +2864,7 @@ interface VerificationResult {
         ...exampleRows.map(row => 
           row.map(value => {
             const stringValue = String(value);
-            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('n')) {
               return `"${stringValue.replace(/"/g, '""')}"`;
             }
             return stringValue;
@@ -2872,8 +2872,8 @@ interface VerificationResult {
         )
       ];
 
-      const csvContent = csvRows.join('\n');
-      const blob = new Blob(['\uFEFF' + csvContent], { 
+      const csvContent = csvRows.join('n');
+      const blob = new Blob(['uFEFF' + csvContent], { 
         type: 'text/csv;charset=utf-8;' 
       });
       
@@ -5365,7 +5365,7 @@ interface VerificationResult {
                         id="competencia"
                         value={editingItem.Competencia || ''}
                         onChange={(e) => {
-                          let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                          let value = e.target.value.replace(/D/g, ''); // Remove non-digits
                           if (value.length >= 2) {
                             value = value.substring(0, 2) + '/' + value.substring(2, 6);
                           }
@@ -5570,7 +5570,7 @@ interface VerificationResult {
                           id="competencia"
                           value={editingItem.Competencia || ''}
                           onChange={(e) => {
-                            let value = e.target.value.replace(/\D/g, '');
+                            let value = e.target.value.replace(/D/g, '');
                             if (value.length >= 2) {
                               value = value.substring(0, 2) + '/' + value.substring(2, 6);
                             }
@@ -5726,12 +5726,12 @@ interface VerificationResult {
                         <div className="flex items-center gap-2">
                           <Input
                             id="liquidez"
-                            value={editingItem.liquidez ? editingItem.liquidez.replace(/^D\+/i, '') : ''}
+                            value={editingItem.liquidez ? editingItem.liquidez.replace(/^D+/i, '') : ''}
                             onChange={(e) => {
-                              const num = e.target.value.replace(/\D/g, '');
+                              const num = e.target.value.replace(/D/g, '');
                               setEditingItem({
                                 ...editingItem,
-                                liquidez: num ? \`D+\${num}\` : null
+                                liquidez: num ? `D+${num}` : null
                               });
                             }}
                             placeholder="Ex: 0, 30, 90..."
@@ -5911,7 +5911,7 @@ interface VerificationResult {
                       id="bulk-competencia"
                       value={bulkEditData.Competencia || ''}
                       onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, '');
+                        let value = e.target.value.replace(/D/g, '');
                         if (value.length >= 2) {
                           value = value.substring(0, 2) + '/' + value.substring(2, 6);
                         }
@@ -5977,7 +5977,7 @@ interface VerificationResult {
                       id="bulk-competencia"
                       value={bulkEditData.Competencia || ''}
                       onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, '');
+                        let value = e.target.value.replace(/D/g, '');
                         if (value.length >= 2) {
                           value = value.substring(0, 2) + '/' + value.substring(2, 6);
                         }
@@ -6177,7 +6177,7 @@ interface VerificationResult {
                     id="calc-competencia"
                     value={manualCalcData.competencia}
                     onChange={(e) => {
-                      let value = e.target.value.replace(/\D/g, '');
+                      let value = e.target.value.replace(/D/g, '');
                       if (value.length >= 2) {
                         value = value.substring(0, 2) + '/' + value.substring(2, 6);
                       }
@@ -6306,7 +6306,7 @@ interface VerificationResult {
                     id="calc-custom-competencia"
                     value={customCalcData.competencia}
                     onChange={(e) => {
-                      let value = e.target.value.replace(/\D/g, '');
+                      let value = e.target.value.replace(/D/g, '');
                       if (value.length >= 2) {
                         value = value.substring(0, 2) + '/' + value.substring(2, 6);
                       }
@@ -6465,7 +6465,7 @@ interface VerificationResult {
                     id="calc-market-competencia"
                     value={marketCalcData.competencia}
                     onChange={(e) => {
-                      let value = e.target.value.replace(/\D/g, '');
+                      let value = e.target.value.replace(/D/g, '');
                       if (value.length >= 2) {
                         value = value.substring(0, 2) + '/' + value.substring(2, 6);
                       }
@@ -6557,7 +6557,7 @@ interface VerificationResult {
                     id="calc-treasury-competencia"
                     value={treasuryCalcData.competencia}
                     onChange={(e) => {
-                      let value = e.target.value.replace(/\D/g, '');
+                      let value = e.target.value.replace(/D/g, '');
                       if (value.length >= 2) {
                         value = value.substring(0, 2) + '/' + value.substring(2, 6);
                       }
