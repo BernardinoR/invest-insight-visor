@@ -5367,7 +5367,7 @@ interface VerificationResult {
                         id="competencia"
                         value={editingItem.Competencia || ''}
                         onChange={(e) => {
-                          let value = e.target.value.replace(/D/g, ''); // Remove non-digits
+                          let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
                           if (value.length >= 2) {
                             value = value.substring(0, 2) + '/' + value.substring(2, 6);
                           }
@@ -5572,7 +5572,7 @@ interface VerificationResult {
                            id="competencia"
                            value={editingItem.Competencia || ''}
                            onChange={(e) => {
-                             let value = e.target.value.replace(/D/g, '');
+                             let value = e.target.value.replace(/\D/g, '');
                              if (value.length >= 2) {
                                value = value.substring(0, 2) + '/' + value.substring(2, 6);
                              }
@@ -5900,7 +5900,7 @@ interface VerificationResult {
                       id="bulk-competencia"
                       value={bulkEditData.Competencia || ''}
                       onChange={(e) => {
-                        let value = e.target.value.replace(/D/g, '');
+                        let value = e.target.value.replace(/\D/g, '');
                         if (value.length >= 2) {
                           value = value.substring(0, 2) + '/' + value.substring(2, 6);
                         }
@@ -5966,7 +5966,7 @@ interface VerificationResult {
                       id="bulk-competencia"
                       value={bulkEditData.Competencia || ''}
                       onChange={(e) => {
-                        let value = e.target.value.replace(/D/g, '');
+                        let value = e.target.value.replace(/\D/g, '');
                         if (value.length >= 2) {
                           value = value.substring(0, 2) + '/' + value.substring(2, 6);
                         }
@@ -6166,7 +6166,7 @@ interface VerificationResult {
                     id="calc-competencia"
                     value={manualCalcData.competencia}
                     onChange={(e) => {
-                      let value = e.target.value.replace(/D/g, '');
+                      let value = e.target.value.replace(/\D/g, '');
                       if (value.length >= 2) {
                         value = value.substring(0, 2) + '/' + value.substring(2, 6);
                       }
@@ -6295,7 +6295,7 @@ interface VerificationResult {
                     id="calc-custom-competencia"
                     value={customCalcData.competencia}
                     onChange={(e) => {
-                      let value = e.target.value.replace(/D/g, '');
+                      let value = e.target.value.replace(/\D/g, '');
                       if (value.length >= 2) {
                         value = value.substring(0, 2) + '/' + value.substring(2, 6);
                       }
@@ -6454,7 +6454,7 @@ interface VerificationResult {
                     id="calc-market-competencia"
                     value={marketCalcData.competencia}
                     onChange={(e) => {
-                      let value = e.target.value.replace(/D/g, '');
+                      let value = e.target.value.replace(/\D/g, '');
                       if (value.length >= 2) {
                         value = value.substring(0, 2) + '/' + value.substring(2, 6);
                       }
@@ -6546,7 +6546,7 @@ interface VerificationResult {
                     id="calc-treasury-competencia"
                     value={treasuryCalcData.competencia}
                     onChange={(e) => {
-                      let value = e.target.value.replace(/D/g, '');
+                      let value = e.target.value.replace(/\D/g, '');
                       if (value.length >= 2) {
                         value = value.substring(0, 2) + '/' + value.substring(2, 6);
                       }
