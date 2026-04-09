@@ -5547,11 +5547,12 @@ interface VerificationResult {
                   });
                    // Preencher automaticamente os campos da calculadora do Tesouro
                    setTreasuryCalcData({
-                     competencia: editingItem.Competencia || '',
-                     tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
-                     vencimento: extractYearFromDate(editingItem.Vencimento || ''),
-                   });
-                  setIsCalculatorOpen(true);
+                      competencia: editingItem.Competencia || '',
+                      tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
+                      vencimento: extractYearFromDate(editingItem.Vencimento || ''),
+                    });
+                   setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || ''});
+                   setIsCalculatorOpen(true);
                 }}
                         className="mt-2 w-full"
                       >
@@ -5800,14 +5801,15 @@ interface VerificationResult {
                             competencia: editingItem.Competencia || '',
                             ticker: getTickerWithSuffix(editingItem.Ativo || '', editingItem["Classe do ativo"] || '')
                           });
-                          setTreasuryCalcData({
-                            competencia: editingItem.Competencia || '',
-                            tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
-                            vencimento: extractYearFromDate(editingItem.Vencimento || ''),
-                          });
-                          setIsCalculatorOpen(true);
-                        }}
-                      >
+                           setTreasuryCalcData({
+                             competencia: editingItem.Competencia || '',
+                             tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
+                             vencimento: extractYearFromDate(editingItem.Vencimento || ''),
+                           });
+                           setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || ''});
+                           setIsCalculatorOpen(true);
+                         }}
+                       >
                         Calcular
                       </Button>
                     </div>
