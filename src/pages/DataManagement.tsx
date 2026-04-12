@@ -4,7 +4,8 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus, FastForward } from "lucide-react";
+import { RolloverDialog } from "@/components/RolloverDialog";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -223,6 +224,10 @@ export default function DataManagement() {
   // Estado para o AlertDialog de exclusão de consolidado
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [consolidadoToDelete, setConsolidadoToDelete] = useState<ConsolidadoData | null>(null);
+
+  // Rollover state
+  const [isRolloverOpen, setIsRolloverOpen] = useState(false);
+  const [rolloverConsolidado, setRolloverConsolidado] = useState<ConsolidadoData | null>(null);
 
   // Estado para o dialog de conflito de classificação RAG
   const [ragConflictDialog, setRagConflictDialog] = useState<{
@@ -4290,8 +4295,21 @@ interface VerificationResult {
                                      onClick={() => handleCreateFromRecord(item, 'consolidado')}
                                      title="Criar novo registro com base neste"
                                    >
-                                     <Copy className="h-4 w-4" />
-                                   </Button>
+                                      <Copy className="h-4 w-4" />
+                                    </Button>
+
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 text-orange-600 hover:text-orange-700"
+                                      onClick={() => {
+                                        setRolloverConsolidado(item);
+                                        setIsRolloverOpen(true);
+                                      }}
+                                      title="Avançar competência"
+                                    >
+                                      <FastForward className="h-4 w-4" />
+                                    </Button>
                                    
                                    <Button
                                      variant="ghost"
@@ -6757,6 +6775,17 @@ interface VerificationResult {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Rollover Dialog */}
+      <RolloverDialog
+        open={isRolloverOpen}
+        onOpenChange={setIsRolloverOpen}
+        consolidado={rolloverConsolidado}
+        dadosData={dadosData}
+        cdiData={cdiData}
+        marketIndicators={marketIndicators}
+        onSuccess={() => fetchData()}
+      />
     </div>
   );
 }
