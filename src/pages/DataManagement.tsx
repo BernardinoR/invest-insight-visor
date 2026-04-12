@@ -4259,7 +4259,7 @@ interface VerificationResult {
                              )}
                              {visibleColumns.has('Ações') && (
                                <TableCell>
-                                 <div className="flex items-center gap-1">
+                                 <div className="flex items-center justify-end gap-0.5">
                                     {(() => {
                                       const verification = getVerification(item);
                                      
