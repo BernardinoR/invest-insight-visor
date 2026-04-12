@@ -6775,6 +6775,17 @@ interface VerificationResult {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Rollover Dialog */}
+      <RolloverDialog
+        open={isRolloverOpen}
+        onOpenChange={setIsRolloverOpen}
+        consolidado={rolloverConsolidado}
+        dadosData={dadosData}
+        cdiData={cdiData}
+        marketIndicators={marketIndicators}
+        onSuccess={() => fetchData()}
+      />
     </div>
   );
 }
