@@ -433,6 +433,19 @@ export function RolloverDialog({
                   Aplicar
                 </Button>
               </div>
+              {/* Resgate proporcional */}
+              <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+                <span className="text-sm font-medium">Resgate da competência (R$):</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={resgate || ''}
+                  onChange={(e) => handleResgateChange(parseFloat(e.target.value) || 0)}
+                  className="w-[160px]"
+                  placeholder="0,00"
+                />
+              </div>
 
               {/* Multi-asset table */}
               <div className="rounded-md border overflow-x-auto">
