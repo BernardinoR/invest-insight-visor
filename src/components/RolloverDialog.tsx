@@ -163,6 +163,19 @@ export function RolloverDialog({
     setResgate(0);
   }, [open, consolidado, dadosData, cdiData, marketIndicators]);
 
+  const applyResgateToAtivos = (ativos: RolloverAtivo[], resgateTotal: number): RolloverAtivo[] => {
+    const somaPos = ativos.reduce((s, a) => s + (a.Posicao || 0), 0);
+    if (somaPos === 0 || resgateTotal === 0) return ativos;
+    return ativos.map(a => {
+      const peso = (a.Posicao || 0) / somaPos;
+      const resgateAtivo = resgateTotal * peso;
+      // Recalc novaPosicao from rendimento (which is stored as %)
+      const posBase = (a.Posicao || 0) * (1 + a.rendimento / 100);
+      const novaPosicao = Math.round((posBase - resgateAtivo) * 100) / 100;
+      return { ...a, novaPosicao };
+    });
+  };
+
   const recalcAtivo = (ativos: RolloverAtivo[], index: number, modo: CalcMode, parametro: number): RolloverAtivo[] => {
     if (!rolloverData) return ativos;
     const cdiMensal = getCDIMensal(cdiData, rolloverData.competenciaOrigem);
@@ -177,7 +190,7 @@ export function RolloverDialog({
       rendimento: rendimento * 100,
       novaPosicao: Math.round(novaPosicao * 100) / 100,
     };
-    return updated;
+    return applyResgateToAtivos(updated, resgate);
   };
 
   const handleUpdateAtivo = (index: number, campo: 'modo' | 'parametro' | 'novaPosicao', valor: any) => {
