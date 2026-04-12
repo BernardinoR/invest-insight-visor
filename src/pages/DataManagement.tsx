@@ -4259,7 +4259,7 @@ interface VerificationResult {
                              )}
                              {visibleColumns.has('Ações') && (
                                <TableCell>
-                                 <div className="flex items-center gap-1">
+                                 <div className="flex items-center justify-end gap-0.5">
                                     {(() => {
                                       const verification = getVerification(item);
                                      
@@ -4267,24 +4267,23 @@ interface VerificationResult {
                                         <Button
                                           variant="ghost"
                                           size="sm"
-                                          className="h-8 px-2 hover:bg-primary/10 text-primary"
-                                          onClick={() => {
-                                            setSelectedConsolidado(item);
-                                            setActiveTab('detalhados');
-                                            setSelectedCompetencias([item.Competencia]);
-                                            setSelectedInstituicoes([item.Instituicao]);
-                                            setSelectedNomesConta(item.nomeConta ? [item.nomeConta] : []);
-                                            setTimeout(() => {
-                                              document.querySelector('[value="detalhados"]')?.scrollIntoView({ 
-                                                behavior: 'smooth' 
-                                              });
-                                            }, 100);
-                                          }}
-                                          title={`Ver ${verification.detailedCount || 0} ativos detalhados`}
-                                        >
-                                         <ArrowRight className="h-4 w-4" />
-                                         <span className="ml-1 text-xs font-medium">{verification.detailedCount || 0}</span>
-                                       </Button>
+                                           className="h-8 w-8 p-0 hover:bg-primary/10 text-primary"
+                                           onClick={() => {
+                                             setSelectedConsolidado(item);
+                                             setActiveTab('detalhados');
+                                             setSelectedCompetencias([item.Competencia]);
+                                             setSelectedInstituicoes([item.Instituicao]);
+                                             setSelectedNomesConta(item.nomeConta ? [item.nomeConta] : []);
+                                             setTimeout(() => {
+                                               document.querySelector('[value="detalhados"]')?.scrollIntoView({ 
+                                                 behavior: 'smooth' 
+                                               });
+                                             }, 100);
+                                           }}
+                                           title={`Ver ${verification.detailedCount || 0} ativos detalhados`}
+                                         >
+                                          <ArrowRight className="h-4 w-4" />
+                                        </Button>
                                      );
                                     })()}
                                    
