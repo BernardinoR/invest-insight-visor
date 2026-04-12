@@ -688,7 +688,7 @@ export default function DataManagement() {
     // Verificar se o ativo é "Caixa" ou "Proventos" (auto-validado)
     if (nomeAtivo) {
       const nomeNormalizado = nomeAtivo.toLowerCase().trim();
-      if (nomeNormalizado.includes('caixa') || nomeNormalizado.includes('proventos')) {
+      if (nomeNormalizado.includes('caixa') || nomeNormalizado.includes('proventos') || nomeNormalizado.includes('cash')) {
         return true; // Auto-validado
       }
     }
@@ -1547,6 +1547,15 @@ export default function DataManagement() {
         Object.entries(itemData).filter(([_, value]) => value !== undefined && value !== '')
       );
       
+      // Auto-validar rentabilidade para Caixa/Cash/Proventos com rendimento 0
+      if (tableName === 'DadosPerformance') {
+        const nomeNorm = (cleanedData.Ativo || '').toLowerCase();
+        if ((nomeNorm.includes('caixa') || nomeNorm.includes('cash') || nomeNorm.includes('proventos')) && 
+            (cleanedData.Rendimento === 0 || cleanedData.Rendimento == null || cleanedData.Rendimento === '0')) {
+          cleanedData.rentabilidade_validada = true;
+        }
+      }
+
       console.log('Cleaned data:', cleanedData);
       console.log('Table name:', tableName);
 
@@ -2513,6 +2522,15 @@ interface VerificationResult {
           Moeda: row['Moeda'] || 'Real',
           nomeConta: row['Nome da conta'] || row['nomeConta'] || null,
         })).filter(record => record.Ativo && record.Competencia);
+
+        // Auto-validar rentabilidade para Caixa/Cash/Proventos com rendimento 0
+        recordsToInsert.forEach(record => {
+          const nomeNorm = (record.Ativo || '').toLowerCase();
+          if ((nomeNorm.includes('caixa') || nomeNorm.includes('cash') || nomeNorm.includes('proventos')) && 
+              (record.Rendimento === 0 || record.Rendimento == null)) {
+            (record as any).rentabilidade_validada = true;
+          }
+        });
 
         if (recordsToInsert.length === 0) {
           toast({
