@@ -118,6 +118,8 @@ export function RolloverDialog({
   const [bulkMode, setBulkMode] = useState<CalcMode>('CDI');
   const [bulkParametro, setBulkParametro] = useState<number>(100);
   const [resgate, setResgate] = useState<number>(0);
+  const [resgateMode, setResgateMode] = useState<'proporcional' | 'por_ativo'>('proporcional');
+  const [resgatesPorAtivo, setResgatesPorAtivo] = useState<Record<number, number>>({});
 
   // Initialize rollover data when dialog opens
   useEffect(() => {
@@ -161,15 +163,24 @@ export function RolloverDialog({
     setBulkMode('CDI');
     setBulkParametro(100);
     setResgate(0);
+    setResgateMode('proporcional');
+    setResgatesPorAtivo({});
   }, [open, consolidado, dadosData, cdiData, marketIndicators]);
 
-  const applyResgateToAtivos = (ativos: RolloverAtivo[], resgateTotal: number): RolloverAtivo[] => {
+  const applyResgateToAtivos = (ativos: RolloverAtivo[], resgateTotal: number, mode: 'proporcional' | 'por_ativo' = resgateMode, perAtivo: Record<number, number> = resgatesPorAtivo): RolloverAtivo[] => {
+    if (mode === 'por_ativo') {
+      return ativos.map(a => {
+        const resgateAtivo = perAtivo[a.id] || 0;
+        const posBase = (a.Posicao || 0) * (1 + a.rendimento / 100);
+        const novaPosicao = Math.round((posBase - resgateAtivo) * 100) / 100;
+        return { ...a, novaPosicao };
+      });
+    }
     const somaPos = ativos.reduce((s, a) => s + (a.Posicao || 0), 0);
     if (somaPos === 0 || resgateTotal === 0) return ativos;
     return ativos.map(a => {
       const peso = (a.Posicao || 0) / somaPos;
       const resgateAtivo = resgateTotal * peso;
-      // Recalc novaPosicao from rendimento (which is stored as %)
       const posBase = (a.Posicao || 0) * (1 + a.rendimento / 100);
       const novaPosicao = Math.round((posBase - resgateAtivo) * 100) / 100;
       return { ...a, novaPosicao };
@@ -239,14 +250,46 @@ export function RolloverDialog({
   const handleResgateChange = (valor: number) => {
     setResgate(valor);
     if (!rolloverData) return;
-    // Reapply resgate to current ativos (recalc from rendimento)
     const updated = rolloverData.ativos.map(a => {
       const posBase = (a.Posicao || 0) * (1 + a.rendimento / 100);
       return { ...a, novaPosicao: Math.round(posBase * 100) / 100 };
     });
-    const withResgate = applyResgateToAtivos(updated, valor);
+    const withResgate = applyResgateToAtivos(updated, valor, 'proporcional');
     setRolloverData({ ...rolloverData, ativos: withResgate });
   };
+
+  const handleResgateAtivoChange = (ativoId: number, valor: number) => {
+    const newResgates = { ...resgatesPorAtivo, [ativoId]: valor };
+    setResgatesPorAtivo(newResgates);
+    if (!rolloverData) return;
+    const updated = rolloverData.ativos.map(a => {
+      const posBase = (a.Posicao || 0) * (1 + a.rendimento / 100);
+      return { ...a, novaPosicao: Math.round(posBase * 100) / 100 };
+    });
+    const withResgate = applyResgateToAtivos(updated, 0, 'por_ativo', newResgates);
+    setRolloverData({ ...rolloverData, ativos: withResgate });
+  };
+
+  const handleResgateModeChange = (mode: 'proporcional' | 'por_ativo') => {
+    setResgateMode(mode);
+    if (!rolloverData) return;
+    const updated = rolloverData.ativos.map(a => {
+      const posBase = (a.Posicao || 0) * (1 + a.rendimento / 100);
+      return { ...a, novaPosicao: Math.round(posBase * 100) / 100 };
+    });
+    if (mode === 'proporcional') {
+      const withResgate = applyResgateToAtivos(updated, resgate, 'proporcional');
+      setRolloverData({ ...rolloverData, ativos: withResgate });
+    } else {
+      const withResgate = applyResgateToAtivos(updated, 0, 'por_ativo', resgatesPorAtivo);
+      setRolloverData({ ...rolloverData, ativos: withResgate });
+    }
+  };
+
+  const totalResgate = useMemo(() => {
+    if (resgateMode === 'proporcional') return resgate;
+    return Object.values(resgatesPorAtivo).reduce((s, v) => s + (v || 0), 0);
+  }, [resgateMode, resgate, resgatesPorAtivo]);
 
   const totalNovaPosicao = useMemo(() => {
     if (!rolloverData) return 0;
