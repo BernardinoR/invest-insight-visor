@@ -515,6 +515,7 @@ export function RolloverDialog({
                       <TableHead className="text-xs text-right">Posição Atual</TableHead>
                       <TableHead className="text-xs">Cálculo</TableHead>
                       <TableHead className="text-xs">Param.</TableHead>
+                      {resgateMode === 'por_ativo' && <TableHead className="text-xs text-right">Resgate</TableHead>}
                       <TableHead className="text-xs text-right">Nova Posição</TableHead>
                       <TableHead className="text-xs text-right">Rend. %</TableHead>
                     </TableRow>
@@ -534,6 +535,19 @@ export function RolloverDialog({
                         <TableCell>
                           {renderParameterInput(a.modo, a.parametro, (v) => handleUpdateAtivo(i, 'parametro', v), 'sm')}
                         </TableCell>
+                        {resgateMode === 'por_ativo' && (
+                          <TableCell className="text-right">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={resgatesPorAtivo[a.id] || ''}
+                              onChange={(e) => handleResgateAtivoChange(a.id, parseFloat(e.target.value) || 0)}
+                              className="h-8 text-xs w-[100px] ml-auto text-right"
+                              placeholder="0,00"
+                            />
+                          </TableCell>
+                        )}
                         <TableCell className="text-right">
                           <Input
                             type="number"
