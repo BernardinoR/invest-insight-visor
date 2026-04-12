@@ -225,6 +225,10 @@ export default function DataManagement() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [consolidadoToDelete, setConsolidadoToDelete] = useState<ConsolidadoData | null>(null);
 
+  // Rollover state
+  const [isRolloverOpen, setIsRolloverOpen] = useState(false);
+  const [rolloverConsolidado, setRolloverConsolidado] = useState<ConsolidadoData | null>(null);
+
   // Estado para o dialog de conflito de classificação RAG
   const [ragConflictDialog, setRagConflictDialog] = useState<{
     open: boolean;
