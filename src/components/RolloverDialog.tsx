@@ -160,6 +160,7 @@ export function RolloverDialog({
     });
     setBulkMode('CDI');
     setBulkParametro(100);
+    setResgate(0);
   }, [open, consolidado, dadosData, cdiData, marketIndicators]);
 
   const recalcAtivo = (ativos: RolloverAtivo[], index: number, modo: CalcMode, parametro: number): RolloverAtivo[] => {
