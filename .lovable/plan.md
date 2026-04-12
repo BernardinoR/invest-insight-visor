@@ -1,37 +1,35 @@
 
 
-# Plano: Auto-preencher indexador e taxa no Calcular Manual pela classe do ativo
+# Plano: Auto-validar rentabilidade de Caixa, Cash e Proventos com 0%
 
 ## Problema
-Ao abrir a calculadora no modo Manual, o indexador sempre começa em "CDI" com 100%. O usuário precisa mudar manualmente para Pré ou IPCA+ mesmo quando a classe do ativo já indica o tipo.
+Ativos com nome "Caixa", "Cash" ou "Proventos" e rentabilidade 0% precisam ser marcados automaticamente como `rentabilidade_validada = true`, sem intervenção manual. Hoje o `hasValidYield` já trata "Caixa" e "Proventos" como válidos visualmente, mas não inclui "Cash" e não persiste no banco.
 
-## Solução
-Criar uma função `inferIndexadorFromClasse` que mapeia a classe do ativo para o indexador correto e parsear o campo `Taxa` do ativo para pré-preencher o percentual.
+## Alterações
 
-### Mapeamento de classes:
-- `CDI - *` → indexador `CDI`, operação `%`, taxa do campo Taxa (ex: "110" → 110% do CDI)
-- `Inflação - *` → indexador `IPCA`, operação `+`, taxa do campo Taxa (ex: "6" → IPCA+6%)
-- `Pré Fixado - *` → indexador `PRE`, taxa do campo Taxa (ex: "14" → 14% a.a.)
-- Demais classes → mantém CDI 100% como padrão
-
-### Arquivo: `src/pages/DataManagement.tsx`
-
-**Nova função `inferManualCalcFromAtivo(editingItem)`:**
-- Lê `editingItem["Classe do ativo"]` para determinar o indexador
-- Lê `editingItem.Taxa` (string) e extrai o número para preencher o percentual
-- Para CDI: detecta se taxa contém "+" para definir `cdiOperacao`
-- Retorna `{ indexador, percentual, cdiOperacao, ipcaOperacao }`
-
-**Alteração nos 2 locais onde `setManualCalcData` é chamado (linhas ~5571 e ~5826):**
-De:
-```js
-setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || ''});
-```
-Para:
-```js
-const inferred = inferManualCalcFromAtivo(editingItem);
-setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || '', ...inferred});
+### 1. Atualizar `hasValidYield` (linha ~691)
+Adicionar `'cash'` à lista de nomes auto-validados:
+```ts
+if (nomeNormalizado.includes('caixa') || nomeNormalizado.includes('proventos') || nomeNormalizado.includes('cash')) {
+  return true;
+}
 ```
 
-Resultado: ao abrir a calculadora, se o ativo é "Pré Fixado - Titulos" com Taxa "14", já aparece indexador PRE com 14% preenchido. Se é "Inflação - Titulos" com Taxa "6", aparece IPCA+ com 6%.
+### 2. Auto-setar `rentabilidade_validada` ao salvar/inserir dados
+Nos locais onde ativos são salvos no banco (edição individual, bulk edit, importação), adicionar lógica:
+```ts
+// Se o ativo é Caixa/Cash/Proventos e Rendimento é 0, auto-validar
+const nomeNorm = (item.Ativo || '').toLowerCase();
+if ((nomeNorm.includes('caixa') || nomeNorm.includes('cash') || nomeNorm.includes('proventos')) && (item.Rendimento === 0 || item.Rendimento == null)) {
+  item.rentabilidade_validada = true;
+}
+```
+
+Isso será aplicado em:
+- Função de salvar edição individual (`handleSaveItem` ou equivalente)
+- Função de salvar edição em massa (bulk edit)
+- Qualquer local de insert de novos ativos (importação, rollover)
+
+### 3. Resultado
+Ativos com nome contendo "Caixa", "Cash" ou "Proventos" com rendimento 0% serão automaticamente considerados validados tanto na UI quanto persistidos no banco.
 
