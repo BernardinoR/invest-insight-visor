@@ -1,35 +1,41 @@
 
 
-# Plano: Auto-validar rentabilidade de Caixa, Cash e Proventos com 0%
+# Plano: Campo de Resgate Proporcional no Avançar Competência
 
 ## Problema
-Ativos com nome "Caixa", "Cash" ou "Proventos" e rentabilidade 0% precisam ser marcados automaticamente como `rentabilidade_validada = true`, sem intervenção manual. Hoje o `hasValidYield` já trata "Caixa" e "Proventos" como válidos visualmente, mas não inclui "Cash" e não persiste no banco.
+No rollover multi-ativos, não há como informar um resgate total da competência que seja distribuído proporcionalmente entre os ativos.
 
-## Alterações
+## Solução
+Adicionar um campo "Resgate" na seção multi-ativos do `RolloverDialog`. O valor digitado será subtraído proporcionalmente (por peso de posição) de cada ativo após o cálculo de rentabilidade. O consolidado gerado terá o resgate registrado no campo `Movimentação` (como valor negativo).
 
-### 1. Atualizar `hasValidYield` (linha ~691)
-Adicionar `'cash'` à lista de nomes auto-validados:
+### Arquivo: `src/components/RolloverDialog.tsx`
+
+**1. Novo estado:**
 ```ts
-if (nomeNormalizado.includes('caixa') || nomeNormalizado.includes('proventos') || nomeNormalizado.includes('cash')) {
-  return true;
-}
+const [resgate, setResgate] = useState<number>(0);
 ```
+Reset para 0 no `useEffect` de inicialização.
 
-### 2. Auto-setar `rentabilidade_validada` ao salvar/inserir dados
-Nos locais onde ativos são salvos no banco (edição individual, bulk edit, importação), adicionar lógica:
-```ts
-// Se o ativo é Caixa/Cash/Proventos e Rendimento é 0, auto-validar
-const nomeNorm = (item.Ativo || '').toLowerCase();
-if ((nomeNorm.includes('caixa') || nomeNorm.includes('cash') || nomeNorm.includes('proventos')) && (item.Rendimento === 0 || item.Rendimento == null)) {
-  item.rentabilidade_validada = true;
-}
+**2. Campo na UI (entre "Aplicar a todos" e a tabela):**
+Um input numérico com label "Resgate da competência (R$)". Ao alterar, recalcula as novas posições de todos os ativos subtraindo o resgate proporcional.
+
+**3. Lógica de distribuição proporcional:**
+Após calcular `novaPosicao` pela rentabilidade, subtrai de cada ativo:
+```
+resgateDoAtivo = resgate * (posicaoAtual_i / somaPosicaoAtual)
+novaPosicaoFinal = novaPosicaoAposRendimento - resgateDoAtivo
 ```
 
 Isso será aplicado em:
-- Função de salvar edição individual (`handleSaveItem` ou equivalente)
-- Função de salvar edição em massa (bulk edit)
-- Qualquer local de insert de novos ativos (importação, rollover)
+- `handleApplyAll` — recalcula com resgate
+- `recalcAtivo` — ao mudar modo/param individual, aplica resgate proporcional
+- `totalNovaPosicao` — já soma as novaPosicao que incluem o resgate
 
-### 3. Resultado
-Ativos com nome contendo "Caixa", "Cash" ou "Proventos" com rendimento 0% serão automaticamente considerados validados tanto na UI quanto persistidos no banco.
+**4. No `handleExecuteRollover`:**
+- O campo `Movimentação` do consolidado recebe `-resgate` (negativo)
+- `Patrimonio Final` = soma das novas posições (já com resgate descontado)
+- `Ganho Financeiro` = `patrimonioFinal - patrimonioInicial + resgate` (pois resgate não é perda de performance)
+
+**5. Resumo visual:**
+Adicionar linha "Resgate" no bloco de summary abaixo da tabela, mostrando o valor em vermelho.
 
