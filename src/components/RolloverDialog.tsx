@@ -220,7 +220,7 @@ export function RolloverDialog({
     const cdiMensal = getCDIMensal(cdiData, rolloverData.competenciaOrigem);
     const ipcaMensal = getIPCAMensal(marketIndicators, rolloverData.competenciaOrigem);
 
-    const ativos = rolloverData.ativos.map(a => {
+    let ativos = rolloverData.ativos.map(a => {
       const rendimento = calcularRendimento(bulkMode, bulkParametro, cdiMensal, ipcaMensal);
       const novaPosicao = (a.Posicao || 0) * (1 + rendimento);
       return {
@@ -232,7 +232,20 @@ export function RolloverDialog({
       };
     });
 
+    ativos = applyResgateToAtivos(ativos, resgate);
     setRolloverData({ ...rolloverData, ativos });
+  };
+
+  const handleResgateChange = (valor: number) => {
+    setResgate(valor);
+    if (!rolloverData) return;
+    // Reapply resgate to current ativos (recalc from rendimento)
+    const updated = rolloverData.ativos.map(a => {
+      const posBase = (a.Posicao || 0) * (1 + a.rendimento / 100);
+      return { ...a, novaPosicao: Math.round(posBase * 100) / 100 };
+    });
+    const withResgate = applyResgateToAtivos(updated, valor);
+    setRolloverData({ ...rolloverData, ativos: withResgate });
   };
 
   const totalNovaPosicao = useMemo(() => {
