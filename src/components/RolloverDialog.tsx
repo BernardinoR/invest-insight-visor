@@ -117,6 +117,7 @@ export function RolloverDialog({
   const [saving, setSaving] = useState(false);
   const [bulkMode, setBulkMode] = useState<CalcMode>('CDI');
   const [bulkParametro, setBulkParametro] = useState<number>(100);
+  const [resgate, setResgate] = useState<number>(0);
 
   // Initialize rollover data when dialog opens
   useEffect(() => {
