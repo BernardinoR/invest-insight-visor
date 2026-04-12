@@ -117,6 +117,7 @@ export function RolloverDialog({
   const [saving, setSaving] = useState(false);
   const [bulkMode, setBulkMode] = useState<CalcMode>('CDI');
   const [bulkParametro, setBulkParametro] = useState<number>(100);
+  const [resgate, setResgate] = useState<number>(0);
 
   // Initialize rollover data when dialog opens
   useEffect(() => {
@@ -159,7 +160,21 @@ export function RolloverDialog({
     });
     setBulkMode('CDI');
     setBulkParametro(100);
+    setResgate(0);
   }, [open, consolidado, dadosData, cdiData, marketIndicators]);
+
+  const applyResgateToAtivos = (ativos: RolloverAtivo[], resgateTotal: number): RolloverAtivo[] => {
+    const somaPos = ativos.reduce((s, a) => s + (a.Posicao || 0), 0);
+    if (somaPos === 0 || resgateTotal === 0) return ativos;
+    return ativos.map(a => {
+      const peso = (a.Posicao || 0) / somaPos;
+      const resgateAtivo = resgateTotal * peso;
+      // Recalc novaPosicao from rendimento (which is stored as %)
+      const posBase = (a.Posicao || 0) * (1 + a.rendimento / 100);
+      const novaPosicao = Math.round((posBase - resgateAtivo) * 100) / 100;
+      return { ...a, novaPosicao };
+    });
+  };
 
   const recalcAtivo = (ativos: RolloverAtivo[], index: number, modo: CalcMode, parametro: number): RolloverAtivo[] => {
     if (!rolloverData) return ativos;
@@ -175,7 +190,7 @@ export function RolloverDialog({
       rendimento: rendimento * 100,
       novaPosicao: Math.round(novaPosicao * 100) / 100,
     };
-    return updated;
+    return applyResgateToAtivos(updated, resgate);
   };
 
   const handleUpdateAtivo = (index: number, campo: 'modo' | 'parametro' | 'novaPosicao', valor: any) => {
@@ -205,7 +220,7 @@ export function RolloverDialog({
     const cdiMensal = getCDIMensal(cdiData, rolloverData.competenciaOrigem);
     const ipcaMensal = getIPCAMensal(marketIndicators, rolloverData.competenciaOrigem);
 
-    const ativos = rolloverData.ativos.map(a => {
+    let ativos = rolloverData.ativos.map(a => {
       const rendimento = calcularRendimento(bulkMode, bulkParametro, cdiMensal, ipcaMensal);
       const novaPosicao = (a.Posicao || 0) * (1 + rendimento);
       return {
@@ -217,7 +232,20 @@ export function RolloverDialog({
       };
     });
 
+    ativos = applyResgateToAtivos(ativos, resgate);
     setRolloverData({ ...rolloverData, ativos });
+  };
+
+  const handleResgateChange = (valor: number) => {
+    setResgate(valor);
+    if (!rolloverData) return;
+    // Reapply resgate to current ativos (recalc from rendimento)
+    const updated = rolloverData.ativos.map(a => {
+      const posBase = (a.Posicao || 0) * (1 + a.rendimento / 100);
+      return { ...a, novaPosicao: Math.round(posBase * 100) / 100 };
+    });
+    const withResgate = applyResgateToAtivos(updated, valor);
+    setRolloverData({ ...rolloverData, ativos: withResgate });
   };
 
   const totalNovaPosicao = useMemo(() => {
@@ -293,9 +321,9 @@ export function RolloverDialog({
       // Insert consolidado
       const patrimonioInicial = totalPosicaoAtual;
       const patrimonioFinal = totalNovaPosicao;
-      const ganhoFinanceiro = patrimonioFinal - patrimonioInicial;
+      const ganhoFinanceiro = patrimonioFinal - patrimonioInicial + resgate;
       const rendimentoConsolidado = patrimonioInicial > 0
-        ? (patrimonioFinal / patrimonioInicial - 1)
+        ? (patrimonioFinal + resgate) / patrimonioInicial - 1
         : 0;
 
       const { error: consolidadoError } = await supabase
@@ -310,7 +338,7 @@ export function RolloverDialog({
           'Patrimonio Final': patrimonioFinal,
           'Ganho Financeiro': ganhoFinanceiro,
           Rendimento: rendimentoConsolidado,
-          'Movimentação': 0,
+          'Movimentação': resgate > 0 ? -resgate : 0,
           Impostos: 0,
           Data: novaCompetencia,
         });
@@ -404,6 +432,19 @@ export function RolloverDialog({
                 <Button size="sm" variant="secondary" onClick={handleApplyAll}>
                   Aplicar
                 </Button>
+              </div>
+              {/* Resgate proporcional */}
+              <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+                <span className="text-sm font-medium">Resgate da competência (R$):</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={resgate || ''}
+                  onChange={(e) => handleResgateChange(parseFloat(e.target.value) || 0)}
+                  className="w-[160px]"
+                  placeholder="0,00"
+                />
               </div>
 
               {/* Multi-asset table */}
@@ -513,13 +554,21 @@ export function RolloverDialog({
 
           {/* Summary */}
           <div className="bg-muted p-3 rounded-md">
-            <div className="grid grid-cols-3 gap-2 text-sm">
+            <div className={`grid ${resgate > 0 ? 'grid-cols-4' : 'grid-cols-3'} gap-2 text-sm`}>
               <div>
                 <p className="text-xs text-muted-foreground">Patrimônio Atual</p>
                 <p className="font-medium">
                   R$ {totalPosicaoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
+              {resgate > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Resgate</p>
+                  <p className="font-medium text-red-600">
+                    - R$ {resgate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              )}
               <div>
                 <p className="text-xs text-muted-foreground">Novo Patrimônio</p>
                 <p className="font-medium text-primary">
