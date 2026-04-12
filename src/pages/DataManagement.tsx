@@ -4295,8 +4295,21 @@ interface VerificationResult {
                                      onClick={() => handleCreateFromRecord(item, 'consolidado')}
                                      title="Criar novo registro com base neste"
                                    >
-                                     <Copy className="h-4 w-4" />
-                                   </Button>
+                                      <Copy className="h-4 w-4" />
+                                    </Button>
+
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 text-orange-600 hover:text-orange-700"
+                                      onClick={() => {
+                                        setRolloverConsolidado(item);
+                                        setIsRolloverOpen(true);
+                                      }}
+                                      title="Avançar competência"
+                                    >
+                                      <FastForward className="h-4 w-4" />
+                                    </Button>
                                    
                                    <Button
                                      variant="ghost"
