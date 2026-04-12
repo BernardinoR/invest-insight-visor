@@ -1549,7 +1549,7 @@ export default function DataManagement() {
       
       // Auto-validar rentabilidade para Caixa/Cash/Proventos com rendimento 0
       if (tableName === 'DadosPerformance') {
-        const nomeNorm = (cleanedData.Ativo || '').toLowerCase();
+        const nomeNorm = (String(cleanedData.Ativo || '')).toLowerCase();
         if ((nomeNorm.includes('caixa') || nomeNorm.includes('cash') || nomeNorm.includes('proventos')) && 
             (cleanedData.Rendimento === 0 || cleanedData.Rendimento == null || cleanedData.Rendimento === '0')) {
           cleanedData.rentabilidade_validada = true;
