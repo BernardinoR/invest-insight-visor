@@ -554,13 +554,21 @@ export function RolloverDialog({
 
           {/* Summary */}
           <div className="bg-muted p-3 rounded-md">
-            <div className="grid grid-cols-3 gap-2 text-sm">
+            <div className={`grid ${resgate > 0 ? 'grid-cols-4' : 'grid-cols-3'} gap-2 text-sm`}>
               <div>
                 <p className="text-xs text-muted-foreground">Patrimônio Atual</p>
                 <p className="font-medium">
                   R$ {totalPosicaoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
+              {resgate > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Resgate</p>
+                  <p className="font-medium text-red-600">
+                    - R$ {resgate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              )}
               <div>
                 <p className="text-xs text-muted-foreground">Novo Patrimônio</p>
                 <p className="font-medium text-primary">
