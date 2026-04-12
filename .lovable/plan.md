@@ -1,84 +1,20 @@
 
 
-# Plano: "Avançar Competência" — com 5 modos de cálculo de rentabilidade
+# Plano: Alinhar ícones na coluna Ações dos consolidados
 
-## Resumo
-Implementar o botão "Avançar Competência" na tabela de consolidados com suporte a múltiplos ativos e 5 modos de cálculo de rentabilidade por ativo.
+## Problema
+O primeiro botão (ver ativos detalhados) usa `px-2` com texto dinâmico (contagem de ativos), enquanto os demais usam `w-8 p-0` fixo. Isso faz os ícones ficarem desalinhados entre linhas.
 
-## Modos de cálculo
+## Solução
+Padronizar todos os botões de ação para `h-8 w-8 p-0` e usar `flex items-center justify-center` no container. O botão de "ver ativos" perderá o texto da contagem inline e ficará apenas com o ícone (a contagem já aparece no tooltip via `title`).
 
-1. **CDI** — aplica 100% do CDI do mês (via `useCDIData` existente)
-2. **% do CDI** — campo para digitar percentual (ex: 110% do CDI). Cálculo: `CDI_mensal × (percentual / 100)`
-3. **IPCA+** — campo para digitar spread anual (ex: IPCA+6%). Cálculo: `(1 + IPCA_mensal) × (1 + spread_mensal) - 1`, usando IPCA do `useMarketIndicators`
-4. **Pré-fixado** — campo para digitar taxa anual (ex: 14% a.a.). Cálculo: `(1 + taxa)^(1/12) - 1`
-5. **Manual** — campo para digitar o rendimento % direto do mês
+Alternativamente, se quiser manter a contagem visível, dar largura fixa mínima ao primeiro botão (`min-w-[40px]`) para que todas as linhas tenham o mesmo espaçamento.
 
-## UI — Versão Simples (1 ativo)
+### Arquivo: `src/pages/DataManagement.tsx` (linhas ~4262-4333)
 
-```text
-┌──────────────────────────────────────────────────┐
-│  ⏩ Avançar Competência                          │
-│  BTG — 03/2025 → 04/2025                         │
-│                                                  │
-│  Ativo: CDB Banco XYZ                            │
-│  Posição atual: R$ 150.000,00                    │
-│                                                  │
-│  Cálculo:                                        │
-│  (●) CDI  ( ) % CDI [110%]  ( ) IPCA+ [6%]      │
-│  ( ) Pré [14%]  ( ) Manual [1.2%]                │
-│                                                  │
-│  Nova posição: R$ 152.300,00  (editável)         │
-│  Rendimento: 1,53%                               │
-│                                                  │
-│  [Cancelar]            [Avançar e Criar Tudo]    │
-└──────────────────────────────────────────────────┘
-```
+- Mudar o container de `flex items-center gap-1` para `flex items-center justify-end gap-0.5`
+- Primeiro botão: trocar `h-8 px-2` por `h-8 w-8 p-0` e remover o `<span>` com a contagem (mover contagem para o `title` que já existe)
+- Manter todos os outros botões com `h-8 w-8 p-0` como já estão
 
-## UI — Versão Multi-ativos (2+ ativos)
-
-```text
-┌────────────────────────────────────────────────────────┐
-│  ⏩ Avançar Competência                                │
-│  BB — Guilherme — 03/2025 → 04/2025                    │
-│                                                        │
-│  Aplicar a todos: [CDI ▾] [___]  [Aplicar]             │
-│                                                        │
-│  ┌──────────────────────────────────────────────────┐   │
-│  │ Ativo           Posição    Modo       Nova Pos.  │   │
-│  │ CDB XYZ         50.000    CDI        [51.200]   │   │
-│  │ LCI BB           80.000    %CDI 110%  [81.800]   │   │
-│  │ Fundo RF          20.000    IPCA+6%    [20.400]   │   │
-│  └──────────────────────────────────────────────────┘   │
-│                                                        │
-│  Consolidado: Patrimônio = R$ 153.400,00               │
-│  Rendimento ponderado: 1,42%                           │
-│                                                        │
-│  [Cancelar]                [Avançar e Criar Tudo]      │
-└────────────────────────────────────────────────────────┘
-```
-
-Cada ativo tem seu próprio select de modo + campo de parâmetro. O "Aplicar a todos" é atalho opcional.
-
-## Detalhes técnicos
-
-### Arquivo: `src/pages/DataManagement.tsx`
-
-**Novos states:**
-- `isRolloverOpen`, `rolloverData` com array de ativos, cada um com: `{ ...dadosAtivo, modo: 'CDI'|'pctCDI'|'IPCA'|'PRE'|'Manual', parametro: number, novaPosicao: number, rendimento: number }`
-
-**Funções de cálculo:**
-- `calcularRendimentoRollover(modo, parametro, cdiMensal, ipcaMensal)` — retorna o rendimento mensal conforme o modo
-- `getNextCompetencia(comp)` — "12/2025" → "01/2026"
-- `handleOpenRollover(consolidado)` — busca ativos vinculados, pré-calcula com CDI
-- `handleExecuteRollover()` — insere N ativos + 1 consolidado no Supabase
-
-**Dados de mercado:**
-- CDI: já disponível via `useCDIData`
-- IPCA: já disponível via `useMarketIndicators` (dados mensais do BCB)
-- Pré: cálculo local `(1 + taxa_anual)^(1/12) - 1`
-
-**Validações:**
-- Verificar duplicatas na competência destino
-- Posições > 0
-- Toast com resumo
+Resultado: 5 ícones quadrados de 32px, alinhados uniformemente em todas as linhas.
 
