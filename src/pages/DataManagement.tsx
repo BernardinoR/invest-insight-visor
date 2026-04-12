@@ -181,6 +181,29 @@ export default function DataManagement() {
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [calculatorContext, setCalculatorContext] = useState<'bulk' | 'single'>('bulk');
   const [calculatorMode, setCalculatorMode] = useState<'auto' | 'manual' | 'custom' | 'market' | 'treasury'>('auto');
+  const inferManualCalcFromAtivo = (item: any) => {
+    const classe = (item?.["Classe do ativo"] || '').toLowerCase();
+    const taxaStr = item?.Taxa || '';
+    const taxaNum = parseFloat(taxaStr.replace(/[^0-9.,\-]/g, '').replace(',', '.')) || 0;
+
+    if (classe.startsWith('pré fixado') || classe.startsWith('pre fixado')) {
+      return { indexador: 'PRE', percentual: taxaNum || 10, cdiOperacao: '%' as const, ipcaOperacao: '+' as const };
+    }
+    if (classe.startsWith('inflação') || classe.startsWith('inflacao')) {
+      return { indexador: 'IPCA', percentual: taxaNum || 5, cdiOperacao: '%' as const, ipcaOperacao: '+' as const };
+    }
+    if (classe.startsWith('cdi')) {
+      const hasCdiPlus = taxaStr.includes('+');
+      return {
+        indexador: 'CDI',
+        percentual: hasCdiPlus ? taxaNum : (taxaNum || 100),
+        cdiOperacao: hasCdiPlus ? '+' as const : '%' as const,
+        ipcaOperacao: '+' as const
+      };
+    }
+    return { indexador: 'CDI', percentual: 100, cdiOperacao: '%' as const, ipcaOperacao: '+' as const };
+  };
+
   const [manualCalcData, setManualCalcData] = useState({
     competencia: '',
     indexador: 'CDI',
@@ -5568,7 +5591,7 @@ interface VerificationResult {
                       tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
                       vencimento: extractYearFromDate(editingItem.Vencimento || ''),
                     });
-                   setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || ''});
+                   setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || '', ...inferManualCalcFromAtivo(editingItem)});
                    setIsCalculatorOpen(true);
                 }}
                         className="mt-2 w-full"
@@ -5823,7 +5846,7 @@ interface VerificationResult {
                              tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
                              vencimento: extractYearFromDate(editingItem.Vencimento || ''),
                            });
-                           setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || ''});
+                           setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || '', ...inferManualCalcFromAtivo(editingItem)});
                            setIsCalculatorOpen(true);
                          }}
                        >
