@@ -476,18 +476,34 @@ export function RolloverDialog({
                   Aplicar
                 </Button>
               </div>
-              {/* Resgate proporcional */}
-              <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
-                <span className="text-sm font-medium">Resgate da competência (R$):</span>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={resgate || ''}
-                  onChange={(e) => handleResgateChange(parseFloat(e.target.value) || 0)}
-                  className="w-[160px]"
-                  placeholder="0,00"
-                />
+              {/* Resgate */}
+              <div className="flex items-center gap-2 p-3 bg-muted rounded-md flex-wrap">
+                <span className="text-sm font-medium">Resgate:</span>
+                <Select value={resgateMode} onValueChange={(v) => handleResgateModeChange(v as 'proporcional' | 'por_ativo')}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="proporcional">Proporcional</SelectItem>
+                    <SelectItem value="por_ativo">Por ativo</SelectItem>
+                  </SelectContent>
+                </Select>
+                {resgateMode === 'proporcional' && (
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={resgate || ''}
+                    onChange={(e) => handleResgateChange(parseFloat(e.target.value) || 0)}
+                    className="w-[160px]"
+                    placeholder="0,00"
+                  />
+                )}
+                {resgateMode === 'por_ativo' && totalResgate > 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    Total: R$ {totalResgate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                )}
               </div>
 
               {/* Multi-asset table */}
