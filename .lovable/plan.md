@@ -1,41 +1,43 @@
 
 
-# Plano: Campo de Resgate Proporcional no Avançar Competência
+# Plano: Resgate por ativo específico no Avançar Competência
 
 ## Problema
-No rollover multi-ativos, não há como informar um resgate total da competência que seja distribuído proporcionalmente entre os ativos.
+Atualmente o resgate é distribuído proporcionalmente entre todos os ativos. O usuário quer poder escolher em qual(is) ativo(s) aplicar o resgate, podendo ser proporcional (atual) ou direcionado a um ativo específico.
 
 ## Solução
-Adicionar um campo "Resgate" na seção multi-ativos do `RolloverDialog`. O valor digitado será subtraído proporcionalmente (por peso de posição) de cada ativo após o cálculo de rentabilidade. O consolidado gerado terá o resgate registrado no campo `Movimentação` (como valor negativo).
+Adicionar um seletor de modo de resgate ("Proporcional" vs "Por ativo") e, no modo "Por ativo", uma coluna extra na tabela para informar o resgate individual de cada ativo.
 
-### Arquivo: `src/components/RolloverDialog.tsx`
+### Alterações em `src/components/RolloverDialog.tsx`
 
 **1. Novo estado:**
 ```ts
-const [resgate, setResgate] = useState<number>(0);
-```
-Reset para 0 no `useEffect` de inicialização.
-
-**2. Campo na UI (entre "Aplicar a todos" e a tabela):**
-Um input numérico com label "Resgate da competência (R$)". Ao alterar, recalcula as novas posições de todos os ativos subtraindo o resgate proporcional.
-
-**3. Lógica de distribuição proporcional:**
-Após calcular `novaPosicao` pela rentabilidade, subtrai de cada ativo:
-```
-resgateDoAtivo = resgate * (posicaoAtual_i / somaPosicaoAtual)
-novaPosicaoFinal = novaPosicaoAposRendimento - resgateDoAtivo
+const [resgateMode, setResgateMode] = useState<'proporcional' | 'por_ativo'>('proporcional');
+const [resgatesPorAtivo, setResgatesPorAtivo] = useState<Record<string, number>>({});
 ```
 
-Isso será aplicado em:
-- `handleApplyAll` — recalcula com resgate
-- `recalcAtivo` — ao mudar modo/param individual, aplica resgate proporcional
-- `totalNovaPosicao` — já soma as novaPosicao que incluem o resgate
+**2. UI do campo de resgate (linhas ~436-448):**
+- Adicionar toggle/select entre "Proporcional" e "Por ativo"
+- No modo "Proporcional": mantém o input atual de valor total
+- No modo "Por ativo": esconde o input total (o total será a soma dos individuais)
 
-**4. No `handleExecuteRollover`:**
-- O campo `Movimentação` do consolidado recebe `-resgate` (negativo)
-- `Patrimonio Final` = soma das novas posições (já com resgate descontado)
-- `Ganho Financeiro` = `patrimonioFinal - patrimonioInicial + resgate` (pois resgate não é perda de performance)
+**3. Tabela multi-ativos (linhas ~451-493):**
+- No modo "Por ativo", adicionar coluna "Resgate" com input numérico por linha
+- Ao alterar o resgate de um ativo, subtrair da novaPosicao daquele ativo (posBase - resgateIndividual)
+- Exibir total de resgates abaixo da tabela
 
-**5. Resumo visual:**
-Adicionar linha "Resgate" no bloco de summary abaixo da tabela, mostrando o valor em vermelho.
+**4. Lógica `applyResgateToAtivos`:**
+- Se modo = "proporcional": distribui proporcionalmente (lógica atual)
+- Se modo = "por_ativo": subtrai o valor específico de cada ativo usando `resgatesPorAtivo[ativo.id]`
+
+**5. `handleResgateChange` e `handleResgateAtivoChange`:**
+- `handleResgateChange`: modo proporcional (já existe)
+- Nova `handleResgateAtivoChange(ativoId, valor)`: atualiza `resgatesPorAtivo` e recalcula novaPosicao daquele ativo
+
+**6. `handleExecuteRollover`:**
+- `resgate` total = modo proporcional ? valor do input : soma dos `resgatesPorAtivo`
+- Resto da lógica (Movimentação, Ganho Financeiro) permanece igual
+
+**7. Resumo:**
+- Mostra o total de resgate (soma) independente do modo escolhido
 
