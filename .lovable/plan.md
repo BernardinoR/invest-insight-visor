@@ -1,20 +1,37 @@
 
 
-# Plano: Alinhar ícones na coluna Ações dos consolidados
+# Plano: Auto-preencher indexador e taxa no Calcular Manual pela classe do ativo
 
 ## Problema
-O primeiro botão (ver ativos detalhados) usa `px-2` com texto dinâmico (contagem de ativos), enquanto os demais usam `w-8 p-0` fixo. Isso faz os ícones ficarem desalinhados entre linhas.
+Ao abrir a calculadora no modo Manual, o indexador sempre começa em "CDI" com 100%. O usuário precisa mudar manualmente para Pré ou IPCA+ mesmo quando a classe do ativo já indica o tipo.
 
 ## Solução
-Padronizar todos os botões de ação para `h-8 w-8 p-0` e usar `flex items-center justify-center` no container. O botão de "ver ativos" perderá o texto da contagem inline e ficará apenas com o ícone (a contagem já aparece no tooltip via `title`).
+Criar uma função `inferIndexadorFromClasse` que mapeia a classe do ativo para o indexador correto e parsear o campo `Taxa` do ativo para pré-preencher o percentual.
 
-Alternativamente, se quiser manter a contagem visível, dar largura fixa mínima ao primeiro botão (`min-w-[40px]`) para que todas as linhas tenham o mesmo espaçamento.
+### Mapeamento de classes:
+- `CDI - *` → indexador `CDI`, operação `%`, taxa do campo Taxa (ex: "110" → 110% do CDI)
+- `Inflação - *` → indexador `IPCA`, operação `+`, taxa do campo Taxa (ex: "6" → IPCA+6%)
+- `Pré Fixado - *` → indexador `PRE`, taxa do campo Taxa (ex: "14" → 14% a.a.)
+- Demais classes → mantém CDI 100% como padrão
 
-### Arquivo: `src/pages/DataManagement.tsx` (linhas ~4262-4333)
+### Arquivo: `src/pages/DataManagement.tsx`
 
-- Mudar o container de `flex items-center gap-1` para `flex items-center justify-end gap-0.5`
-- Primeiro botão: trocar `h-8 px-2` por `h-8 w-8 p-0` e remover o `<span>` com a contagem (mover contagem para o `title` que já existe)
-- Manter todos os outros botões com `h-8 w-8 p-0` como já estão
+**Nova função `inferManualCalcFromAtivo(editingItem)`:**
+- Lê `editingItem["Classe do ativo"]` para determinar o indexador
+- Lê `editingItem.Taxa` (string) e extrai o número para preencher o percentual
+- Para CDI: detecta se taxa contém "+" para definir `cdiOperacao`
+- Retorna `{ indexador, percentual, cdiOperacao, ipcaOperacao }`
 
-Resultado: 5 ícones quadrados de 32px, alinhados uniformemente em todas as linhas.
+**Alteração nos 2 locais onde `setManualCalcData` é chamado (linhas ~5571 e ~5826):**
+De:
+```js
+setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || ''});
+```
+Para:
+```js
+const inferred = inferManualCalcFromAtivo(editingItem);
+setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || '', ...inferred});
+```
+
+Resultado: ao abrir a calculadora, se o ativo é "Pré Fixado - Titulos" com Taxa "14", já aparece indexador PRE com 14% preenchido. Se é "Inflação - Titulos" com Taxa "6", aparece IPCA+ com 6%.
 
