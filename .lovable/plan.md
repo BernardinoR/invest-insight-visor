@@ -1,43 +1,42 @@
 
 
-# Plano: Resgate por ativo específico no Avançar Competência
+# Plano: Inputs de resgate com formato numérico brasileiro
 
 ## Problema
-Atualmente o resgate é distribuído proporcionalmente entre todos os ativos. O usuário quer poder escolher em qual(is) ativo(s) aplicar o resgate, podendo ser proporcional (atual) ou direcionado a um ativo específico.
+Os campos de resgate usam `type="number"` que aceita ponto como decimal (padrão americano). No Brasil, o separador decimal é vírgula.
 
 ## Solução
-Adicionar um seletor de modo de resgate ("Proporcional" vs "Por ativo") e, no modo "Por ativo", uma coluna extra na tabela para informar o resgate individual de cada ativo.
+Trocar os inputs de resgate de `type="number"` para `type="text"` com tratamento manual de formatação brasileira (vírgula como decimal, ponto como milhares).
 
 ### Alterações em `src/components/RolloverDialog.tsx`
 
-**1. Novo estado:**
+**1. Função auxiliar `parseBRNumber`:**
+Converte string no formato brasileiro ("1.234,56") para número JS (1234.56):
 ```ts
-const [resgateMode, setResgateMode] = useState<'proporcional' | 'por_ativo'>('proporcional');
-const [resgatesPorAtivo, setResgatesPorAtivo] = useState<Record<string, number>>({});
+const parseBRNumber = (str: string): number => {
+  const cleaned = str.replace(/\./g, '').replace(',', '.');
+  return parseFloat(cleaned) || 0;
+};
 ```
 
-**2. UI do campo de resgate (linhas ~436-448):**
-- Adicionar toggle/select entre "Proporcional" e "Por ativo"
-- No modo "Proporcional": mantém o input atual de valor total
-- No modo "Por ativo": esconde o input total (o total será a soma dos individuais)
+**2. Função auxiliar `formatBRNumber`:**
+Formata número para exibição no input:
+```ts
+const formatBRNumber = (val: number): string => {
+  if (val === 0) return '';
+  return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+```
 
-**3. Tabela multi-ativos (linhas ~451-493):**
-- No modo "Por ativo", adicionar coluna "Resgate" com input numérico por linha
-- Ao alterar o resgate de um ativo, subtrair da novaPosicao daquele ativo (posBase - resgateIndividual)
-- Exibir total de resgates abaixo da tabela
+**3. Input proporcional (linha ~492-500):**
+- Mudar `type="text"`, remover `step`/`min`
+- `value={formatBRNumber(resgate)}`
+- `onChange`: usar `parseBRNumber` antes de chamar `handleResgateChange`
+- Permitir digitação livre (vírgula, ponto como milhares)
 
-**4. Lógica `applyResgateToAtivos`:**
-- Se modo = "proporcional": distribui proporcionalmente (lógica atual)
-- Se modo = "por_ativo": subtrai o valor específico de cada ativo usando `resgatesPorAtivo[ativo.id]`
+**4. Input por ativo (linha ~540-548):**
+- Mesma mudança: `type="text"`, `parseBRNumber` no onChange, `formatBRNumber` no value
 
-**5. `handleResgateChange` e `handleResgateAtivoChange`:**
-- `handleResgateChange`: modo proporcional (já existe)
-- Nova `handleResgateAtivoChange(ativoId, valor)`: atualiza `resgatesPorAtivo` e recalcula novaPosicao daquele ativo
-
-**6. `handleExecuteRollover`:**
-- `resgate` total = modo proporcional ? valor do input : soma dos `resgatesPorAtivo`
-- Resto da lógica (Movimentação, Ganho Financeiro) permanece igual
-
-**7. Resumo:**
-- Mostra o total de resgate (soma) independente do modo escolhido
+**5. Abordagem de digitação:**
+Para permitir digitação fluida, o value será a string digitada (não formatada em tempo real). A formatação/parse acontece no `onBlur` para não atrapalhar a digitação. Usaremos estados auxiliares de string para os inputs.
 
