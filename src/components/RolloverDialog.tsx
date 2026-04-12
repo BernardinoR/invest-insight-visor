@@ -490,11 +490,13 @@ export function RolloverDialog({
                 </Select>
                 {resgateMode === 'proporcional' && (
                   <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={resgate || ''}
-                    onChange={(e) => handleResgateChange(parseFloat(e.target.value) || 0)}
+                    type="text"
+                    value={resgate ? resgate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                    onChange={(e) => {
+                      const cleaned = e.target.value.replace(/\./g, '').replace(',', '.');
+                      const parsed = parseFloat(cleaned) || 0;
+                      handleResgateChange(parsed);
+                    }}
                     className="w-[160px]"
                     placeholder="0,00"
                   />
@@ -538,11 +540,13 @@ export function RolloverDialog({
                         {resgateMode === 'por_ativo' && (
                           <TableCell className="text-right">
                             <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={resgatesPorAtivo[a.id] || ''}
-                              onChange={(e) => handleResgateAtivoChange(a.id, parseFloat(e.target.value) || 0)}
+                              type="text"
+                              value={resgatesPorAtivo[a.id] ? resgatesPorAtivo[a.id].toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                              onChange={(e) => {
+                                const cleaned = e.target.value.replace(/\./g, '').replace(',', '.');
+                                const parsed = parseFloat(cleaned) || 0;
+                                handleResgateAtivoChange(a.id, parsed);
+                              }}
                               className="h-8 text-xs w-[100px] ml-auto text-right"
                               placeholder="0,00"
                             />
