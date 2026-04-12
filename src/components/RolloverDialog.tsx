@@ -364,9 +364,9 @@ export function RolloverDialog({
       // Insert consolidado
       const patrimonioInicial = totalPosicaoAtual;
       const patrimonioFinal = totalNovaPosicao;
-      const ganhoFinanceiro = patrimonioFinal - patrimonioInicial + resgate;
+      const ganhoFinanceiro = patrimonioFinal - patrimonioInicial + totalResgate;
       const rendimentoConsolidado = patrimonioInicial > 0
-        ? (patrimonioFinal + resgate) / patrimonioInicial - 1
+        ? (patrimonioFinal + totalResgate) / patrimonioInicial - 1
         : 0;
 
       const { error: consolidadoError } = await supabase
@@ -381,7 +381,7 @@ export function RolloverDialog({
           'Patrimonio Final': patrimonioFinal,
           'Ganho Financeiro': ganhoFinanceiro,
           Rendimento: rendimentoConsolidado,
-          'Movimentação': resgate > 0 ? -resgate : 0,
+          'Movimentação': totalResgate > 0 ? -totalResgate : 0,
           Impostos: 0,
           Data: novaCompetencia,
         });
