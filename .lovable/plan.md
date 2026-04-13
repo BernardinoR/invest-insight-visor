@@ -1,20 +1,34 @@
 
 
-# Plano: Corrigir bug no parse de número brasileiro no DataManagement
+# Plano: Corrigir campo que zera ao colar número no editar consolidado
 
 ## Problema
-Na função `parseBrazilianNumber` (linha 104 de `DataManagement.tsx`), a regex `/./g` não tem o ponto escapado. O `.` em regex significa "qualquer caractere", então `cleaned.replace(/./g, '')` apaga a string inteira, resultando em `parseFloat("")` → `NaN` → `0`.
+Quando o usuário cola um valor como "477.714,47", o navegador pode disparar `onChange` e `onBlur` quase simultaneamente. O `onBlur` lê o valor do estado React (`numericFieldsText`), mas o `setState` do `onChange` ainda não foi aplicado — então ele lê o valor antigo (vazio ou "0,00"), faz o parse para 0, e sobrescreve o campo.
 
 ## Solução
-Uma única correção de 1 caractere:
+Nos handlers `onBlur` de todos os campos numéricos do consolidado e detalhado, ler o valor diretamente do elemento DOM (`e.target.value`) em vez de ler do estado React. Isso garante que o valor mais recente (incluindo o texto colado) seja usado no parse.
 
-**Linha 104 de `src/pages/DataManagement.tsx`:**
-```ts
-// De:
-cleaned = cleaned.replace(/./g, '');
-// Para:
-cleaned = cleaned.replace(/\./g, '');
+### Alterações em `src/pages/DataManagement.tsx`
+
+Todos os ~6 campos numéricos do consolidado (Patrimônio Inicial, Movimentação, Impostos, Ganho Financeiro, Patrimônio Final) e o campo Posição do detalhado precisam da mesma mudança:
+
+**De:**
+```tsx
+onBlur={() => {
+  const text = numericFieldsText["Patrimonio Final"];
+  const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
+  ...
+}}
 ```
 
-Isso faz o regex casar apenas pontos literais (separadores de milhares), mantendo os dígitos e a vírgula intactos para o parse correto.
+**Para:**
+```tsx
+onBlur={(e) => {
+  const text = e.target.value;
+  const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
+  ...
+}}
+```
+
+São ~6 substituições simples, todas seguindo o mesmo padrão: trocar a leitura de `numericFieldsText[campo]` por `e.target.value` no `onBlur`.
 
