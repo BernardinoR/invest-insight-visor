@@ -101,7 +101,7 @@ const parseBrazilianNumber = (value: string): number => {
   // Se tiver vírgula, assume formato brasileiro
   if (cleaned.includes(',')) {
     // Remove todos os pontos (separadores de milhares)
-    cleaned = cleaned.replace(/./g, '');
+    cleaned = cleaned.replace(/\./g, '');
     // Substitui vírgula por ponto (decimal)
     cleaned = cleaned.replace(',', '.');
   }
