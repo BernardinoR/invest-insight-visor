@@ -1,4 +1,49 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+
+const parseBRNumber = (str: string): number => {
+  const cleaned = str.replace(/\./g, '').replace(',', '.');
+  return parseFloat(cleaned);
+};
+
+const formatBRNumber = (val: number): string => {
+  return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const BRNumberInput = ({ value, onChange, className, placeholder }: {
+  value: number;
+  onChange: (val: number) => void;
+  className?: string;
+  placeholder?: string;
+}) => {
+  const [localValue, setLocalValue] = useState(formatBRNumber(value));
+  const [focused, setFocused] = useState(false);
+
+  useEffect(() => {
+    if (!focused) {
+      setLocalValue(formatBRNumber(value));
+    }
+  }, [value, focused]);
+
+  return (
+    <Input
+      type="text"
+      value={localValue}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => {
+        setFocused(false);
+        const parsed = parseBRNumber(localValue);
+        if (!isNaN(parsed)) {
+          onChange(parsed);
+        } else {
+          setLocalValue(formatBRNumber(value));
+        }
+      }}
+      className={className}
+      placeholder={placeholder}
+    />
+  );
+};
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -214,11 +259,13 @@ export function RolloverDialog({
     } else if (campo === 'parametro') {
       ativos = recalcAtivo(ativos, index, ativos[index].modo, parseFloat(valor) || 0);
     } else if (campo === 'novaPosicao') {
+      const num = typeof valor === 'number' ? valor : parseFloat(valor);
+      if (isNaN(num)) return;
       ativos[index] = {
         ...ativos[index],
-        novaPosicao: parseFloat(valor) || 0,
+        novaPosicao: num,
         rendimento: ativos[index].Posicao > 0
-          ? ((parseFloat(valor) || 0) / ativos[index].Posicao - 1) * 100
+          ? (num / ativos[index].Posicao - 1) * 100
           : 0,
       };
     }
@@ -553,11 +600,9 @@ export function RolloverDialog({
                           </TableCell>
                         )}
                         <TableCell className="text-right">
-                          <Input
-                            type="number"
-                            step="0.01"
+                          <BRNumberInput
                             value={a.novaPosicao}
-                            onChange={(e) => handleUpdateAtivo(i, 'novaPosicao', e.target.value)}
+                            onChange={(val) => handleUpdateAtivo(i, 'novaPosicao', val)}
                             className="h-8 text-xs w-[110px] ml-auto text-right"
                           />
                         </TableCell>
@@ -601,11 +646,9 @@ export function RolloverDialog({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs text-muted-foreground">Nova posição</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
+                    <BRNumberInput
                       value={rolloverData.ativos[0].novaPosicao}
-                      onChange={(e) => handleUpdateAtivo(0, 'novaPosicao', e.target.value)}
+                      onChange={(val) => handleUpdateAtivo(0, 'novaPosicao', val)}
                     />
                   </div>
                   <div>
