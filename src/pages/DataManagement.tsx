@@ -5481,8 +5481,8 @@ interface VerificationResult {
                           const text = e.target.value;
                           setNumericFieldsText({...numericFieldsText, "Patrimonio Inicial": text});
                         }}
-                        onBlur={() => {
-                          const text = numericFieldsText["Patrimonio Inicial"];
+                        onBlur={(e) => {
+                          const text = e.target.value;
                           const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, "Patrimonio Inicial": numericValue});
                           const formatted = formatBrazilianNumber(numericValue);
@@ -5500,8 +5500,8 @@ interface VerificationResult {
                           const text = e.target.value;
                           setNumericFieldsText({...numericFieldsText, "Movimentação": text});
                         }}
-                        onBlur={() => {
-                          const text = numericFieldsText["Movimentação"];
+                        onBlur={(e) => {
+                          const text = e.target.value;
                           const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, "Movimentação": numericValue});
                           const formatted = formatBrazilianNumber(numericValue);
@@ -5522,8 +5522,8 @@ interface VerificationResult {
                           const text = e.target.value;
                           setNumericFieldsText({...numericFieldsText, Impostos: text});
                         }}
-                        onBlur={() => {
-                          const text = numericFieldsText.Impostos;
+                        onBlur={(e) => {
+                          const text = e.target.value;
                           const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, Impostos: numericValue});
                           const formatted = formatBrazilianNumber(numericValue);
@@ -5541,8 +5541,8 @@ interface VerificationResult {
                           const text = e.target.value;
                           setNumericFieldsText({...numericFieldsText, "Ganho Financeiro": text});
                         }}
-                        onBlur={() => {
-                          const text = numericFieldsText["Ganho Financeiro"];
+                        onBlur={(e) => {
+                          const text = e.target.value;
                           const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, "Ganho Financeiro": numericValue});
                           const formatted = formatBrazilianNumber(numericValue);
@@ -5563,8 +5563,8 @@ interface VerificationResult {
                           const text = e.target.value;
                           setNumericFieldsText({...numericFieldsText, "Patrimonio Final": text});
                         }}
-                        onBlur={() => {
-                          const text = numericFieldsText["Patrimonio Final"];
+                        onBlur={(e) => {
+                          const text = e.target.value;
                           const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                           setEditingItem({...editingItem, "Patrimonio Final": numericValue});
                           const formatted = formatBrazilianNumber(numericValue);
@@ -5743,8 +5743,8 @@ interface VerificationResult {
                            const text = e.target.value;
                            setNumericFieldsText({...numericFieldsText, Posicao: text});
                          }}
-                         onBlur={() => {
-                           const text = numericFieldsText.Posicao;
+                         onBlur={(e) => {
+                           const text = e.target.value;
                            const numericValue = (!text || text.trim() === '') ? 0 : parseBrazilianNumber(text);
                            setEditingItem({...editingItem, Posicao: numericValue});
                            const formatted = formatBrazilianNumber(numericValue);
