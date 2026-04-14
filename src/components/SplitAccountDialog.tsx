@@ -715,6 +715,16 @@ export function SplitAccountDialog({
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="h-7 px-2 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleEditConfig(config)}
+                            title="Editar config"
+                          >
+                            <Pencil className="h-3.5 w-3.5 mr-1" />
+                            <span className="text-xs">Editar</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="h-7 px-2 text-primary"
                             onClick={() => handleApplyConfig(config)}
                             title="Aplicar na competência atual"
