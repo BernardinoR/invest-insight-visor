@@ -38,6 +38,7 @@ export function SplitAccountDialog({
   consolidado,
   dadosData,
   onSuccess,
+  preloadConfigId,
 }: SplitAccountDialogProps) {
   const { toast } = useToast();
   const [nomeContaDestino, setNomeContaDestino] = useState('');
@@ -74,20 +75,32 @@ export function SplitAccountDialog({
       valorTransferido: 0,
     }));
 
-    // Load saved config
-    loadSavedConfig(consolidado, initialAtivos);
-  }, [open, consolidado, dadosData]);
+    // Load saved config (prefer preloadConfigId if provided)
+    loadSavedConfig(consolidado, initialAtivos, preloadConfigId || undefined);
+  }, [open, consolidado, dadosData, preloadConfigId]);
 
-  const loadSavedConfig = async (cons: any, initialAtivos: SplitAtivo[]) => {
+  const loadSavedConfig = async (cons: any, initialAtivos: SplitAtivo[], forceConfigId?: string) => {
     try {
-      const { data: configs } = await supabase
-        .from('account_split_configs')
-        .select('*')
-        .eq('cliente', cons.Nome)
-        .eq('instituicao', cons.Instituicao)
-        .eq('nome_conta_origem', cons.nomeConta || '')
-        .eq('ativo', true)
-        .limit(1);
+      let configs: any[] | null = null;
+
+      if (forceConfigId) {
+        const { data } = await supabase
+          .from('account_split_configs')
+          .select('*')
+          .eq('id', forceConfigId)
+          .limit(1);
+        configs = data;
+      } else {
+        const { data } = await supabase
+          .from('account_split_configs')
+          .select('*')
+          .eq('cliente', cons.Nome)
+          .eq('instituicao', cons.Instituicao)
+          .eq('nome_conta_origem', cons.nomeConta || '')
+          .eq('ativo', true)
+          .limit(1);
+        configs = data;
+      }
 
       if (configs && configs.length > 0) {
         const config = configs[0];
