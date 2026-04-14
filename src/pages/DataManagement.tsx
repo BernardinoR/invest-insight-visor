@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus, FastForward, Scissors } from "lucide-react";
 import { RolloverDialog } from "@/components/RolloverDialog";
 import { SplitAccountDialog } from "@/components/SplitAccountDialog";
+import { SplitConfigsPanel } from "@/components/SplitConfigsPanel";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -256,6 +257,8 @@ export default function DataManagement() {
   // Split state
   const [isSplitOpen, setIsSplitOpen] = useState(false);
   const [splitConsolidado, setSplitConsolidado] = useState<ConsolidadoData | null>(null);
+  const [splitPreloadConfigId, setSplitPreloadConfigId] = useState<string | null>(null);
+  const [splitConfigsRefreshKey, setSplitConfigsRefreshKey] = useState(0);
 
   // Estado para o dialog de conflito de classificação RAG
   const [ragConflictDialog, setRagConflictDialog] = useState<{
@@ -3589,6 +3592,18 @@ interface VerificationResult {
           </CardContent>
         </Card>
 
+        <SplitConfigsPanel
+          clientName={decodedClientName}
+          consolidadoData={consolidadoData}
+          dadosData={dadosData}
+          refreshKey={splitConfigsRefreshKey}
+          onApplyConfig={(consolidado, configId) => {
+            setSplitConsolidado(consolidado);
+            setSplitPreloadConfigId(configId);
+            setIsSplitOpen(true);
+          }}
+        />
+
         <Tabs value={activeTab} onValueChange={(value) => {
           setActiveTab(value);
           if (value !== 'detalhados') {
@@ -4360,9 +4375,10 @@ interface VerificationResult {
                                        variant="ghost"
                                        size="sm"
                                        className="h-8 w-8 p-0 text-violet-600 hover:text-violet-700"
-                                       onClick={() => {
-                                         setSplitConsolidado(item);
-                                         setIsSplitOpen(true);
+                                        onClick={() => {
+                                          setSplitConsolidado(item);
+                                          setSplitPreloadConfigId(null);
+                                          setIsSplitOpen(true);
                                        }}
                                        title="Separar conta"
                                      >
@@ -6847,10 +6863,17 @@ interface VerificationResult {
       {/* Split Account Dialog */}
       <SplitAccountDialog
         open={isSplitOpen}
-        onOpenChange={setIsSplitOpen}
+        onOpenChange={(open) => {
+          setIsSplitOpen(open);
+          if (!open) setSplitPreloadConfigId(null);
+        }}
         consolidado={splitConsolidado}
         dadosData={dadosData}
-        onSuccess={() => fetchData()}
+        preloadConfigId={splitPreloadConfigId}
+        onSuccess={() => {
+          fetchData();
+          setSplitConfigsRefreshKey(k => k + 1);
+        }}
       />
     </div>
   );
