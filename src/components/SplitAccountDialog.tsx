@@ -410,8 +410,18 @@ export function SplitAccountDialog({
     }
   };
 
-  // Saved configs tab: apply a config
-  const handleApplyConfig = (config: SplitConfig) => {
+  // Helper: calculate consolidated values from assets
+  const calcularConsolidadoFromAtivos = (ativosArr: any[]) => {
+    const patrimonioFinal = ativosArr.reduce((s: number, a: any) => s + (a.Posicao || 0), 0);
+    const weightedSum = ativosArr.reduce((s: number, a: any) => s + ((a.Posicao || 0) * (a.Rendimento || 0)), 0);
+    const rendimento = patrimonioFinal > 0 ? weightedSum / patrimonioFinal : 0;
+    const patrimonioInicial = rendimento !== 0 ? patrimonioFinal / (1 + rendimento) : patrimonioFinal;
+    const ganhoFinanceiro = patrimonioFinal - patrimonioInicial;
+    return { patrimonioFinal, patrimonioInicial, ganhoFinanceiro, rendimento };
+  };
+
+  // Load config into form from saved configs tab
+  const loadConfigIntoForm = (config: SplitConfig) => {
     const allConsolidados = consolidadoData || [];
     const match = allConsolidados.find(
       (c: any) =>
@@ -425,10 +435,9 @@ export function SplitAccountDialog({
         description: `Não há consolidado para ${config.instituicao} / ${config.nome_conta_origem || '(sem conta)'} na competência atual.`,
         variant: 'destructive',
       });
-      return;
+      return null;
     }
 
-    // Load the config into the form tab
     const comp = match.Competencia;
     const linkedAtivos = dadosData.filter(
       (d: any) =>
@@ -447,10 +456,6 @@ export function SplitAccountDialog({
       valorTransferido: 0,
     }));
 
-    // Apply config rules
-    setConfigId(config.id);
-    setNomeContaDestino(config.nome_conta_destino);
-
     const especificos = config.ativos_especificos || [];
     const defaultPct = Number(config.percentual_padrao) || 0;
 
@@ -466,7 +471,29 @@ export function SplitAccountDialog({
       return a;
     });
 
-    setAtivos(updatedAtivos);
+    return { updatedAtivos, match };
+  };
+
+  // Saved configs tab: apply a config
+  const handleApplyConfig = (config: SplitConfig) => {
+    const result = loadConfigIntoForm(config);
+    if (!result) return;
+
+    setConfigId(config.id);
+    setNomeContaDestino(config.nome_conta_destino);
+    setAtivos(result.updatedAtivos);
+    setConfigLoaded(true);
+    setActiveTab('form');
+  };
+
+  // Saved configs tab: edit a config
+  const handleEditConfig = (config: SplitConfig) => {
+    const result = loadConfigIntoForm(config);
+    if (!result) return;
+
+    setConfigId(config.id);
+    setNomeContaDestino(config.nome_conta_destino);
+    setAtivos(result.updatedAtivos);
     setConfigLoaded(true);
     setActiveTab('form');
   };
