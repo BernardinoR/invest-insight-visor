@@ -4355,7 +4355,19 @@ interface VerificationResult {
                                     >
                                       <FastForward className="h-4 w-4" />
                                     </Button>
-                                   
+
+                                     <Button
+                                       variant="ghost"
+                                       size="sm"
+                                       className="h-8 w-8 p-0 text-violet-600 hover:text-violet-700"
+                                       onClick={() => {
+                                         setSplitConsolidado(item);
+                                         setIsSplitOpen(true);
+                                       }}
+                                       title="Separar conta"
+                                     >
+                                       <Scissors className="h-4 w-4" />
+                                     </Button>
                                    <Button
                                      variant="ghost"
                                      size="sm"
