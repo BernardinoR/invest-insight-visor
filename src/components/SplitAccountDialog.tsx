@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Scissors, Save, Play, Loader2, Trash2 } from 'lucide-react';
+import { Scissors, Save, Play, Loader2, Trash2, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -330,7 +330,7 @@ export function SplitAccountDialog({
         if (data) setConfigId(data.id);
       }
 
-      // Execute split
+      // Execute split on DadosPerformance
       const selected = ativos.filter(a => a.selected);
 
       for (const ativo of selected) {
@@ -368,36 +368,67 @@ export function SplitAccountDialog({
         }
       }
 
-      // Create consolidated for the sub-account
+      // Auto-calculate consolidated for BOTH accounts
+      const comp = consolidado!.Competencia;
+      const inst = consolidado!.Instituicao;
+      const nome = consolidado!.Nome;
+      const contaOrigem = consolidado!.nomeConta || '';
+
+      // Fetch updated assets for original account
+      const { data: ativosOrigem } = await supabase
+        .from('DadosPerformance')
+        .select('Posicao, Rendimento')
+        .eq('Nome', nome)
+        .eq('Competencia', comp)
+        .eq('Instituicao', inst)
+        .eq('nomeConta', contaOrigem);
+
+      // Fetch updated assets for destination account
+      const { data: ativosDestino } = await supabase
+        .from('DadosPerformance')
+        .select('Posicao, Rendimento')
+        .eq('Nome', nome)
+        .eq('Competencia', comp)
+        .eq('Instituicao', inst)
+        .eq('nomeConta', nomeContaDestino);
+
+      const calcOrigem = calcularConsolidadoFromAtivos(ativosOrigem || []);
+      const calcDestino = calcularConsolidadoFromAtivos(ativosDestino || []);
+
+      // Update original consolidated
+      const { error: updateConsError } = await supabase
+        .from('ConsolidadoPerformance')
+        .update({
+          'Patrimonio Final': calcOrigem.patrimonioFinal,
+          'Patrimonio Inicial': calcOrigem.patrimonioInicial,
+          'Ganho Financeiro': calcOrigem.ganhoFinanceiro,
+          Rendimento: calcOrigem.rendimento,
+        })
+        .eq('id', consolidado!.id);
+      if (updateConsError) throw updateConsError;
+
+      // Create/update consolidated for the destination sub-account
       const { error: consError } = await supabase
         .from('ConsolidadoPerformance')
         .insert({
-          Nome: consolidado!.Nome,
-          Competencia: consolidado!.Competencia,
-          Instituicao: consolidado!.Instituicao,
+          Nome: nome,
+          Competencia: comp,
+          Instituicao: inst,
           nomeConta: nomeContaDestino,
           Moeda: consolidado!.Moeda || 'Real',
-          'Patrimonio Inicial': 0,
-          'Patrimonio Final': totalTransferido,
-          'Ganho Financeiro': 0,
-          Rendimento: 0,
+          'Patrimonio Inicial': calcDestino.patrimonioInicial,
+          'Patrimonio Final': calcDestino.patrimonioFinal,
+          'Ganho Financeiro': calcDestino.ganhoFinanceiro,
+          Rendimento: calcDestino.rendimento,
           'Movimentação': 0,
           Impostos: 0,
           Data: consolidado!.Data,
         });
       if (consError) throw consError;
 
-      // Update original consolidated
-      const newPatrimonioFinal = (consolidado!['Patrimonio Final'] || 0) - totalTransferido;
-      const { error: updateConsError } = await supabase
-        .from('ConsolidadoPerformance')
-        .update({ 'Patrimonio Final': newPatrimonioFinal })
-        .eq('id', consolidado!.id);
-      if (updateConsError) throw updateConsError;
-
       toast({
         title: 'Split aplicado!',
-        description: `${selected.length} ativo(s) movidos para "${nomeContaDestino}". Consolidado criado.`,
+        description: `${selected.length} ativo(s) movidos para "${nomeContaDestino}". Consolidados recalculados automaticamente.`,
       });
 
       onOpenChange(false);
@@ -410,8 +441,18 @@ export function SplitAccountDialog({
     }
   };
 
-  // Saved configs tab: apply a config
-  const handleApplyConfig = (config: SplitConfig) => {
+  // Helper: calculate consolidated values from assets
+  const calcularConsolidadoFromAtivos = (ativosArr: any[]) => {
+    const patrimonioFinal = ativosArr.reduce((s: number, a: any) => s + (a.Posicao || 0), 0);
+    const weightedSum = ativosArr.reduce((s: number, a: any) => s + ((a.Posicao || 0) * (a.Rendimento || 0)), 0);
+    const rendimento = patrimonioFinal > 0 ? weightedSum / patrimonioFinal : 0;
+    const patrimonioInicial = rendimento !== 0 ? patrimonioFinal / (1 + rendimento) : patrimonioFinal;
+    const ganhoFinanceiro = patrimonioFinal - patrimonioInicial;
+    return { patrimonioFinal, patrimonioInicial, ganhoFinanceiro, rendimento };
+  };
+
+  // Load config into form from saved configs tab
+  const loadConfigIntoForm = (config: SplitConfig) => {
     const allConsolidados = consolidadoData || [];
     const match = allConsolidados.find(
       (c: any) =>
@@ -425,10 +466,9 @@ export function SplitAccountDialog({
         description: `Não há consolidado para ${config.instituicao} / ${config.nome_conta_origem || '(sem conta)'} na competência atual.`,
         variant: 'destructive',
       });
-      return;
+      return null;
     }
 
-    // Load the config into the form tab
     const comp = match.Competencia;
     const linkedAtivos = dadosData.filter(
       (d: any) =>
@@ -447,10 +487,6 @@ export function SplitAccountDialog({
       valorTransferido: 0,
     }));
 
-    // Apply config rules
-    setConfigId(config.id);
-    setNomeContaDestino(config.nome_conta_destino);
-
     const especificos = config.ativos_especificos || [];
     const defaultPct = Number(config.percentual_padrao) || 0;
 
@@ -466,7 +502,29 @@ export function SplitAccountDialog({
       return a;
     });
 
-    setAtivos(updatedAtivos);
+    return { updatedAtivos, match };
+  };
+
+  // Saved configs tab: apply a config
+  const handleApplyConfig = (config: SplitConfig) => {
+    const result = loadConfigIntoForm(config);
+    if (!result) return;
+
+    setConfigId(config.id);
+    setNomeContaDestino(config.nome_conta_destino);
+    setAtivos(result.updatedAtivos);
+    setConfigLoaded(true);
+    setActiveTab('form');
+  };
+
+  // Saved configs tab: edit a config
+  const handleEditConfig = (config: SplitConfig) => {
+    const result = loadConfigIntoForm(config);
+    if (!result) return;
+
+    setConfigId(config.id);
+    setNomeContaDestino(config.nome_conta_destino);
+    setAtivos(result.updatedAtivos);
     setConfigLoaded(true);
     setActiveTab('form');
   };
@@ -654,6 +712,16 @@ export function SplitAccountDialog({
                           )}
                         </div>
                         <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleEditConfig(config)}
+                            title="Editar config"
+                          >
+                            <Pencil className="h-3.5 w-3.5 mr-1" />
+                            <span className="text-xs">Editar</span>
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
