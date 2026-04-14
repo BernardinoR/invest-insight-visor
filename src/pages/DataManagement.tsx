@@ -3592,6 +3592,18 @@ interface VerificationResult {
           </CardContent>
         </Card>
 
+        <SplitConfigsPanel
+          clientName={decodedClientName}
+          consolidadoData={consolidadoData}
+          dadosData={dadosData}
+          refreshKey={splitConfigsRefreshKey}
+          onApplyConfig={(consolidado, configId) => {
+            setSplitConsolidado(consolidado);
+            setSplitPreloadConfigId(configId);
+            setIsSplitOpen(true);
+          }}
+        />
+
         <Tabs value={activeTab} onValueChange={(value) => {
           setActiveTab(value);
           if (value !== 'detalhados') {
