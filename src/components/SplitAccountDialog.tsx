@@ -330,7 +330,7 @@ export function SplitAccountDialog({
         if (data) setConfigId(data.id);
       }
 
-      // Execute split
+      // Execute split on DadosPerformance
       const selected = ativos.filter(a => a.selected);
 
       for (const ativo of selected) {
@@ -368,36 +368,67 @@ export function SplitAccountDialog({
         }
       }
 
-      // Create consolidated for the sub-account
+      // Auto-calculate consolidated for BOTH accounts
+      const comp = consolidado!.Competencia;
+      const inst = consolidado!.Instituicao;
+      const nome = consolidado!.Nome;
+      const contaOrigem = consolidado!.nomeConta || '';
+
+      // Fetch updated assets for original account
+      const { data: ativosOrigem } = await supabase
+        .from('DadosPerformance')
+        .select('Posicao, Rendimento')
+        .eq('Nome', nome)
+        .eq('Competencia', comp)
+        .eq('Instituicao', inst)
+        .eq('nomeConta', contaOrigem);
+
+      // Fetch updated assets for destination account
+      const { data: ativosDestino } = await supabase
+        .from('DadosPerformance')
+        .select('Posicao, Rendimento')
+        .eq('Nome', nome)
+        .eq('Competencia', comp)
+        .eq('Instituicao', inst)
+        .eq('nomeConta', nomeContaDestino);
+
+      const calcOrigem = calcularConsolidadoFromAtivos(ativosOrigem || []);
+      const calcDestino = calcularConsolidadoFromAtivos(ativosDestino || []);
+
+      // Update original consolidated
+      const { error: updateConsError } = await supabase
+        .from('ConsolidadoPerformance')
+        .update({
+          'Patrimonio Final': calcOrigem.patrimonioFinal,
+          'Patrimonio Inicial': calcOrigem.patrimonioInicial,
+          'Ganho Financeiro': calcOrigem.ganhoFinanceiro,
+          Rendimento: calcOrigem.rendimento,
+        })
+        .eq('id', consolidado!.id);
+      if (updateConsError) throw updateConsError;
+
+      // Create/update consolidated for the destination sub-account
       const { error: consError } = await supabase
         .from('ConsolidadoPerformance')
         .insert({
-          Nome: consolidado!.Nome,
-          Competencia: consolidado!.Competencia,
-          Instituicao: consolidado!.Instituicao,
+          Nome: nome,
+          Competencia: comp,
+          Instituicao: inst,
           nomeConta: nomeContaDestino,
           Moeda: consolidado!.Moeda || 'Real',
-          'Patrimonio Inicial': 0,
-          'Patrimonio Final': totalTransferido,
-          'Ganho Financeiro': 0,
-          Rendimento: 0,
+          'Patrimonio Inicial': calcDestino.patrimonioInicial,
+          'Patrimonio Final': calcDestino.patrimonioFinal,
+          'Ganho Financeiro': calcDestino.ganhoFinanceiro,
+          Rendimento: calcDestino.rendimento,
           'Movimentação': 0,
           Impostos: 0,
           Data: consolidado!.Data,
         });
       if (consError) throw consError;
 
-      // Update original consolidated
-      const newPatrimonioFinal = (consolidado!['Patrimonio Final'] || 0) - totalTransferido;
-      const { error: updateConsError } = await supabase
-        .from('ConsolidadoPerformance')
-        .update({ 'Patrimonio Final': newPatrimonioFinal })
-        .eq('id', consolidado!.id);
-      if (updateConsError) throw updateConsError;
-
       toast({
         title: 'Split aplicado!',
-        description: `${selected.length} ativo(s) movidos para "${nomeContaDestino}". Consolidado criado.`,
+        description: `${selected.length} ativo(s) movidos para "${nomeContaDestino}". Consolidados recalculados automaticamente.`,
       });
 
       onOpenChange(false);
