@@ -6843,6 +6843,15 @@ interface VerificationResult {
         marketIndicators={marketIndicators}
         onSuccess={() => fetchData()}
       />
+
+      {/* Split Account Dialog */}
+      <SplitAccountDialog
+        open={isSplitOpen}
+        onOpenChange={setIsSplitOpen}
+        consolidado={splitConsolidado}
+        dadosData={dadosData}
+        onSuccess={() => fetchData()}
+      />
     </div>
   );
 }
