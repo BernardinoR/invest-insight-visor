@@ -17,6 +17,7 @@ interface SplitAccountDialogProps {
   consolidado: any | null;
   dadosData: any[];
   onSuccess: () => void;
+  preloadConfigId?: string | null;
 }
 
 interface SplitAtivo {
