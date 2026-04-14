@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus, FastForward, Scissors } from "lucide-react";
 import { RolloverDialog } from "@/components/RolloverDialog";
 import { SplitAccountDialog } from "@/components/SplitAccountDialog";
+import { SplitConfigsPanel } from "@/components/SplitConfigsPanel";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -256,6 +257,8 @@ export default function DataManagement() {
   // Split state
   const [isSplitOpen, setIsSplitOpen] = useState(false);
   const [splitConsolidado, setSplitConsolidado] = useState<ConsolidadoData | null>(null);
+  const [splitPreloadConfigId, setSplitPreloadConfigId] = useState<string | null>(null);
+  const [splitConfigsRefreshKey, setSplitConfigsRefreshKey] = useState(0);
 
   // Estado para o dialog de conflito de classificação RAG
   const [ragConflictDialog, setRagConflictDialog] = useState<{
