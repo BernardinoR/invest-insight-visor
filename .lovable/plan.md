@@ -1,29 +1,38 @@
 
 
-# Plano: Mover Configs de Split para aba no Dialog
+# Plano: Editar Config Salva + Auto-Cálculo no Split
 
 ## Problema
-O painel de configs salvas está posicionado de forma estranha no layout atual do DataManagement.
-
-## Solução
-Remover o `SplitConfigsPanel` como componente separado e criar um sistema de abas dentro do `SplitAccountDialog` com duas abas:
-
-1. **"Separar Conta"** — o formulário atual (seleção de ativos, percentuais, aplicar)
-2. **"Configs Salvas"** — lista de configs salvas do cliente, com ações Aplicar/Excluir
+1. Na aba "Configs Salvas" não há botão de editar — só Aplicar e Excluir.
+2. Ao aplicar o split, o consolidado novo é criado com Rendimento=0 e sem cálculos; o original também não recalcula.
 
 ## Alterações
 
-### 1. `SplitAccountDialog.tsx`
-- Adicionar `Tabs` / `TabsList` / `TabsContent` do shadcn dentro do dialog
-- Aba 1: conteúdo atual (formulário de split)
-- Aba 2: lógica que hoje está no `SplitConfigsPanel` — lista configs salvas, botões Aplicar (pré-popula a aba 1) e Excluir
-- Ao clicar "Aplicar" numa config salva, troca para a aba 1 com os dados carregados
+### 1. Botão "Editar" na aba Configs Salvas (`SplitAccountDialog.tsx`)
 
-### 2. `DataManagement.tsx`
-- Remover `SplitConfigsPanel` e seus estados relacionados (`showSplitConfigs`, `splitConfigsRefreshKey`)
-- Manter o botão Scissors no consolidado que abre o dialog
-- Adicionar um botão separado (ou manter o Scissors) que abre o dialog direto na aba de configs salvas
+Adicionar um botão "Editar" (ícone Edit) ao lado de "Aplicar" em cada config salva. Ao clicar:
+- Carrega a config no formulário (mesma lógica do `handleApplyConfig`, mas usando os ativos da conta atual)
+- Troca para a aba "form" para edição
+- O usuário pode alterar seleções/percentuais e salvar com "Salvar Config"
 
-### 3. `SplitConfigsPanel.tsx`
-- Deletar o arquivo (lógica migrada para dentro do dialog)
+### 2. Auto-cálculo ao aplicar o split (`SplitAccountDialog.tsx` — `handleApply`)
+
+Após mover os ativos, calcular automaticamente os consolidados (conta original e nova) usando a mesma lógica de média ponderada que já existe no `calculateWeightedReturn`:
+
+Para cada consolidado (original e novo):
+1. Buscar os `DadosPerformance` vinculados (mesma competência, instituição, nomeConta)
+2. **Patrimônio Final** = soma das Posições
+3. **Rendimento** = média ponderada (Σ Posição × Rendimento / Σ Posição)
+4. **Patrimônio Inicial** = Patrimônio Final / (1 + Rendimento)
+5. **Ganho Financeiro** = Patrimônio Final - Patrimônio Inicial
+
+Isso substitui a lógica atual que simplesmente subtrai `totalTransferido` do original e cria o novo com Rendimento=0.
+
+### Detalhes técnicos
+
+- Extrair uma função `calcularConsolidadoFromAtivos(ativos[])` que recebe os registros de DadosPerformance e retorna `{ patrimonioFinal, patrimonioInicial, ganhoFinanceiro, rendimento }`
+- No `handleApply`, após executar as operações de split nos DadosPerformance:
+  - Fazer SELECT dos ativos atualizados de cada conta (original e destino)
+  - Calcular e fazer UPDATE/INSERT nos consolidados com os valores corretos
+- Sem migration necessária — mesmas tabelas
 
