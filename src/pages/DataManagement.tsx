@@ -253,6 +253,10 @@ export default function DataManagement() {
   const [isRolloverOpen, setIsRolloverOpen] = useState(false);
   const [rolloverConsolidado, setRolloverConsolidado] = useState<ConsolidadoData | null>(null);
 
+  // Split state
+  const [isSplitOpen, setIsSplitOpen] = useState(false);
+  const [splitConsolidado, setSplitConsolidado] = useState<ConsolidadoData | null>(null);
+
   // Estado para o dialog de conflito de classificação RAG
   const [ragConflictDialog, setRagConflictDialog] = useState<{
     open: boolean;
