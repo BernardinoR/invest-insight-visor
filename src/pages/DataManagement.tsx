@@ -4,8 +4,9 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus, FastForward } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus, FastForward, Scissors } from "lucide-react";
 import { RolloverDialog } from "@/components/RolloverDialog";
+import { SplitAccountDialog } from "@/components/SplitAccountDialog";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -251,6 +252,10 @@ export default function DataManagement() {
   // Rollover state
   const [isRolloverOpen, setIsRolloverOpen] = useState(false);
   const [rolloverConsolidado, setRolloverConsolidado] = useState<ConsolidadoData | null>(null);
+
+  // Split state
+  const [isSplitOpen, setIsSplitOpen] = useState(false);
+  const [splitConsolidado, setSplitConsolidado] = useState<ConsolidadoData | null>(null);
 
   // Estado para o dialog de conflito de classificação RAG
   const [ragConflictDialog, setRagConflictDialog] = useState<{
@@ -4350,7 +4355,19 @@ interface VerificationResult {
                                     >
                                       <FastForward className="h-4 w-4" />
                                     </Button>
-                                   
+
+                                     <Button
+                                       variant="ghost"
+                                       size="sm"
+                                       className="h-8 w-8 p-0 text-violet-600 hover:text-violet-700"
+                                       onClick={() => {
+                                         setSplitConsolidado(item);
+                                         setIsSplitOpen(true);
+                                       }}
+                                       title="Separar conta"
+                                     >
+                                       <Scissors className="h-4 w-4" />
+                                     </Button>
                                    <Button
                                      variant="ghost"
                                      size="sm"
@@ -6824,6 +6841,15 @@ interface VerificationResult {
         dadosData={dadosData}
         cdiData={cdiData}
         marketIndicators={marketIndicators}
+        onSuccess={() => fetchData()}
+      />
+
+      {/* Split Account Dialog */}
+      <SplitAccountDialog
+        open={isSplitOpen}
+        onOpenChange={setIsSplitOpen}
+        consolidado={splitConsolidado}
+        dadosData={dadosData}
         onSuccess={() => fetchData()}
       />
     </div>
