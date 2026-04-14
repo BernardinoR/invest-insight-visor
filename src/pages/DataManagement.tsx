@@ -4375,9 +4375,10 @@ interface VerificationResult {
                                        variant="ghost"
                                        size="sm"
                                        className="h-8 w-8 p-0 text-violet-600 hover:text-violet-700"
-                                       onClick={() => {
-                                         setSplitConsolidado(item);
-                                         setIsSplitOpen(true);
+                                        onClick={() => {
+                                          setSplitConsolidado(item);
+                                          setSplitPreloadConfigId(null);
+                                          setIsSplitOpen(true);
                                        }}
                                        title="Separar conta"
                                      >
@@ -6862,10 +6863,17 @@ interface VerificationResult {
       {/* Split Account Dialog */}
       <SplitAccountDialog
         open={isSplitOpen}
-        onOpenChange={setIsSplitOpen}
+        onOpenChange={(open) => {
+          setIsSplitOpen(open);
+          if (!open) setSplitPreloadConfigId(null);
+        }}
         consolidado={splitConsolidado}
         dadosData={dadosData}
-        onSuccess={() => fetchData()}
+        preloadConfigId={splitPreloadConfigId}
+        onSuccess={() => {
+          fetchData();
+          setSplitConfigsRefreshKey(k => k + 1);
+        }}
       />
     </div>
   );
