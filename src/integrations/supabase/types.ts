@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_split_configs: {
+        Row: {
+          ativo: boolean | null
+          ativos_especificos: Json | null
+          cliente: string
+          created_at: string | null
+          id: string
+          instituicao: string
+          nome_conta_destino: string
+          nome_conta_origem: string
+          percentual_padrao: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          ativos_especificos?: Json | null
+          cliente: string
+          created_at?: string | null
+          id?: string
+          instituicao: string
+          nome_conta_destino: string
+          nome_conta_origem?: string
+          percentual_padrao?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          ativos_especificos?: Json | null
+          cliente?: string
+          created_at?: string | null
+          id?: string
+          instituicao?: string
+          nome_conta_destino?: string
+          nome_conta_origem?: string
+          percentual_padrao?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ConsolidadoPerformance: {
         Row: {
           Competencia: string | null
