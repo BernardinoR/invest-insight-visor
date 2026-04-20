@@ -342,7 +342,7 @@ export function SplitAccountDialog({
         if (ativo.percentual === 100) {
           const { error } = await supabase
             .from('DadosPerformance')
-            .update({ nomeConta: nomeContaDestino })
+            .update({ nomeConta: nomeContaDestino, is_outra_pessoa: isOutraPessoa })
             .eq('id', ativo.id);
           if (error) throw error;
         } else {
@@ -368,6 +368,7 @@ export function SplitAccountDialog({
               ...rest,
               Posicao: ativo.valorTransferido,
               nomeConta: nomeContaDestino,
+              is_outra_pessoa: isOutraPessoa,
             });
           if (insertError) throw insertError;
         }
@@ -428,6 +429,7 @@ export function SplitAccountDialog({
           'Movimentação': 0,
           Impostos: 0,
           Data: consolidado!.Data,
+          is_outra_pessoa: isOutraPessoa,
         });
       if (consError) throw consError;
 
@@ -517,6 +519,7 @@ export function SplitAccountDialog({
 
     setConfigId(config.id);
     setNomeContaDestino(config.nome_conta_destino);
+    setIsOutraPessoa(!!config.is_outra_pessoa);
     setAtivos(result.updatedAtivos);
     setConfigLoaded(true);
     setActiveTab('form');
@@ -529,6 +532,7 @@ export function SplitAccountDialog({
 
     setConfigId(config.id);
     setNomeContaDestino(config.nome_conta_destino);
+    setIsOutraPessoa(!!config.is_outra_pessoa);
     setAtivos(result.updatedAtivos);
     setConfigLoaded(true);
     setActiveTab('form');
