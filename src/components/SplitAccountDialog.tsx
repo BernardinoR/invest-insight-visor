@@ -52,6 +52,7 @@ interface SplitConfig {
   percentual_padrao: number;
   ativos_especificos: Array<{ ativo: string; percentual: number }>;
   ativo: boolean;
+  is_outra_pessoa?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -73,6 +74,7 @@ export function SplitAccountDialog({
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [nomeContaDestino, setNomeContaDestino] = useState('');
+  const [isOutraPessoa, setIsOutraPessoa] = useState(false);
   const [ativos, setAtivos] = useState<SplitAtivo[]>([]);
   const [saving, setSaving] = useState(false);
   const [configId, setConfigId] = useState<string | null>(null);
@@ -127,6 +129,7 @@ export function SplitAccountDialog({
     if (!open || !consolidado) {
       setAtivos([]);
       setNomeContaDestino('');
+      setIsOutraPessoa(false);
       setConfigId(null);
       setConfigLoaded(false);
       return;
@@ -180,6 +183,7 @@ export function SplitAccountDialog({
         const config = fetchedConfigs[0];
         setConfigId(config.id);
         setNomeContaDestino(config.nome_conta_destino);
+        setIsOutraPessoa(!!config.is_outra_pessoa);
 
         const especificos: Array<{ ativo: string; percentual: number }> =
           (config.ativos_especificos as any) || [];
@@ -267,6 +271,7 @@ export function SplitAccountDialog({
       percentual_padrao: 0,
       ativos_especificos: especificos,
       ativo: true,
+      is_outra_pessoa: isOutraPessoa,
     };
   };
 
@@ -337,7 +342,7 @@ export function SplitAccountDialog({
         if (ativo.percentual === 100) {
           const { error } = await supabase
             .from('DadosPerformance')
-            .update({ nomeConta: nomeContaDestino })
+            .update({ nomeConta: nomeContaDestino, is_outra_pessoa: isOutraPessoa })
             .eq('id', ativo.id);
           if (error) throw error;
         } else {
@@ -363,6 +368,7 @@ export function SplitAccountDialog({
               ...rest,
               Posicao: ativo.valorTransferido,
               nomeConta: nomeContaDestino,
+              is_outra_pessoa: isOutraPessoa,
             });
           if (insertError) throw insertError;
         }
@@ -423,6 +429,7 @@ export function SplitAccountDialog({
           'Movimentação': 0,
           Impostos: 0,
           Data: consolidado!.Data,
+          is_outra_pessoa: isOutraPessoa,
         });
       if (consError) throw consError;
 
@@ -512,6 +519,7 @@ export function SplitAccountDialog({
 
     setConfigId(config.id);
     setNomeContaDestino(config.nome_conta_destino);
+    setIsOutraPessoa(!!config.is_outra_pessoa);
     setAtivos(result.updatedAtivos);
     setConfigLoaded(true);
     setActiveTab('form');
@@ -524,6 +532,7 @@ export function SplitAccountDialog({
 
     setConfigId(config.id);
     setNomeContaDestino(config.nome_conta_destino);
+    setIsOutraPessoa(!!config.is_outra_pessoa);
     setAtivos(result.updatedAtivos);
     setConfigLoaded(true);
     setActiveTab('form');
@@ -595,6 +604,21 @@ export function SplitAccountDialog({
                       onChange={e => setNomeContaDestino(e.target.value)}
                       placeholder="Ex: Maria Luiza"
                     />
+                    <div className="flex items-start gap-2 pt-2">
+                      <Checkbox
+                        id="is-outra-pessoa"
+                        checked={isOutraPessoa}
+                        onCheckedChange={(c) => setIsOutraPessoa(!!c)}
+                      />
+                      <div className="space-y-0.5">
+                        <Label htmlFor="is-outra-pessoa" className="cursor-pointer">
+                          Esta conta pertence a outra pessoa?
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Quando marcado, os ativos desta sub-conta serão tratados como de outra pessoa no gráfico de Exposição por Emissor (limite separado de R$ 250k).
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   <Separator />

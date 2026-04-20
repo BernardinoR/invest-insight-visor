@@ -21,6 +21,8 @@ export function IssuerExposure({ clientName, dadosData: propDadosData }: {
     Vencimento: string;
     Competencia: string;
     nomeConta?: string;
+    is_outra_pessoa?: boolean;
+    Nome?: string;
   }>;
 }) {
   const { dadosData: hookDadosData, loading } = useClientData(clientName || "");
@@ -95,9 +97,10 @@ export function IssuerExposure({ clientName, dadosData: propDadosData }: {
     return result;
   }, [selectedAccount, filteredData]);
 
-  // Group investments by issuer and calculate totals
+  // Group investments by PERSON + issuer (each person has its own R$250k limit per issuer)
   const issuerData = useMemo(() => {
     console.log('📈 Calculating issuer data...');
+    const titularName = clientName || 'Titular';
     const data = accountFilteredData
       .filter(investment => investment.Emissor && investment.Posicao)
       .reduce((acc, investment) => {
@@ -105,10 +108,18 @@ export function IssuerExposure({ clientName, dadosData: propDadosData }: {
         const position = Number(investment.Posicao) || 0;
         const vencimento = investment.Vencimento;
         const nomeConta = investment.nomeConta || "Sem nome";
+        const isOutra = !!(investment as any).is_outra_pessoa;
+        const pessoa = isOutra ? nomeConta : titularName;
+        // Composite key so different people with the same issuer get separate bars
+        const key = `${pessoa}__${issuer}`;
+        const displayName = isOutra ? `${issuer} (${pessoa})` : issuer;
         
-        if (!acc[issuer]) {
-          acc[issuer] = { 
-            name: issuer, 
+        if (!acc[key]) {
+          acc[key] = { 
+            name: displayName,
+            issuer,
+            pessoa,
+            isOutraPessoa: isOutra,
             exposure: 0, 
             count: 0,
             exceedsLimit: false,
@@ -116,25 +127,25 @@ export function IssuerExposure({ clientName, dadosData: propDadosData }: {
             contas: []
           };
         }
-        acc[issuer].exposure += position;
-        acc[issuer].count += 1;
+        acc[key].exposure += position;
+        acc[key].count += 1;
         
         // Add maturity date if it exists and isn't already in the list
-        if (vencimento && !acc[issuer].vencimentos.includes(vencimento)) {
-          acc[issuer].vencimentos.push(vencimento);
+        if (vencimento && !acc[key].vencimentos.includes(vencimento)) {
+          acc[key].vencimentos.push(vencimento);
         }
         
         // Add account name if it exists and isn't already in the list
-        if (nomeConta && !acc[issuer].contas.includes(nomeConta)) {
-          acc[issuer].contas.push(nomeConta);
+        if (nomeConta && !acc[key].contas.includes(nomeConta)) {
+          acc[key].contas.push(nomeConta);
         }
         
         return acc;
-      }, {} as Record<string, IssuerData & { vencimentos: string[]; contas: string[] }>);
+      }, {} as Record<string, IssuerData & { issuer: string; pessoa: string; isOutraPessoa: boolean; vencimentos: string[]; contas: string[] }>);
     
-    console.log('📊 Issuer data calculated:', Object.keys(data).length, 'issuers');
+    console.log('📊 Issuer data calculated:', Object.keys(data).length, 'person-issuer combinations');
     return data;
-  }, [accountFilteredData]);
+  }, [accountFilteredData, clientName]);
 
   const LIMIT = 250000; // R$ 250.000
 
@@ -181,7 +192,13 @@ export function IssuerExposure({ clientName, dadosData: propDadosData }: {
       
       return (
         <div className="bg-card border border-border rounded-lg p-3 shadow-elegant-md max-w-xs">
-          <p className="text-foreground font-medium">{data.name}</p>
+          <p className="text-foreground font-medium">{data.issuer || data.name}</p>
+          {data.pessoa && (
+            <p className="text-xs text-muted-foreground">
+              Pessoa: <span className="font-medium">{data.pessoa}</span>
+              {data.isOutraPessoa && <span className="ml-1 text-accent">(outra pessoa)</span>}
+            </p>
+          )}
           <p className="text-primary">
             Exposição: R$ {data.exposure.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>

@@ -22,6 +22,7 @@ export type Database = {
           created_at: string | null
           id: string
           instituicao: string
+          is_outra_pessoa: boolean
           nome_conta_destino: string
           nome_conta_origem: string
           percentual_padrao: number | null
@@ -34,6 +35,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           instituicao: string
+          is_outra_pessoa?: boolean
           nome_conta_destino: string
           nome_conta_origem?: string
           percentual_padrao?: number | null
@@ -46,6 +48,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           instituicao?: string
+          is_outra_pessoa?: boolean
           nome_conta_destino?: string
           nome_conta_origem?: string
           percentual_padrao?: number | null
@@ -62,6 +65,7 @@ export type Database = {
           id: number
           Impostos: number | null
           Instituicao: string | null
+          is_outra_pessoa: boolean
           Moeda: string | null
           Movimentação: number | null
           Nome: string | null
@@ -78,6 +82,7 @@ export type Database = {
           id?: number
           Impostos?: number | null
           Instituicao?: string | null
+          is_outra_pessoa?: boolean
           Moeda?: string | null
           Movimentação?: number | null
           Nome?: string | null
@@ -94,6 +99,7 @@ export type Database = {
           id?: number
           Impostos?: number | null
           Instituicao?: string | null
+          is_outra_pessoa?: boolean
           Moeda?: string | null
           Movimentação?: number | null
           Nome?: string | null
@@ -136,6 +142,7 @@ export type Database = {
           Emissor: string | null
           id: number
           Instituicao: string | null
+          is_outra_pessoa: boolean
           liquidez: string | null
           Moeda: string | null
           Nome: string | null
@@ -156,6 +163,7 @@ export type Database = {
           Emissor?: string | null
           id?: number
           Instituicao?: string | null
+          is_outra_pessoa?: boolean
           liquidez?: string | null
           Moeda?: string | null
           Nome?: string | null
@@ -176,6 +184,7 @@ export type Database = {
           Emissor?: string | null
           id?: number
           Instituicao?: string | null
+          is_outra_pessoa?: boolean
           liquidez?: string | null
           Moeda?: string | null
           Nome?: string | null
