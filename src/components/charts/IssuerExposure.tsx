@@ -192,7 +192,13 @@ export function IssuerExposure({ clientName, dadosData: propDadosData }: {
       
       return (
         <div className="bg-card border border-border rounded-lg p-3 shadow-elegant-md max-w-xs">
-          <p className="text-foreground font-medium">{data.name}</p>
+          <p className="text-foreground font-medium">{data.issuer || data.name}</p>
+          {data.pessoa && (
+            <p className="text-xs text-muted-foreground">
+              Pessoa: <span className="font-medium">{data.pessoa}</span>
+              {data.isOutraPessoa && <span className="ml-1 text-accent">(outra pessoa)</span>}
+            </p>
+          )}
           <p className="text-primary">
             Exposição: R$ {data.exposure.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
