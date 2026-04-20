@@ -74,6 +74,7 @@ export function SplitAccountDialog({
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [nomeContaDestino, setNomeContaDestino] = useState('');
+  const [isOutraPessoa, setIsOutraPessoa] = useState(false);
   const [ativos, setAtivos] = useState<SplitAtivo[]>([]);
   const [saving, setSaving] = useState(false);
   const [configId, setConfigId] = useState<string | null>(null);
