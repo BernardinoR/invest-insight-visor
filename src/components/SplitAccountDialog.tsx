@@ -604,6 +604,21 @@ export function SplitAccountDialog({
                       onChange={e => setNomeContaDestino(e.target.value)}
                       placeholder="Ex: Maria Luiza"
                     />
+                    <div className="flex items-start gap-2 pt-2">
+                      <Checkbox
+                        id="is-outra-pessoa"
+                        checked={isOutraPessoa}
+                        onCheckedChange={(c) => setIsOutraPessoa(!!c)}
+                      />
+                      <div className="space-y-0.5">
+                        <Label htmlFor="is-outra-pessoa" className="cursor-pointer">
+                          Esta conta pertence a outra pessoa?
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Quando marcado, os ativos desta sub-conta serão tratados como de outra pessoa no gráfico de Exposição por Emissor (limite separado de R$ 250k).
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   <Separator />
