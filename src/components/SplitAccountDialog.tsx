@@ -129,6 +129,7 @@ export function SplitAccountDialog({
     if (!open || !consolidado) {
       setAtivos([]);
       setNomeContaDestino('');
+      setIsOutraPessoa(false);
       setConfigId(null);
       setConfigLoaded(false);
       return;
@@ -182,6 +183,7 @@ export function SplitAccountDialog({
         const config = fetchedConfigs[0];
         setConfigId(config.id);
         setNomeContaDestino(config.nome_conta_destino);
+        setIsOutraPessoa(!!config.is_outra_pessoa);
 
         const especificos: Array<{ ativo: string; percentual: number }> =
           (config.ativos_especificos as any) || [];
@@ -269,6 +271,7 @@ export function SplitAccountDialog({
       percentual_padrao: 0,
       ativos_especificos: especificos,
       ativo: true,
+      is_outra_pessoa: isOutraPessoa,
     };
   };
 
