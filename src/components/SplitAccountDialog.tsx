@@ -52,6 +52,7 @@ interface SplitConfig {
   percentual_padrao: number;
   ativos_especificos: Array<{ ativo: string; percentual: number }>;
   ativo: boolean;
+  is_outra_pessoa?: boolean;
   created_at: string;
   updated_at: string;
 }
