@@ -400,6 +400,7 @@ export function RolloverDialog({
         Data: novaCompetencia,
         liquidez: a.liquidez,
         rentabilidade_validada: true,
+        is_outra_pessoa: (a as any).is_outra_pessoa ?? false,
       }));
 
       const { error: ativoError } = await supabase
@@ -431,6 +432,7 @@ export function RolloverDialog({
           'Movimentação': totalResgate > 0 ? -totalResgate : 0,
           Impostos: 0,
           Data: novaCompetencia,
+          is_outra_pessoa: (consolidado as any).is_outra_pessoa ?? false,
         });
 
       if (consolidadoError) throw consolidadoError;
