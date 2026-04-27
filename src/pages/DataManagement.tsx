@@ -5934,6 +5934,24 @@ interface VerificationResult {
                               <X className="h-4 w-4" />
                             </Button>
                           )}
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-10 w-10 shrink-0"
+                                  disabled={!editingItem.Ativo || !editingItem.liquidez || ragLiquidezSaving}
+                                  onClick={handleSaveLiquidez}
+                                >
+                                  <BookmarkPlus className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Gravar liquidez para uso automático</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                         {editingItem.liquidez && (
                           <p className="text-xs text-muted-foreground mt-1">
