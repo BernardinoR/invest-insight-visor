@@ -6972,7 +6972,36 @@ interface VerificationResult {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Rollover Dialog */}
+      {/* RAG Liquidez Conflict Dialog */}
+      <AlertDialog open={ragLiquidezConflictDialog?.open || false} onOpenChange={(open) => !open && setRagLiquidezConflictDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Liquidez diferente encontrada</AlertDialogTitle>
+            <AlertDialogDescription>
+              O ativo <strong>"{ragLiquidezConflictDialog?.ativo}"</strong> está gravado com liquidez{' '}
+              <strong>"{ragLiquidezConflictDialog?.liquidezExistente}"</strong>. Deseja atualizar para{' '}
+              <strong>"{ragLiquidezConflictDialog?.liquidezNova}"</strong>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-center space-x-2 py-2">
+            <Checkbox
+              id="ragLiquidezUpdateExisting"
+              checked={ragLiquidezUpdateExisting}
+              onCheckedChange={(checked) => setRagLiquidezUpdateExisting(checked === true)}
+            />
+            <label htmlFor="ragLiquidezUpdateExisting" className="text-sm text-muted-foreground cursor-pointer">
+              Atualizar também todos os registros existentes com este ativo
+            </label>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Manter atual</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmRagLiquidezUpdate} disabled={ragLiquidezSaving}>
+              {ragLiquidezSaving ? 'Atualizando...' : 'Atualizar liquidez'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <RolloverDialog
         open={isRolloverOpen}
         onOpenChange={setIsRolloverOpen}
