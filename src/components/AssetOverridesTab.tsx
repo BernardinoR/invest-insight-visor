@@ -166,6 +166,26 @@ export function AssetOverridesTab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientName, refreshSignal]);
 
+  // Abre o dialog de criação pré-preenchido quando o nonce muda
+  useEffect(() => {
+    if (!prefillRequest) return;
+    setForm({
+      cliente: clientName,
+      instituicao: prefillRequest.instituicao || "",
+      ativo_original: prefillRequest.ativo_original || "",
+      ativo_novo: "",
+      classe_ativo: prefillRequest.classe_ativo || "",
+      emissor: prefillRequest.emissor || "",
+      taxa: prefillRequest.taxa || "",
+      vencimento: prefillRequest.vencimento || "",
+      liquidez: prefillRequest.liquidez || "",
+      observacao: "",
+      ativo: true,
+    });
+    setIsDialogOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillRequest?.nonce]);
+
   const filtered = useMemo(() => {
     let data = overrides;
     if (filterInstituicao && filterInstituicao !== "__all__") {
