@@ -1,100 +1,65 @@
+# Plano: Exportar Relatório do Dashboard em PDF
 
-# Plano: Liquidez/Vencimento no Verificador e Filtro de Qualidade
+## Resumo
+Adicionar um botão "Exportar PDF" no header do Dashboard que captura todos os gráficos e tabelas atualmente visíveis (respeitando filtros de competência, contas selecionadas, moeda e modo de visualização) e gera um PDF multi-página para download.
 
-## Diagnóstico
+## Abordagem técnica
 
-- A **bolinha laranja** já existe em ambos os lugares:
-  - Consolidado: `DataManagement.tsx` linhas 4271-4274 (5ª bolinha condicional)
-  - Ativos detalhados: linhas 5377-5391 (condicional, só aparece quando faltando)
-- O que **falta**:
-  1. No **popover de verificação do consolidado** (linhas 4277-4422), não há uma seção dedicada explicando o status de liquidez/vencimento — só aparecem seções para Integridade, Classificação, Rentabilidade e Ativos Novos.
-  2. No popover/tooltip de verificação por linha de **ativos detalhados**, hoje é só um `title` simples no `<div>` (linha 5385). Não há detalhe.
-  3. **Filtro de Qualidade** (linhas 4751-4880) não inclui a opção "Sem liquidez e vencimento".
+Como o dashboard é totalmente client-side com gráficos do Recharts (SVG) + tabelas HTML, a melhor abordagem é **captura visual via `html2canvas` + montagem do PDF via `jsPDF`**. Essa combinação:
+- Preserva exatamente o que o usuário vê (cores, tema, moeda, filtros aplicados)
+- Funciona com SVG do Recharts sem precisar reimplementar gráficos
+- Não exige backend nem edge function
 
-## Alterações em `src/pages/DataManagement.tsx`
+### Bibliotecas a adicionar
+- `html2canvas` — captura DOM/SVG em canvas
+- `jspdf` — monta o PDF a partir das imagens
 
-### 1. Adicionar seção no popover de verificação do consolidado
+## Alterações
 
-Após a seção de "Ativos Novos" (linha ~4420), adicionar nova seção condicional usando `verification.hasMissingLiquidity` e `verification.missingLiquidityCount` (já calculados em `verifyIntegrity`):
+### 1. Novo utilitário `src/lib/pdfExport.ts`
+- Função `exportDashboardToPDF(options)` que:
+  - Recebe lista de seletores/refs das seções a capturar (resumo, gráficos, tabelas)
+  - Para cada seção: roda `html2canvas` com `scale: 2`, `backgroundColor` do tema, `useCORS: true`
+  - Monta PDF A4 paisagem, inserindo cada seção em uma nova página, com cabeçalho (nome do cliente + competência + data de geração) e numeração de página
+  - Faz download via `jsPDF.save(\`Relatorio_${cliente}_${competencia}.pdf\`)`
+- Trata caso de seção mais alta que a página dividindo em múltiplas páginas
 
-```tsx
-{verification.hasMissingLiquidity && (
-  <>
-    <Separator />
-    <div>
-      <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-        <XCircle className="h-4 w-4 text-orange-500" />
-        Liquidez / Vencimento
-      </h4>
-      <div className="flex justify-between text-sm">
-        <span className="text-muted-foreground">Sem liquidez e sem vencimento:</span>
-        <span className="font-medium text-orange-600">{verification.missingLiquidityCount}</span>
-      </div>
-      <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded text-xs text-orange-700 dark:text-orange-400">
-        💧 {verification.missingLiquidityCount} ativo(s) sem campo "Liquidez" e sem "Vencimento". Preencha um dos dois para que apareçam corretamente nas análises de liquidez.
-      </div>
-    </div>
-  </>
-)}
-```
+### 2. Marcar seções no `InvestmentDashboard.tsx`
+- Adicionar `data-pdf-section="..."` (ou refs) nos blocos a exportar:
+  - Resumo do cliente / cards de patrimônio e rendimento
+  - Gráfico de Performance (PerformanceChart)
+  - StrategyBreakdown
+  - StrategyScatterChart
+  - MaturityTimeline
+  - IssuerExposure
+  - InvestmentPolicyCompliance
+  - RiskManagement (somente se viewMode='risk' estiver visível, ou forçar render)
+  - Tabela "Retorno por Ativo" (InvestmentDetailsTable)
+  - PortfolioTable (lista de instituições/contas)
 
-### 2. Substituir a bolinha "estática" por um Popover na tabela de ativos detalhados
+### 3. Botão no header do `Dashboard.tsx` (`src/pages/Dashboard.tsx`)
+- Adicionar botão `<Button>` com ícone `FileDown` ao lado de `ThemeToggle`
+- Estado `isExporting` para mostrar spinner e desabilitar durante geração
+- Toast de sucesso/erro via `sonner`
+- Ao clicar:
+  1. Toast "Gerando PDF…"
+  2. Aguardar 1 frame para garantir render
+  3. Chamar `exportDashboardToPDF({ clientName, competencia: filteredRange.fim })`
+  4. Toast de sucesso
 
-Hoje cada bolinha por linha (linhas 5347-5392) é só um `<div title="...">`. Vou envolver as 4 bolinhas (classe / rentabilidade / ativo novo / liquidez-vencimento) num `<Popover>` único similar ao do consolidado, mostrando seção por seção (Classe, Rentabilidade, Ativo Novo, Liquidez/Vencimento) com texto explicativo. Isso atende ao pedido "no dialog do verif … de ativos tem que aparecer os sem vencimento e liquidez".
+### 4. Detalhes de qualidade
+- Forçar tema/cores fixas durante captura (ler `bg-background` resolvido) para não sair branco em dark mode
+- Ocultar elementos interativos (dropdowns abertos, tooltips) antes de capturar
+- Garantir que tabelas grandes (Retorno por Ativo) sejam capturadas inteiras, expandindo `overflow` temporariamente
+- Usar largura A4 paisagem (297mm) e calcular altura proporcional
 
-Estrutura:
-- `PopoverTrigger`: as 4 bolinhas inline (mantendo a 4ª — laranja — sempre visível, ou apenas quando faltando — preservar comportamento atual: só mostra se faltando).
-- `PopoverContent`: seções para cada verificação, com a seção de Liquidez/Vencimento mostrando estado verde quando OK ou vermelho/laranja quando faltando.
+## Fora do escopo
+- Geração server-side / edge function (não necessária)
+- Personalização do conteúdo do PDF pelo usuário (escolher quais seções)
+- Exportação em Excel/CSV
 
-### 3. Adicionar bloco "Sem liquidez e vencimento" no card "Alertas de Qualidade dos Dados" (linhas 4687-4740)
-
-- Calcular `missingLiquidityInComparison` (similar a `missingYieldInComparison` na linha 4547):
-  ```ts
-  const missingLiquidityInComparison = filteredDadosData.filter(item => {
-    const ativoNorm = String(item.Ativo || '').toLowerCase();
-    const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
-    return !isCashLike && !item.Vencimento && !(item as any).liquidez;
-  }).length;
-  ```
-- Adicionar 4º card no grid (laranja) com ícone `XCircle` mostrando o contador.
-- Atualizar a condição de exibição da seção para incluir `missingLiquidityInComparison > 0`.
-
-### 4. Adicionar filtro "Sem liquidez e vencimento" no Popover de "Filtros de Qualidade"
-
-- Novo state: `showOnlyMissingLiquidity` (default false).
-- Novo memo `missingLiquidityInCurrentView` (espelha `missingYieldInCurrentView` mas com a condição liquidez+vencimento+!cashLike).
-- Atualizar o memo `filteredDadosData` (linha 2349) para incluir `showOnlyMissingLiquidity`:
-  ```ts
-  const isMissingLiquidity = showOnlyMissingLiquidity && (() => {
-    const ativoNorm = String(item.Ativo || '').toLowerCase();
-    const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
-    return !isCashLike && !item.Vencimento && !(item as any).liquidez;
-  })();
-  return isUnclassified || hasMissingYield || isNewAsset || isMissingLiquidity;
-  ```
-- Adicionar checkbox no Popover (após "Ativos Novos", linha ~4857):
-  ```tsx
-  <div className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors">
-    <Checkbox id="filter-missing-liquidity" checked={showOnlyMissingLiquidity}
-      onCheckedChange={(c) => setShowOnlyMissingLiquidity(c as boolean)} />
-    <div className="flex-1 space-y-1">
-      <label htmlFor="filter-missing-liquidity" className="text-sm font-medium cursor-pointer flex items-center gap-2">
-        <XCircle className="h-3.5 w-3.5 text-orange-600" />
-        Sem liquidez e vencimento
-        {missingLiquidityInCurrentView > 0 && (
-          <Badge variant="outline" className="ml-auto px-1.5 py-0 text-[10px] bg-orange-50 border-orange-200 text-orange-700">
-            {missingLiquidityInCurrentView}
-          </Badge>
-        )}
-      </label>
-      <p className="text-xs text-muted-foreground">Ativos sem ambos os campos preenchidos</p>
-    </div>
-  </div>
-  ```
-- Atualizar:
-  - Condições do botão `variant` e badge total no PopoverTrigger (linhas 4755, 4761-4767) para incluir `showOnlyMissingLiquidity` e `missingLiquidityInCurrentView`.
-  - Botão "Limpar filtros" (linha 4860) para resetar também `setShowOnlyMissingLiquidity(false)`.
-
-## Resumo de arquivos
-
-- `src/pages/DataManagement.tsx` — único arquivo editado. Sem migração, sem novos componentes.
+## Arquivos afetados
+- `package.json` — adicionar `html2canvas` e `jspdf`
+- `src/lib/pdfExport.ts` — novo
+- `src/pages/Dashboard.tsx` — botão + handler
+- `src/components/InvestmentDashboard.tsx` — atributos `data-pdf-section` nas seções
