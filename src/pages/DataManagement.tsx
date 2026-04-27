@@ -1552,7 +1552,95 @@ export default function DataManagement() {
   };
 
 
-  const handleSave = async () => {
+  // Função para gravar liquidez no RAG_Processador
+  const handleSaveLiquidez = async () => {
+    if (!editingItem || !editingItem.Ativo || !editingItem.liquidez) {
+      toast({ title: "Preencha o Ativo e a Liquidez antes de gravar.", variant: "destructive" });
+      return;
+    }
+
+    setRagLiquidezSaving(true);
+    try {
+      const ativo = editingItem.Ativo.trim();
+      const liquidezNova = editingItem.liquidez.trim();
+
+      const { data: existing, error: fetchError } = await supabase
+        .from('RAG_Processador')
+        .select('*')
+        .eq('Ativo', ativo);
+
+      if (fetchError) throw fetchError;
+
+      if (!existing || existing.length === 0) {
+        const { error: insertError } = await supabase
+          .from('RAG_Processador')
+          .insert({ Ativo: ativo, Liquidez: liquidezNova } as any);
+        if (insertError) throw insertError;
+        toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${liquidezNova}` });
+      } else if ((existing[0] as any).Liquidez === liquidezNova) {
+        toast({ title: "Liquidez já gravada", description: `"${ativo}" já está como ${liquidezNova}.` });
+      } else if (!(existing[0] as any).Liquidez) {
+        // Existe sem liquidez — só atualiza
+        const { error: updateError } = await supabase
+          .from('RAG_Processador')
+          .update({ Liquidez: liquidezNova } as any)
+          .eq('Ativo', ativo);
+        if (updateError) throw updateError;
+        toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${liquidezNova}` });
+      } else {
+        // Conflito — abrir dialog
+        setRagLiquidezConflictDialog({
+          open: true,
+          ativo,
+          liquidezNova,
+          liquidezExistente: (existing[0] as any).Liquidez,
+        });
+        setRagLiquidezUpdateExisting(true);
+      }
+    } catch (error: any) {
+      toast({ title: "Erro ao gravar liquidez", description: error.message, variant: "destructive" });
+    } finally {
+      setRagLiquidezSaving(false);
+    }
+  };
+
+  const handleConfirmRagLiquidezUpdate = async () => {
+    if (!ragLiquidezConflictDialog) return;
+    setRagLiquidezSaving(true);
+    try {
+      const { ativo, liquidezNova } = ragLiquidezConflictDialog;
+
+      const { error: updateError } = await supabase
+        .from('RAG_Processador')
+        .update({ Liquidez: liquidezNova } as any)
+        .eq('Ativo', ativo);
+      if (updateError) throw updateError;
+
+      if (ragLiquidezUpdateExisting) {
+        const { error: dadosError } = await supabase
+          .from('DadosPerformance')
+          .update({ liquidez: liquidezNova })
+          .eq('Ativo', ativo);
+        if (dadosError) throw dadosError;
+
+        if (editingItem && editingItem.Ativo === ativo) {
+          setEditingItem({ ...editingItem, liquidez: liquidezNova });
+        }
+
+        await fetchData();
+        toast({ title: "Liquidez atualizada!", description: `"${ativo}" → ${liquidezNova} (todos os registros atualizados)` });
+      } else {
+        toast({ title: "Liquidez atualizada!", description: `"${ativo}" → ${liquidezNova} (apenas RAG)` });
+      }
+    } catch (error: any) {
+      toast({ title: "Erro ao atualizar liquidez", description: error.message, variant: "destructive" });
+    } finally {
+      setRagLiquidezSaving(false);
+      setRagLiquidezConflictDialog(null);
+    }
+  };
+
+
     if (!editingItem) return;
 
     try {
