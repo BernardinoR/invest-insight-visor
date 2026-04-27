@@ -269,6 +269,16 @@ export default function DataManagement() {
   } | null>(null);
   const [ragUpdateExisting, setRagUpdateExisting] = useState(true);
   const [ragSaving, setRagSaving] = useState(false);
+
+  // Estado para o dialog de conflito de liquidez RAG
+  const [ragLiquidezConflictDialog, setRagLiquidezConflictDialog] = useState<{
+    open: boolean;
+    ativo: string;
+    liquidezNova: string;
+    liquidezExistente: string;
+  } | null>(null);
+  const [ragLiquidezUpdateExisting, setRagLiquidezUpdateExisting] = useState(true);
+  const [ragLiquidezSaving, setRagLiquidezSaving] = useState(false);
   const [marketCalcLoading, setMarketCalcLoading] = useState(false);
   const [marketCalcResult, setMarketCalcResult] = useState<{
     monthlyReturn: number;
