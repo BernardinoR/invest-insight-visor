@@ -4462,6 +4462,30 @@ interface VerificationResult {
                                                 </div>
                                               </>
                                             )}
+
+                                            {verification.hasMissingLiquidity && (
+                                              <>
+                                                <Separator />
+                                                <div>
+                                                  <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                                                    <XCircle className="h-4 w-4 text-orange-500" />
+                                                    Liquidez / Vencimento
+                                                  </h4>
+                                                  <div className="text-sm space-y-1">
+                                                    <div className="flex justify-between">
+                                                      <span className="text-muted-foreground">Sem liquidez e sem vencimento:</span>
+                                                      <span className="font-medium text-orange-600">{verification.missingLiquidityCount}</span>
+                                                    </div>
+                                                  </div>
+                                                  <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded text-xs text-orange-700 dark:text-orange-400">
+                                                    💧 {verification.missingLiquidityCount} ativo{verification.missingLiquidityCount > 1 ? 's' : ''} sem campo "Liquidez" e sem "Vencimento".
+                                                    <div className="mt-1 text-[10px] opacity-80">
+                                                      Preencha pelo menos um dos dois campos para que apareçam corretamente nas análises.
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </>
+                                            )}
                                          </div>
                                        </PopoverContent>
                                      </Popover>
