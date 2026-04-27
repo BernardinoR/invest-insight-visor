@@ -2264,7 +2264,9 @@ interface VerificationResult {
       missingYieldCount: 0,
       hasMissingYield: false,
       newAssetCount: 0,
-      hasNewAssets: false
+      hasNewAssets: false,
+      missingLiquidityCount: 0,
+      hasMissingLiquidity: false,
     };
   }, [verificationsCache]);
 
