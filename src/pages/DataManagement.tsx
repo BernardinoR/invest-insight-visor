@@ -5693,7 +5693,23 @@ interface VerificationResult {
                                     >
                                       <Copy className="h-4 w-4" />
                                     </Button>
-                                    
+
+                                    {(() => {
+                                      const hasOverride = overridesIndex.has(`${item.Instituicao}|${item.Ativo}`);
+                                      return (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className={`h-8 w-8 p-0 ${hasOverride ? 'text-muted-foreground' : 'text-primary hover:text-primary'}`}
+                                          onClick={() => handleCreateOverrideFromAsset(item)}
+                                          disabled={hasOverride}
+                                          title={hasOverride ? 'Já existe ajuste para este ativo (gerencie na aba Ajustes)' : 'Criar ajuste deste ativo'}
+                                        >
+                                          <Wand2 className="h-4 w-4" />
+                                        </Button>
+                                      );
+                                    })()}
+
                                     <Button
                                       variant="ghost"
                                       size="sm"
