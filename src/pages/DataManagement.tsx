@@ -175,6 +175,7 @@ export default function DataManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("consolidado");
   const [overridesRefreshSignal, setOverridesRefreshSignal] = useState(0);
+  const [overridesIndex, setOverridesIndex] = useState<Map<string, { id: string; ativo_original: string; ativo_novo: string | null }>>(new Map());
   
   // Multi-selection state
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
