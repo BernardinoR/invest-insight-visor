@@ -1,0 +1,1 @@
+ALTER TABLE public."RAG_Processador" ADD COLUMN "Liquidez" text;

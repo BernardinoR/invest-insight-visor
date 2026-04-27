@@ -531,18 +531,21 @@ export type Database = {
           Classificacao: string | null
           created_at: string
           id: number
+          Liquidez: string | null
         }
         Insert: {
           Ativo?: string | null
           Classificacao?: string | null
           created_at?: string
           id?: number
+          Liquidez?: string | null
         }
         Update: {
           Ativo?: string | null
           Classificacao?: string | null
           created_at?: string
           id?: number
+          Liquidez?: string | null
         }
         Relationships: []
       }

@@ -269,6 +269,16 @@ export default function DataManagement() {
   } | null>(null);
   const [ragUpdateExisting, setRagUpdateExisting] = useState(true);
   const [ragSaving, setRagSaving] = useState(false);
+
+  // Estado para o dialog de conflito de liquidez RAG
+  const [ragLiquidezConflictDialog, setRagLiquidezConflictDialog] = useState<{
+    open: boolean;
+    ativo: string;
+    liquidezNova: string;
+    liquidezExistente: string;
+  } | null>(null);
+  const [ragLiquidezUpdateExisting, setRagLiquidezUpdateExisting] = useState(true);
+  const [ragLiquidezSaving, setRagLiquidezSaving] = useState(false);
   const [marketCalcLoading, setMarketCalcLoading] = useState(false);
   const [marketCalcResult, setMarketCalcResult] = useState<{
     monthlyReturn: number;
@@ -1542,6 +1552,95 @@ export default function DataManagement() {
   };
 
 
+  // Função para gravar liquidez no RAG_Processador
+  const handleSaveLiquidez = async () => {
+    if (!editingItem || !editingItem.Ativo || !editingItem.liquidez) {
+      toast({ title: "Preencha o Ativo e a Liquidez antes de gravar.", variant: "destructive" });
+      return;
+    }
+
+    setRagLiquidezSaving(true);
+    try {
+      const ativo = editingItem.Ativo.trim();
+      const liquidezNova = editingItem.liquidez.trim();
+
+      const { data: existing, error: fetchError } = await supabase
+        .from('RAG_Processador')
+        .select('*')
+        .eq('Ativo', ativo);
+
+      if (fetchError) throw fetchError;
+
+      if (!existing || existing.length === 0) {
+        const { error: insertError } = await supabase
+          .from('RAG_Processador')
+          .insert({ Ativo: ativo, Liquidez: liquidezNova } as any);
+        if (insertError) throw insertError;
+        toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${liquidezNova}` });
+      } else if ((existing[0] as any).Liquidez === liquidezNova) {
+        toast({ title: "Liquidez já gravada", description: `"${ativo}" já está como ${liquidezNova}.` });
+      } else if (!(existing[0] as any).Liquidez) {
+        // Existe sem liquidez — só atualiza
+        const { error: updateError } = await supabase
+          .from('RAG_Processador')
+          .update({ Liquidez: liquidezNova } as any)
+          .eq('Ativo', ativo);
+        if (updateError) throw updateError;
+        toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${liquidezNova}` });
+      } else {
+        // Conflito — abrir dialog
+        setRagLiquidezConflictDialog({
+          open: true,
+          ativo,
+          liquidezNova,
+          liquidezExistente: (existing[0] as any).Liquidez,
+        });
+        setRagLiquidezUpdateExisting(true);
+      }
+    } catch (error: any) {
+      toast({ title: "Erro ao gravar liquidez", description: error.message, variant: "destructive" });
+    } finally {
+      setRagLiquidezSaving(false);
+    }
+  };
+
+  const handleConfirmRagLiquidezUpdate = async () => {
+    if (!ragLiquidezConflictDialog) return;
+    setRagLiquidezSaving(true);
+    try {
+      const { ativo, liquidezNova } = ragLiquidezConflictDialog;
+
+      const { error: updateError } = await supabase
+        .from('RAG_Processador')
+        .update({ Liquidez: liquidezNova } as any)
+        .eq('Ativo', ativo);
+      if (updateError) throw updateError;
+
+      if (ragLiquidezUpdateExisting) {
+        const { error: dadosError } = await supabase
+          .from('DadosPerformance')
+          .update({ liquidez: liquidezNova })
+          .eq('Ativo', ativo);
+        if (dadosError) throw dadosError;
+
+        if (editingItem && editingItem.Ativo === ativo) {
+          setEditingItem({ ...editingItem, liquidez: liquidezNova });
+        }
+
+        await fetchData();
+        toast({ title: "Liquidez atualizada!", description: `"${ativo}" → ${liquidezNova} (todos os registros atualizados)` });
+      } else {
+        toast({ title: "Liquidez atualizada!", description: `"${ativo}" → ${liquidezNova} (apenas RAG)` });
+      }
+    } catch (error: any) {
+      toast({ title: "Erro ao atualizar liquidez", description: error.message, variant: "destructive" });
+    } finally {
+      setRagLiquidezSaving(false);
+      setRagLiquidezConflictDialog(null);
+    }
+  };
+
+
   const handleSave = async () => {
     if (!editingItem) return;
 
@@ -2047,6 +2146,8 @@ interface VerificationResult {
   hasMissingYield: boolean;
   newAssetCount: number;
   hasNewAssets: boolean;
+  missingLiquidityCount: number;
+  hasMissingLiquidity: boolean;
 }
 
   // OPTIMIZED: Create index of assets by composite key - HUGE PERFORMANCE GAIN
@@ -2091,7 +2192,15 @@ interface VerificationResult {
     
     // Contar ativos novos
     const newAssetCount = relatedDetails.filter(item => item.ativo_novo === true).length;
-    
+
+    // Contar ativos sem liquidez E sem vencimento (excluindo cash-like)
+    const missingLiquidityCount = relatedDetails.filter(item => {
+      const ativoNorm = String(item.Ativo || '').toLowerCase();
+      const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+      if (isCashLike) return false;
+      return !item.Vencimento && !(item as any).liquidez;
+    }).length;
+
     // Calcular diferença
     const difference = Math.abs(patrimonioFinal - detailedSum);
     
@@ -2118,7 +2227,9 @@ interface VerificationResult {
       missingYieldCount,
       hasMissingYield: missingYieldCount > 0,
       newAssetCount,
-      hasNewAssets: newAssetCount > 0
+      hasNewAssets: newAssetCount > 0,
+      missingLiquidityCount,
+      hasMissingLiquidity: missingLiquidityCount > 0,
     };
   }, [dadosIndex, correctThreshold, toleranceValue, hasValidYield]);
 
@@ -2153,7 +2264,9 @@ interface VerificationResult {
       missingYieldCount: 0,
       hasMissingYield: false,
       newAssetCount: 0,
-      hasNewAssets: false
+      hasNewAssets: false,
+      missingLiquidityCount: 0,
+      hasMissingLiquidity: false,
     };
   }, [verificationsCache]);
 
@@ -4154,6 +4267,11 @@ interface VerificationResult {
                               {verification.hasNewAssets && (
                                 <Info className="h-4 w-4 text-blue-500" />
                               )}
+
+                              {/* QUINTA BOLINHA: Liquidez/Vencimento Faltante */}
+                              {verification.hasMissingLiquidity && (
+                                <XCircle className="h-4 w-4 text-orange-500" />
+                              )}
                             </Button>
                           </PopoverTrigger>
                                        <PopoverContent className="w-80">
@@ -5255,6 +5373,22 @@ interface VerificationResult {
                                         <Info className="h-4 w-4 text-blue-500" />
                                       </div>
                                     )}
+
+                                    {/* Verificação de Liquidez/Vencimento */}
+                                    {(() => {
+                                      const ativoNorm = String(item.Ativo || '').toLowerCase();
+                                      const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+                                      const semVencimento = !item.Vencimento;
+                                      const semLiquidez = !(item as any).liquidez;
+                                      if (semVencimento && semLiquidez && !isCashLike) {
+                                        return (
+                                          <div title="Sem liquidez e sem vencimento">
+                                            <XCircle className="h-4 w-4 text-orange-500" />
+                                          </div>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
                                   </div>
                                 </TableCell>
                               )}
@@ -5835,6 +5969,24 @@ interface VerificationResult {
                               <X className="h-4 w-4" />
                             </Button>
                           )}
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-10 w-10 shrink-0"
+                                  disabled={!editingItem.Ativo || !editingItem.liquidez || ragLiquidezSaving}
+                                  onClick={handleSaveLiquidez}
+                                >
+                                  <BookmarkPlus className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Gravar liquidez para uso automático</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                         {editingItem.liquidez && (
                           <p className="text-xs text-muted-foreground mt-1">
@@ -6839,7 +6991,36 @@ interface VerificationResult {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Rollover Dialog */}
+      {/* RAG Liquidez Conflict Dialog */}
+      <AlertDialog open={ragLiquidezConflictDialog?.open || false} onOpenChange={(open) => !open && setRagLiquidezConflictDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Liquidez diferente encontrada</AlertDialogTitle>
+            <AlertDialogDescription>
+              O ativo <strong>"{ragLiquidezConflictDialog?.ativo}"</strong> está gravado com liquidez{' '}
+              <strong>"{ragLiquidezConflictDialog?.liquidezExistente}"</strong>. Deseja atualizar para{' '}
+              <strong>"{ragLiquidezConflictDialog?.liquidezNova}"</strong>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-center space-x-2 py-2">
+            <Checkbox
+              id="ragLiquidezUpdateExisting"
+              checked={ragLiquidezUpdateExisting}
+              onCheckedChange={(checked) => setRagLiquidezUpdateExisting(checked === true)}
+            />
+            <label htmlFor="ragLiquidezUpdateExisting" className="text-sm text-muted-foreground cursor-pointer">
+              Atualizar também todos os registros existentes com este ativo
+            </label>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Manter atual</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmRagLiquidezUpdate} disabled={ragLiquidezSaving}>
+              {ragLiquidezSaving ? 'Atualizando...' : 'Atualizar liquidez'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <RolloverDialog
         open={isRolloverOpen}
         onOpenChange={setIsRolloverOpen}
