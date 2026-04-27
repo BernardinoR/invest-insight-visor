@@ -176,6 +176,16 @@ export default function DataManagement() {
   const [activeTab, setActiveTab] = useState("consolidado");
   const [overridesRefreshSignal, setOverridesRefreshSignal] = useState(0);
   const [overridesIndex, setOverridesIndex] = useState<Map<string, { id: string; ativo_original: string; ativo_novo: string | null }>>(new Map());
+  const [overridePrefill, setOverridePrefill] = useState<{
+    nonce: number;
+    instituicao: string;
+    ativo_original: string;
+    classe_ativo?: string;
+    emissor?: string;
+    taxa?: string;
+    vencimento?: string;
+    liquidez?: string;
+  } | null>(null);
   
   // Multi-selection state
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
