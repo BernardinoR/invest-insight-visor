@@ -5491,7 +5491,35 @@ interface VerificationResult {
                               {visibleColumnsDetalhados.has('Instituição') && <TableCell>{item.Instituicao}</TableCell>}
                               {visibleColumnsDetalhados.has('Nome da Conta') && <TableCell>{item.nomeConta || '-'}</TableCell>}
                               {visibleColumnsDetalhados.has('Moeda') && <TableCell>{item.Moeda || '-'}</TableCell>}
-                              {visibleColumnsDetalhados.has('Ativo') && <TableCell>{item.Ativo}</TableCell>}
+                              {visibleColumnsDetalhados.has('Ativo') && (
+                                <TableCell>
+                                  <div className="flex items-center gap-1.5">
+                                    <span>{item.Ativo}</span>
+                                    {overridesIndex.has(`${item.Instituicao}|${item.Ativo}`) && (
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <button
+                                              type="button"
+                                              onClick={() => setActiveTab('overrides')}
+                                              className="inline-flex items-center"
+                                            >
+                                              <Badge variant="outline" className="px-1.5 py-0 text-[10px] gap-1 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300">
+                                                <Wand2 className="h-3 w-3" />
+                                                Ajustado
+                                              </Badge>
+                                            </button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p className="text-xs">Este ativo tem uma regra de ajuste cadastrada.</p>
+                                            <p className="text-xs text-muted-foreground">Clique para ver na aba "Ajustes de Ativos".</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              )}
                               {visibleColumnsDetalhados.has('Emissor') && <TableCell>{item.Emissor}</TableCell>}
                               {visibleColumnsDetalhados.has('Classe') && <TableCell>{item["Classe do ativo"]}</TableCell>}
                               {visibleColumnsDetalhados.has('Posição') && <TableCell>{formatCurrency(item.Posicao, item.Moeda)}</TableCell>}
