@@ -1538,7 +1538,7 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
         
         {/* Risk Management View */}
         {viewMode === 'risk' && (
-          <div className="space-y-6">
+          <div data-pdf-section="Gestão de Risco" className="space-y-6">
             <RiskManagement 
               consolidadoData={filteredConsolidadoData}
               clientTarget={(clientTarget?.targetValue || 0) / 100}
@@ -1550,7 +1550,7 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
 
         {/* Investment Policy Compliance View */}
         {viewMode === 'policy' && (
-          <div className="space-y-6">
+          <div data-pdf-section="Política de Investimentos" className="space-y-6">
             <InvestmentPolicyCompliance 
               dadosData={filteredDadosData}
               selectedClient={selectedClient}
