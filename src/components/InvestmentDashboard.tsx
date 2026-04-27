@@ -904,7 +904,7 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
 
             {/* Investment Details Table - moved to end */}
             {filteredDadosData.length > 0 && (
-              <div className="mb-8 mt-8">
+              <div data-pdf-section="Retorno por Ativo" className="mb-8 mt-8">
             <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
               <CardHeader>
                 <div className="flex items-center justify-between">
