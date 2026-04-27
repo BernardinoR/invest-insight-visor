@@ -5873,6 +5873,7 @@ interface VerificationResult {
                 ativosOriginais={ativosUnique}
                 refreshSignal={overridesRefreshSignal}
                 prefillRequest={overridePrefill ?? undefined}
+                onOverridesChanged={() => setOverridesRefreshSignal((s) => s + 1)}
               />
             </TabsContent>
          </Tabs>
