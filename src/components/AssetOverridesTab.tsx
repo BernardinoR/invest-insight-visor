@@ -694,13 +694,68 @@ export function AssetOverridesTab({
                 </div>
                 <div>
                   <Label>Taxa</Label>
-                  <Input
-                    value={form.taxa}
-                    onChange={(e) =>
-                      setForm({ ...form, taxa: e.target.value })
+                  {(() => {
+                    const tipos = taxaTiposPorClasse(form.classe_ativo || "");
+                    const parsed = parseTaxa(form.taxa);
+                    // Se a classe define tipos específicos e o tipo atual não bate, força o primeiro
+                    const tipoAtual = tipos.includes(parsed.tipo)
+                      ? parsed.tipo
+                      : tipos[0];
+                    const valor = parsed.valor;
+
+                    if (tipos[0] === "Livre") {
+                      return (
+                        <Input
+                          value={form.taxa}
+                          onChange={(e) =>
+                            setForm({ ...form, taxa: e.target.value })
+                          }
+                          placeholder="Sem padrão para esta classe"
+                        />
+                      );
                     }
-                    placeholder="Ex: CDI+2%, IPCA+5,5%"
-                  />
+
+                    const onValor = (v: string) => {
+                      // Aceita só dígitos, vírgula e ponto
+                      const limpo = v.replace(/[^\d.,-]/g, "").replace(".", ",");
+                      setForm({ ...form, taxa: buildTaxa(tipoAtual, limpo) });
+                    };
+                    const onTipo = (t: TaxaTipo) => {
+                      setForm({ ...form, taxa: buildTaxa(t, valor) });
+                    };
+
+                    return (
+                      <div className="flex gap-2">
+                        {tipos.length > 1 ? (
+                          <Select value={tipoAtual} onValueChange={(v) => onTipo(v as TaxaTipo)}>
+                            <SelectTrigger className="w-[120px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {tipos.map((t) => (
+                                <SelectItem key={t} value={t}>{t}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="flex items-center px-3 rounded-md border bg-muted text-sm whitespace-nowrap">
+                            {tipos[0] === "Pré" ? "% a.a." : tipos[0]}
+                          </div>
+                        )}
+                        <Input
+                          inputMode="decimal"
+                          value={valor}
+                          onChange={(e) => onValor(e.target.value)}
+                          onBlur={(e) => {
+                            const f = formatBR2(e.target.value);
+                            setForm({ ...form, taxa: buildTaxa(tipoAtual, f) });
+                          }}
+                          placeholder="0,00"
+                          className="flex-1"
+                        />
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div>
                   <Label>Vencimento</Label>
