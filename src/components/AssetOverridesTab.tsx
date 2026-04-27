@@ -52,6 +52,61 @@ import {
   ArrowRight,
 } from "lucide-react";
 
+// ===== Padronização de Taxa =====
+type TaxaTipo = "% CDI" | "CDI+" | "IPCA+" | "IGPM+" | "Pré" | "Livre" | "Nenhuma";
+
+const taxaTiposPorClasse = (classe: string): TaxaTipo[] => {
+  if (classe.startsWith("CDI")) return ["% CDI", "CDI+"];
+  if (classe.startsWith("Inflação")) return ["IPCA+", "IGPM+"];
+  if (classe.startsWith("Pré Fixado")) return ["Pré"];
+  return ["Livre"];
+};
+
+const formatBR2 = (v: string): string => {
+  const n = Number(v.replace(/\./g, "").replace(",", "."));
+  if (!isFinite(n)) return "";
+  return n.toFixed(2).replace(".", ",");
+};
+
+const buildTaxa = (tipo: TaxaTipo, valor: string): string => {
+  const v = formatBR2(valor);
+  if (!v && tipo !== "Livre" && tipo !== "Nenhuma") return "";
+  switch (tipo) {
+    case "% CDI": return `${v}% CDI`;
+    case "CDI+": return `CDI+ ${v}%`;
+    case "IPCA+": return `IPCA+ ${v}%`;
+    case "IGPM+": return `IGPM+ ${v}%`;
+    case "Pré": return `${v}% a.a.`;
+    case "Livre": return valor.trim();
+    default: return "";
+  }
+};
+
+const parseTaxa = (taxa: string): { tipo: TaxaTipo; valor: string } => {
+  const t = (taxa || "").trim();
+  if (!t) return { tipo: "Livre", valor: "" };
+  // Normaliza ponto decimal pra vírgula só no número extraído
+  const numRe = /(-?\d+(?:[.,]\d+)?)/;
+  const toBR = (s: string) => s.replace(".", ",");
+  let m: RegExpMatchArray | null;
+  // CDI+
+  m = t.match(/^CDI\s*\+\s*(-?\d+(?:[.,]\d+)?)\s*%?$/i);
+  if (m) return { tipo: "CDI+", valor: toBR(m[1]) };
+  // % CDI
+  m = t.match(/^(-?\d+(?:[.,]\d+)?)\s*%?\s*CDI$/i);
+  if (m) return { tipo: "% CDI", valor: toBR(m[1]) };
+  // IPCA+
+  m = t.match(/^IPCA\s*\+?\s*(-?\d+(?:[.,]\d+)?)\s*%?$/i);
+  if (m) return { tipo: "IPCA+", valor: toBR(m[1]) };
+  // IGPM / IGP-M
+  m = t.match(/^IGP[-\s]?M\s*\+?\s*(-?\d+(?:[.,]\d+)?)\s*%?$/i);
+  if (m) return { tipo: "IGPM+", valor: toBR(m[1]) };
+  // Pré (% a.a.)
+  m = t.match(/^(-?\d+(?:[.,]\d+)?)\s*%\s*a\.?\s*a\.?$/i);
+  if (m) return { tipo: "Pré", valor: toBR(m[1]) };
+  return { tipo: "Livre", valor: t };
+};
+
 export interface AssetOverride {
   id: string;
   cliente: string;
