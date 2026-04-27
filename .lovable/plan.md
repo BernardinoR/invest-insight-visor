@@ -1,72 +1,59 @@
-
-
-# Plano: Coluna "Outra Pessoa" + Separação no Gráfico de Emissores
+# Plano: Persistir Liquidez no RAG + Bolinha de Verificação
 
 ## Resumo
-Adicionar um campo que identifica se uma conta separada pertence a outra pessoa. No gráfico de Exposição por Emissor, os ativos de cada pessoa terão seu próprio limite de R$250k por emissor.
+1. Adicionar botão "Salvar liquidez" ao lado do campo Liquidez no modal de edição (igual ao botão de Salvar Classe), persistindo o valor numa nova coluna `Liquidez` em `RAG_Processador`.
+2. Quando um ativo é cadastrado/editado e já existe no RAG com liquidez, pré-preencher automaticamente.
+3. Adicionar uma 3ª bolinha de verificação na tabela de Ativos detalhados (e no consolidado) indicando se o ativo está sem liquidez **e** sem vencimento — só aparece quando há esse problema.
 
 ## Alterações
 
-### 1. Migration: Nova coluna em `account_split_configs`
+### 1. Migration: Nova coluna `Liquidez` em `RAG_Processador`
 
 ```sql
-ALTER TABLE public.account_split_configs
-ADD COLUMN is_outra_pessoa boolean NOT NULL DEFAULT false;
+ALTER TABLE public."RAG_Processador"
+ADD COLUMN "Liquidez" text;
 ```
 
-### 2. Migration: Nova coluna em `ConsolidadoPerformance`
+Permite que cada Ativo tenha uma liquidez "padrão" memorizada (ex: D+30) reutilizada em novos registros.
 
-```sql
-ALTER TABLE public."ConsolidadoPerformance"
-ADD COLUMN is_outra_pessoa boolean NOT NULL DEFAULT false;
+### 2. `DataManagement.tsx` — Botão "Salvar Liquidez" no modal
+
+- Ao lado do campo Liquidez (na seção Condições do modal de edição), adicionar um botão `BookmarkPlus` idêntico ao de Salvar Classe.
+- Nova função `handleSaveLiquidez` espelhando `handleSaveClassificacao`:
+  - Se Ativo não existe no RAG → INSERT com Ativo + Liquidez (Classificacao fica null)
+  - Se existe e Liquidez é igual → toast "já gravada"
+  - Se existe e Liquidez é diferente → AlertDialog de conflito (com opção de propagar para todos os `DadosPerformance` com mesmo Ativo, igual ao fluxo de classe)
+- Habilitado apenas quando `editingItem.Ativo` e `editingItem.liquidez` estão preenchidos.
+
+### 3. Auto-preenchimento ao detectar Ativo conhecido
+
+Onde já existe lógica de auto-classificação a partir do RAG (busca por Ativo), incluir também `Liquidez` no SELECT e setar `editingItem.liquidez` se vier preenchido e o campo atual estiver vazio.
+
+### 4. Nova bolinha "Liquidez/Vencimento faltante" — Tabela de Ativos detalhados
+
+Em `DataManagement.tsx` (~linha 5252, depois da bolinha de Ativo Novo), adicionar:
+
+```tsx
+{!item.Vencimento && !item.liquidez && !isCashLike(item.Ativo) && (
+  <div title="Sem liquidez e sem vencimento">
+    <XCircle className="h-4 w-4 text-orange-500" />
+  </div>
+)}
 ```
 
-Quando o split for aplicado com `is_outra_pessoa = true`, o consolidado destino recebe essa flag.
+Regra: a bolinha aparece **apenas se** `Vencimento` está vazio **E** `liquidez` está vazia. Para evitar ruído, ignorar ativos tipo Caixa/Cash/Proventos (helper `isCashLike` já usado em outras validações).
 
-### 3. Migration: Nova coluna em `DadosPerformance`
+### 5. Resumo no Consolidado (3ª/4ª bolinha agregada)
 
-```sql
-ALTER TABLE public."DadosPerformance"
-ADD COLUMN is_outra_pessoa boolean NOT NULL DEFAULT false;
-```
+Na linha do consolidado (~4116), adicionar nova bolinha entre "Rentabilidade" e "Ativos Novos":
+- Calcular `hasMissingLiquidity` no `getVerification`: conta de ativos do consolidado em que `Vencimento IS NULL AND liquidez IS NULL` (excluindo cash-like).
+- Se > 0 → ícone laranja `AlertCircle`; senão omitir (igual padrão de "Ativos Novos").
+- Adicionar seção correspondente no Popover de detalhes da verificação.
 
-Quando ativos são movidos para uma conta de outra pessoa, recebem essa flag. Isso permite que o gráfico de emissores saiba a qual "pessoa" o ativo pertence.
-
-### 4. `SplitAccountDialog.tsx` — Checkbox "Outra pessoa"
-
-- Adicionar um checkbox/switch "Esta conta pertence a outra pessoa?" no formulário de split
-- Salvar o valor em `account_split_configs.is_outra_pessoa`
-- No `handleApply`, ao mover ativos e criar/atualizar consolidados, propagar `is_outra_pessoa = true` nos registros de `DadosPerformance` e `ConsolidadoPerformance` destino
-
-### 5. `IssuerExposure.tsx` — Separação por pessoa
-
-Lógica atual: agrupa todos os ativos por emissor e compara com R$250k.
-
-Nova lógica:
-- Agrupar ativos por **pessoa** (titular vs cada `nomeConta` com `is_outra_pessoa = true`)
-- Para cada pessoa, calcular exposição por emissor separadamente
-- No gráfico, mostrar barras agrupadas ou empilhadas diferenciando cada pessoa
-- Cada pessoa tem seu próprio limite de R$250k por emissor
-- Legendas identificam qual pessoa é qual
-
-```text
-Exemplo visual:
-  Emissor X
-  ┌─────────┐ Titular: R$180k (OK)
-  ├─────────┤ Maria Luiza: R$200k (OK)
-  
-  Sem separação seria R$380k (ACIMA) — com separação, ambos OK.
-```
-
-### 6. Propagação no Rollover
-
-Quando dados são avançados de competência (rollover), a flag `is_outra_pessoa` deve ser preservada nos novos registros de `DadosPerformance` e `ConsolidadoPerformance`.
+> **Observação**: o cálculo desse novo indicador no consolidado é feito **client-side** no `getVerification` (que já consulta os ativos detalhados). Não é necessário alterar a função `calculate_verification` do banco nesta etapa — fica como melhoria futura caso queira persistir.
 
 ## Detalhes técnicos
-
-- A interface `IssuerExposure` receberá os dados já com o campo `is_outra_pessoa`
-- O agrupamento será: `{ pessoa: string, emissor: string }` como chave composta
-- A "pessoa" do titular será o nome do cliente; a de outra pessoa será o `nomeConta` da conta destino
-- O filtro de conta existente continuará funcionando normalmente
-- 3 migrations + edição de 2 componentes (`SplitAccountDialog.tsx`, `IssuerExposure.tsx`) + possível ajuste no `RolloverDialog.tsx`
-
+- Sem alteração na coluna `liquidez` da tabela `DadosPerformance` (já existe).
+- A nova coluna `Liquidez` em `RAG_Processador` é nullable (ativos antigos continuam funcionando).
+- Reutiliza padrão visual e UX já existentes (BookmarkPlus, AlertDialog de conflito, bolinhas coloridas).
+- Cor laranja diferencia do vermelho (erro crítico) e do azul (informativo).
