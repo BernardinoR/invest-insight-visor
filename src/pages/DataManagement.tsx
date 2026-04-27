@@ -2192,7 +2192,15 @@ interface VerificationResult {
     
     // Contar ativos novos
     const newAssetCount = relatedDetails.filter(item => item.ativo_novo === true).length;
-    
+
+    // Contar ativos sem liquidez E sem vencimento (excluindo cash-like)
+    const missingLiquidityCount = relatedDetails.filter(item => {
+      const ativoNorm = String(item.Ativo || '').toLowerCase();
+      const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+      if (isCashLike) return false;
+      return !item.Vencimento && !(item as any).liquidez;
+    }).length;
+
     // Calcular diferença
     const difference = Math.abs(patrimonioFinal - detailedSum);
     
@@ -2219,7 +2227,9 @@ interface VerificationResult {
       missingYieldCount,
       hasMissingYield: missingYieldCount > 0,
       newAssetCount,
-      hasNewAssets: newAssetCount > 0
+      hasNewAssets: newAssetCount > 0,
+      missingLiquidityCount,
+      hasMissingLiquidity: missingLiquidityCount > 0,
     };
   }, [dadosIndex, correctThreshold, toleranceValue, hasValidYield]);
 
