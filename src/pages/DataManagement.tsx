@@ -2146,6 +2146,8 @@ interface VerificationResult {
   hasMissingYield: boolean;
   newAssetCount: number;
   hasNewAssets: boolean;
+  missingLiquidityCount: number;
+  hasMissingLiquidity: boolean;
 }
 
   // OPTIMIZED: Create index of assets by composite key - HUGE PERFORMANCE GAIN
