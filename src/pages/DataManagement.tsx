@@ -4922,9 +4922,36 @@ interface VerificationResult {
                             </p>
                           </div>
                         </div>
-                        
+
+                        {/* Sem Liquidez e Vencimento */}
+                        <div className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors">
+                          <Checkbox
+                            id="filter-missing-liquidity"
+                            checked={showOnlyMissingLiquidity}
+                            onCheckedChange={(checked) => setShowOnlyMissingLiquidity(checked as boolean)}
+                            className="mt-0.5"
+                          />
+                          <div className="flex-1 space-y-1">
+                            <label
+                              htmlFor="filter-missing-liquidity"
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
+                            >
+                              <XCircle className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
+                              Sem liquidez e vencimento
+                              {missingLiquidityInCurrentView > 0 && (
+                                <Badge variant="outline" className="ml-auto px-1.5 py-0 text-[10px] bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300">
+                                  {missingLiquidityInCurrentView}
+                                </Badge>
+                              )}
+                            </label>
+                            <p className="text-xs text-muted-foreground">
+                              Ativos sem nenhum dos dois campos preenchidos
+                            </p>
+                          </div>
+                        </div>
+
                         {/* Ações */}
-                        {(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets) && (
+                        {(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets || showOnlyMissingLiquidity) && (
                           <>
                             <Separator className="my-2" />
                             <Button 
@@ -4935,6 +4962,7 @@ interface VerificationResult {
                                 setShowOnlyUnclassified(false);
                                 setShowOnlyMissingYield(false);
                                 setShowOnlyNewAssets(false);
+                                setShowOnlyMissingLiquidity(false);
                               }}
                             >
                               <X className="mr-1 h-3 w-3" />
