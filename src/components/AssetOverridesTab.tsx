@@ -127,6 +127,7 @@ export function AssetOverridesTab({
   ativosOriginais,
   refreshSignal,
   prefillRequest,
+  onOverridesChanged,
 }: AssetOverridesTabProps) {
   const { toast } = useToast();
   const [overrides, setOverrides] = useState<AssetOverride[]>([]);
