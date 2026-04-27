@@ -471,6 +471,7 @@ export default function DataManagement() {
   const [showOnlyUnclassified, setShowOnlyUnclassified] = useState(false);
   const [showOnlyMissingYield, setShowOnlyMissingYield] = useState(false);
   const [showOnlyNewAssets, setShowOnlyNewAssets] = useState(false);
+  const [showOnlyMissingLiquidity, setShowOnlyMissingLiquidity] = useState(false);
 
   // Ref para o input de upload de CSV
   const csvFileInputRef = useRef<HTMLInputElement>(null);
@@ -2346,13 +2347,20 @@ interface VerificationResult {
     }
     
     // Filter for quality issues
-    if (showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets) {
+    if (showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets || showOnlyMissingLiquidity) {
       data = data.filter(item => {
         const isUnclassified = showOnlyUnclassified && !isValidAssetClass(item["Classe do ativo"]);
-        const hasMissingYield = showOnlyMissingYield && !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo);
+        const hasMissingYieldF = showOnlyMissingYield && !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo);
         const isNewAsset = showOnlyNewAssets && item.ativo_novo === true;
-        
-        return isUnclassified || hasMissingYield || isNewAsset;
+        const isMissingLiquidity = (() => {
+          if (!showOnlyMissingLiquidity) return false;
+          const ativoNorm = String(item.Ativo || '').toLowerCase();
+          const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+          if (isCashLike) return false;
+          return !item.Vencimento && !(item as any).liquidez;
+        })();
+
+        return isUnclassified || hasMissingYieldF || isNewAsset || isMissingLiquidity;
       });
     }
     
@@ -2360,7 +2368,7 @@ interface VerificationResult {
     data = applySortingGeneric(data, sortConfig ?? DEFAULT_COMPETENCIA_SORT);
     
     return data;
-  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo, showOnlyUnclassified, showOnlyMissingYield, showOnlyNewAssets, activeFilters, sortConfig, isValidAssetClass, hasValidYield]);
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo, showOnlyUnclassified, showOnlyMissingYield, showOnlyNewAssets, showOnlyMissingLiquidity, activeFilters, sortConfig, isValidAssetClass, hasValidYield]);
 
   // Contador de ativos não classificados na view atual (antes do filtro showOnlyUnclassified)
   const unclassifiedInCurrentView = useMemo(() => {
@@ -2454,6 +2462,42 @@ interface VerificationResult {
     }
     
     return data.filter(item => item.ativo_novo === true).length;
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo]);
+
+  // Contador de ativos sem liquidez E sem vencimento na view atual
+  const missingLiquidityInCurrentView = useMemo(() => {
+    let data = dadosData;
+
+    if (selectedCompetencias.length > 0) {
+      data = data.filter(item => selectedCompetencias.includes(item.Competencia));
+    }
+    if (selectedInstituicoes.length > 0) {
+      data = data.filter(item => selectedInstituicoes.includes(item.Instituicao));
+    }
+    if (selectedNomesConta.length > 0) {
+      data = data.filter(item => selectedNomesConta.includes(item.nomeConta || ''));
+    }
+    if (selectedClasses.length > 0) {
+      data = data.filter(item => selectedClasses.includes(item["Classe do ativo"]));
+    }
+    if (selectedEmissores.length > 0) {
+      data = data.filter(item => selectedEmissores.includes(item.Emissor));
+    }
+    if (searchAtivo.trim()) {
+      const searchLower = searchAtivo.toLowerCase();
+      data = data.filter(item =>
+        item.Ativo?.toLowerCase().includes(searchLower) ||
+        item.Emissor?.toLowerCase().includes(searchLower) ||
+        item["Classe do ativo"]?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return data.filter(item => {
+      const ativoNorm = String(item.Ativo || '').toLowerCase();
+      const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+      if (isCashLike) return false;
+      return !item.Vencimento && !(item as any).liquidez;
+    }).length;
   }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo]);
 
   // Função para abrir o dialog de exportação
@@ -4418,6 +4462,30 @@ interface VerificationResult {
                                                 </div>
                                               </>
                                             )}
+
+                                            {verification.hasMissingLiquidity && (
+                                              <>
+                                                <Separator />
+                                                <div>
+                                                  <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                                                    <XCircle className="h-4 w-4 text-orange-500" />
+                                                    Liquidez / Vencimento
+                                                  </h4>
+                                                  <div className="text-sm space-y-1">
+                                                    <div className="flex justify-between">
+                                                      <span className="text-muted-foreground">Sem liquidez e sem vencimento:</span>
+                                                      <span className="font-medium text-orange-600">{verification.missingLiquidityCount}</span>
+                                                    </div>
+                                                  </div>
+                                                  <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded text-xs text-orange-700 dark:text-orange-400">
+                                                    💧 {verification.missingLiquidityCount} ativo{verification.missingLiquidityCount > 1 ? 's' : ''} sem campo "Liquidez" e sem "Vencimento".
+                                                    <div className="mt-1 text-[10px] opacity-80">
+                                                      Preencha pelo menos um dos dois campos para que apareçam corretamente nas análises.
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </>
+                                            )}
                                          </div>
                                        </PopoverContent>
                                      </Popover>
@@ -4563,6 +4631,14 @@ interface VerificationResult {
                   // Calcular ativos novos nos dados filtrados
                   const newAssetsInComparison = filteredDadosData.filter(item => item.ativo_novo === true).length;
 
+                  // Calcular ativos sem liquidez E sem vencimento (excluindo cash-like)
+                  const missingLiquidityInComparison = filteredDadosData.filter(item => {
+                    const ativoNorm = String(item.Ativo || '').toLowerCase();
+                    const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+                    if (isCashLike) return false;
+                    return !item.Vencimento && !(item as any).liquidez;
+                  }).length;
+
                   const consolidadoValue = selectedConsolidado["Patrimonio Final"] || 0;
                   const difference = Math.abs(consolidadoValue - assetsSum);
                   const percentDiff = consolidadoValue !== 0 
@@ -4685,7 +4761,7 @@ interface VerificationResult {
                           )}
                           
                           {/* Seção de Verificações Adicionais */}
-                          {(unclassifiedInComparison > 0 || missingYieldInComparison > 0 || newAssetsInComparison > 0) && (
+                          {(unclassifiedInComparison > 0 || missingYieldInComparison > 0 || newAssetsInComparison > 0 || missingLiquidityInComparison > 0) && (
                             <div className="mt-4 pt-4 border-t">
                               <p className="text-xs font-medium text-muted-foreground mb-3">Alertas de Qualidade dos Dados</p>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -4734,7 +4810,22 @@ interface VerificationResult {
                                     </div>
                                   </div>
                                 )}
-                                
+
+                                {/* Sem Liquidez e Vencimento */}
+                                {missingLiquidityInComparison > 0 && (
+                                  <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800">
+                                    <XCircle className="h-4 w-4 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-semibold text-orange-900 dark:text-orange-100">
+                                        {missingLiquidityInComparison} {missingLiquidityInComparison === 1 ? 'ativo' : 'ativos'}
+                                      </p>
+                                      <p className="text-xs text-orange-700 dark:text-orange-300">
+                                        Sem liquidez e sem vencimento
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+
                               </div>
                             </div>
                           )}
@@ -4752,18 +4843,18 @@ interface VerificationResult {
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button 
-                        variant={(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets) ? "default" : "outline"}
+                        variant={(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets || showOnlyMissingLiquidity) ? "default" : "outline"}
                         size="sm" 
                         className="h-8"
                       >
                         <AlertTriangle className="mr-2 h-4 w-4" />
                         Filtros de Qualidade
-                        {(unclassifiedInCurrentView > 0 || missingYieldInCurrentView > 0 || newAssetsInCurrentView > 0) && (
+                        {(unclassifiedInCurrentView > 0 || missingYieldInCurrentView > 0 || newAssetsInCurrentView > 0 || missingLiquidityInCurrentView > 0) && (
                           <Badge 
-                            variant={(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets) ? "secondary" : "destructive"} 
+                            variant={(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets || showOnlyMissingLiquidity) ? "secondary" : "destructive"} 
                             className="ml-2 px-1.5 py-0 text-[10px]"
                           >
-                            {unclassifiedInCurrentView + missingYieldInCurrentView + newAssetsInCurrentView}
+                            {unclassifiedInCurrentView + missingYieldInCurrentView + newAssetsInCurrentView + missingLiquidityInCurrentView}
                           </Badge>
                         )}
                         <ChevronDown className="ml-1 h-3 w-3" />
@@ -4855,9 +4946,36 @@ interface VerificationResult {
                             </p>
                           </div>
                         </div>
-                        
+
+                        {/* Sem Liquidez e Vencimento */}
+                        <div className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors">
+                          <Checkbox
+                            id="filter-missing-liquidity"
+                            checked={showOnlyMissingLiquidity}
+                            onCheckedChange={(checked) => setShowOnlyMissingLiquidity(checked as boolean)}
+                            className="mt-0.5"
+                          />
+                          <div className="flex-1 space-y-1">
+                            <label
+                              htmlFor="filter-missing-liquidity"
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
+                            >
+                              <XCircle className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
+                              Sem liquidez e vencimento
+                              {missingLiquidityInCurrentView > 0 && (
+                                <Badge variant="outline" className="ml-auto px-1.5 py-0 text-[10px] bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300">
+                                  {missingLiquidityInCurrentView}
+                                </Badge>
+                              )}
+                            </label>
+                            <p className="text-xs text-muted-foreground">
+                              Ativos sem nenhum dos dois campos preenchidos
+                            </p>
+                          </div>
+                        </div>
+
                         {/* Ações */}
-                        {(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets) && (
+                        {(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets || showOnlyMissingLiquidity) && (
                           <>
                             <Separator className="my-2" />
                             <Button 
@@ -4868,6 +4986,7 @@ interface VerificationResult {
                                 setShowOnlyUnclassified(false);
                                 setShowOnlyMissingYield(false);
                                 setShowOnlyNewAssets(false);
+                                setShowOnlyMissingLiquidity(false);
                               }}
                             >
                               <X className="mr-1 h-3 w-3" />
@@ -5344,52 +5463,131 @@ interface VerificationResult {
                               {visibleColumnsDetalhados.has('Rendimento %') && <TableCell>{typeof item.Rendimento === 'number' ? formatPercentage(item.Rendimento) : item.Rendimento || '-'}</TableCell>}
                               {visibleColumnsDetalhados.has('Verificação') && (
                                 <TableCell className="text-center">
-                                  <div className="flex items-center justify-center gap-1.5">
-                                    {/* Verificação da Classe */}
-                                    {!isValidAssetClass(item["Classe do ativo"]) ? (
-                                      <div title="Classe inválida ou não classificada">
-                                        <XCircle className="h-4 w-4 text-red-500" />
-                                      </div>
-                                    ) : (
-                                      <div title="Classe válida">
-                                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                      </div>
-                                    )}
-                                    
-                                    {/* Verificação da Rentabilidade */}
-                                    {!hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo) ? (
-                                      <div title="Rentabilidade não preenchida">
-                                        <XCircle className="h-4 w-4 text-red-500" />
-                                      </div>
-                                    ) : (
-                                      <div title="Rentabilidade preenchida">
-                                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                      </div>
-                                    )}
-                                    
-                                    {/* Verificação de Ativo Novo */}
-                                    {item.ativo_novo === true && (
-                                      <div title="Ativo novo — sem rentabilidade anterior">
-                                        <Info className="h-4 w-4 text-blue-500" />
-                                      </div>
-                                    )}
+                                  {(() => {
+                                    const ativoNorm = String(item.Ativo || '').toLowerCase();
+                                    const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+                                    const classeOk = isValidAssetClass(item["Classe do ativo"]);
+                                    const rentOk = hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo);
+                                    const isAtivoNovo = item.ativo_novo === true;
+                                    const semVencimento = !item.Vencimento;
+                                    const semLiquidez = !(item as any).liquidez;
+                                    const liquidezAlert = semVencimento && semLiquidez && !isCashLike;
 
-                                    {/* Verificação de Liquidez/Vencimento */}
-                                    {(() => {
-                                      const ativoNorm = String(item.Ativo || '').toLowerCase();
-                                      const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
-                                      const semVencimento = !item.Vencimento;
-                                      const semLiquidez = !(item as any).liquidez;
-                                      if (semVencimento && semLiquidez && !isCashLike) {
-                                        return (
-                                          <div title="Sem liquidez e sem vencimento">
-                                            <XCircle className="h-4 w-4 text-orange-500" />
+                                    return (
+                                      <Popover>
+                                        <PopoverTrigger asChild>
+                                          <Button variant="ghost" size="sm" className="h-8 px-1 flex items-center justify-center gap-1.5 mx-auto">
+                                            {/* Verificação da Classe */}
+                                            {!classeOk ? (
+                                              <XCircle className="h-4 w-4 text-red-500" />
+                                            ) : (
+                                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                            )}
+
+                                            {/* Verificação da Rentabilidade */}
+                                            {!rentOk ? (
+                                              <XCircle className="h-4 w-4 text-red-500" />
+                                            ) : (
+                                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                            )}
+
+                                            {/* Verificação de Ativo Novo */}
+                                            {isAtivoNovo && (
+                                              <Info className="h-4 w-4 text-blue-500" />
+                                            )}
+
+                                            {/* Verificação de Liquidez/Vencimento */}
+                                            {liquidezAlert && (
+                                              <XCircle className="h-4 w-4 text-orange-500" />
+                                            )}
+                                          </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-80">
+                                          <div className="space-y-3">
+                                            <div>
+                                              <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                                                <Tag className="h-4 w-4" />
+                                                Classe do Ativo
+                                              </h4>
+                                              <div className="flex justify-between text-sm">
+                                                <span className="text-muted-foreground">Status:</span>
+                                                <span className={`font-medium flex items-center gap-1 ${classeOk ? 'text-green-600' : 'text-red-600'}`}>
+                                                  {classeOk ? (
+                                                    <><CheckCircle2 className="h-3 w-3" /> Válida</>
+                                                  ) : (
+                                                    <><XCircle className="h-3 w-3" /> Não classificada</>
+                                                  )}
+                                                </span>
+                                              </div>
+                                            </div>
+
+                                            <Separator />
+
+                                            <div>
+                                              <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                                                <DollarSign className="h-4 w-4" />
+                                                Rentabilidade
+                                              </h4>
+                                              <div className="flex justify-between text-sm">
+                                                <span className="text-muted-foreground">Status:</span>
+                                                <span className={`font-medium flex items-center gap-1 ${rentOk ? 'text-green-600' : 'text-red-600'}`}>
+                                                  {rentOk ? (
+                                                    <><CheckCircle2 className="h-3 w-3" /> Preenchida</>
+                                                  ) : (
+                                                    <><XCircle className="h-3 w-3" /> Faltando</>
+                                                  )}
+                                                </span>
+                                              </div>
+                                            </div>
+
+                                            <Separator />
+
+                                            <div>
+                                              <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                                                <XCircle className={`h-4 w-4 ${liquidezAlert ? 'text-orange-500' : 'text-green-500'}`} />
+                                                Liquidez / Vencimento
+                                              </h4>
+                                              <div className="text-sm space-y-1">
+                                                <div className="flex justify-between">
+                                                  <span className="text-muted-foreground">Vencimento:</span>
+                                                  <span className="font-medium">{item.Vencimento || '—'}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                  <span className="text-muted-foreground">Liquidez:</span>
+                                                  <span className="font-medium">{(item as any).liquidez || '—'}</span>
+                                                </div>
+                                              </div>
+                                              {liquidezAlert && (
+                                                <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded text-xs text-orange-700 dark:text-orange-400">
+                                                  💧 Este ativo está sem "Liquidez" e sem "Vencimento". Preencha pelo menos um dos dois.
+                                                </div>
+                                              )}
+                                              {!liquidezAlert && isCashLike && (
+                                                <div className="mt-2 text-[10px] text-muted-foreground">
+                                                  Ativo de caixa — não exige liquidez/vencimento.
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {isAtivoNovo && (
+                                              <>
+                                                <Separator />
+                                                <div>
+                                                  <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                                                    <Info className="h-4 w-4 text-blue-500" />
+                                                    Ativo Novo
+                                                  </h4>
+                                                  <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-xs text-blue-700 dark:text-blue-400">
+                                                    Entrou na carteira nesta competência — sem histórico de rentabilidade anterior.
+                                                  </div>
+                                                </div>
+                                              </>
+                                            )}
                                           </div>
-                                        );
-                                      }
-                                      return null;
-                                    })()}
-                                  </div>
+                                        </PopoverContent>
+                                      </Popover>
+                                    );
+                                  })()}
                                 </TableCell>
                               )}
                               {visibleColumnsDetalhados.has('Ações') && (

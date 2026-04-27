@@ -1,59 +1,100 @@
-# Plano: Persistir Liquidez no RAG + Bolinha de Verificação
 
-## Resumo
-1. Adicionar botão "Salvar liquidez" ao lado do campo Liquidez no modal de edição (igual ao botão de Salvar Classe), persistindo o valor numa nova coluna `Liquidez` em `RAG_Processador`.
-2. Quando um ativo é cadastrado/editado e já existe no RAG com liquidez, pré-preencher automaticamente.
-3. Adicionar uma 3ª bolinha de verificação na tabela de Ativos detalhados (e no consolidado) indicando se o ativo está sem liquidez **e** sem vencimento — só aparece quando há esse problema.
+# Plano: Liquidez/Vencimento no Verificador e Filtro de Qualidade
 
-## Alterações
+## Diagnóstico
 
-### 1. Migration: Nova coluna `Liquidez` em `RAG_Processador`
+- A **bolinha laranja** já existe em ambos os lugares:
+  - Consolidado: `DataManagement.tsx` linhas 4271-4274 (5ª bolinha condicional)
+  - Ativos detalhados: linhas 5377-5391 (condicional, só aparece quando faltando)
+- O que **falta**:
+  1. No **popover de verificação do consolidado** (linhas 4277-4422), não há uma seção dedicada explicando o status de liquidez/vencimento — só aparecem seções para Integridade, Classificação, Rentabilidade e Ativos Novos.
+  2. No popover/tooltip de verificação por linha de **ativos detalhados**, hoje é só um `title` simples no `<div>` (linha 5385). Não há detalhe.
+  3. **Filtro de Qualidade** (linhas 4751-4880) não inclui a opção "Sem liquidez e vencimento".
 
-```sql
-ALTER TABLE public."RAG_Processador"
-ADD COLUMN "Liquidez" text;
-```
+## Alterações em `src/pages/DataManagement.tsx`
 
-Permite que cada Ativo tenha uma liquidez "padrão" memorizada (ex: D+30) reutilizada em novos registros.
+### 1. Adicionar seção no popover de verificação do consolidado
 
-### 2. `DataManagement.tsx` — Botão "Salvar Liquidez" no modal
-
-- Ao lado do campo Liquidez (na seção Condições do modal de edição), adicionar um botão `BookmarkPlus` idêntico ao de Salvar Classe.
-- Nova função `handleSaveLiquidez` espelhando `handleSaveClassificacao`:
-  - Se Ativo não existe no RAG → INSERT com Ativo + Liquidez (Classificacao fica null)
-  - Se existe e Liquidez é igual → toast "já gravada"
-  - Se existe e Liquidez é diferente → AlertDialog de conflito (com opção de propagar para todos os `DadosPerformance` com mesmo Ativo, igual ao fluxo de classe)
-- Habilitado apenas quando `editingItem.Ativo` e `editingItem.liquidez` estão preenchidos.
-
-### 3. Auto-preenchimento ao detectar Ativo conhecido
-
-Onde já existe lógica de auto-classificação a partir do RAG (busca por Ativo), incluir também `Liquidez` no SELECT e setar `editingItem.liquidez` se vier preenchido e o campo atual estiver vazio.
-
-### 4. Nova bolinha "Liquidez/Vencimento faltante" — Tabela de Ativos detalhados
-
-Em `DataManagement.tsx` (~linha 5252, depois da bolinha de Ativo Novo), adicionar:
+Após a seção de "Ativos Novos" (linha ~4420), adicionar nova seção condicional usando `verification.hasMissingLiquidity` e `verification.missingLiquidityCount` (já calculados em `verifyIntegrity`):
 
 ```tsx
-{!item.Vencimento && !item.liquidez && !isCashLike(item.Ativo) && (
-  <div title="Sem liquidez e sem vencimento">
-    <XCircle className="h-4 w-4 text-orange-500" />
-  </div>
+{verification.hasMissingLiquidity && (
+  <>
+    <Separator />
+    <div>
+      <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+        <XCircle className="h-4 w-4 text-orange-500" />
+        Liquidez / Vencimento
+      </h4>
+      <div className="flex justify-between text-sm">
+        <span className="text-muted-foreground">Sem liquidez e sem vencimento:</span>
+        <span className="font-medium text-orange-600">{verification.missingLiquidityCount}</span>
+      </div>
+      <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded text-xs text-orange-700 dark:text-orange-400">
+        💧 {verification.missingLiquidityCount} ativo(s) sem campo "Liquidez" e sem "Vencimento". Preencha um dos dois para que apareçam corretamente nas análises de liquidez.
+      </div>
+    </div>
+  </>
 )}
 ```
 
-Regra: a bolinha aparece **apenas se** `Vencimento` está vazio **E** `liquidez` está vazia. Para evitar ruído, ignorar ativos tipo Caixa/Cash/Proventos (helper `isCashLike` já usado em outras validações).
+### 2. Substituir a bolinha "estática" por um Popover na tabela de ativos detalhados
 
-### 5. Resumo no Consolidado (3ª/4ª bolinha agregada)
+Hoje cada bolinha por linha (linhas 5347-5392) é só um `<div title="...">`. Vou envolver as 4 bolinhas (classe / rentabilidade / ativo novo / liquidez-vencimento) num `<Popover>` único similar ao do consolidado, mostrando seção por seção (Classe, Rentabilidade, Ativo Novo, Liquidez/Vencimento) com texto explicativo. Isso atende ao pedido "no dialog do verif … de ativos tem que aparecer os sem vencimento e liquidez".
 
-Na linha do consolidado (~4116), adicionar nova bolinha entre "Rentabilidade" e "Ativos Novos":
-- Calcular `hasMissingLiquidity` no `getVerification`: conta de ativos do consolidado em que `Vencimento IS NULL AND liquidez IS NULL` (excluindo cash-like).
-- Se > 0 → ícone laranja `AlertCircle`; senão omitir (igual padrão de "Ativos Novos").
-- Adicionar seção correspondente no Popover de detalhes da verificação.
+Estrutura:
+- `PopoverTrigger`: as 4 bolinhas inline (mantendo a 4ª — laranja — sempre visível, ou apenas quando faltando — preservar comportamento atual: só mostra se faltando).
+- `PopoverContent`: seções para cada verificação, com a seção de Liquidez/Vencimento mostrando estado verde quando OK ou vermelho/laranja quando faltando.
 
-> **Observação**: o cálculo desse novo indicador no consolidado é feito **client-side** no `getVerification` (que já consulta os ativos detalhados). Não é necessário alterar a função `calculate_verification` do banco nesta etapa — fica como melhoria futura caso queira persistir.
+### 3. Adicionar bloco "Sem liquidez e vencimento" no card "Alertas de Qualidade dos Dados" (linhas 4687-4740)
 
-## Detalhes técnicos
-- Sem alteração na coluna `liquidez` da tabela `DadosPerformance` (já existe).
-- A nova coluna `Liquidez` em `RAG_Processador` é nullable (ativos antigos continuam funcionando).
-- Reutiliza padrão visual e UX já existentes (BookmarkPlus, AlertDialog de conflito, bolinhas coloridas).
-- Cor laranja diferencia do vermelho (erro crítico) e do azul (informativo).
+- Calcular `missingLiquidityInComparison` (similar a `missingYieldInComparison` na linha 4547):
+  ```ts
+  const missingLiquidityInComparison = filteredDadosData.filter(item => {
+    const ativoNorm = String(item.Ativo || '').toLowerCase();
+    const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+    return !isCashLike && !item.Vencimento && !(item as any).liquidez;
+  }).length;
+  ```
+- Adicionar 4º card no grid (laranja) com ícone `XCircle` mostrando o contador.
+- Atualizar a condição de exibição da seção para incluir `missingLiquidityInComparison > 0`.
+
+### 4. Adicionar filtro "Sem liquidez e vencimento" no Popover de "Filtros de Qualidade"
+
+- Novo state: `showOnlyMissingLiquidity` (default false).
+- Novo memo `missingLiquidityInCurrentView` (espelha `missingYieldInCurrentView` mas com a condição liquidez+vencimento+!cashLike).
+- Atualizar o memo `filteredDadosData` (linha 2349) para incluir `showOnlyMissingLiquidity`:
+  ```ts
+  const isMissingLiquidity = showOnlyMissingLiquidity && (() => {
+    const ativoNorm = String(item.Ativo || '').toLowerCase();
+    const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+    return !isCashLike && !item.Vencimento && !(item as any).liquidez;
+  })();
+  return isUnclassified || hasMissingYield || isNewAsset || isMissingLiquidity;
+  ```
+- Adicionar checkbox no Popover (após "Ativos Novos", linha ~4857):
+  ```tsx
+  <div className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors">
+    <Checkbox id="filter-missing-liquidity" checked={showOnlyMissingLiquidity}
+      onCheckedChange={(c) => setShowOnlyMissingLiquidity(c as boolean)} />
+    <div className="flex-1 space-y-1">
+      <label htmlFor="filter-missing-liquidity" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+        <XCircle className="h-3.5 w-3.5 text-orange-600" />
+        Sem liquidez e vencimento
+        {missingLiquidityInCurrentView > 0 && (
+          <Badge variant="outline" className="ml-auto px-1.5 py-0 text-[10px] bg-orange-50 border-orange-200 text-orange-700">
+            {missingLiquidityInCurrentView}
+          </Badge>
+        )}
+      </label>
+      <p className="text-xs text-muted-foreground">Ativos sem ambos os campos preenchidos</p>
+    </div>
+  </div>
+  ```
+- Atualizar:
+  - Condições do botão `variant` e badge total no PopoverTrigger (linhas 4755, 4761-4767) para incluir `showOnlyMissingLiquidity` e `missingLiquidityInCurrentView`.
+  - Botão "Limpar filtros" (linha 4860) para resetar também `setShowOnlyMissingLiquidity(false)`.
+
+## Resumo de arquivos
+
+- `src/pages/DataManagement.tsx` — único arquivo editado. Sem migração, sem novos componentes.
