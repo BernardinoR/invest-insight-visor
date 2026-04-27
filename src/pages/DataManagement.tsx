@@ -2464,6 +2464,42 @@ interface VerificationResult {
     return data.filter(item => item.ativo_novo === true).length;
   }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo]);
 
+  // Contador de ativos sem liquidez E sem vencimento na view atual
+  const missingLiquidityInCurrentView = useMemo(() => {
+    let data = dadosData;
+
+    if (selectedCompetencias.length > 0) {
+      data = data.filter(item => selectedCompetencias.includes(item.Competencia));
+    }
+    if (selectedInstituicoes.length > 0) {
+      data = data.filter(item => selectedInstituicoes.includes(item.Instituicao));
+    }
+    if (selectedNomesConta.length > 0) {
+      data = data.filter(item => selectedNomesConta.includes(item.nomeConta || ''));
+    }
+    if (selectedClasses.length > 0) {
+      data = data.filter(item => selectedClasses.includes(item["Classe do ativo"]));
+    }
+    if (selectedEmissores.length > 0) {
+      data = data.filter(item => selectedEmissores.includes(item.Emissor));
+    }
+    if (searchAtivo.trim()) {
+      const searchLower = searchAtivo.toLowerCase();
+      data = data.filter(item =>
+        item.Ativo?.toLowerCase().includes(searchLower) ||
+        item.Emissor?.toLowerCase().includes(searchLower) ||
+        item["Classe do ativo"]?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return data.filter(item => {
+      const ativoNorm = String(item.Ativo || '').toLowerCase();
+      const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+      if (isCashLike) return false;
+      return !item.Vencimento && !(item as any).liquidez;
+    }).length;
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo]);
+
   // Função para abrir o dialog de exportação
   const exportToCSV = () => {
     setIsExportDialogOpen(true);
