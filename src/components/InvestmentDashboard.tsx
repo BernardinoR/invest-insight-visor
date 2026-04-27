@@ -873,13 +873,13 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
           <>
             {/* Strategy Breakdown */}
             {filteredDadosData.length > 0 && (
-              <div className="mb-8">
+              <div data-pdf-section="Estratégias" className="mb-8">
                 <StrategyBreakdown dadosData={filteredDadosData} />
               </div>
             )}
 
             {/* Investment Details Table */}
-            <div className="mb-8">
+            <div data-pdf-section="Detalhamento por Estratégia" className="mb-8">
               <InvestmentDetailsTable 
                 dadosData={filteredDadosData} 
                 selectedClient={selectedClient} 
@@ -888,17 +888,17 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
             </div>
 
             {/* Charts Grid */}
-            <div className="grid grid-cols-1 gap-6 mb-8">
+            <div data-pdf-section="Vencimentos" className="grid grid-cols-1 gap-6 mb-8">
               <MaturityTimeline selectedClient={selectedClient} dadosData={filteredDadosData} />
             </div>
 
             {/* Issuer Exposure Chart - Full Width */}
-            <div className="mb-8">
+            <div data-pdf-section="Exposição por Emissor" className="mb-8">
               <IssuerExposure clientName={selectedClient} dadosData={filteredDadosData} />
             </div>
 
             {/* Strategy Scatter Chart */}
-            <div className="mb-8">
+            <div data-pdf-section="Risco x Retorno por Estratégia" className="mb-8">
               <StrategyScatterChart />
             </div>
 
