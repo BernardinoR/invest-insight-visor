@@ -4607,6 +4607,14 @@ interface VerificationResult {
                   // Calcular ativos novos nos dados filtrados
                   const newAssetsInComparison = filteredDadosData.filter(item => item.ativo_novo === true).length;
 
+                  // Calcular ativos sem liquidez E sem vencimento (excluindo cash-like)
+                  const missingLiquidityInComparison = filteredDadosData.filter(item => {
+                    const ativoNorm = String(item.Ativo || '').toLowerCase();
+                    const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+                    if (isCashLike) return false;
+                    return !item.Vencimento && !(item as any).liquidez;
+                  }).length;
+
                   const consolidadoValue = selectedConsolidado["Patrimonio Final"] || 0;
                   const difference = Math.abs(consolidadoValue - assetsSum);
                   const percentDiff = consolidadoValue !== 0 
