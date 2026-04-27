@@ -697,6 +697,31 @@ export default function DataManagement() {
     fetchClassesAtivo();
   }, [decodedClientName]);
 
+  // Carregar overrides ativos do cliente para indicador visual
+  useEffect(() => {
+    if (!decodedClientName) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from('asset_overrides' as any)
+        .select('id, instituicao, ativo_original, ativo_novo, ativo')
+        .eq('cliente', decodedClientName)
+        .eq('ativo', true);
+      if (error) {
+        console.error('Erro ao carregar overrides:', error);
+        return;
+      }
+      const idx = new Map<string, { id: string; ativo_original: string; ativo_novo: string | null }>();
+      (data || []).forEach((o: any) => {
+        // indexar por instituição + nome (original e novo) para cobrir os dois casos
+        idx.set(`${o.instituicao}|${o.ativo_original}`, { id: o.id, ativo_original: o.ativo_original, ativo_novo: o.ativo_novo });
+        if (o.ativo_novo) {
+          idx.set(`${o.instituicao}|${o.ativo_novo}`, { id: o.id, ativo_original: o.ativo_original, ativo_novo: o.ativo_novo });
+        }
+      });
+      setOverridesIndex(idx);
+    })();
+  }, [decodedClientName, overridesRefreshSignal]);
+
   const fetchClassesAtivo = async () => {
     try {
       console.log('Classes de ativo carregadas:', VALID_ASSET_CLASSES);
