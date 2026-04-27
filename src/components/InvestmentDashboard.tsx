@@ -584,7 +584,7 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
         
         {viewMode === 'performance' && (
         <>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div data-pdf-section="Resumo" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Patrimônio Total</CardTitle>
@@ -837,33 +837,35 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
         </div>
 
         {/* Client Data Display - includes Performance chart, Consolidado Performance, Portfolio Table placeholder, and Institution Allocation placeholder */}
-        <ClientDataDisplay 
-          consolidadoData={filteredConsolidadoData}
-          dadosData={filteredDadosData}
-          loading={loading}
-          clientName={selectedClient}
-          originalConsolidadoData={consolidadoData}
-          institutionCardData={institutionCardData}
-          selectedRows={selectedRows}
-          onToggleRow={handleToggleRow}
-          onClearFilters={handleClearFilters}
-          totalPatrimonio={displayPatrimonio}
-          marketData={marketData}
-          clientTarget={clientTarget}
-          portfolioTableComponent={
-            <PortfolioTable 
-              selectedClient={selectedClient}
-              onYearTotalsChange={handleYearTotalsChange}
-              filteredConsolidadoData={filteredConsolidadoData}
-              filteredRange={filteredRange}
-              selectedRows={selectedRows}
-              onRowsChange={setSelectedRows}
-              showInstitutionCard={false}
-              onInstitutionCardRender={handleInstitutionCardRender}
-              unfilteredByInstitution={consolidadoDataForInstitutionList}
-            />
-          }
-        />
+        <div data-pdf-section="Performance e Carteira">
+          <ClientDataDisplay 
+            consolidadoData={filteredConsolidadoData}
+            dadosData={filteredDadosData}
+            loading={loading}
+            clientName={selectedClient}
+            originalConsolidadoData={consolidadoData}
+            institutionCardData={institutionCardData}
+            selectedRows={selectedRows}
+            onToggleRow={handleToggleRow}
+            onClearFilters={handleClearFilters}
+            totalPatrimonio={displayPatrimonio}
+            marketData={marketData}
+            clientTarget={clientTarget}
+            portfolioTableComponent={
+              <PortfolioTable 
+                selectedClient={selectedClient}
+                onYearTotalsChange={handleYearTotalsChange}
+                filteredConsolidadoData={filteredConsolidadoData}
+                filteredRange={filteredRange}
+                selectedRows={selectedRows}
+                onRowsChange={setSelectedRows}
+                showInstitutionCard={false}
+                onInstitutionCardRender={handleInstitutionCardRender}
+                unfilteredByInstitution={consolidadoDataForInstitutionList}
+              />
+            }
+          />
+        </div>
         </>
         )}
 
@@ -871,13 +873,13 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
           <>
             {/* Strategy Breakdown */}
             {filteredDadosData.length > 0 && (
-              <div className="mb-8">
+              <div data-pdf-section="Estratégias" className="mb-8">
                 <StrategyBreakdown dadosData={filteredDadosData} />
               </div>
             )}
 
             {/* Investment Details Table */}
-            <div className="mb-8">
+            <div data-pdf-section="Detalhamento por Estratégia" className="mb-8">
               <InvestmentDetailsTable 
                 dadosData={filteredDadosData} 
                 selectedClient={selectedClient} 
@@ -886,23 +888,23 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
             </div>
 
             {/* Charts Grid */}
-            <div className="grid grid-cols-1 gap-6 mb-8">
+            <div data-pdf-section="Vencimentos" className="grid grid-cols-1 gap-6 mb-8">
               <MaturityTimeline selectedClient={selectedClient} dadosData={filteredDadosData} />
             </div>
 
             {/* Issuer Exposure Chart - Full Width */}
-            <div className="mb-8">
+            <div data-pdf-section="Exposição por Emissor" className="mb-8">
               <IssuerExposure clientName={selectedClient} dadosData={filteredDadosData} />
             </div>
 
             {/* Strategy Scatter Chart */}
-            <div className="mb-8">
+            <div data-pdf-section="Risco x Retorno por Estratégia" className="mb-8">
               <StrategyScatterChart />
             </div>
 
             {/* Investment Details Table - moved to end */}
             {filteredDadosData.length > 0 && (
-              <div className="mb-8 mt-8">
+              <div data-pdf-section="Retorno por Ativo" className="mb-8 mt-8">
             <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -1536,7 +1538,7 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
         
         {/* Risk Management View */}
         {viewMode === 'risk' && (
-          <div className="space-y-6">
+          <div data-pdf-section="Gestão de Risco" className="space-y-6">
             <RiskManagement 
               consolidadoData={filteredConsolidadoData}
               clientTarget={(clientTarget?.targetValue || 0) / 100}
@@ -1548,7 +1550,7 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
 
         {/* Investment Policy Compliance View */}
         {viewMode === 'policy' && (
-          <div className="space-y-6">
+          <div data-pdf-section="Política de Investimentos" className="space-y-6">
             <InvestmentPolicyCompliance 
               dadosData={filteredDadosData}
               selectedClient={selectedClient}
