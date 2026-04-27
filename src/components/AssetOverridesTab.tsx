@@ -87,6 +87,8 @@ interface AssetOverridesTabProps {
     vencimento?: string;
     liquidez?: string;
   };
+  /** Notificado após criação, edição, exclusão ou toggle de regras */
+  onOverridesChanged?: () => void;
 }
 
 type FormState = {
