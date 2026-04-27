@@ -76,6 +76,19 @@ interface AssetOverridesTabProps {
   ativosOriginais: string[]; // ativos vistos para esse cliente, para autocomplete
   /** Quando muda, o componente recarrega as regras (útil após salvar do modal externo) */
   refreshSignal?: number;
+  /** Quando o nonce muda, abre o dialog de criação pré-preenchido com os campos abaixo. */
+  prefillRequest?: {
+    nonce: number;
+    instituicao: string;
+    ativo_original: string;
+    classe_ativo?: string;
+    emissor?: string;
+    taxa?: string;
+    vencimento?: string;
+    liquidez?: string;
+  };
+  /** Notificado após criação, edição, exclusão ou toggle de regras */
+  onOverridesChanged?: () => void;
 }
 
 type FormState = {
@@ -113,6 +126,8 @@ export function AssetOverridesTab({
   instituicoes,
   ativosOriginais,
   refreshSignal,
+  prefillRequest,
+  onOverridesChanged,
 }: AssetOverridesTabProps) {
   const { toast } = useToast();
   const [overrides, setOverrides] = useState<AssetOverride[]>([]);
@@ -153,6 +168,26 @@ export function AssetOverridesTab({
     if (clientName) fetchOverrides();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientName, refreshSignal]);
+
+  // Abre o dialog de criação pré-preenchido quando o nonce muda
+  useEffect(() => {
+    if (!prefillRequest) return;
+    setForm({
+      cliente: clientName,
+      instituicao: prefillRequest.instituicao || "",
+      ativo_original: prefillRequest.ativo_original || "",
+      ativo_novo: "",
+      classe_ativo: prefillRequest.classe_ativo || "",
+      emissor: prefillRequest.emissor || "",
+      taxa: prefillRequest.taxa || "",
+      vencimento: prefillRequest.vencimento || "",
+      liquidez: prefillRequest.liquidez || "",
+      observacao: "",
+      ativo: true,
+    });
+    setIsDialogOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillRequest?.nonce]);
 
   const filtered = useMemo(() => {
     let data = overrides;
@@ -266,6 +301,7 @@ export function AssetOverridesTab({
 
       setIsDialogOpen(false);
       await fetchOverrides();
+      onOverridesChanged?.();
     } catch (error: any) {
       toast({
         title: "Erro ao salvar regra",
@@ -285,6 +321,7 @@ export function AssetOverridesTab({
         .eq("id", o.id);
       if (error) throw error;
       await fetchOverrides();
+      onOverridesChanged?.();
     } catch (error: any) {
       toast({
         title: "Erro ao alterar status",
@@ -305,6 +342,7 @@ export function AssetOverridesTab({
       toast({ title: "Regra excluída" });
       setDeleteId(null);
       await fetchOverrides();
+      onOverridesChanged?.();
     } catch (error: any) {
       toast({
         title: "Erro ao excluir",

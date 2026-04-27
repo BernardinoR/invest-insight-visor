@@ -176,6 +176,16 @@ export default function DataManagement() {
   const [activeTab, setActiveTab] = useState("consolidado");
   const [overridesRefreshSignal, setOverridesRefreshSignal] = useState(0);
   const [overridesIndex, setOverridesIndex] = useState<Map<string, { id: string; ativo_original: string; ativo_novo: string | null }>>(new Map());
+  const [overridePrefill, setOverridePrefill] = useState<{
+    nonce: number;
+    instituicao: string;
+    ativo_original: string;
+    classe_ativo?: string;
+    emissor?: string;
+    taxa?: string;
+    vencimento?: string;
+    liquidez?: string;
+  } | null>(null);
   
   // Multi-selection state
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
@@ -1061,6 +1071,21 @@ export default function DataManagement() {
     }
 
     return null;
+  };
+
+  // Cria um ajuste (override) pré-preenchido a partir de um ativo da tabela
+  const handleCreateOverrideFromAsset = (item: any) => {
+    setOverridePrefill({
+      nonce: Date.now(),
+      instituicao: item.Instituicao || '',
+      ativo_original: item.Ativo || '',
+      classe_ativo: item["Classe do ativo"] || '',
+      emissor: item.Emissor || '',
+      taxa: item.Taxa || '',
+      vencimento: item.Vencimento || '',
+      liquidez: (item as any).liquidez || '',
+    });
+    setActiveTab('overrides');
   };
 
   const handleCreateFromRecord = (item: any, type: 'consolidado' | 'dados') => {
@@ -5668,7 +5693,23 @@ interface VerificationResult {
                                     >
                                       <Copy className="h-4 w-4" />
                                     </Button>
-                                    
+
+                                    {(() => {
+                                      const hasOverride = overridesIndex.has(`${item.Instituicao}|${item.Ativo}`);
+                                      return (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className={`h-8 w-8 p-0 ${hasOverride ? 'text-muted-foreground' : 'text-primary hover:text-primary'}`}
+                                          onClick={() => handleCreateOverrideFromAsset(item)}
+                                          disabled={hasOverride}
+                                          title={hasOverride ? 'Já existe ajuste para este ativo (gerencie na aba Ajustes)' : 'Criar ajuste deste ativo'}
+                                        >
+                                          <Wand2 className="h-4 w-4" />
+                                        </Button>
+                                      );
+                                    })()}
+
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -5831,6 +5872,8 @@ interface VerificationResult {
                 instituicoes={instituicoes}
                 ativosOriginais={ativosUnique}
                 refreshSignal={overridesRefreshSignal}
+                prefillRequest={overridePrefill ?? undefined}
+                onOverridesChanged={() => setOverridesRefreshSignal((s) => s + 1)}
               />
             </TabsContent>
          </Tabs>
