@@ -4,9 +4,10 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus, FastForward, Scissors } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus, FastForward, Scissors, Wand2 } from "lucide-react";
 import { RolloverDialog } from "@/components/RolloverDialog";
 import { SplitAccountDialog } from "@/components/SplitAccountDialog";
+import { AssetOverridesTab } from "@/components/AssetOverridesTab";
 
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -173,6 +174,8 @@ export default function DataManagement() {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("consolidado");
+  const [overridesRefreshSignal, setOverridesRefreshSignal] = useState(0);
+  const [overridesIndex, setOverridesIndex] = useState<Map<string, { id: string; ativo_original: string; ativo_novo: string | null }>>(new Map());
   
   // Multi-selection state
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
@@ -633,6 +636,12 @@ export default function DataManagement() {
       .filter(emissor => emissor && emissor.trim() !== '').sort(),
     [dadosData]
   );
+
+  const ativosUnique = useMemo(() =>
+    [...new Set(dadosData.map(item => item.Ativo))]
+      .filter(a => a && a.trim() !== '').sort(),
+    [dadosData]
+  );
   
   // Get unique values for Nome da Conta and Moeda - MEMOIZED
   const nomesContaUnique = useMemo(() =>
@@ -687,6 +696,31 @@ export default function DataManagement() {
     fetchData();
     fetchClassesAtivo();
   }, [decodedClientName]);
+
+  // Carregar overrides ativos do cliente para indicador visual
+  useEffect(() => {
+    if (!decodedClientName) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from('asset_overrides' as any)
+        .select('id, instituicao, ativo_original, ativo_novo, ativo')
+        .eq('cliente', decodedClientName)
+        .eq('ativo', true);
+      if (error) {
+        console.error('Erro ao carregar overrides:', error);
+        return;
+      }
+      const idx = new Map<string, { id: string; ativo_original: string; ativo_novo: string | null }>();
+      (data || []).forEach((o: any) => {
+        // indexar por instituição + nome (original e novo) para cobrir os dois casos
+        idx.set(`${o.instituicao}|${o.ativo_original}`, { id: o.id, ativo_original: o.ativo_original, ativo_novo: o.ativo_novo });
+        if (o.ativo_novo) {
+          idx.set(`${o.instituicao}|${o.ativo_novo}`, { id: o.id, ativo_original: o.ativo_original, ativo_novo: o.ativo_novo });
+        }
+      });
+      setOverridesIndex(idx);
+    })();
+  }, [decodedClientName, overridesRefreshSignal]);
 
   const fetchClassesAtivo = async () => {
     try {
@@ -3759,9 +3793,13 @@ interface VerificationResult {
             setSelectedNomesConta([]);
           }
         }}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="consolidado">Consolidado</TabsTrigger>
             <TabsTrigger value="detalhados">Ativos</TabsTrigger>
+            <TabsTrigger value="overrides">
+              <Wand2 className="h-4 w-4 mr-1" />
+              Ajustes de Ativos
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="consolidado">
@@ -5453,7 +5491,35 @@ interface VerificationResult {
                               {visibleColumnsDetalhados.has('Instituição') && <TableCell>{item.Instituicao}</TableCell>}
                               {visibleColumnsDetalhados.has('Nome da Conta') && <TableCell>{item.nomeConta || '-'}</TableCell>}
                               {visibleColumnsDetalhados.has('Moeda') && <TableCell>{item.Moeda || '-'}</TableCell>}
-                              {visibleColumnsDetalhados.has('Ativo') && <TableCell>{item.Ativo}</TableCell>}
+                              {visibleColumnsDetalhados.has('Ativo') && (
+                                <TableCell>
+                                  <div className="flex items-center gap-1.5">
+                                    <span>{item.Ativo}</span>
+                                    {overridesIndex.has(`${item.Instituicao}|${item.Ativo}`) && (
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <button
+                                              type="button"
+                                              onClick={() => setActiveTab('overrides')}
+                                              className="inline-flex items-center"
+                                            >
+                                              <Badge variant="outline" className="px-1.5 py-0 text-[10px] gap-1 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300">
+                                                <Wand2 className="h-3 w-3" />
+                                                Ajustado
+                                              </Badge>
+                                            </button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p className="text-xs">Este ativo tem uma regra de ajuste cadastrada.</p>
+                                            <p className="text-xs text-muted-foreground">Clique para ver na aba "Ajustes de Ativos".</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              )}
                               {visibleColumnsDetalhados.has('Emissor') && <TableCell>{item.Emissor}</TableCell>}
                               {visibleColumnsDetalhados.has('Classe') && <TableCell>{item["Classe do ativo"]}</TableCell>}
                               {visibleColumnsDetalhados.has('Posição') && <TableCell>{formatCurrency(item.Posicao, item.Moeda)}</TableCell>}
@@ -5756,8 +5822,18 @@ interface VerificationResult {
                  </div>
                </CardContent>
              </Card>
-           </TabsContent>
-        </Tabs>
+            </TabsContent>
+
+            <TabsContent value="overrides">
+              <AssetOverridesTab
+                clientName={decodedClientName}
+                classesAtivo={[...VALID_ASSET_CLASSES]}
+                instituicoes={instituicoes}
+                ativosOriginais={ativosUnique}
+                refreshSignal={overridesRefreshSignal}
+              />
+            </TabsContent>
+         </Tabs>
       </div>
 
       {/* Edit/Create Dialog - FASE 2: LAZY RENDER */}
