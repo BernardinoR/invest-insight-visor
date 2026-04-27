@@ -1073,6 +1073,21 @@ export default function DataManagement() {
     return null;
   };
 
+  // Cria um ajuste (override) pré-preenchido a partir de um ativo da tabela
+  const handleCreateOverrideFromAsset = (item: any) => {
+    setOverridePrefill({
+      nonce: Date.now(),
+      instituicao: item.Instituicao || '',
+      ativo_original: item.Ativo || '',
+      classe_ativo: item["Classe do ativo"] || '',
+      emissor: item.Emissor || '',
+      taxa: item.Taxa || '',
+      vencimento: item.Vencimento || '',
+      liquidez: (item as any).liquidez || '',
+    });
+    setActiveTab('overrides');
+  };
+
   const handleCreateFromRecord = (item: any, type: 'consolidado' | 'dados') => {
     if (type === 'consolidado') {
       // Criar novo registro Consolidado baseado no item
