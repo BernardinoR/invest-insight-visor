@@ -633,6 +633,12 @@ export default function DataManagement() {
       .filter(emissor => emissor && emissor.trim() !== '').sort(),
     [dadosData]
   );
+
+  const ativosUnique = useMemo(() =>
+    [...new Set(dadosData.map(item => item.Ativo))]
+      .filter(a => a && a.trim() !== '').sort(),
+    [dadosData]
+  );
   
   // Get unique values for Nome da Conta and Moeda - MEMOIZED
   const nomesContaUnique = useMemo(() =>
