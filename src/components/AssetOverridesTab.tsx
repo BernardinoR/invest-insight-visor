@@ -102,7 +102,6 @@ type FormState = {
   taxa: string;
   vencimento: string;
   liquidez: string;
-  observacao: string;
   ativo: boolean;
 };
 
@@ -116,7 +115,6 @@ const emptyForm = (cliente: string): FormState => ({
   taxa: "",
   vencimento: "",
   liquidez: "",
-  observacao: "",
   ativo: true,
 });
 
@@ -182,7 +180,6 @@ export function AssetOverridesTab({
       taxa: prefillRequest.taxa || "",
       vencimento: prefillRequest.vencimento || "",
       liquidez: prefillRequest.liquidez || "",
-      observacao: "",
       ativo: true,
     });
     setIsDialogOpen(true);
@@ -223,7 +220,6 @@ export function AssetOverridesTab({
       taxa: o.taxa || "",
       vencimento: o.vencimento || "",
       liquidez: o.liquidez || "",
-      observacao: o.observacao || "",
       ativo: o.ativo,
     });
     setIsDialogOpen(true);
@@ -269,7 +265,6 @@ export function AssetOverridesTab({
         taxa: form.taxa.trim() || null,
         vencimento: form.vencimento || null,
         liquidez: form.liquidez.trim() || null,
-        observacao: form.observacao.trim() || null,
         ativo: form.ativo,
       };
 
@@ -680,18 +675,6 @@ export function AssetOverridesTab({
             </div>
 
             <Separator />
-
-            <div>
-              <Label>Observação</Label>
-              <Textarea
-                value={form.observacao}
-                onChange={(e) =>
-                  setForm({ ...form, observacao: e.target.value })
-                }
-                placeholder="Anote o motivo do ajuste (opcional)"
-                rows={2}
-              />
-            </div>
 
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div>
