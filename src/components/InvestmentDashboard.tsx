@@ -837,33 +837,35 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
         </div>
 
         {/* Client Data Display - includes Performance chart, Consolidado Performance, Portfolio Table placeholder, and Institution Allocation placeholder */}
-        <ClientDataDisplay 
-          consolidadoData={filteredConsolidadoData}
-          dadosData={filteredDadosData}
-          loading={loading}
-          clientName={selectedClient}
-          originalConsolidadoData={consolidadoData}
-          institutionCardData={institutionCardData}
-          selectedRows={selectedRows}
-          onToggleRow={handleToggleRow}
-          onClearFilters={handleClearFilters}
-          totalPatrimonio={displayPatrimonio}
-          marketData={marketData}
-          clientTarget={clientTarget}
-          portfolioTableComponent={
-            <PortfolioTable 
-              selectedClient={selectedClient}
-              onYearTotalsChange={handleYearTotalsChange}
-              filteredConsolidadoData={filteredConsolidadoData}
-              filteredRange={filteredRange}
-              selectedRows={selectedRows}
-              onRowsChange={setSelectedRows}
-              showInstitutionCard={false}
-              onInstitutionCardRender={handleInstitutionCardRender}
-              unfilteredByInstitution={consolidadoDataForInstitutionList}
-            />
-          }
-        />
+        <div data-pdf-section="Performance e Carteira">
+          <ClientDataDisplay 
+            consolidadoData={filteredConsolidadoData}
+            dadosData={filteredDadosData}
+            loading={loading}
+            clientName={selectedClient}
+            originalConsolidadoData={consolidadoData}
+            institutionCardData={institutionCardData}
+            selectedRows={selectedRows}
+            onToggleRow={handleToggleRow}
+            onClearFilters={handleClearFilters}
+            totalPatrimonio={displayPatrimonio}
+            marketData={marketData}
+            clientTarget={clientTarget}
+            portfolioTableComponent={
+              <PortfolioTable 
+                selectedClient={selectedClient}
+                onYearTotalsChange={handleYearTotalsChange}
+                filteredConsolidadoData={filteredConsolidadoData}
+                filteredRange={filteredRange}
+                selectedRows={selectedRows}
+                onRowsChange={setSelectedRows}
+                showInstitutionCard={false}
+                onInstitutionCardRender={handleInstitutionCardRender}
+                unfilteredByInstitution={consolidadoDataForInstitutionList}
+              />
+            }
+          />
+        </div>
         </>
         )}
 
