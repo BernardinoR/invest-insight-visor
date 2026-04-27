@@ -676,18 +676,6 @@ export function AssetOverridesTab({
 
             <Separator />
 
-            <div>
-              <Label>Observação</Label>
-              <Textarea
-                value={form.observacao}
-                onChange={(e) =>
-                  setForm({ ...form, observacao: e.target.value })
-                }
-                placeholder="Anote o motivo do ajuste (opcional)"
-                rows={2}
-              />
-            </div>
-
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div>
                 <Label className="text-sm font-medium">Regra ativa</Label>
