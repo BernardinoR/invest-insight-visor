@@ -4267,6 +4267,11 @@ interface VerificationResult {
                               {verification.hasNewAssets && (
                                 <Info className="h-4 w-4 text-blue-500" />
                               )}
+
+                              {/* QUINTA BOLINHA: Liquidez/Vencimento Faltante */}
+                              {verification.hasMissingLiquidity && (
+                                <XCircle className="h-4 w-4 text-orange-500" />
+                              )}
                             </Button>
                           </PopoverTrigger>
                                        <PopoverContent className="w-80">
