@@ -471,6 +471,7 @@ export default function DataManagement() {
   const [showOnlyUnclassified, setShowOnlyUnclassified] = useState(false);
   const [showOnlyMissingYield, setShowOnlyMissingYield] = useState(false);
   const [showOnlyNewAssets, setShowOnlyNewAssets] = useState(false);
+  const [showOnlyMissingLiquidity, setShowOnlyMissingLiquidity] = useState(false);
 
   // Ref para o input de upload de CSV
   const csvFileInputRef = useRef<HTMLInputElement>(null);
