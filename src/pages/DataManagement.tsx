@@ -5463,52 +5463,131 @@ interface VerificationResult {
                               {visibleColumnsDetalhados.has('Rendimento %') && <TableCell>{typeof item.Rendimento === 'number' ? formatPercentage(item.Rendimento) : item.Rendimento || '-'}</TableCell>}
                               {visibleColumnsDetalhados.has('Verificação') && (
                                 <TableCell className="text-center">
-                                  <div className="flex items-center justify-center gap-1.5">
-                                    {/* Verificação da Classe */}
-                                    {!isValidAssetClass(item["Classe do ativo"]) ? (
-                                      <div title="Classe inválida ou não classificada">
-                                        <XCircle className="h-4 w-4 text-red-500" />
-                                      </div>
-                                    ) : (
-                                      <div title="Classe válida">
-                                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                      </div>
-                                    )}
-                                    
-                                    {/* Verificação da Rentabilidade */}
-                                    {!hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo) ? (
-                                      <div title="Rentabilidade não preenchida">
-                                        <XCircle className="h-4 w-4 text-red-500" />
-                                      </div>
-                                    ) : (
-                                      <div title="Rentabilidade preenchida">
-                                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                      </div>
-                                    )}
-                                    
-                                    {/* Verificação de Ativo Novo */}
-                                    {item.ativo_novo === true && (
-                                      <div title="Ativo novo — sem rentabilidade anterior">
-                                        <Info className="h-4 w-4 text-blue-500" />
-                                      </div>
-                                    )}
+                                  {(() => {
+                                    const ativoNorm = String(item.Ativo || '').toLowerCase();
+                                    const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+                                    const classeOk = isValidAssetClass(item["Classe do ativo"]);
+                                    const rentOk = hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo);
+                                    const isAtivoNovo = item.ativo_novo === true;
+                                    const semVencimento = !item.Vencimento;
+                                    const semLiquidez = !(item as any).liquidez;
+                                    const liquidezAlert = semVencimento && semLiquidez && !isCashLike;
 
-                                    {/* Verificação de Liquidez/Vencimento */}
-                                    {(() => {
-                                      const ativoNorm = String(item.Ativo || '').toLowerCase();
-                                      const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
-                                      const semVencimento = !item.Vencimento;
-                                      const semLiquidez = !(item as any).liquidez;
-                                      if (semVencimento && semLiquidez && !isCashLike) {
-                                        return (
-                                          <div title="Sem liquidez e sem vencimento">
-                                            <XCircle className="h-4 w-4 text-orange-500" />
+                                    return (
+                                      <Popover>
+                                        <PopoverTrigger asChild>
+                                          <Button variant="ghost" size="sm" className="h-8 px-1 flex items-center justify-center gap-1.5 mx-auto">
+                                            {/* Verificação da Classe */}
+                                            {!classeOk ? (
+                                              <XCircle className="h-4 w-4 text-red-500" />
+                                            ) : (
+                                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                            )}
+
+                                            {/* Verificação da Rentabilidade */}
+                                            {!rentOk ? (
+                                              <XCircle className="h-4 w-4 text-red-500" />
+                                            ) : (
+                                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                            )}
+
+                                            {/* Verificação de Ativo Novo */}
+                                            {isAtivoNovo && (
+                                              <Info className="h-4 w-4 text-blue-500" />
+                                            )}
+
+                                            {/* Verificação de Liquidez/Vencimento */}
+                                            {liquidezAlert && (
+                                              <XCircle className="h-4 w-4 text-orange-500" />
+                                            )}
+                                          </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-80">
+                                          <div className="space-y-3">
+                                            <div>
+                                              <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                                                <Tag className="h-4 w-4" />
+                                                Classe do Ativo
+                                              </h4>
+                                              <div className="flex justify-between text-sm">
+                                                <span className="text-muted-foreground">Status:</span>
+                                                <span className={`font-medium flex items-center gap-1 ${classeOk ? 'text-green-600' : 'text-red-600'}`}>
+                                                  {classeOk ? (
+                                                    <><CheckCircle2 className="h-3 w-3" /> Válida</>
+                                                  ) : (
+                                                    <><XCircle className="h-3 w-3" /> Não classificada</>
+                                                  )}
+                                                </span>
+                                              </div>
+                                            </div>
+
+                                            <Separator />
+
+                                            <div>
+                                              <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                                                <DollarSign className="h-4 w-4" />
+                                                Rentabilidade
+                                              </h4>
+                                              <div className="flex justify-between text-sm">
+                                                <span className="text-muted-foreground">Status:</span>
+                                                <span className={`font-medium flex items-center gap-1 ${rentOk ? 'text-green-600' : 'text-red-600'}`}>
+                                                  {rentOk ? (
+                                                    <><CheckCircle2 className="h-3 w-3" /> Preenchida</>
+                                                  ) : (
+                                                    <><XCircle className="h-3 w-3" /> Faltando</>
+                                                  )}
+                                                </span>
+                                              </div>
+                                            </div>
+
+                                            <Separator />
+
+                                            <div>
+                                              <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                                                <XCircle className={`h-4 w-4 ${liquidezAlert ? 'text-orange-500' : 'text-green-500'}`} />
+                                                Liquidez / Vencimento
+                                              </h4>
+                                              <div className="text-sm space-y-1">
+                                                <div className="flex justify-between">
+                                                  <span className="text-muted-foreground">Vencimento:</span>
+                                                  <span className="font-medium">{item.Vencimento || '—'}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                  <span className="text-muted-foreground">Liquidez:</span>
+                                                  <span className="font-medium">{(item as any).liquidez || '—'}</span>
+                                                </div>
+                                              </div>
+                                              {liquidezAlert && (
+                                                <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded text-xs text-orange-700 dark:text-orange-400">
+                                                  💧 Este ativo está sem "Liquidez" e sem "Vencimento". Preencha pelo menos um dos dois.
+                                                </div>
+                                              )}
+                                              {!liquidezAlert && isCashLike && (
+                                                <div className="mt-2 text-[10px] text-muted-foreground">
+                                                  Ativo de caixa — não exige liquidez/vencimento.
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {isAtivoNovo && (
+                                              <>
+                                                <Separator />
+                                                <div>
+                                                  <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                                                    <Info className="h-4 w-4 text-blue-500" />
+                                                    Ativo Novo
+                                                  </h4>
+                                                  <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-xs text-blue-700 dark:text-blue-400">
+                                                    Entrou na carteira nesta competência — sem histórico de rentabilidade anterior.
+                                                  </div>
+                                                </div>
+                                              </>
+                                            )}
                                           </div>
-                                        );
-                                      }
-                                      return null;
-                                    })()}
-                                  </div>
+                                        </PopoverContent>
+                                      </Popover>
+                                    );
+                                  })()}
                                 </TableCell>
                               )}
                               {visibleColumnsDetalhados.has('Ações') && (
