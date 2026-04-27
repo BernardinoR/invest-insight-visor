@@ -5354,6 +5354,22 @@ interface VerificationResult {
                                         <Info className="h-4 w-4 text-blue-500" />
                                       </div>
                                     )}
+
+                                    {/* Verificação de Liquidez/Vencimento */}
+                                    {(() => {
+                                      const ativoNorm = String(item.Ativo || '').toLowerCase();
+                                      const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+                                      const semVencimento = !item.Vencimento;
+                                      const semLiquidez = !(item as any).liquidez;
+                                      if (semVencimento && semLiquidez && !isCashLike) {
+                                        return (
+                                          <div title="Sem liquidez e sem vencimento">
+                                            <XCircle className="h-4 w-4 text-orange-500" />
+                                          </div>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
                                   </div>
                                 </TableCell>
                               )}
