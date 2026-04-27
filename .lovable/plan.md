@@ -1,100 +1,101 @@
+# Ajustador de Ativos — Cadastro de Regras + Indicador Visual
 
-# Plano: Liquidez/Vencimento no Verificador e Filtro de Qualidade
+## Escopo
 
-## Diagnóstico
+- **Aqui (Lovable)**: interface para CRUD das regras + indicador visual nos ativos que casam com regras existentes.
+- **Fora (n8n)**: aplicação efetiva das regras no pipeline de ingestão.
 
-- A **bolinha laranja** já existe em ambos os lugares:
-  - Consolidado: `DataManagement.tsx` linhas 4271-4274 (5ª bolinha condicional)
-  - Ativos detalhados: linhas 5377-5391 (condicional, só aparece quando faltando)
-- O que **falta**:
-  1. No **popover de verificação do consolidado** (linhas 4277-4422), não há uma seção dedicada explicando o status de liquidez/vencimento — só aparecem seções para Integridade, Classificação, Rentabilidade e Ativos Novos.
-  2. No popover/tooltip de verificação por linha de **ativos detalhados**, hoje é só um `title` simples no `<div>` (linha 5385). Não há detalhe.
-  3. **Filtro de Qualidade** (linhas 4751-4880) não inclui a opção "Sem liquidez e vencimento".
+Sem triggers no Postgres, sem aplicação retroativa via SQL.
 
-## Alterações em `src/pages/DataManagement.tsx`
+## 1. Migration: tabela `asset_overrides`
 
-### 1. Adicionar seção no popover de verificação do consolidado
+```sql
+CREATE TABLE public.asset_overrides (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  cliente text NOT NULL,
+  instituicao text NOT NULL,
+  ativo_original text NOT NULL,
+  -- campos a sobrescrever (todos opcionais)
+  ativo_novo text,
+  classe_ativo text,
+  emissor text,
+  taxa text,
+  vencimento date,
+  liquidez text,
+  -- metadados
+  ativo boolean NOT NULL DEFAULT true,
+  observacao text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT asset_overrides_unique_key UNIQUE (cliente, instituicao, ativo_original)
+);
 
-Após a seção de "Ativos Novos" (linha ~4420), adicionar nova seção condicional usando `verification.hasMissingLiquidity` e `verification.missingLiquidityCount` (já calculados em `verifyIntegrity`):
+ALTER TABLE public.asset_overrides ENABLE ROW LEVEL SECURITY;
 
-```tsx
-{verification.hasMissingLiquidity && (
-  <>
-    <Separator />
-    <div>
-      <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-        <XCircle className="h-4 w-4 text-orange-500" />
-        Liquidez / Vencimento
-      </h4>
-      <div className="flex justify-between text-sm">
-        <span className="text-muted-foreground">Sem liquidez e sem vencimento:</span>
-        <span className="font-medium text-orange-600">{verification.missingLiquidityCount}</span>
-      </div>
-      <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded text-xs text-orange-700 dark:text-orange-400">
-        💧 {verification.missingLiquidityCount} ativo(s) sem campo "Liquidez" e sem "Vencimento". Preencha um dos dois para que apareçam corretamente nas análises de liquidez.
-      </div>
-    </div>
-  </>
-)}
+CREATE POLICY "Allow all on asset_overrides" ON public.asset_overrides
+  FOR ALL USING (true) WITH CHECK (true);
+
+CREATE TRIGGER trg_asset_overrides_updated_at
+  BEFORE UPDATE ON public.asset_overrides
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE INDEX idx_asset_overrides_lookup
+  ON public.asset_overrides (cliente, instituicao, ativo_original)
+  WHERE ativo = true;
 ```
 
-### 2. Substituir a bolinha "estática" por um Popover na tabela de ativos detalhados
+> O n8n vai consultar essa tabela durante a ingestão e aplicar os campos não-nulos sobre o registro recebido.
 
-Hoje cada bolinha por linha (linhas 5347-5392) é só um `<div title="...">`. Vou envolver as 4 bolinhas (classe / rentabilidade / ativo novo / liquidez-vencimento) num `<Popover>` único similar ao do consolidado, mostrando seção por seção (Classe, Rentabilidade, Ativo Novo, Liquidez/Vencimento) com texto explicativo. Isso atende ao pedido "no dialog do verif … de ativos tem que aparecer os sem vencimento e liquidez".
+## 2. UI — Nova aba "Ajustes de Ativos" em `DataManagement.tsx`
 
-Estrutura:
-- `PopoverTrigger`: as 4 bolinhas inline (mantendo a 4ª — laranja — sempre visível, ou apenas quando faltando — preservar comportamento atual: só mostra se faltando).
-- `PopoverContent`: seções para cada verificação, com a seção de Liquidez/Vencimento mostrando estado verde quando OK ou vermelho/laranja quando faltando.
+Adicionar uma aba ao lado de "Consolidado" / "Ativos" / etc:
 
-### 3. Adicionar bloco "Sem liquidez e vencimento" no card "Alertas de Qualidade dos Dados" (linhas 4687-4740)
+- **Tabela** com colunas: Cliente · Instituição · Ativo Original → Ativo Novo · Classe · Emissor · Taxa · Vencimento · Liquidez · Ativa? · Ações (editar/excluir/desativar).
+- **Filtros**: por cliente, instituição, busca textual no ativo original.
+- **Botão "+ Nova regra"** abre dialog com:
+  - Cliente (select dos clientes existentes)
+  - Instituição (select)
+  - Ativo Original (text — exatamente como vem do extrato)
+  - Bloco "Sobrescrever para": Ativo Novo, Classe (select), Emissor, Taxa (com BRNumberInput), Vencimento, Liquidez
+  - Observação (textarea opcional)
+  - Switch "Regra ativa"
+- **Editar** abre o mesmo dialog pré-preenchido.
+- **Excluir** com confirmação.
 
-- Calcular `missingLiquidityInComparison` (similar a `missingYieldInComparison` na linha 4547):
-  ```ts
-  const missingLiquidityInComparison = filteredDadosData.filter(item => {
-    const ativoNorm = String(item.Ativo || '').toLowerCase();
-    const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
-    return !isCashLike && !item.Vencimento && !(item as any).liquidez;
-  }).length;
-  ```
-- Adicionar 4º card no grid (laranja) com ícone `XCircle` mostrando o contador.
-- Atualizar a condição de exibição da seção para incluir `missingLiquidityInComparison > 0`.
+## 3. Botão "Salvar como Ajuste" no modal de edição de ativo
 
-### 4. Adicionar filtro "Sem liquidez e vencimento" no Popover de "Filtros de Qualidade"
+No modal atual de edição de ativo detalhado, adicionar **um único botão** "Salvar como ajuste de ativo" (ícone `Wand2` ou similar) no rodapé do modal, separado dos botões "Salvar Classe" / "Salvar Liquidez" já existentes (que permanecem para o RAG global).
 
-- Novo state: `showOnlyMissingLiquidity` (default false).
-- Novo memo `missingLiquidityInCurrentView` (espelha `missingYieldInCurrentView` mas com a condição liquidez+vencimento+!cashLike).
-- Atualizar o memo `filteredDadosData` (linha 2349) para incluir `showOnlyMissingLiquidity`:
-  ```ts
-  const isMissingLiquidity = showOnlyMissingLiquidity && (() => {
-    const ativoNorm = String(item.Ativo || '').toLowerCase();
-    const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
-    return !isCashLike && !item.Vencimento && !(item as any).liquidez;
-  })();
-  return isUnclassified || hasMissingYield || isNewAsset || isMissingLiquidity;
-  ```
-- Adicionar checkbox no Popover (após "Ativos Novos", linha ~4857):
-  ```tsx
-  <div className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors">
-    <Checkbox id="filter-missing-liquidity" checked={showOnlyMissingLiquidity}
-      onCheckedChange={(c) => setShowOnlyMissingLiquidity(c as boolean)} />
-    <div className="flex-1 space-y-1">
-      <label htmlFor="filter-missing-liquidity" className="text-sm font-medium cursor-pointer flex items-center gap-2">
-        <XCircle className="h-3.5 w-3.5 text-orange-600" />
-        Sem liquidez e vencimento
-        {missingLiquidityInCurrentView > 0 && (
-          <Badge variant="outline" className="ml-auto px-1.5 py-0 text-[10px] bg-orange-50 border-orange-200 text-orange-700">
-            {missingLiquidityInCurrentView}
-          </Badge>
-        )}
-      </label>
-      <p className="text-xs text-muted-foreground">Ativos sem ambos os campos preenchidos</p>
-    </div>
-  </div>
-  ```
-- Atualizar:
-  - Condições do botão `variant` e badge total no PopoverTrigger (linhas 4755, 4761-4767) para incluir `showOnlyMissingLiquidity` e `missingLiquidityInCurrentView`.
-  - Botão "Limpar filtros" (linha 4860) para resetar também `setShowOnlyMissingLiquidity(false)`.
+Ao clicar:
+- Abre um dialog de confirmação mostrando os campos atuais do ativo e perguntando quais devem virar parte da regra (checkboxes pré-marcados nos campos preenchidos).
+- Chave da regra: `cliente = Nome`, `instituicao = Instituicao`, `ativo_original = Ativo` original do registro (antes de qualquer edição na sessão).
+- Se já existir regra com essa chave, mostra dialog de conflito (estilo `ragLiquidezConflictDialog`) com opção "Sobrescrever regra existente".
 
-## Resumo de arquivos
+## 4. Indicador visual nos ativos ajustados
 
-- `src/pages/DataManagement.tsx` — único arquivo editado. Sem migração, sem novos componentes.
+Na tabela de **ativos detalhados** (`DataManagement.tsx`):
+
+- Carregar o conjunto de regras ativas uma vez (`useQuery` em `asset_overrides` filtrado por cliente atual) e indexar por `${instituicao}|${ativo_original}`.
+- Para cada linha, verificar:
+  - **Match exato** (`ativo_original` bate com o nome de `Ativo` original recebido — guardar o nome original em algum lugar não é trivial; vamos casar pelo `Ativo` atual mesmo) → badge azul **"Ajustado"** com ícone `Wand2` ao lado do nome do ativo.
+  - **Tooltip** mostrando: "Esta linha tem uma regra de ajuste cadastrada (Cliente + Instituição + Ativo). Clique para editar a regra."
+  - Click no badge → abre o dialog de edição da regra na aba "Ajustes de Ativos".
+
+> Observação: como o n8n já vai ter aplicado a regra antes do dado chegar no Supabase, o `Ativo` na tabela tipicamente já será o `ativo_novo`. Por isso o match precisa ser feito também por `ativo_novo`, não só por `ativo_original`. A chave de lookup vira: `${instituicao}|${ativo_novo ?? ativo_original}`.
+
+## 5. Indicador no consolidado (opcional, leve)
+
+No popover de verificação do consolidado, adicionar uma linha informativa:
+- "🪄 N ativo(s) com regra de ajuste aplicada" (apenas informativo, sem alerta).
+
+## Arquivos afetados
+
+- 1 migration (criação de `asset_overrides`).
+- `src/pages/DataManagement.tsx` — nova aba, dialog de CRUD, botão no modal, badge nas linhas, query das regras.
+- `src/integrations/supabase/types.ts` — regenerado automaticamente após migration.
+
+Sem mudanças em edge functions, sem mexer no RAG_Processador, sem trigger.
+
+## Confirmação esperada
+
+Aplicação das regras é responsabilidade do n8n; aqui é só CRUD + visibilidade.
