@@ -321,6 +321,7 @@ export function AssetOverridesTab({
         .eq("id", o.id);
       if (error) throw error;
       await fetchOverrides();
+      onOverridesChanged?.();
     } catch (error: any) {
       toast({
         title: "Erro ao alterar status",
