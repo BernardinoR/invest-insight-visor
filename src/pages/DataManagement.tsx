@@ -2347,13 +2347,20 @@ interface VerificationResult {
     }
     
     // Filter for quality issues
-    if (showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets) {
+    if (showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets || showOnlyMissingLiquidity) {
       data = data.filter(item => {
         const isUnclassified = showOnlyUnclassified && !isValidAssetClass(item["Classe do ativo"]);
-        const hasMissingYield = showOnlyMissingYield && !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo);
+        const hasMissingYieldF = showOnlyMissingYield && !hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo);
         const isNewAsset = showOnlyNewAssets && item.ativo_novo === true;
-        
-        return isUnclassified || hasMissingYield || isNewAsset;
+        const isMissingLiquidity = (() => {
+          if (!showOnlyMissingLiquidity) return false;
+          const ativoNorm = String(item.Ativo || '').toLowerCase();
+          const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+          if (isCashLike) return false;
+          return !item.Vencimento && !(item as any).liquidez;
+        })();
+
+        return isUnclassified || hasMissingYieldF || isNewAsset || isMissingLiquidity;
       });
     }
     
@@ -2361,7 +2368,7 @@ interface VerificationResult {
     data = applySortingGeneric(data, sortConfig ?? DEFAULT_COMPETENCIA_SORT);
     
     return data;
-  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo, showOnlyUnclassified, showOnlyMissingYield, showOnlyNewAssets, activeFilters, sortConfig, isValidAssetClass, hasValidYield]);
+  }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo, showOnlyUnclassified, showOnlyMissingYield, showOnlyNewAssets, showOnlyMissingLiquidity, activeFilters, sortConfig, isValidAssetClass, hasValidYield]);
 
   // Contador de ativos não classificados na view atual (antes do filtro showOnlyUnclassified)
   const unclassifiedInCurrentView = useMemo(() => {
