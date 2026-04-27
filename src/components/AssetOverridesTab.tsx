@@ -342,6 +342,7 @@ export function AssetOverridesTab({
       toast({ title: "Regra excluída" });
       setDeleteId(null);
       await fetchOverrides();
+      onOverridesChanged?.();
     } catch (error: any) {
       toast({
         title: "Erro ao excluir",
