@@ -3767,9 +3767,13 @@ interface VerificationResult {
             setSelectedNomesConta([]);
           }
         }}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="consolidado">Consolidado</TabsTrigger>
             <TabsTrigger value="detalhados">Ativos</TabsTrigger>
+            <TabsTrigger value="overrides">
+              <Wand2 className="h-4 w-4 mr-1" />
+              Ajustes de Ativos
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="consolidado">
