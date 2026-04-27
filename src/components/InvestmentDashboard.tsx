@@ -584,7 +584,7 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
         
         {viewMode === 'performance' && (
         <>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div data-pdf-section="Resumo" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="bg-gradient-card border-border/50 shadow-elegant-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Patrimônio Total</CardTitle>
