@@ -5768,8 +5768,18 @@ interface VerificationResult {
                  </div>
                </CardContent>
              </Card>
-           </TabsContent>
-        </Tabs>
+            </TabsContent>
+
+            <TabsContent value="overrides">
+              <AssetOverridesTab
+                clientName={decodedClientName}
+                classesAtivo={[...VALID_ASSET_CLASSES]}
+                instituicoes={instituicoes}
+                ativosOriginais={ativosUnique}
+                refreshSignal={overridesRefreshSignal}
+              />
+            </TabsContent>
+         </Tabs>
       </div>
 
       {/* Edit/Create Dialog - FASE 2: LAZY RENDER */}
