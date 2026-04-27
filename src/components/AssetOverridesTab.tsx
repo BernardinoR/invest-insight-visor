@@ -102,7 +102,6 @@ type FormState = {
   taxa: string;
   vencimento: string;
   liquidez: string;
-  observacao: string;
   ativo: boolean;
 };
 
@@ -116,7 +115,6 @@ const emptyForm = (cliente: string): FormState => ({
   taxa: "",
   vencimento: "",
   liquidez: "",
-  observacao: "",
   ativo: true,
 });
 
@@ -182,7 +180,6 @@ export function AssetOverridesTab({
       taxa: prefillRequest.taxa || "",
       vencimento: prefillRequest.vencimento || "",
       liquidez: prefillRequest.liquidez || "",
-      observacao: "",
       ativo: true,
     });
     setIsDialogOpen(true);
@@ -223,7 +220,6 @@ export function AssetOverridesTab({
       taxa: o.taxa || "",
       vencimento: o.vencimento || "",
       liquidez: o.liquidez || "",
-      observacao: o.observacao || "",
       ativo: o.ativo,
     });
     setIsDialogOpen(true);
@@ -269,7 +265,6 @@ export function AssetOverridesTab({
         taxa: form.taxa.trim() || null,
         vencimento: form.vencimento || null,
         liquidez: form.liquidez.trim() || null,
-        observacao: form.observacao.trim() || null,
         ativo: form.ativo,
       };
 
