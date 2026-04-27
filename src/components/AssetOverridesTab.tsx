@@ -76,6 +76,17 @@ interface AssetOverridesTabProps {
   ativosOriginais: string[]; // ativos vistos para esse cliente, para autocomplete
   /** Quando muda, o componente recarrega as regras (útil após salvar do modal externo) */
   refreshSignal?: number;
+  /** Quando o nonce muda, abre o dialog de criação pré-preenchido com os campos abaixo. */
+  prefillRequest?: {
+    nonce: number;
+    instituicao: string;
+    ativo_original: string;
+    classe_ativo?: string;
+    emissor?: string;
+    taxa?: string;
+    vencimento?: string;
+    liquidez?: string;
+  };
 }
 
 type FormState = {
