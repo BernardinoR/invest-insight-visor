@@ -4819,18 +4819,18 @@ interface VerificationResult {
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button 
-                        variant={(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets) ? "default" : "outline"}
+                        variant={(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets || showOnlyMissingLiquidity) ? "default" : "outline"}
                         size="sm" 
                         className="h-8"
                       >
                         <AlertTriangle className="mr-2 h-4 w-4" />
                         Filtros de Qualidade
-                        {(unclassifiedInCurrentView > 0 || missingYieldInCurrentView > 0 || newAssetsInCurrentView > 0) && (
+                        {(unclassifiedInCurrentView > 0 || missingYieldInCurrentView > 0 || newAssetsInCurrentView > 0 || missingLiquidityInCurrentView > 0) && (
                           <Badge 
-                            variant={(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets) ? "secondary" : "destructive"} 
+                            variant={(showOnlyUnclassified || showOnlyMissingYield || showOnlyNewAssets || showOnlyMissingLiquidity) ? "secondary" : "destructive"} 
                             className="ml-2 px-1.5 py-0 text-[10px]"
                           >
-                            {unclassifiedInCurrentView + missingYieldInCurrentView + newAssetsInCurrentView}
+                            {unclassifiedInCurrentView + missingYieldInCurrentView + newAssetsInCurrentView + missingLiquidityInCurrentView}
                           </Badge>
                         )}
                         <ChevronDown className="ml-1 h-3 w-3" />
