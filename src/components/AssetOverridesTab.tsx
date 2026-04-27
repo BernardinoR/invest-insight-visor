@@ -301,6 +301,7 @@ export function AssetOverridesTab({
 
       setIsDialogOpen(false);
       await fetchOverrides();
+      onOverridesChanged?.();
     } catch (error: any) {
       toast({
         title: "Erro ao salvar regra",
