@@ -174,6 +174,7 @@ export default function DataManagement() {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("consolidado");
+  const [overridesRefreshSignal, setOverridesRefreshSignal] = useState(0);
   
   // Multi-selection state
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
