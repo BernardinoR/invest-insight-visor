@@ -56,6 +56,57 @@ export type Database = {
         }
         Relationships: []
       }
+      asset_overrides: {
+        Row: {
+          ativo: boolean
+          ativo_novo: string | null
+          ativo_original: string
+          classe_ativo: string | null
+          cliente: string
+          created_at: string
+          emissor: string | null
+          id: string
+          instituicao: string
+          liquidez: string | null
+          observacao: string | null
+          taxa: string | null
+          updated_at: string
+          vencimento: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          ativo_novo?: string | null
+          ativo_original: string
+          classe_ativo?: string | null
+          cliente: string
+          created_at?: string
+          emissor?: string | null
+          id?: string
+          instituicao: string
+          liquidez?: string | null
+          observacao?: string | null
+          taxa?: string | null
+          updated_at?: string
+          vencimento?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          ativo_novo?: string | null
+          ativo_original?: string
+          classe_ativo?: string | null
+          cliente?: string
+          created_at?: string
+          emissor?: string | null
+          id?: string
+          instituicao?: string
+          liquidez?: string | null
+          observacao?: string | null
+          taxa?: string | null
+          updated_at?: string
+          vencimento?: string | null
+        }
+        Relationships: []
+      }
       ConsolidadoPerformance: {
         Row: {
           Competencia: string | null
