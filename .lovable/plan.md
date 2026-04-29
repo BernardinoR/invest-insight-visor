@@ -1,62 +1,42 @@
-## Padronização do campo Taxa em Ajuste de Ativos
+## Problema
 
-### Diagnóstico do banco
+Ao clicar em **"Gravar liquidez"** no modal de edição de "Gerenciar Dados", o registro correspondente em `RAG_Processador` está ficando com `Classificacao = NULL`.
 
-Hoje a coluna `Taxa` em `DadosPerformance` tem MUITAS variações para o mesmo conceito (~milhares de valores distintos). Exemplos reais por classe:
+Confirmado no banco: 18 dos 20 registros mais recentes do RAG (ex.: `Trend Pré-Fixado XP Seg Prev FIC FIRF RL`, `ARX Denali XP Seg Prev FIC FIRF CP RL`, `Ibiuna ST XP Seg Prev FIC FIM CP`, etc.) têm `Liquidez` preenchida mas `Classificacao = NULL`.
 
-- **CDI - Liquidez / CDI - Titulos / CDI - Fundos**: `100% CDI`, `100,00% CDI`, `100,0% CDI`, `103.5% CDI`, `CDI+ 2,64%`, `CDI+ 1,20%`, `CDI+ 100,00%` (claramente errado), `1,20%`, `4,76% a.a.`
-- **Inflação - Titulos / Fundos**: `IPCA+ 6,85%`, `IPCA+ 6,8%`, `IPCA+ 7%`, `IPCA+ 6,317%`, `IGP-M + 7,00%`, `IGP-M + 6,60%`, `11,14% a.a.`
-- **Pré Fixado - Titulos / Fundos**: `14,8% a.a.`, `13,00% a.a.`, `14.8% a.a.` (com ponto), `17% a.a.`
-- **Ações / ETFs / Multimercado / etc.**: `-`, `2,04%`, `17,28` (sem símbolo)
+### Causa raiz (`src/pages/DataManagement.tsx`, função `handleSaveLiquidez`, linha 1615)
 
-Problemas: separador decimal inconsistente (`,` vs `.`), sufixo opcional (`% CDI`, `a.a.`), espaço após `+`, `IGP-M +` vs `IPCA+`, casas decimais variáveis, e alguns valores com tipo errado para a classe.
+Quando o ativo ainda não existe na tabela `RAG_Processador`, o código executa:
 
-### Formato padrão proposto (sempre BR — vírgula decimal, 2 casas)
+```ts
+.insert({ Ativo: ativo, Liquidez: liquidezNova })
+```
 
-| Classe | Tipos permitidos | Formato canônico |
-|---|---|---|
-| CDI - Liquidez / Titulos / Fundos | `% CDI` ou `CDI+` | `103,50% CDI` ou `CDI+ 2,55%` |
-| Inflação - Titulos / Fundos | `IPCA+` ou `IGPM+` | `IPCA+ 6,85%` ou `IGPM+ 7,00%` |
-| Pré Fixado - Titulos / Fundos | Pré | `14,80% a.a.` |
-| Multimercado, Ações, ETFs, Imobiliário, Exterior, COE, Cripto, Ouro, Alternativo, PE/VC | livre / sem taxa | campo vazio (default) |
+Sem incluir `Classificacao`. Resultado: a classe que o usuário acabou de preencher no modal (`editingItem["Classe do ativo"]`) **não é gravada** junto, e o registro nasce sem classificação. Como o RAG é a fonte usada para auto-preencher classes em importações futuras, esses ativos passam a aparecer como "sem classificação".
 
-Padronização: `IGP-M +` → `IGPM+`, ponto → vírgula, sempre 2 casas, sufixo obrigatório.
+O caminho `handleSaveClassificacao` tem o mesmo problema em espelho: insere apenas `{ Ativo, Classificacao }` sem `Liquidez`.
 
-### Mudanças no AssetOverridesTab.tsx (modal "Nova regra" / Editar)
+## Correção
 
-Substituir o `Input` único de Taxa por um **componente composto** que muda dinamicamente conforme a classe selecionada (`form.classe_ativo`):
+Atualizar **ambos** os fluxos de gravação no RAG (`handleSaveLiquidez` e `handleSaveClassificacao`) para preservar o outro campo se ele estiver disponível em `editingItem`, sem nunca sobrescrever um valor já existente no RAG por `null`.
 
-1. **Detector de tipo de taxa** baseado na classe:
-   - Classes CDI → mostra `Select` com 2 opções: `% CDI` | `CDI+` + `BRNumberInput` (2 casas)
-   - Classes Inflação → mostra `Select` com 2 opções: `IPCA+` | `IGPM+` + `BRNumberInput`
-   - Classes Pré Fixado → mostra apenas `BRNumberInput` com sufixo fixo `% a.a.`
-   - Demais classes → mostra `Input` livre (fallback) ou oculta o campo
+### Mudanças em `src/pages/DataManagement.tsx`
 
-2. **Montagem do valor canônico** ao salvar:
-   - `% CDI`: `{valor}% CDI`
-   - `CDI+`: `CDI+ {valor}%`
-   - `IPCA+` / `IGPM+`: `{tipo} {valor}%`
-   - Pré: `{valor}% a.a.`
-   - Sempre formatado com vírgula e 2 casas decimais.
+**1. `handleSaveLiquidez` (linhas 1615-1665):**
+- Quando o registro **não existe** no RAG: incluir `Classificacao: editingItem["Classe do ativo"]?.trim() || null` no `insert`, junto com `Ativo` e `Liquidez`.
+- Quando o registro **existe sem Liquidez**: manter o `update` apenas em `Liquidez` (não tocar em `Classificacao`).
+- Caminho de conflito (`handleConfirmRagLiquidezUpdate`): segue atualizando só `Liquidez`. Sem mudança.
 
-3. **Parser ao abrir/editar** uma regra existente: regex extrai tipo + número de qualquer um dos formatos antigos para popular o select e o input numéricos corretamente. Aceita `100% CDI`, `100,00% CDI`, `103.5% CDI`, `CDI+ 2,64%`, `IPCA+ 6,85%`, `IGP-M + 6,60%`, `14,8% a.a.`, `14.8% a.a.`.
+**2. `handleSaveClassificacao` (linhas 1528-1572):**
+- Quando o registro **não existe** no RAG: incluir `Liquidez: editingItem.liquidez?.trim() || null` no `insert`, junto com `Ativo` e `Classificacao`.
+- Demais caminhos não mudam.
 
-4. **Pré-preenchimento contextual**: quando a regra é criada via "Ajustar ativo" da tabela, o `prefillRequest.taxa` (vindo do registro original) passa pelo mesmo parser, já caindo nos selects/inputs corretos.
+### Por que é seguro
 
-5. **Placeholder dinâmico** mostra exemplo do formato canônico esperado para a classe atual.
+- Os updates parciais continuam tocando apenas a coluna alvo, então gravar liquidez nunca apaga uma classificação previamente salva no RAG.
+- O insert passa a refletir o estado completo do `editingItem`, evitando perda silenciosa de dados.
+- Não há mudanças em schema, RLS ou outras tabelas.
 
-6. **BRNumberInput**: reutilizar `src/components/BRNumberInput` (já padrão do projeto) para garantir vírgula como separador decimal.
+### Backfill (opcional, fora desta correção)
 
-### Não inclui (escopo separado)
-
-- Migração/atualização em massa dos valores antigos em `DadosPerformance.Taxa` — apenas o que for editado/ajustado via app passa a ficar canônico.
-- Mudança no schema (`Taxa` segue como `text`).
-- Aplicação automática das regras (continua sendo feita pelo n8n, conforme memória `asset-overrides`).
-
-### Arquivos afetados
-
-- `src/components/AssetOverridesTab.tsx` — substituir o bloco do campo Taxa (linhas ~640-649) por um componente composto + ajustar `prefillRequest` effect (~180), `handleOpenEdit` (~220) e `handleSave` (~265) para serializar/parsear.
-
-### Pergunta antes de implementar
-
-Os títulos `% CDI` aparecem hoje quase sempre com 2 casas decimais (ex: `119,00%`, `103,50%`). Confirma que quer **forçar sempre 2 casas** ao salvar, ou prefere **mínimo 2, máximo 4** (para casos como `IPCA+ 6,317%` ou `126,67% CDI`)?
+Os registros já gravados sem classificação continuam sem ela. Se quiser, depois eu rodo um update para preencher a `Classificacao` desses ativos a partir da classe atual em `DadosPerformance`. Diga se quer que eu inclua esse backfill no mesmo passo.
