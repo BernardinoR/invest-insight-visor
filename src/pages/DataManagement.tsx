@@ -1547,9 +1547,10 @@ export default function DataManagement() {
       
       if (!existing || existing.length === 0) {
         // Não existe — inserir novo
+        const liquidezAtual = editingItem.liquidez?.trim() || null;
         const { error: insertError } = await supabase
           .from('RAG_Processador')
-          .insert({ Ativo: ativo, Classificacao: classeNova });
+          .insert({ Ativo: ativo, Classificacao: classeNova, Liquidez: liquidezAtual } as any);
         if (insertError) throw insertError;
         toast({ title: "Classificação gravada!", description: `"${ativo}" → ${classeNova}` });
       } else if (existing[0].Classificacao === classeNova) {
