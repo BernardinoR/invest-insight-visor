@@ -1547,9 +1547,10 @@ export default function DataManagement() {
       
       if (!existing || existing.length === 0) {
         // Não existe — inserir novo
+        const liquidezAtual = editingItem.liquidez?.trim() || null;
         const { error: insertError } = await supabase
           .from('RAG_Processador')
-          .insert({ Ativo: ativo, Classificacao: classeNova });
+          .insert({ Ativo: ativo, Classificacao: classeNova, Liquidez: liquidezAtual } as any);
         if (insertError) throw insertError;
         toast({ title: "Classificação gravada!", description: `"${ativo}" → ${classeNova}` });
       } else if (existing[0].Classificacao === classeNova) {
@@ -1632,9 +1633,10 @@ export default function DataManagement() {
       if (fetchError) throw fetchError;
 
       if (!existing || existing.length === 0) {
+        const classeAtual = editingItem["Classe do ativo"]?.trim() || null;
         const { error: insertError } = await supabase
           .from('RAG_Processador')
-          .insert({ Ativo: ativo, Liquidez: liquidezNova } as any);
+          .insert({ Ativo: ativo, Liquidez: liquidezNova, Classificacao: classeAtual } as any);
         if (insertError) throw insertError;
         toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${liquidezNova}` });
       } else if ((existing[0] as any).Liquidez === liquidezNova) {
