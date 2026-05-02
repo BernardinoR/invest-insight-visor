@@ -261,9 +261,17 @@ export function AssetOverridesTab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientName, refreshSignal]);
 
-  // Abre o dialog de criação pré-preenchido quando o nonce muda
+  // Abre o dialog de criação pré-preenchido apenas quando um nonce NOVO chega.
+  // Inicializa o ref com o nonce atual (se houver) para evitar abertura indevida
+  // na primeira montagem da aba quando o pai ainda mantém um prefill antigo.
+  const lastConsumedNonceRef = useRef<number | null>(
+    prefillRequest?.nonce ?? null
+  );
   useEffect(() => {
-    if (!prefillRequest) return;
+    const nonce = prefillRequest?.nonce;
+    if (!prefillRequest || nonce == null) return;
+    if (lastConsumedNonceRef.current === nonce) return;
+    lastConsumedNonceRef.current = nonce;
     setForm({
       cliente: clientName,
       instituicao: prefillRequest.instituicao || "",
