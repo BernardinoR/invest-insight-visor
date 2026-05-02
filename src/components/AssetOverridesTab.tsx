@@ -240,7 +240,11 @@ export function AssetOverridesTab({
         .order("instituicao", { ascending: true })
         .order("ativo_original", { ascending: true });
       if (error) throw error;
-      setOverrides((data || []) as unknown as AssetOverride[]);
+      const mapped = (data || []).map((r: any) => ({
+        ...r,
+        ativo_novo: r.nome_ajustado ?? null,
+      }));
+      setOverrides(mapped as unknown as AssetOverride[]);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar regras",
