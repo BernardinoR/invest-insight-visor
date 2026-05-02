@@ -240,7 +240,11 @@ export function AssetOverridesTab({
         .order("instituicao", { ascending: true })
         .order("ativo_original", { ascending: true });
       if (error) throw error;
-      setOverrides((data || []) as unknown as AssetOverride[]);
+      const mapped = (data || []).map((r: any) => ({
+        ...r,
+        ativo_novo: r.nome_ajustado ?? null,
+      }));
+      setOverrides(mapped as unknown as AssetOverride[]);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar regras",
@@ -349,7 +353,7 @@ export function AssetOverridesTab({
         cliente: form.cliente,
         instituicao: form.instituicao,
         ativo_original: form.ativo_original.trim(),
-        ativo_novo: form.ativo_novo.trim() || null,
+        nome_ajustado: form.ativo_novo.trim() || null,
         classe_ativo: form.classe_ativo || null,
         emissor: form.emissor.trim() || null,
         taxa: form.taxa.trim() || null,
