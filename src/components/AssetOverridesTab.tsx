@@ -686,13 +686,31 @@ export function AssetOverridesTab({
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
                   <Label>Novo nome do ativo</Label>
-                  <Input
-                    value={form.ativo_novo}
-                    onChange={(e) =>
-                      setForm({ ...form, ativo_novo: e.target.value })
-                    }
-                    placeholder="Deixe vazio para manter o nome original"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      value={form.ativo_novo}
+                      onChange={(e) =>
+                        setForm({ ...form, ativo_novo: e.target.value })
+                      }
+                      placeholder="Deixe vazio para manter o nome original"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      title="Gerar nome padrão (PREFIXO Emissor Taxa Vencimento)"
+                      disabled={
+                        !form.emissor.trim() &&
+                        !form.taxa.trim() &&
+                        !form.vencimento.trim()
+                      }
+                      onClick={() =>
+                        setForm({ ...form, ativo_novo: buildNomePadrao(form) })
+                      }
+                    >
+                      <Wand2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div>
                   <Label>Classe do Ativo</Label>
