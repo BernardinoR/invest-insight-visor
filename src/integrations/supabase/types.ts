@@ -59,7 +59,6 @@ export type Database = {
       asset_overrides: {
         Row: {
           ativo: boolean
-          ativo_novo: string | null
           ativo_original: string
           classe_ativo: string | null
           cliente: string
@@ -68,6 +67,7 @@ export type Database = {
           id: string
           instituicao: string
           liquidez: string | null
+          nome_ajustado: string | null
           observacao: string | null
           taxa: string | null
           updated_at: string
@@ -75,7 +75,6 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
-          ativo_novo?: string | null
           ativo_original: string
           classe_ativo?: string | null
           cliente: string
@@ -84,6 +83,7 @@ export type Database = {
           id?: string
           instituicao: string
           liquidez?: string | null
+          nome_ajustado?: string | null
           observacao?: string | null
           taxa?: string | null
           updated_at?: string
@@ -91,7 +91,6 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
-          ativo_novo?: string | null
           ativo_original?: string
           classe_ativo?: string | null
           cliente?: string
@@ -100,6 +99,7 @@ export type Database = {
           id?: string
           instituicao?: string
           liquidez?: string | null
+          nome_ajustado?: string | null
           observacao?: string | null
           taxa?: string | null
           updated_at?: string
