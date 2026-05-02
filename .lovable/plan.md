@@ -1,38 +1,40 @@
 ## Problema
 
-Erro ao criar regra: `Could not find the 'ativo_novo' column of 'asset_overrides' in the schema cache`.
+Ao trocar para a aba **"Ajustes de Ativos"**, o modal de criação de regra abre sozinho (com os dados de um ativo clicado anteriormente em outra aba).
 
 ## Causa
 
-A coluna no banco `asset_overrides` se chama **`nome_ajustado`** (vide schema), mas o payload enviado em `handleSave` (linha 352 de `src/components/AssetOverridesTab.tsx`) usa a chave `ativo_novo`. O Supabase rejeita o insert/update.
+`AssetOverridesTab` é montado de forma lazy pelo `<TabsContent value="overrides">` (Radix Tabs só renderiza o painel quando a aba é ativada). O pai (`DataManagement.tsx`) mantém `overridePrefill` no estado mesmo depois do uso. Quando o usuário entra na aba pela primeira vez (ou volta a ela), o componente monta, o `useEffect` que observa `prefillRequest?.nonce` roda pela primeira vez naquele ciclo de vida e — como o nonce existe — dispara `setIsDialogOpen(true)`.
 
-O mesmo desalinhamento existe na leitura: o restante do componente trata o campo como `ativo_novo` (estado, filtro de busca, render da tabela, edit form), então o `select("*")` está retornando `nome_ajustado` mas o código espera `ativo_novo` — hoje os valores de "Novo nome" não aparecem na tabela quando uma regra já existe.
+O efeito não distingue entre "novo prefill recebido agora" e "prefill antigo encontrado na montagem".
 
 ## Correção
 
-Mapear nos dois pontos de fronteira com o banco, mantendo o resto do código (estado e UI) usando `ativo_novo` para minimizar o blast radius.
-
 **Arquivo:** `src/components/AssetOverridesTab.tsx`
 
-1. **Payload de gravação (linha 352)** — trocar a chave:
-   ```ts
-   // de:
-   ativo_novo: form.ativo_novo.trim() || null,
-   // para:
-   nome_ajustado: form.ativo_novo.trim() || null,
-   ```
+Usar um `useRef` para guardar o último `nonce` já consumido. O efeito só abre o modal quando o nonce **mudou de fato** desde o último consumo. Na primeira montagem, inicializa o ref com o nonce atual (se existir), tratando-o como "já consumido" — ou seja, montar a aba com um prefill antigo no pai não abre nada.
 
-2. **Leitura (`fetchOverrides`, ~linha 243)** — após o `select`, mapear `nome_ajustado → ativo_novo` antes de salvar no estado:
-   ```ts
-   const mapped = (data || []).map((r: any) => ({
-     ...r,
-     ativo_novo: r.nome_ajustado ?? null,
-   }));
-   setOverrides(mapped as unknown as AssetOverride[]);
-   ```
+```ts
+const lastConsumedNonceRef = useRef<number | null>(
+  prefillRequest?.nonce ?? null
+);
+
+useEffect(() => {
+  const nonce = prefillRequest?.nonce;
+  if (!prefillRequest || nonce == null) return;
+  if (lastConsumedNonceRef.current === nonce) return;
+  lastConsumedNonceRef.current = nonce;
+  setForm({ ...prefill values... });
+  setIsDialogOpen(true);
+}, [prefillRequest?.nonce]);
+```
+
+Isso resolve:
+- Trocar para a aba sem clicar em "Criar regra a partir do ativo" → modal **não** abre.
+- Clicar em "Criar regra a partir do ativo" em outra aba → pai gera novo `nonce`, efeito vê nonce diferente, abre o modal normalmente.
+- Voltar pra aba depois de fechar o modal → nonce permanece o mesmo já consumido, **não** reabre.
 
 ## Fora de escopo
 
-- Não altera o schema do banco nem outras tabelas.
-- Não toca em pipeline n8n (que já lê `nome_ajustado` direto da tabela).
-- Não renomeia a coluna em todo o componente — o mapeamento na fronteira é mais seguro e não quebra usos cruzados.
+- Não muda contrato com `DataManagement.tsx` nem o `prefillRequest`.
+- Não toca em DB ou pipeline.
