@@ -349,7 +349,7 @@ export function AssetOverridesTab({
         cliente: form.cliente,
         instituicao: form.instituicao,
         ativo_original: form.ativo_original.trim(),
-        ativo_novo: form.ativo_novo.trim() || null,
+        nome_ajustado: form.ativo_novo.trim() || null,
         classe_ativo: form.classe_ativo || null,
         emissor: form.emissor.trim() || null,
         taxa: form.taxa.trim() || null,
