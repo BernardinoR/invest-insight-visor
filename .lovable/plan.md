@@ -1,42 +1,47 @@
-## Problema
+## Objetivo
 
-Ao clicar em **"Gravar liquidez"** no modal de edição de "Gerenciar Dados", o registro correspondente em `RAG_Processador` está ficando com `Classificacao = NULL`.
+Adicionar um botão ao lado do campo **"Novo nome do ativo"** no modal de criação/edição de regra (`AssetOverridesTab.tsx`) que pré-preenche automaticamente o nome no formato:
 
-Confirmado no banco: 18 dos 20 registros mais recentes do RAG (ex.: `Trend Pré-Fixado XP Seg Prev FIC FIRF RL`, `ARX Denali XP Seg Prev FIC FIRF CP RL`, `Ibiuna ST XP Seg Prev FIC FIM CP`, etc.) têm `Liquidez` preenchida mas `Classificacao = NULL`.
-
-### Causa raiz (`src/pages/DataManagement.tsx`, função `handleSaveLiquidez`, linha 1615)
-
-Quando o ativo ainda não existe na tabela `RAG_Processador`, o código executa:
-
-```ts
-.insert({ Ativo: ativo, Liquidez: liquidezNova })
+```
+PREFIXO EMISSOR TAXA VENCIMENTO
 ```
 
-Sem incluir `Classificacao`. Resultado: a classe que o usuário acabou de preencher no modal (`editingItem["Classe do ativo"]`) **não é gravada** junto, e o registro nasce sem classificação. Como o RAG é a fonte usada para auto-preencher classes em importações futuras, esses ativos passam a aparecer como "sem classificação".
+Exemplo: `CDB C6 110% CDI 19/06/2028`
 
-O caminho `handleSaveClassificacao` tem o mesmo problema em espelho: insere apenas `{ Ativo, Classificacao }` sem `Liquidez`.
+## Regras de geração
 
-## Correção
+### 1. Prefixo (detectado no `ativo_original`, case-insensitive)
+- Contém `CDB` → `CDB`
+- Contém `CRA` → `CRA`
+- Contém `CRI` → `CRI`
+- Contém `DEB` (ou `DEBENTURE`/`DEBÊNTURE`) → `DEB`
+- Caso nenhum case, usa a **Classe do Ativo** selecionada como fallback (ou string vazia se nada).
 
-Atualizar **ambos** os fluxos de gravação no RAG (`handleSaveLiquidez` e `handleSaveClassificacao`) para preservar o outro campo se ele estiver disponível em `editingItem`, sem nunca sobrescrever um valor já existente no RAG por `null`.
+### 2. Emissor
+- Usa o campo `form.emissor` exatamente como digitado (trim).
 
-### Mudanças em `src/pages/DataManagement.tsx`
+### 3. Taxa
+- Usa o campo `form.taxa` exatamente como está (já padronizado pelo seletor: `% CDI`, `CDI+`, `IPCA+`, `IGPM+`, `Pré`).
 
-**1. `handleSaveLiquidez` (linhas 1615-1665):**
-- Quando o registro **não existe** no RAG: incluir `Classificacao: editingItem["Classe do ativo"]?.trim() || null` no `insert`, junto com `Ativo` e `Liquidez`.
-- Quando o registro **existe sem Liquidez**: manter o `update` apenas em `Liquidez` (não tocar em `Classificacao`).
-- Caminho de conflito (`handleConfirmRagLiquidezUpdate`): segue atualizando só `Liquidez`. Sem mudança.
+### 4. Vencimento
+- Usa `form.vencimento` (campo `<input type="date">`, formato `YYYY-MM-DD`) e converte para `DD/MM/YYYY`.
+- Se vazio, omite.
 
-**2. `handleSaveClassificacao` (linhas 1528-1572):**
-- Quando o registro **não existe** no RAG: incluir `Liquidez: editingItem.liquidez?.trim() || null` no `insert`, junto com `Ativo` e `Classificacao`.
-- Demais caminhos não mudam.
+### 5. Montagem
+- Concatena com espaço simples, ignorando partes vazias e fazendo trim final.
+- Sempre **sobrescreve** o valor atual de `ativo_novo` ao clicar (comportamento de "gerar/regerar").
 
-### Por que é seguro
+## Mudanças de código
 
-- Os updates parciais continuam tocando apenas a coluna alvo, então gravar liquidez nunca apaga uma classificação previamente salva no RAG.
-- O insert passa a refletir o estado completo do `editingItem`, evitando perda silenciosa de dados.
-- Não há mudanças em schema, RLS ou outras tabelas.
+**Arquivo:** `src/components/AssetOverridesTab.tsx`
 
-### Backfill (opcional, fora desta correção)
+1. Adicionar helper `buildNomePadrao(form)` que aplica as regras acima.
+2. No bloco do "Novo nome do ativo" (linhas 652-661), envolver `<Input>` num container flex e adicionar um `<Button variant="outline" size="icon" type="button">` com ícone `Wand2` (lucide-react, já compatível) e tooltip `"Gerar nome padrão"`.
+3. `onClick` do botão: `setForm({ ...form, ativo_novo: buildNomePadrao(form) })`.
+4. Botão fica **desabilitado** se `form.emissor` e `form.taxa` e `form.vencimento` estiverem todos vazios (nada para gerar).
 
-Os registros já gravados sem classificação continuam sem ela. Se quiser, depois eu rodo um update para preencher a `Classificacao` desses ativos a partir da classe atual em `DadosPerformance`. Diga se quer que eu inclua esse backfill no mesmo passo.
+## Fora de escopo
+
+- Não altera schema, RLS ou pipeline n8n.
+- Não toca em registros já existentes — só ajuda na criação de novas regras.
+- Sem geração automática ao digitar — só quando o usuário clica no botão.
