@@ -273,6 +273,7 @@ export function AssetOverridesTab({
     if (!prefillRequest || nonce == null) return;
     if (lastConsumedNonceRef.current === nonce) return;
     lastConsumedNonceRef.current = nonce;
+    setOriginalNomeAjustado("");
     setForm({
       cliente: clientName,
       instituicao: prefillRequest.instituicao || "",
