@@ -309,6 +309,7 @@ export function AssetOverridesTab({
 
   const openCreate = () => {
     setForm(emptyForm(clientName));
+    setOriginalNomeAjustado("");
     setIsDialogOpen(true);
   };
 
@@ -326,6 +327,7 @@ export function AssetOverridesTab({
       liquidez: o.liquidez || "",
       ativo: o.ativo,
     });
+    setOriginalNomeAjustado(o.ativo_novo || "");
     setIsDialogOpen(true);
   };
 
