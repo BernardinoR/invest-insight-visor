@@ -229,6 +229,7 @@ export function AssetOverridesTab({
   const [saving, setSaving] = useState(false);
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [originalNomeAjustado, setOriginalNomeAjustado] = useState<string>("");
 
   const fetchOverrides = async () => {
     setLoading(true);
@@ -272,6 +273,7 @@ export function AssetOverridesTab({
     if (!prefillRequest || nonce == null) return;
     if (lastConsumedNonceRef.current === nonce) return;
     lastConsumedNonceRef.current = nonce;
+    setOriginalNomeAjustado("");
     setForm({
       cliente: clientName,
       instituicao: prefillRequest.instituicao || "",
@@ -307,6 +309,7 @@ export function AssetOverridesTab({
 
   const openCreate = () => {
     setForm(emptyForm(clientName));
+    setOriginalNomeAjustado("");
     setIsDialogOpen(true);
   };
 
@@ -324,6 +327,7 @@ export function AssetOverridesTab({
       liquidez: o.liquidez || "",
       ativo: o.ativo,
     });
+    setOriginalNomeAjustado(o.ativo_novo || "");
     setIsDialogOpen(true);
   };
 
@@ -376,7 +380,6 @@ export function AssetOverridesTab({
           .update(payload)
           .eq("id", form.id);
         if (error) throw error;
-        toast({ title: "Regra atualizada" });
       } else {
         const { error } = await supabase
           .from("asset_overrides" as any)
@@ -393,7 +396,55 @@ export function AssetOverridesTab({
           }
           throw error;
         }
-        toast({ title: "Regra criada" });
+      }
+
+      // Aplicar imediatamente em DadosPerformance, se a regra estiver ativa
+      const baseTitle = form.id ? "Regra atualizada" : "Regra criada";
+      if (form.ativo) {
+        const updates: Record<string, any> = {};
+        if (form.ativo_novo.trim()) updates["Ativo"] = form.ativo_novo.trim();
+        if (form.classe_ativo) updates["Classe do ativo"] = form.classe_ativo;
+        if (form.emissor.trim()) updates["Emissor"] = form.emissor.trim();
+        if (form.taxa.trim()) updates["Taxa"] = form.taxa.trim();
+        if (form.vencimento) updates["Vencimento"] = form.vencimento;
+        if (form.liquidez.trim()) updates["liquidez"] = form.liquidez.trim();
+
+        if (Object.keys(updates).length > 0) {
+          const ativoMatches = Array.from(
+            new Set(
+              [form.ativo_original.trim(), originalNomeAjustado.trim()].filter(
+                Boolean
+              )
+            )
+          );
+          const { error: updErr, count } = await supabase
+            .from("DadosPerformance")
+            .update(updates, { count: "exact" })
+            .eq("Nome", form.cliente)
+            .eq("Instituicao", form.instituicao)
+            .in("Ativo", ativoMatches);
+
+          if (updErr) {
+            toast({
+              title: "Regra salva, mas falha ao aplicar nos registros existentes",
+              description: updErr.message,
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: baseTitle,
+              description: `${count ?? 0} registro(s) ajustado(s) imediatamente.`,
+            });
+          }
+        } else {
+          toast({ title: baseTitle });
+        }
+      } else {
+        toast({
+          title: baseTitle,
+          description:
+            "Regra desativada — registros existentes não foram alterados.",
+        });
       }
 
       setIsDialogOpen(false);
