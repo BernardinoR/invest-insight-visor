@@ -229,6 +229,7 @@ export function AssetOverridesTab({
   const [saving, setSaving] = useState(false);
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [originalNomeAjustado, setOriginalNomeAjustado] = useState<string>("");
 
   const fetchOverrides = async () => {
     setLoading(true);
