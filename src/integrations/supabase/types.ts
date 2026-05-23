@@ -914,11 +914,13 @@ export type Database = {
           client_name: string
           competencia: string
           diferenca: number | null
+          has_missing_liquidity: boolean
           has_missing_yield: boolean | null
           has_new_assets: boolean | null
           has_unclassified: boolean | null
           id: number
           instituicao: string
+          missing_liquidity_count: number
           missing_yield_count: number | null
           moeda: string | null
           new_asset_count: number | null
@@ -935,11 +937,13 @@ export type Database = {
           client_name: string
           competencia: string
           diferenca?: number | null
+          has_missing_liquidity?: boolean
           has_missing_yield?: boolean | null
           has_new_assets?: boolean | null
           has_unclassified?: boolean | null
           id?: number
           instituicao: string
+          missing_liquidity_count?: number
           missing_yield_count?: number | null
           moeda?: string | null
           new_asset_count?: number | null
@@ -956,11 +960,13 @@ export type Database = {
           client_name?: string
           competencia?: string
           diferenca?: number | null
+          has_missing_liquidity?: boolean
           has_missing_yield?: boolean | null
           has_new_assets?: boolean | null
           has_unclassified?: boolean | null
           id?: number
           instituicao?: string
+          missing_liquidity_count?: number
           missing_yield_count?: number | null
           moeda?: string | null
           new_asset_count?: number | null
