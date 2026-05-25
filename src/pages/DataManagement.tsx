@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus, FastForward, Scissors, Wand2 } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus, FastForward, Scissors, Wand2, Database } from "lucide-react";
 import { RolloverDialog } from "@/components/RolloverDialog";
 import { SplitAccountDialog } from "@/components/SplitAccountDialog";
 import { AssetOverridesTab } from "@/components/AssetOverridesTab";
@@ -1977,6 +1977,76 @@ export default function DataManagement() {
       });
     }
   };
+
+  const handleBulkFillLiquidezFromRAG = async () => {
+    if (selectedItems.size === 0) return;
+
+    const items = filteredDadosData.filter(item => selectedItems.has(item.id));
+    const nomesUnicos = Array.from(
+      new Set(items.map(i => (i.Ativo || '').trim()).filter(Boolean))
+    );
+
+    if (nomesUnicos.length === 0) {
+      toast({ title: "Nenhum ativo válido selecionado", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const { data: ragRows, error: ragErr } = await supabase
+        .from('RAG_Processador')
+        .select('Ativo, Liquidez')
+        .in('Ativo', nomesUnicos);
+
+      if (ragErr) throw ragErr;
+
+      const map = new Map<string, string>();
+      (ragRows || []).forEach((r: any) => {
+        const liq = (r.Liquidez || '').toString().trim();
+        if (r.Ativo && liq) map.set(r.Ativo, liq);
+      });
+
+      let updated = 0;
+      let semRag = 0;
+      let jaIgual = 0;
+
+      const updatePromises: Promise<any>[] = [];
+      for (const item of items) {
+        const ativo = (item.Ativo || '').trim();
+        const liqRag = map.get(ativo);
+        if (!liqRag) { semRag++; continue; }
+        const liqAtual = ((item as any).liquidez || '').toString().trim();
+        if (liqAtual === liqRag) { jaIgual++; continue; }
+        updated++;
+        updatePromises.push(
+          Promise.resolve(
+            supabase.from('DadosPerformance').update({ liquidez: liqRag } as any).eq('id', item.id)
+          )
+        );
+
+      }
+
+      await Promise.all(updatePromises);
+
+      toast({
+        title: "Liquidez preenchida via RAG",
+        description: `${updated} atualizado(s) · ${jaIgual} já igual · ${semRag} sem cadastro no RAG`,
+      });
+
+      setIsBulkEditOpen(false);
+      setBulkEditData({});
+      setSelectedItems(new Set());
+      await fetchData();
+    } catch (error: any) {
+      console.error('Erro ao preencher liquidez via RAG:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao preencher liquidez via RAG",
+        variant: "destructive",
+      });
+    }
+  };
+
+
 
   const handleBulkDelete = async () => {
     if (selectedItems.size === 0) return;
@@ -6629,8 +6699,25 @@ interface VerificationResult {
                     )}
                   </div>
                 </div>
+
+                <div className="border-t pt-4 mt-2">
+                  <Label className="text-sm font-medium">Liquidez via RAG</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Busca a liquidez cadastrada no RAG para cada ativo selecionado e aplica individualmente.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkFillLiquidezFromRAG}
+                    className="w-full"
+                  >
+                    <Database className="mr-2 h-4 w-4" />
+                    Preencher liquidez via RAG ({selectedItems.size})
+                  </Button>
+                </div>
               </>
             )}
+
             
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setIsBulkEditOpen(false)}>
