@@ -1978,6 +1978,73 @@ export default function DataManagement() {
     }
   };
 
+  const handleBulkFillLiquidezFromRAG = async () => {
+    if (selectedItems.size === 0) return;
+
+    const items = filteredDadosData.filter(item => selectedItems.has(item.id));
+    const nomesUnicos = Array.from(
+      new Set(items.map(i => (i.Ativo || '').trim()).filter(Boolean))
+    );
+
+    if (nomesUnicos.length === 0) {
+      toast({ title: "Nenhum ativo válido selecionado", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const { data: ragRows, error: ragErr } = await supabase
+        .from('RAG_Processador')
+        .select('Ativo, Liquidez')
+        .in('Ativo', nomesUnicos);
+
+      if (ragErr) throw ragErr;
+
+      const map = new Map<string, string>();
+      (ragRows || []).forEach((r: any) => {
+        const liq = (r.Liquidez || '').toString().trim();
+        if (r.Ativo && liq) map.set(r.Ativo, liq);
+      });
+
+      let updated = 0;
+      let semRag = 0;
+      let jaIgual = 0;
+
+      const updatePromises: Promise<any>[] = [];
+      for (const item of items) {
+        const ativo = (item.Ativo || '').trim();
+        const liqRag = map.get(ativo);
+        if (!liqRag) { semRag++; continue; }
+        const liqAtual = ((item as any).liquidez || '').toString().trim();
+        if (liqAtual === liqRag) { jaIgual++; continue; }
+        updated++;
+        updatePromises.push(
+          supabase.from('DadosPerformance').update({ liquidez: liqRag } as any).eq('id', item.id)
+        );
+      }
+
+      await Promise.all(updatePromises);
+
+      toast({
+        title: "Liquidez preenchida via RAG",
+        description: `${updated} atualizado(s) · ${jaIgual} já igual · ${semRag} sem cadastro no RAG`,
+      });
+
+      setIsBulkEditOpen(false);
+      setBulkEditData({});
+      setSelectedItems(new Set());
+      await fetchData();
+    } catch (error: any) {
+      console.error('Erro ao preencher liquidez via RAG:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao preencher liquidez via RAG",
+        variant: "destructive",
+      });
+    }
+  };
+
+
+
   const handleBulkDelete = async () => {
     if (selectedItems.size === 0) return;
     if (!confirm(`Tem certeza que deseja excluir ${selectedItems.size} registros?`)) return;
