@@ -1,78 +1,30 @@
-## Objetivo
+## Auto-preencher Liquidez via RAG no Bulk Edit
 
-Adicionar check "Sem Liquidez" à verificação de dados: um ativo é "sem liquidez" se em `DadosPerformance` o campo `Vencimento` **OU** o campo `liquidez` estiver vazio (lógica OR). Persistir contagem e flag em `verification_results` e incluir no `all_green`.
+No diálogo de "Editar Registros em Lote" (aba Detalhado de DataManagement), adicionar uma ação que, para cada ativo selecionado, busca a liquidez cadastrada na tabela `RAG_Processador` (por nome de `Ativo`) e aplica esse valor — registro a registro — em `DadosPerformance.liquidez`.
 
-## Descobertas relevantes
+Diferente dos outros campos do bulk edit (que aplicam o mesmo valor a todos), esta ação aplica um valor **diferente por linha**, dependendo do que estiver no RAG.
 
-- `verification_results.all_green` é uma coluna **GENERATED ALWAYS AS STORED** (não setada via INSERT). Para incluir o novo check é necessário **DROP + ADD** da coluna gerada.
-- A definição atual de `all_green` considera apenas `patrimonio_status IN ('match','tolerance') AND NOT has_unclassified AND NOT has_missing_yield`. Não inclui `has_new_assets` (apesar de o pedido sugerir o contrário). Vou **preservar** a lógica atual e apenas **somar** `AND NOT has_missing_liquidity`.
-- A função existente é `calculate_verification(p_client_name text, p_competencia text)` (overload com `text, text`). Vou atualizar essa versão e também a versão `(p_client_name text)` para manter consistência.
-- Colunas em `DadosPerformance` usadas pelos outros checks: `"Nome"`, `"Competencia"`, `"Instituicao"`, `"nomeConta"`. `Vencimento` é `date` (não precisa de TRIM, basta `IS NULL`); `liquidez` é `text` (usar `IS NULL OR TRIM(...) = ''`).
-- O escopo de contagem usado pelos outros checks (missing_yield, unclassified, new_assets) é por **conta** (Nome+Competencia+Instituicao+nomeConta). Vou seguir o mesmo escopo para `missing_liquidity_count` — mais consistente com a estrutura da tabela e com como o CRM exibe os resultados (uma linha por conta). O snippet do pedido filtra só por cliente+competência, mas a tabela é granular por conta; aplicar o mesmo escopo evita inflar contagens.
+### Onde
+`src/pages/DataManagement.tsx` — dentro do `<Dialog open={isBulkEditOpen}>` (a partir da linha 6435), na seção do tab `detalhado`, próximo ao campo de Taxa/Rendimento.
 
-## Migração SQL
+### UX
+- Novo botão: **"Preencher liquidez via RAG"** (com ícone `Database` ou `Sparkles`), largura total, variant `outline`.
+- Texto auxiliar: "Busca a liquidez cadastrada no RAG para cada ativo selecionado e aplica individualmente."
+- Ao clicar:
+  1. Coleta os nomes únicos de `Ativo` dos `selectedItems` (filtrados em `filteredDadosData`).
+  2. Faz uma única query: `supabase.from('RAG_Processador').select('Ativo, Liquidez').in('Ativo', nomesUnicos)`.
+  3. Monta um mapa `ativo → Liquidez` (ignorando entradas sem `Liquidez`).
+  4. Para cada item selecionado, se existir mapeamento e `Liquidez` não vazia, dispara um `update` em `DadosPerformance` pelo `id` com `{ liquidez: <valor RAG> }`.
+  5. Roda os updates em paralelo (`Promise.all`).
+  6. Toast final com: `X ativos atualizados, Y sem cadastro no RAG, Z já com liquidez igual`.
+  7. Fecha o diálogo, limpa `selectedItems`, chama `fetchData()`.
 
-```sql
--- 1. Novas colunas
-ALTER TABLE public.verification_results
-  ADD COLUMN has_missing_liquidity BOOLEAN NOT NULL DEFAULT false,
-  ADD COLUMN missing_liquidity_count INTEGER NOT NULL DEFAULT 0;
+### Detalhes técnicos
+- Reaproveita o estado `selectedItems` e `filteredDadosData` já existentes.
+- Não mexe em `bulkEditData` nem em `handleBulkSave` — é um fluxo paralelo (botão próprio com seu próprio handler `handleBulkFillLiquidezFromRAG`).
+- Considera `Liquidez` válido apenas quando `trim() !== ''`.
+- Não sobrescreve liquidez existente do registro se já for igual ao RAG (apenas conta como "já igual"); mas **sobrescreve** se for diferente — mesmo comportamento atual de uma regra "RAG é fonte da verdade" para este botão.
+- Só aparece quando `activeTab === 'detalhado'`.
 
--- 2. Recriar all_green incluindo o novo check
-ALTER TABLE public.verification_results DROP COLUMN all_green;
-ALTER TABLE public.verification_results
-  ADD COLUMN all_green BOOLEAN GENERATED ALWAYS AS (
-    patrimonio_status IN ('match', 'tolerance')
-    AND has_unclassified = false
-    AND has_missing_yield = false
-    AND has_missing_liquidity = false
-  ) STORED;
-
-CREATE INDEX IF NOT EXISTS idx_verification_all_green
-  ON public.verification_results(client_name, all_green);
-```
-
-## Atualização da RPC `calculate_verification`
-
-Em ambas as assinaturas (`(text)` e `(text, text)`), dentro do loop por conta, adicionar:
-
-```sql
-SELECT COUNT(*) INTO v_missing_liquidity
-FROM "DadosPerformance"
-WHERE "Nome" = rec."Nome"
-  AND "Competencia" = rec."Competencia"
-  AND "Instituicao" = rec."Instituicao"
-  AND COALESCE("nomeConta", '') = rec.nome_conta
-  AND (
-    "Vencimento" IS NULL
-    OR "liquidez" IS NULL
-    OR TRIM("liquidez") = ''
-  );
-```
-
-E incluir no `INSERT ... ON CONFLICT DO UPDATE`:
-- colunas: `has_missing_liquidity`, `missing_liquidity_count`
-- valores: `v_missing_liquidity > 0`, `v_missing_liquidity`
-- no `DO UPDATE SET`: atualizar ambas
-
-`all_green` não entra no INSERT (é gerada).
-
-## Compatibilidade
-
-- Nenhuma coluna existente é removida ou renomeada.
-- `all_green` mantém o mesmo nome/tipo — só ganha uma condição a mais. CRM continua funcionando.
-- `src/integrations/supabase/types.ts` será regenerado automaticamente após a migração; nenhum código TS muda.
-
-## Critério de aceite
-
-```sql
-SELECT client_name, competencia, missing_liquidity_count,
-       has_missing_liquidity, all_green
-FROM verification_results
-LIMIT 10;
-```
-Contas com ao menos um ativo sem `Vencimento` ou sem `liquidez` devem ter `missing_liquidity_count > 0` e `has_missing_liquidity = true`. `all_green` passa a ser `false` quando esse novo check falha.
-
-## Execução
-
-Tudo via uma única migração Supabase (DDL + `CREATE OR REPLACE FUNCTION` para as duas assinaturas). Depois rodar `SELECT calculate_verification(NULL, NULL);` (ou equivalente) para repopular os resultados.
+### Sem migrations
+Tabela `RAG_Processador` e coluna `DadosPerformance.liquidez` já existem.
