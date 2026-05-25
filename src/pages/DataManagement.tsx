@@ -6699,8 +6699,25 @@ interface VerificationResult {
                     )}
                   </div>
                 </div>
+
+                <div className="border-t pt-4 mt-2">
+                  <Label className="text-sm font-medium">Liquidez via RAG</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Busca a liquidez cadastrada no RAG para cada ativo selecionado e aplica individualmente.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkFillLiquidezFromRAG}
+                    className="w-full"
+                  >
+                    <Database className="mr-2 h-4 w-4" />
+                    Preencher liquidez via RAG ({selectedItems.size})
+                  </Button>
+                </div>
               </>
             )}
+
             
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setIsBulkEditOpen(false)}>
