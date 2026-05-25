@@ -2018,8 +2018,11 @@ export default function DataManagement() {
         if (liqAtual === liqRag) { jaIgual++; continue; }
         updated++;
         updatePromises.push(
-          supabase.from('DadosPerformance').update({ liquidez: liqRag } as any).eq('id', item.id)
+          Promise.resolve(
+            supabase.from('DadosPerformance').update({ liquidez: liqRag } as any).eq('id', item.id)
+          )
         );
+
       }
 
       await Promise.all(updatePromises);
