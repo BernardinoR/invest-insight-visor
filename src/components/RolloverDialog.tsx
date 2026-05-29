@@ -472,6 +472,7 @@ export function RolloverDialog({
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="CDI">CDI</SelectItem>
+        <SelectItem value="CDIplus">CDI+</SelectItem>
         <SelectItem value="pctCDI">% do CDI</SelectItem>
         <SelectItem value="IPCA">IPCA+</SelectItem>
         <SelectItem value="PRE">Pré-fixado</SelectItem>
