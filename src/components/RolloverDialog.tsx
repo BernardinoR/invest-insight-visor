@@ -259,7 +259,7 @@ export function RolloverDialog({
     let ativos = [...rolloverData.ativos];
 
     if (campo === 'modo') {
-      const defaultParam = valor === 'pctCDI' ? 100 : valor === 'IPCA' ? 6 : valor === 'PRE' ? 14 : valor === 'Manual' ? 1 : 100;
+      const defaultParam = valor === 'pctCDI' ? 100 : valor === 'CDIplus' ? 4 : valor === 'IPCA' ? 6 : valor === 'PRE' ? 14 : valor === 'Manual' ? 1 : 100;
       ativos = recalcAtivo(ativos, index, valor as CalcMode, defaultParam);
     } else if (campo === 'parametro') {
       ativos = recalcAtivo(ativos, index, ativos[index].modo, parseFloat(valor) || 0);
