@@ -1,22 +1,32 @@
-## Fix `calculate_verification` — lógica do check "Sem Liquidez"
+## Adicionar opção "CDI+" no RolloverDialog
 
-### Problema
-Na função `calculate_verification(p_client_name, p_competencia)`, o count `v_missing_liquidity` usa `OR` entre falta de `Vencimento` e falta de `liquidez`, marcando praticamente 100% dos ativos como problema (ações/fundos nunca têm vencimento).
+Adicionar novo modo de cálculo de rentabilidade `CDI+` (CDI + spread% a.a.) no diálogo "Avançar Competência".
 
-### Correção
-Trocar `OR` por `AND`: só conta quando faltam **os dois** (sem vencimento E sem liquidez).
+### Mudanças em `src/components/RolloverDialog.tsx`
 
-```sql
-AND "Vencimento" IS NULL
-AND ("liquidez" IS NULL OR TRIM("liquidez") = '')
-```
+1. **Tipo `CalcMode`** (linha 59): adicionar `'CDIplus'`.
+   ```ts
+   type CalcMode = 'CDI' | 'CDIplus' | 'pctCDI' | 'IPCA' | 'PRE' | 'Manual';
+   ```
 
-### Passos
-1. **Migration** — `CREATE OR REPLACE FUNCTION public.calculate_verification(text, text)` com o bloco de liquidez corrigido. Nenhuma outra contagem é alterada (patrimônio, não classificados, sem rendimento, ativos novos ficam iguais). A versão de 1 argumento não é tocada.
-2. **Recalcular dados existentes** rodando `SELECT public.calculate_verification(NULL::text, NULL::text);` após a migration ser aplicada, para atualizar todas as linhas de `verification_results` com a nova lógica.
+2. **`calcularRendimento`** (linha 124): adicionar case `CDIplus`:
+   ```ts
+   case 'CDIplus': {
+     const spreadMensal = Math.pow(1 + (parametro / 100), 1 / 12) - 1;
+     return (1 + cdiMensal) * (1 + spreadMensal) - 1;
+   }
+   ```
+
+3. **`MODE_LABELS`** (linha 143): adicionar `CDIplus: 'CDI+'`.
+
+4. **`SelectItem`** (linha ~470): adicionar `<SelectItem value="CDIplus">CDI+</SelectItem>` logo após `CDI`.
+
+5. **Lógica do parâmetro** (linhas 257, 479-481):
+   - default param: `valor === 'CDIplus' ? 4 : ...`
+   - `if (modo === 'CDI') return null;` permanece (CDI+ mostra input)
+   - placeholder/suffix: `modo === 'CDIplus' ? '4'` / `'% a.a.'`
 
 ### Validação
-Após recálculo, em 04/2026 `missing_liquidity_count` agregado deve cair de 836 → 343 (os 274 ativos com vencimento mas sem liquidez deixam de contar).
+Conferir no preview que ao escolher "CDI+" aparece input para o spread (ex. `4`), e o rendimento exibido é `(1+CDI_mês) * (1+4%)^(1/12) - 1`.
 
-### Sem mudanças de frontend
-Nenhum arquivo TS/TSX é tocado — colunas de `verification_results` permanecem idênticas.
+Sem mudanças de schema/banco.
