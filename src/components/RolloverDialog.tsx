@@ -483,8 +483,8 @@ export function RolloverDialog({
 
   const renderParameterInput = (modo: CalcMode, parametro: number, onChange: (v: number) => void, size?: string) => {
     if (modo === 'CDI') return null;
-    const placeholder = modo === 'pctCDI' ? '110' : modo === 'IPCA' ? '6' : modo === 'PRE' ? '14' : '1.5';
-    const suffix = modo === 'pctCDI' ? '%' : modo === 'IPCA' ? '% a.a.' : modo === 'PRE' ? '% a.a.' : '%';
+    const placeholder = modo === 'pctCDI' ? '110' : modo === 'CDIplus' ? '4' : modo === 'IPCA' ? '6' : modo === 'PRE' ? '14' : '1.5';
+    const suffix = modo === 'pctCDI' ? '%' : modo === 'CDIplus' ? '% a.a.' : modo === 'IPCA' ? '% a.a.' : modo === 'PRE' ? '% a.a.' : '%';
     return (
       <div className="flex items-center gap-1">
         <Input
