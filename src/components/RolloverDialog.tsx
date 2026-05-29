@@ -125,6 +125,10 @@ function calcularRendimento(modo: CalcMode, parametro: number, cdiMensal: number
   switch (modo) {
     case 'CDI':
       return cdiMensal;
+    case 'CDIplus': {
+      const spreadMensal = Math.pow(1 + (parametro / 100), 1 / 12) - 1;
+      return (1 + cdiMensal) * (1 + spreadMensal) - 1;
+    }
     case 'pctCDI':
       return cdiMensal * (parametro / 100);
     case 'IPCA': {
@@ -142,6 +146,7 @@ function calcularRendimento(modo: CalcMode, parametro: number, cdiMensal: number
 
 const MODE_LABELS: Record<CalcMode, string> = {
   CDI: 'CDI',
+  CDIplus: 'CDI+',
   pctCDI: '% do CDI',
   IPCA: 'IPCA+',
   PRE: 'Pré-fixado',
