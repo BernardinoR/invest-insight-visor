@@ -56,7 +56,7 @@ import { FastForward, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-type CalcMode = 'CDI' | 'pctCDI' | 'IPCA' | 'PRE' | 'Manual';
+type CalcMode = 'CDI' | 'CDIplus' | 'pctCDI' | 'IPCA' | 'PRE' | 'Manual';
 
 interface RolloverAtivo {
   id: number;
@@ -125,6 +125,10 @@ function calcularRendimento(modo: CalcMode, parametro: number, cdiMensal: number
   switch (modo) {
     case 'CDI':
       return cdiMensal;
+    case 'CDIplus': {
+      const spreadMensal = Math.pow(1 + (parametro / 100), 1 / 12) - 1;
+      return (1 + cdiMensal) * (1 + spreadMensal) - 1;
+    }
     case 'pctCDI':
       return cdiMensal * (parametro / 100);
     case 'IPCA': {
@@ -142,6 +146,7 @@ function calcularRendimento(modo: CalcMode, parametro: number, cdiMensal: number
 
 const MODE_LABELS: Record<CalcMode, string> = {
   CDI: 'CDI',
+  CDIplus: 'CDI+',
   pctCDI: '% do CDI',
   IPCA: 'IPCA+',
   PRE: 'Pré-fixado',
@@ -254,7 +259,7 @@ export function RolloverDialog({
     let ativos = [...rolloverData.ativos];
 
     if (campo === 'modo') {
-      const defaultParam = valor === 'pctCDI' ? 100 : valor === 'IPCA' ? 6 : valor === 'PRE' ? 14 : valor === 'Manual' ? 1 : 100;
+      const defaultParam = valor === 'pctCDI' ? 100 : valor === 'CDIplus' ? 4 : valor === 'IPCA' ? 6 : valor === 'PRE' ? 14 : valor === 'Manual' ? 1 : 100;
       ativos = recalcAtivo(ativos, index, valor as CalcMode, defaultParam);
     } else if (campo === 'parametro') {
       ativos = recalcAtivo(ativos, index, ativos[index].modo, parseFloat(valor) || 0);
@@ -467,6 +472,7 @@ export function RolloverDialog({
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="CDI">CDI</SelectItem>
+        <SelectItem value="CDIplus">CDI+</SelectItem>
         <SelectItem value="pctCDI">% do CDI</SelectItem>
         <SelectItem value="IPCA">IPCA+</SelectItem>
         <SelectItem value="PRE">Pré-fixado</SelectItem>
@@ -477,8 +483,8 @@ export function RolloverDialog({
 
   const renderParameterInput = (modo: CalcMode, parametro: number, onChange: (v: number) => void, size?: string) => {
     if (modo === 'CDI') return null;
-    const placeholder = modo === 'pctCDI' ? '110' : modo === 'IPCA' ? '6' : modo === 'PRE' ? '14' : '1.5';
-    const suffix = modo === 'pctCDI' ? '%' : modo === 'IPCA' ? '% a.a.' : modo === 'PRE' ? '% a.a.' : '%';
+    const placeholder = modo === 'pctCDI' ? '110' : modo === 'CDIplus' ? '4' : modo === 'IPCA' ? '6' : modo === 'PRE' ? '14' : '1.5';
+    const suffix = modo === 'pctCDI' ? '%' : modo === 'CDIplus' ? '% a.a.' : modo === 'IPCA' ? '% a.a.' : modo === 'PRE' ? '% a.a.' : '%';
     return (
       <div className="flex items-center gap-1">
         <Input
