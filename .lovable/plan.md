@@ -1,30 +1,22 @@
-## Auto-preencher Liquidez via RAG no Bulk Edit
+## Fix `calculate_verification` — lógica do check "Sem Liquidez"
 
-No diálogo de "Editar Registros em Lote" (aba Detalhado de DataManagement), adicionar uma ação que, para cada ativo selecionado, busca a liquidez cadastrada na tabela `RAG_Processador` (por nome de `Ativo`) e aplica esse valor — registro a registro — em `DadosPerformance.liquidez`.
+### Problema
+Na função `calculate_verification(p_client_name, p_competencia)`, o count `v_missing_liquidity` usa `OR` entre falta de `Vencimento` e falta de `liquidez`, marcando praticamente 100% dos ativos como problema (ações/fundos nunca têm vencimento).
 
-Diferente dos outros campos do bulk edit (que aplicam o mesmo valor a todos), esta ação aplica um valor **diferente por linha**, dependendo do que estiver no RAG.
+### Correção
+Trocar `OR` por `AND`: só conta quando faltam **os dois** (sem vencimento E sem liquidez).
 
-### Onde
-`src/pages/DataManagement.tsx` — dentro do `<Dialog open={isBulkEditOpen}>` (a partir da linha 6435), na seção do tab `detalhado`, próximo ao campo de Taxa/Rendimento.
+```sql
+AND "Vencimento" IS NULL
+AND ("liquidez" IS NULL OR TRIM("liquidez") = '')
+```
 
-### UX
-- Novo botão: **"Preencher liquidez via RAG"** (com ícone `Database` ou `Sparkles`), largura total, variant `outline`.
-- Texto auxiliar: "Busca a liquidez cadastrada no RAG para cada ativo selecionado e aplica individualmente."
-- Ao clicar:
-  1. Coleta os nomes únicos de `Ativo` dos `selectedItems` (filtrados em `filteredDadosData`).
-  2. Faz uma única query: `supabase.from('RAG_Processador').select('Ativo, Liquidez').in('Ativo', nomesUnicos)`.
-  3. Monta um mapa `ativo → Liquidez` (ignorando entradas sem `Liquidez`).
-  4. Para cada item selecionado, se existir mapeamento e `Liquidez` não vazia, dispara um `update` em `DadosPerformance` pelo `id` com `{ liquidez: <valor RAG> }`.
-  5. Roda os updates em paralelo (`Promise.all`).
-  6. Toast final com: `X ativos atualizados, Y sem cadastro no RAG, Z já com liquidez igual`.
-  7. Fecha o diálogo, limpa `selectedItems`, chama `fetchData()`.
+### Passos
+1. **Migration** — `CREATE OR REPLACE FUNCTION public.calculate_verification(text, text)` com o bloco de liquidez corrigido. Nenhuma outra contagem é alterada (patrimônio, não classificados, sem rendimento, ativos novos ficam iguais). A versão de 1 argumento não é tocada.
+2. **Recalcular dados existentes** rodando `SELECT public.calculate_verification(NULL::text, NULL::text);` após a migration ser aplicada, para atualizar todas as linhas de `verification_results` com a nova lógica.
 
-### Detalhes técnicos
-- Reaproveita o estado `selectedItems` e `filteredDadosData` já existentes.
-- Não mexe em `bulkEditData` nem em `handleBulkSave` — é um fluxo paralelo (botão próprio com seu próprio handler `handleBulkFillLiquidezFromRAG`).
-- Considera `Liquidez` válido apenas quando `trim() !== ''`.
-- Não sobrescreve liquidez existente do registro se já for igual ao RAG (apenas conta como "já igual"); mas **sobrescreve** se for diferente — mesmo comportamento atual de uma regra "RAG é fonte da verdade" para este botão.
-- Só aparece quando `activeTab === 'detalhado'`.
+### Validação
+Após recálculo, em 04/2026 `missing_liquidity_count` agregado deve cair de 836 → 343 (os 274 ativos com vencimento mas sem liquidez deixam de contar).
 
-### Sem migrations
-Tabela `RAG_Processador` e coluna `DadosPerformance.liquidez` já existem.
+### Sem mudanças de frontend
+Nenhum arquivo TS/TSX é tocado — colunas de `verification_results` permanecem idênticas.
