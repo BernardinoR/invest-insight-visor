@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.get-treasury-return]
 verify_jwt = false
+
+[functions.get-maisretorno-return]
+verify_jwt = false
