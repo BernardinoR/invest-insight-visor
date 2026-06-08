@@ -308,8 +308,10 @@ export default function DataManagement() {
   const [ragLiquidezConflictDialog, setRagLiquidezConflictDialog] = useState<{
     open: boolean;
     ativo: string;
-    liquidezNova: string;
-    liquidezExistente: string;
+    corridosNovo: string | null;
+    uteisNovo: string | null;
+    corridosExistente: string | null;
+    uteisExistente: string | null;
   } | null>(null);
   const [ragLiquidezUpdateExisting, setRagLiquidezUpdateExisting] = useState(true);
   const [ragLiquidezSaving, setRagLiquidezSaving] = useState(false);
