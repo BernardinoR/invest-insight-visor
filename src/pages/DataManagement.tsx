@@ -7486,6 +7486,105 @@ interface VerificationResult {
               </div>
             )}
 
+            {/* Modo Mais Retorno */}
+            {calculatorMode === 'maisretorno' && (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Busca a rentabilidade mensal do ativo (fundos, Tesouro Direto, títulos públicos)
+                  via API <a href="https://developers.maisretorno.com/" target="_blank" rel="noreferrer" className="underline">Mais Retorno</a>.
+                </p>
+
+                <div>
+                  <Label htmlFor="calc-mr-competencia">Competência</Label>
+                  <Input
+                    id="calc-mr-competencia"
+                    value={mrCalcData.competencia}
+                    onChange={(e) => {
+                      let value = e.target.value.replace(/\D/g, '');
+                      if (value.length >= 2) value = value.substring(0, 2) + '/' + value.substring(2, 6);
+                      setMrCalcData({ ...mrCalcData, competencia: value });
+                    }}
+                    placeholder="MM/YYYY"
+                    maxLength={7}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="calc-mr-identifier">Identifier Mais Retorno</Label>
+                  <Input
+                    id="calc-mr-identifier"
+                    value={mrCalcData.identifier}
+                    onChange={(e) => setMrCalcData({ ...mrCalcData, identifier: e.target.value.trim() })}
+                    placeholder="ex.: 12345678000190:fi  •  tesouro-selic-18-06-2008:td"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Fundos: <code>cnpj:fi</code> · Tesouro Direto: <code>slug:td</code> · Títulos Públicos: <code>slug:tp</code>.
+                    {editingItem?.Ativo && (
+                      <> Pré-carregado do RAG quando disponível. </>
+                    )}
+                  </p>
+                </div>
+
+                {editingItem?.Ativo && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="calc-mr-save-rag"
+                      type="checkbox"
+                      checked={mrSaveToRag}
+                      onChange={(e) => setMrSaveToRag(e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="calc-mr-save-rag" className="text-sm font-normal">
+                      Salvar identifier no RAG para reuso futuro
+                    </Label>
+                  </div>
+                )}
+
+                <Button
+                  onClick={handleFetchMaisRetornoData}
+                  disabled={!mrCalcData.identifier || !mrCalcData.competencia || mrCalcLoading}
+                  className="w-full"
+                  variant="secondary"
+                >
+                  {mrCalcLoading ? 'Buscando...' : 'Buscar Rentabilidade'}
+                </Button>
+
+                {mrCalcResult && (
+                  <div className="bg-muted p-4 rounded-md space-y-2 border border-primary/20">
+                    <h4 className="font-semibold text-sm">Resultado:</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="col-span-2">
+                        <p className="text-muted-foreground">Ativo:</p>
+                        <p className="font-medium">{mrCalcResult.nicename || mrCalcResult.identifier}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Rentabilidade:</p>
+                        <p className={`font-medium ${mrCalcResult.rentabilidadeMensal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {mrCalcResult.rentabilidadeMensal.toFixed(4)}%
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Dias com cota:</p>
+                        <p className="font-medium">{mrCalcResult.dias}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Cota Inicial ({mrCalcResult.dataInicial}):</p>
+                        <p className="font-medium">{mrCalcResult.cotacaoInicial}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Cota Final ({mrCalcResult.dataFinal}):</p>
+                        <p className="font-medium">{mrCalcResult.cotacaoFinal}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground italic mt-2">
+                      ℹ️ Ao confirmar, este valor será usado como Rendimento
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+
             {/* Botões de ação */}
             <div className="flex gap-2 pt-4">
               <Button
