@@ -216,7 +216,7 @@ export default function DataManagement() {
   // Calculator dialog state
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [calculatorContext, setCalculatorContext] = useState<'bulk' | 'single'>('bulk');
-  const [calculatorMode, setCalculatorMode] = useState<'auto' | 'manual' | 'custom' | 'market' | 'treasury'>('auto');
+  const [calculatorMode, setCalculatorMode] = useState<'auto' | 'manual' | 'custom' | 'market' | 'treasury' | 'maisretorno'>('auto');
   const inferManualCalcFromAtivo = (item: any) => {
     const classe = (item?.["Classe do ativo"] || '').toLowerCase();
     const taxaStr = item?.Taxa || '';
@@ -278,6 +278,24 @@ export default function DataManagement() {
     puFinal: number;
     vencimento: string;
     diasUteis: number;
+  } | null>(null);
+
+  // Mais Retorno calculator state
+  const [mrCalcData, setMrCalcData] = useState<{
+    competencia: string;
+    identifier: string;
+  }>({ competencia: '', identifier: '' });
+  const [mrCalcLoading, setMrCalcLoading] = useState(false);
+  const [mrSaveToRag, setMrSaveToRag] = useState(true);
+  const [mrCalcResult, setMrCalcResult] = useState<{
+    identifier: string;
+    nicename: string | null;
+    rentabilidadeMensal: number;
+    cotacaoInicial: number;
+    cotacaoFinal: number;
+    dataInicial: string;
+    dataFinal: string;
+    dias: number;
   } | null>(null);
 
   // Estado para o AlertDialog de exclusão de consolidado
