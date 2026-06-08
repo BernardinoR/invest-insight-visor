@@ -1,58 +1,76 @@
-## Adicionar liquidez em dias corridos e dias úteis
+## Integração com a API Mais Retorno
 
-Hoje existe apenas uma coluna `liquidez` (texto, formato `D+N`) em `DadosPerformance` e `RAG_Processador`. Vamos passar a ter dois campos — um para **dias corridos** e outro para **dias úteis** — para refletir como fundos costumam divulgar liquidez (D+N corridos / D+N úteis, podendo ter um ou os dois).
+Adicionar um novo modo de cálculo de rentabilidade que consulta a [API Mais Retorno](https://developers.maisretorno.com/) (`https://data.maisretorno.com/mr-data/v4/api`) para fundos de investimento e títulos públicos / Tesouro Direto. Útil principalmente quando o ativo é novo (`ativo_novo = true`) ou o `Rendimento` veio zerado/errado do extrato.
 
-### 1. Banco (migração)
+### 1. Segredo
 
-Em `DadosPerformance`:
-- Adicionar `liquidez_corridos text` e `liquidez_uteis text`.
-- Backfill: `liquidez_corridos = liquidez` (valor atual tratado como dias corridos), `liquidez_uteis` fica null.
-- Manter a coluna `liquidez` por compatibilidade (sem remover agora).
+- Guardar `MAISRETORNO_API_KEY` via secret. Header usado server-side: `X-Api-Key: <key>`.
+- Nunca expor no frontend — toda chamada passa por edge function.
 
-Em `RAG_Processador`:
-- Adicionar `Liquidez_Corridos text` e `Liquidez_Uteis text`.
-- Backfill: `Liquidez_Corridos = Liquidez`.
+### 2. Identificador do ativo (`mr_identifier`)
 
-Atualizar `calculate_verification(text, text)`:
-- Trocar a contagem de `missing_liquidity` para considerar **sem vencimento E sem liquidez_corridos E sem liquidez_uteis** (regra escolhida: ambos em branco e sem vencimento).
-- Rodar `SELECT public.calculate_verification(NULL,NULL)` ao final para recomputar `verification_results`.
+A API usa identifiers `ativo:mercado`:
+- Fundos: `<cnpj>:fi` (ou `<cnpj>-<subclasse>:fi`)
+- Tesouro Direto: `<slug>:td` (ex.: `tesouro-selic-18-06-2008:td`)
+- Títulos públicos: `<slug>:tp`
 
-### 2. UI — `src/pages/DataManagement.tsx`
+**Persistência**: nova coluna `mr_identifier text` em `RAG_Processador` (chave do ativo já cadastrada lá) — assim o identifier fica vinculado ao ativo e é reutilizado em todas as competências. Sem alteração em `DadosPerformance`.
 
-**Tipo / estado do `editingItem`** (linhas 158, 187, 1086): adicionar `liquidez_corridos` e `liquidez_uteis` em vez do `liquidez` único. Carregar do registro ao abrir o modal.
+### 3. Edge function `get-maisretorno-return`
 
-**Modal de edição (seção "Condições", layout 4-seções)**: substituir o input único de Liquidez por dois inputs lado a lado:
-- `Liquidez (dias corridos)` — placeholder `D+30`, formato numbers-only com prefixo `D+` (mesmo componente já usado hoje).
-- `Liquidez (dias úteis)` — idem, placeholder `D+30`.
-Botão "Gravar no RAG" passa a gravar os dois campos (`Liquidez_Corridos` e `Liquidez_Uteis`) no `RAG_Processador`.
+Nova função em `supabase/functions/get-maisretorno-return/index.ts`, espelhando o padrão de `get-treasury-return`:
 
-**Diálogo de conflito RAG** (`ragLiquidezConflictDialog`): exibir conflito separado por tipo (mostrando o que mudou em corridos e/ou úteis). Mesma opção "atualizar registros existentes".
+Entrada (POST JSON):
+```
+{ identifier: string, competencia: "MM/YYYY" }
+```
 
-**Preencher liquidez via RAG (bulk)** (`handleBulkFillLiquidezFromRAG`): preencher os dois campos a partir de `Liquidez_Corridos` e `Liquidez_Uteis` do RAG; só atualiza um campo se ele estiver vazio no item.
+Fluxo:
+1. Valida input + auth (verify_jwt=false, CORS padrão).
+2. Calcula `start_date` = primeiro dia do mês, `end_date` = último dia do mês.
+3. `GET /quotes/{identifier}?start_date=...&end_date=...` com `X-Api-Key`.
+4. Ordena cotações por data, pega primeira (`c0`) e última (`cN`).
+5. Retorna `{ identifier, nicename, competencia, rentabilidadeMensal: (cN-c0)/c0*100, cotacaoInicial, cotacaoFinal, dias: quotes.length }`.
+6. Erros tratados com mensagens claras (sem quotes no período, 401/403, etc.).
 
-**Bulk edit** (modal de edição em massa): adicionar os dois campos; aplica regra "pré-preenche só se todos os selecionados compartilham o mesmo valor".
+Observação: para fundos com cota PL diária a fórmula de retorno mensal via `c` (cota de fechamento) funciona direto. Para títulos públicos a API também devolve `c` por dia — mesmo cálculo.
 
-**Tabela detalhada** (linha 5324 e arredores):
-- Coluna única `Liquidez` exibindo: `D+30c / D+20u`, ou só um lado quando o outro for vazio, `-` quando ambos vazios. (Mantém uma coluna só para não estourar largura.)
-- Visibilidade da coluna continua controlada por `visibleColumnsDetalhados`.
+### 4. UI — `src/pages/DataManagement.tsx`
 
-**Alerta "sem liquidez"** (linhas 2328, 2491, 2598, 2630, 4774, 5636): trocar a checagem `!liquidez` por `!liquidez_corridos && !liquidez_uteis`. Mensagem do tooltip atualizada para "Sem vencimento e sem liquidez (corridos/úteis)".
+**Novo modo no calculador** (junto de `auto | manual | custom | market | treasury`):
+- Acrescenta `'maisretorno'` em `calculatorMode`.
+- Botão "Mais Retorno" só fica habilitado quando a classe do ativo for compatível (qualquer `*Fundos*`, `Multimercado`, `Pré Fixado - Titulos`, `Inflação - Titulos`, `CDI - Titulos`, etc.).
 
-**Tooltip da bolinha de verificação** (linhas 4607-4616): atualizar texto.
+**Painel do modo**:
+- Campo `Identificador Mais Retorno` (pré-preenche com `mr_identifier` do RAG; placeholder mostra o formato esperado por classe).
+- Em modo `single`, com `cnpj` já presente no RAG, sugere `<cnpj>:fi` automaticamente.
+- Botão "Buscar rentabilidade" → chama a edge function.
+- Mostra resultado: cotação inicial, cotação final, rentabilidade mensal calculada, e botão "Aplicar" que grava em `DadosPerformance.Rendimento` (+ marca `rentabilidade_validada = true`).
+- Checkbox "Salvar identificador no RAG" (default ligado) — atualiza `RAG_Processador.mr_identifier` para reuso.
 
-### 3. CSV import
+**Bulk**: aplica para todos os selecionados que tenham `mr_identifier` (no RAG ou explícito). Ativos sem identifier ficam como "skipped" com mensagem.
 
-`handleImportCSV` aceita as colunas novas `liquidez_corridos` e `liquidez_uteis`. Se vier só a antiga `liquidez`, mapeia para `liquidez_corridos` (compatibilidade).
+**Modo `auto` (fallback)**: se o ativo for fundo/título e tiver `mr_identifier` salvo, `auto` tenta Mais Retorno antes do mercado/treasury já existentes. Mantém comportamento atual quando não houver identifier.
 
-### 4. Validação
+### 5. Migração
 
-- Editar um ativo, preencher só corridos → bolinha some.
-- Preencher só úteis → bolinha some.
-- Limpar os dois e remover vencimento → bolinha aparece, contador de `missing_liquidity` bate com o cálculo SQL.
-- Bulk fill RAG preenche os campos corretos.
-- Tabela mostra `D+30c / D+20u` corretamente.
+```sql
+ALTER TABLE public."RAG_Processador" ADD COLUMN IF NOT EXISTS mr_identifier text;
+```
+
+(sem alterar `calculate_verification` — esta feature não muda a contagem de alertas.)
+
+### 6. Memória
+
+Atualizar `mem://features/calculator/market-mode-logic` ou criar `mem://features/calculator/maisretorno-mode` documentando: endpoint, identifier por classe, fórmula (primeira × última cota do mês), persistência do identifier no RAG, e que o modo é o preferido quando o ativo é novo.
 
 ### Fora de escopo
 
-- Remoção da coluna `liquidez` antiga (mantida para não quebrar n8n / extratos legados; pode ser dropada num passo futuro).
-- Mudanças em outros componentes (Dashboard, MaturityDialog) — só leem `Vencimento`, não dependem de liquidez.
+- Endpoints `stats`, `wallet-detail`, `search` (podem entrar depois — `search` seria útil para auto-descobrir identifier por nome do ativo, mas fica para um próximo passo).
+- Cálculo via PL/quotas para subclasses específicas (usa identifier direto que o usuário cola).
+- Mudança no n8n / fluxos externos.
+
+### Perguntas de validação
+
+1. Confirma usar `Quotes` (primeira × última do mês) como fórmula? Alternativa seria `Stats` com `start_date`/`end_date` cobrindo o mês — mais simples mas depende do que a API retorna como `profitability` mensal.
+2. O identifier deve mesmo morar em `RAG_Processador` (vinculado ao ativo), ou prefere uma coluna `mr_identifier` também em `DadosPerformance` para casos pontuais?
