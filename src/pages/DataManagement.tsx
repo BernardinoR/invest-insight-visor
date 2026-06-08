@@ -1384,6 +1384,68 @@ export default function DataManagement() {
     }
   };
 
+  // Função para buscar rentabilidade via Mais Retorno
+  const handleFetchMaisRetornoData = async () => {
+    const identifier = mrCalcData.identifier.trim();
+    const competencia = mrCalcData.competencia.trim();
+    if (!identifier || !competencia) {
+      toast({
+        title: "Dados incompletos",
+        description: "Preencha identifier (ex.: 12345678000190:fi) e competência (MM/YYYY).",
+        variant: "destructive",
+      });
+      return;
+    }
+    setMrCalcLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('get-maisretorno-return', {
+        body: { identifier, competencia },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setMrCalcResult(data);
+      toast({
+        title: "Rentabilidade obtida!",
+        description: `${data.nicename || identifier}: ${Number(data.rentabilidadeMensal).toFixed(4)}%`,
+      });
+
+      // Salvar identifier no RAG (best-effort) se habilitado e houver Ativo no editingItem
+      if (mrSaveToRag && editingItem?.Ativo) {
+        const ativo = editingItem.Ativo.trim();
+        try {
+          const { data: existing } = await supabase
+            .from('RAG_Processador')
+            .select('id, mr_identifier' as any)
+            .eq('Ativo', ativo);
+          if (existing && existing.length > 0) {
+            const row = existing[0] as any;
+            if ((row.mr_identifier || '').trim() !== identifier) {
+              await supabase
+                .from('RAG_Processador')
+                .update({ mr_identifier: identifier } as any)
+                .eq('Ativo', ativo);
+            }
+          } else {
+            await supabase
+              .from('RAG_Processador')
+              .insert({ Ativo: ativo, mr_identifier: identifier } as any);
+          }
+        } catch (e) {
+          console.warn('Falha ao salvar mr_identifier no RAG:', e);
+        }
+      }
+    } catch (err: any) {
+      toast({
+        title: "Erro ao buscar Mais Retorno",
+        description: err.message || "Verifique o identifier e tente novamente.",
+        variant: "destructive",
+      });
+      setMrCalcResult(null);
+    } finally {
+      setMrCalcLoading(false);
+    }
+  };
+
   // Função para confirmar e aplicar o cálculo ao campo Rendimento
   const handleCalculatorConfirm = () => {
     let calculatedReturn: number | null = null;
