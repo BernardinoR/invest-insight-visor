@@ -1446,6 +1446,23 @@ export default function DataManagement() {
     }
   };
 
+  // Pré-carrega mr_identifier do RAG_Processador para o ativo informado
+  const prefillMrIdentifierFromRag = async (ativo: string) => {
+    const a = (ativo || '').trim();
+    if (!a) return;
+    try {
+      const { data } = await supabase
+        .from('RAG_Processador')
+        .select('mr_identifier' as any)
+        .eq('Ativo', a)
+        .limit(1);
+      const id = (data && data[0] && (data[0] as any).mr_identifier) || '';
+      if (id) setMrCalcData((prev) => ({ ...prev, identifier: id }));
+    } catch (e) {
+      console.warn('prefillMrIdentifierFromRag falhou:', e);
+    }
+  };
+
   // Função para confirmar e aplicar o cálculo ao campo Rendimento
   const handleCalculatorConfirm = () => {
     let calculatedReturn: number | null = null;
