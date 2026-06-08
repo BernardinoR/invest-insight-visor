@@ -1494,6 +1494,17 @@ export default function DataManagement() {
         });
         return;
       }
+    } else if (calculatorMode === 'maisretorno') {
+      if (mrCalcResult) {
+        calculatedReturn = mrCalcResult.rentabilidadeMensal / 100;
+      } else {
+        toast({
+          title: "Busque os dados primeiro",
+          description: "Clique em 'Buscar Rentabilidade' antes de confirmar",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
 
