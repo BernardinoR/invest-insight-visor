@@ -1636,17 +1636,18 @@ export default function DataManagement() {
   };
 
 
-  // Função para gravar liquidez no RAG_Processador
+  // Função para gravar liquidez (corridos + úteis) no RAG_Processador
   const handleSaveLiquidez = async () => {
-    if (!editingItem || !editingItem.Ativo || !editingItem.liquidez) {
-      toast({ title: "Preencha o Ativo e a Liquidez antes de gravar.", variant: "destructive" });
+    if (!editingItem || !editingItem.Ativo || (!editingItem.liquidez_corridos && !editingItem.liquidez_uteis)) {
+      toast({ title: "Preencha o Ativo e pelo menos um dos campos de Liquidez antes de gravar.", variant: "destructive" });
       return;
     }
 
     setRagLiquidezSaving(true);
     try {
       const ativo = editingItem.Ativo.trim();
-      const liquidezNova = editingItem.liquidez.trim();
+      const corridosNovo = editingItem.liquidez_corridos?.trim() || null;
+      const uteisNovo = editingItem.liquidez_uteis?.trim() || null;
 
       const { data: existing, error: fetchError } = await supabase
         .from('RAG_Processador')
@@ -1659,28 +1660,41 @@ export default function DataManagement() {
         const classeAtual = editingItem["Classe do ativo"]?.trim() || null;
         const { error: insertError } = await supabase
           .from('RAG_Processador')
-          .insert({ Ativo: ativo, Liquidez: liquidezNova, Classificacao: classeAtual } as any);
+          .insert({
+            Ativo: ativo,
+            Liquidez_Corridos: corridosNovo,
+            Liquidez_Uteis: uteisNovo,
+            Classificacao: classeAtual,
+          } as any);
         if (insertError) throw insertError;
-        toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${liquidezNova}` });
-      } else if ((existing[0] as any).Liquidez === liquidezNova) {
-        toast({ title: "Liquidez já gravada", description: `"${ativo}" já está como ${liquidezNova}.` });
-      } else if (!(existing[0] as any).Liquidez) {
-        // Existe sem liquidez — só atualiza
-        const { error: updateError } = await supabase
-          .from('RAG_Processador')
-          .update({ Liquidez: liquidezNova } as any)
-          .eq('Ativo', ativo);
-        if (updateError) throw updateError;
-        toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${liquidezNova}` });
+        toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${formatLiquidezDisplay({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo })}` });
       } else {
-        // Conflito — abrir dialog
-        setRagLiquidezConflictDialog({
-          open: true,
-          ativo,
-          liquidezNova,
-          liquidezExistente: (existing[0] as any).Liquidez,
-        });
-        setRagLiquidezUpdateExisting(true);
+        const row = existing[0] as any;
+        const corridosExistente = (row.Liquidez_Corridos || '').toString().trim() || null;
+        const uteisExistente = (row.Liquidez_Uteis || '').toString().trim() || null;
+        const same = corridosExistente === corridosNovo && uteisExistente === uteisNovo;
+        const empty = !corridosExistente && !uteisExistente && !((row.Liquidez || '').toString().trim());
+
+        if (same) {
+          toast({ title: "Liquidez já gravada", description: `"${ativo}" já está nesses valores.` });
+        } else if (empty) {
+          const { error: updateError } = await supabase
+            .from('RAG_Processador')
+            .update({ Liquidez_Corridos: corridosNovo, Liquidez_Uteis: uteisNovo } as any)
+            .eq('Ativo', ativo);
+          if (updateError) throw updateError;
+          toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${formatLiquidezDisplay({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo })}` });
+        } else {
+          setRagLiquidezConflictDialog({
+            open: true,
+            ativo,
+            corridosNovo,
+            uteisNovo,
+            corridosExistente: corridosExistente || (row.Liquidez || null),
+            uteisExistente,
+          });
+          setRagLiquidezUpdateExisting(true);
+        }
       }
     } catch (error: any) {
       toast({ title: "Erro ao gravar liquidez", description: error.message, variant: "destructive" });
@@ -1693,29 +1707,29 @@ export default function DataManagement() {
     if (!ragLiquidezConflictDialog) return;
     setRagLiquidezSaving(true);
     try {
-      const { ativo, liquidezNova } = ragLiquidezConflictDialog;
+      const { ativo, corridosNovo, uteisNovo } = ragLiquidezConflictDialog;
 
       const { error: updateError } = await supabase
         .from('RAG_Processador')
-        .update({ Liquidez: liquidezNova } as any)
+        .update({ Liquidez_Corridos: corridosNovo, Liquidez_Uteis: uteisNovo } as any)
         .eq('Ativo', ativo);
       if (updateError) throw updateError;
 
       if (ragLiquidezUpdateExisting) {
         const { error: dadosError } = await supabase
           .from('DadosPerformance')
-          .update({ liquidez: liquidezNova })
+          .update({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo } as any)
           .eq('Ativo', ativo);
         if (dadosError) throw dadosError;
 
         if (editingItem && editingItem.Ativo === ativo) {
-          setEditingItem({ ...editingItem, liquidez: liquidezNova });
+          setEditingItem({ ...editingItem, liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo });
         }
 
         await fetchData();
-        toast({ title: "Liquidez atualizada!", description: `"${ativo}" → ${liquidezNova} (todos os registros atualizados)` });
+        toast({ title: "Liquidez atualizada!", description: `"${ativo}" (todos os registros atualizados)` });
       } else {
-        toast({ title: "Liquidez atualizada!", description: `"${ativo}" → ${liquidezNova} (apenas RAG)` });
+        toast({ title: "Liquidez atualizada!", description: `"${ativo}" (apenas RAG)` });
       }
     } catch (error: any) {
       toast({ title: "Erro ao atualizar liquidez", description: error.message, variant: "destructive" });
@@ -1724,6 +1738,7 @@ export default function DataManagement() {
       setRagLiquidezConflictDialog(null);
     }
   };
+
 
 
   const handleSave = async () => {
