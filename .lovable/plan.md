@@ -1,16 +1,16 @@
-## Problema
+## Correções Mais Retorno
 
-O erro de CORS no preflight (`Response to preflight request doesn't pass access control check: It does not have HTTP ok status`) acontece quando o navegador faz OPTIONS e a função **não responde 200**. Verifiquei os logs de `get-maisretorno-return` e **não há nenhum log** — ou seja, a função nunca foi de fato deployada/iniciada no Supabase, apesar do código existir em `supabase/functions/get-maisretorno-return/index.ts` e o secret `MAISRETORNO_API_KEY` já estar configurado.
+1. **Edge function** `supabase/functions/get-maisretorno-return/index.ts`:
+   - **Normalizar identifier**: aceitar CNPJ formatado (`26.491.419/0001-87`) removendo `.`, `/`, `-` → `26491419000187:fi`; 14 dígitos puros → `:fi`; slug → `:td`; já com `:mercado` → manter.
+   - **Janela de datas**: começar no **último dia do mês anterior** (não no dia 1º do mês) para usar a cota de fechamento anterior como base, e terminar no último dia do mês da competência. Mesmo padrão de `get-stock-return`.
+   - Logar `{rawIdentifier, identifierFinal, startDate, endDate}` para debug.
+   - Mensagens de erro mais descritivas (incluir o valor recebido).
 
-## Plano
+2. **Frontend** `src/pages/DataManagement.tsx` (`handleFetchMaisRetornoData`): trocar `supabase.functions.invoke` por `fetch` direto com header `apikey`, para ler o JSON `{error}` mesmo em 4xx/5xx e exibir a mensagem real no toast.
 
-1. **Forçar deploy** de `get-maisretorno-return` via `supabase--deploy_edge_functions`.
-2. **Testar com curl** (OPTIONS e POST) usando `supabase--curl_edge_functions` para confirmar que a função responde 200 no preflight e processa o corpo.
-3. **Checar logs** após o teste para garantir que está chamando a API Mais Retorno corretamente.
-4. Se o teste falhar por outro motivo (ex.: 401 da API, identifier inválido), ajustar a função; mas o erro de CORS atual será resolvido apenas com o deploy.
+3. **Redeploy** + teste via curl com CNPJ formatado.
 
 ## Detalhes técnicos
 
-- O código atual já trata OPTIONS retornando `{ headers: corsHeaders }` com status 200 — não precisa de mudança no código.
-- `supabase/config.toml` já tem `[functions.get-maisretorno-return] verify_jwt = false`.
-- Sem mudanças de schema. Sem mudanças no frontend.
+- Cálculo continua `(cotaFinal - cotaInicial) / cotaInicial * 100`, mas agora `cotaInicial` é a cotação do último dia útil do mês anterior (primeira cotação válida retornada no range estendido).
+- Atualizar memória `mem://features/calculator/maisretorno-mode` com a nova lógica de janela.
