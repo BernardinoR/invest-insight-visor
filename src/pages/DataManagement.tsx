@@ -156,7 +156,28 @@ interface DadosData {
   "rentabilidade_validada"?: boolean;
   "ativo_novo"?: boolean;
   "liquidez"?: string | null;
+  "liquidez_corridos"?: string | null;
+  "liquidez_uteis"?: string | null;
 }
+
+// Helpers de liquidez (dias corridos / dias úteis + coluna legada)
+const hasAnyLiquidez = (item: any): boolean => {
+  const c = (item?.liquidez_corridos || '').toString().trim();
+  const u = (item?.liquidez_uteis || '').toString().trim();
+  const legacy = (item?.liquidez || '').toString().trim();
+  return !!(c || u || legacy);
+};
+
+const formatLiquidezDisplay = (item: any): string => {
+  const c = (item?.liquidez_corridos || '').toString().trim();
+  const u = (item?.liquidez_uteis || '').toString().trim();
+  const legacy = (item?.liquidez || '').toString().trim();
+  const parts: string[] = [];
+  if (c) parts.push(`${c}c`);
+  if (u) parts.push(`${u}u`);
+  if (!c && !u && legacy) parts.push(legacy);
+  return parts.length ? parts.join(' / ') : '-';
+};
 
 export default function DataManagement() {
   const { clientName } = useParams<{ clientName: string }>();
