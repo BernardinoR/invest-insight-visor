@@ -1398,11 +1398,21 @@ export default function DataManagement() {
     }
     setMrCalcLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('get-maisretorno-return', {
-        body: { identifier, competencia },
+      // fetch direto p/ ler o corpo de erro mesmo em 4xx/5xx (invoke engole o body)
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-maisretorno-return`;
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string}`,
+        },
+        body: JSON.stringify({ identifier, competencia }),
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || data?.error) {
+        throw new Error(data?.error || `HTTP ${resp.status}`);
+      }
       setMrCalcResult(data);
       toast({
         title: "Rentabilidade obtida!",
