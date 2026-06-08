@@ -1106,7 +1106,7 @@ export default function DataManagement() {
       emissor: item.Emissor || '',
       taxa: item.Taxa || '',
       vencimento: item.Vencimento || '',
-      liquidez: (item as any).liquidez || '',
+      liquidez: (item as any).liquidez_corridos || (item as any).liquidez_uteis || (item as any).liquidez || '',
     });
     setActiveTab('overrides');
   };
