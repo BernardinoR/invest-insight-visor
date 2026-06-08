@@ -28,18 +28,35 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const identifier: string = (body?.identifier ?? '').toString().trim();
+    const rawIdentifier: string = (body?.identifier ?? '').toString().trim();
     const competencia: string = (body?.competencia ?? '').toString().trim();
 
-    if (!identifier || !/^[^:]+:[a-z]+$/i.test(identifier)) {
+    if (!rawIdentifier) {
       return new Response(
-        JSON.stringify({ error: 'identifier inválido. Esperado formato "ativo:mercado" (ex.: 12345678000190:fi, tesouro-selic-18-06-2008:td).' }),
+        JSON.stringify({ error: 'identifier obrigatório. Ex.: 26.491.419/0001-87, 26491419000187:fi ou tesouro-selic-18-06-2008:td.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
+
+    // Normalizar identifier: aceitar CNPJ formatado (26.491.419/0001-87), 14 dígitos, slug ou já com :mercado
+    let identifier = rawIdentifier;
+    if (!/^[^:]+:[a-z]+$/i.test(identifier)) {
+      const digitsOnly = identifier.replace(/\D/g, '');
+      if (digitsOnly.length === 14) {
+        identifier = `${digitsOnly}:fi`;
+      } else if (/^[a-z0-9-]+$/i.test(identifier)) {
+        identifier = `${identifier}:td`;
+      } else {
+        return new Response(
+          JSON.stringify({ error: `identifier inválido: "${rawIdentifier}". Use CNPJ (com ou sem pontuação), slug do TD, ou "ativo:mercado".` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+    }
+
     if (!/^\d{2}\/\d{4}$/.test(competencia)) {
       return new Response(
-        JSON.stringify({ error: 'competencia inválida. Use MM/YYYY.' }),
+        JSON.stringify({ error: `competencia inválida: "${competencia}". Use MM/YYYY.` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
@@ -47,12 +64,19 @@ Deno.serve(async (req) => {
     const [mm, yyyy] = competencia.split('/');
     const month = parseInt(mm, 10);
     const year = parseInt(yyyy, 10);
-    const startDate = `${yyyy}-${mm}-01`;
+
+    // Cota inicial = último dia do mês ANTERIOR (mesmo padrão de get-stock-return).
+    // Cota final = último dia do mês da competência.
+    const prevMonth = month === 1 ? 12 : month - 1;
+    const prevYear = month === 1 ? year - 1 : year;
+    const prevLastDay = String(lastDayOfMonth(prevYear, prevMonth)).padStart(2, '0');
+    const prevMm = String(prevMonth).padStart(2, '0');
+    const startDate = `${prevYear}-${prevMm}-${prevLastDay}`;
     const endDay = String(lastDayOfMonth(year, month)).padStart(2, '0');
     const endDate = `${yyyy}-${mm}-${endDay}`;
 
     const url = `${MR_BASE}/quotes/${encodeURIComponent(identifier)}?start_date=${startDate}&end_date=${endDate}`;
-    console.log('Mais Retorno GET', url);
+    console.log('Mais Retorno request', { rawIdentifier, identifier, competencia, startDate, endDate });
 
     const resp = await fetch(url, {
       headers: { 'X-Api-Key': apiKey, Accept: 'application/json' },
