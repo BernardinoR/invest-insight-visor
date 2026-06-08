@@ -6970,6 +6970,13 @@ interface VerificationResult {
                 <BarChart3 className="h-4 w-4 mr-1" />
                 Tesouro
               </Button>
+              <Button
+                variant={calculatorMode === 'maisretorno' ? 'default' : 'outline'}
+                onClick={() => setCalculatorMode('maisretorno')}
+                className="col-span-2"
+              >
+                Mais Retorno (Fundos/Tesouro)
+              </Button>
             </div>
 
             {/* Modo Automático */}
