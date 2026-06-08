@@ -2351,7 +2351,7 @@ interface VerificationResult {
       const ativoNorm = String(item.Ativo || '').toLowerCase();
       const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
       if (isCashLike) return false;
-      return !item.Vencimento && !(item as any).liquidez;
+      return !item.Vencimento && !hasAnyLiquidez(item);
     }).length;
 
     // Calcular diferença
