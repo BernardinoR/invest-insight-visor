@@ -1570,10 +1570,11 @@ export default function DataManagement() {
       
       if (!existing || existing.length === 0) {
         // Não existe — inserir novo
-        const liquidezAtual = editingItem.liquidez?.trim() || null;
+        const corridosAtual = editingItem.liquidez_corridos?.trim() || null;
+        const uteisAtual = editingItem.liquidez_uteis?.trim() || null;
         const { error: insertError } = await supabase
           .from('RAG_Processador')
-          .insert({ Ativo: ativo, Classificacao: classeNova, Liquidez: liquidezAtual } as any);
+          .insert({ Ativo: ativo, Classificacao: classeNova, Liquidez_Corridos: corridosAtual, Liquidez_Uteis: uteisAtual } as any);
         if (insertError) throw insertError;
         toast({ title: "Classificação gravada!", description: `"${ativo}" → ${classeNova}` });
       } else if (existing[0].Classificacao === classeNova) {
