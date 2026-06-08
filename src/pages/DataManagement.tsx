@@ -5643,7 +5643,7 @@ interface VerificationResult {
                               {visibleColumnsDetalhados.has('Posição') && <TableCell>{formatCurrency(item.Posicao, item.Moeda)}</TableCell>}
                               {visibleColumnsDetalhados.has('Taxa') && <TableCell>{item.Taxa}</TableCell>}
                               {visibleColumnsDetalhados.has('Vencimento') && <TableCell>{item.Vencimento}</TableCell>}
-                              {visibleColumnsDetalhados.has('Liquidez') && <TableCell>{(item as any).liquidez || '-'}</TableCell>}
+                              {visibleColumnsDetalhados.has('Liquidez') && <TableCell>{formatLiquidezDisplay(item)}</TableCell>}
                               {visibleColumnsDetalhados.has('Rendimento %') && <TableCell>{typeof item.Rendimento === 'number' ? formatPercentage(item.Rendimento) : item.Rendimento || '-'}</TableCell>}
                               {visibleColumnsDetalhados.has('Verificação') && (
                                 <TableCell className="text-center">
