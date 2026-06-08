@@ -6295,6 +6295,9 @@ interface VerificationResult {
                       vencimento: extractYearFromDate(editingItem.Vencimento || ''),
                     });
                    setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || '', ...inferManualCalcFromAtivo(editingItem)});
+                   setMrCalcData({ competencia: editingItem.Competencia || '', identifier: '' });
+                   setMrCalcResult(null);
+                   prefillMrIdentifierFromRag(editingItem.Ativo || '');
                    setIsCalculatorOpen(true);
                 }}
                         className="mt-2 w-full"
@@ -6602,6 +6605,9 @@ interface VerificationResult {
                              vencimento: extractYearFromDate(editingItem.Vencimento || ''),
                            });
                            setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || '', ...inferManualCalcFromAtivo(editingItem)});
+                           setMrCalcData({ competencia: editingItem.Competencia || '', identifier: '' });
+                           setMrCalcResult(null);
+                           prefillMrIdentifierFromRag(editingItem.Ativo || '');
                            setIsCalculatorOpen(true);
                          }}
                        >
