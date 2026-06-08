@@ -195,6 +195,8 @@ export type Database = {
           Instituicao: string | null
           is_outra_pessoa: boolean
           liquidez: string | null
+          liquidez_corridos: string | null
+          liquidez_uteis: string | null
           Moeda: string | null
           Nome: string | null
           nomeConta: string | null
@@ -216,6 +218,8 @@ export type Database = {
           Instituicao?: string | null
           is_outra_pessoa?: boolean
           liquidez?: string | null
+          liquidez_corridos?: string | null
+          liquidez_uteis?: string | null
           Moeda?: string | null
           Nome?: string | null
           nomeConta?: string | null
@@ -237,6 +241,8 @@ export type Database = {
           Instituicao?: string | null
           is_outra_pessoa?: boolean
           liquidez?: string | null
+          liquidez_corridos?: string | null
+          liquidez_uteis?: string | null
           Moeda?: string | null
           Nome?: string | null
           nomeConta?: string | null
@@ -583,6 +589,8 @@ export type Database = {
           created_at: string
           id: number
           Liquidez: string | null
+          Liquidez_Corridos: string | null
+          Liquidez_Uteis: string | null
         }
         Insert: {
           Ativo?: string | null
@@ -590,6 +598,8 @@ export type Database = {
           created_at?: string
           id?: number
           Liquidez?: string | null
+          Liquidez_Corridos?: string | null
+          Liquidez_Uteis?: string | null
         }
         Update: {
           Ativo?: string | null
@@ -597,6 +607,8 @@ export type Database = {
           created_at?: string
           id?: number
           Liquidez?: string | null
+          Liquidez_Corridos?: string | null
+          Liquidez_Uteis?: string | null
         }
         Relationships: []
       }
