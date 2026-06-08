@@ -216,7 +216,7 @@ export default function DataManagement() {
   // Calculator dialog state
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [calculatorContext, setCalculatorContext] = useState<'bulk' | 'single'>('bulk');
-  const [calculatorMode, setCalculatorMode] = useState<'auto' | 'manual' | 'custom' | 'market' | 'treasury'>('auto');
+  const [calculatorMode, setCalculatorMode] = useState<'auto' | 'manual' | 'custom' | 'market' | 'treasury' | 'maisretorno'>('auto');
   const inferManualCalcFromAtivo = (item: any) => {
     const classe = (item?.["Classe do ativo"] || '').toLowerCase();
     const taxaStr = item?.Taxa || '';
@@ -278,6 +278,24 @@ export default function DataManagement() {
     puFinal: number;
     vencimento: string;
     diasUteis: number;
+  } | null>(null);
+
+  // Mais Retorno calculator state
+  const [mrCalcData, setMrCalcData] = useState<{
+    competencia: string;
+    identifier: string;
+  }>({ competencia: '', identifier: '' });
+  const [mrCalcLoading, setMrCalcLoading] = useState(false);
+  const [mrSaveToRag, setMrSaveToRag] = useState(true);
+  const [mrCalcResult, setMrCalcResult] = useState<{
+    identifier: string;
+    nicename: string | null;
+    rentabilidadeMensal: number;
+    cotacaoInicial: number;
+    cotacaoFinal: number;
+    dataInicial: string;
+    dataFinal: string;
+    dias: number;
   } | null>(null);
 
   // Estado para o AlertDialog de exclusão de consolidado
@@ -1366,6 +1384,85 @@ export default function DataManagement() {
     }
   };
 
+  // Função para buscar rentabilidade via Mais Retorno
+  const handleFetchMaisRetornoData = async () => {
+    const identifier = mrCalcData.identifier.trim();
+    const competencia = mrCalcData.competencia.trim();
+    if (!identifier || !competencia) {
+      toast({
+        title: "Dados incompletos",
+        description: "Preencha identifier (ex.: 12345678000190:fi) e competência (MM/YYYY).",
+        variant: "destructive",
+      });
+      return;
+    }
+    setMrCalcLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('get-maisretorno-return', {
+        body: { identifier, competencia },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setMrCalcResult(data);
+      toast({
+        title: "Rentabilidade obtida!",
+        description: `${data.nicename || identifier}: ${Number(data.rentabilidadeMensal).toFixed(4)}%`,
+      });
+
+      // Salvar identifier no RAG (best-effort) se habilitado e houver Ativo no editingItem
+      if (mrSaveToRag && editingItem?.Ativo) {
+        const ativo = editingItem.Ativo.trim();
+        try {
+          const { data: existing } = await supabase
+            .from('RAG_Processador')
+            .select('id, mr_identifier' as any)
+            .eq('Ativo', ativo);
+          if (existing && existing.length > 0) {
+            const row = existing[0] as any;
+            if ((row.mr_identifier || '').trim() !== identifier) {
+              await supabase
+                .from('RAG_Processador')
+                .update({ mr_identifier: identifier } as any)
+                .eq('Ativo', ativo);
+            }
+          } else {
+            await supabase
+              .from('RAG_Processador')
+              .insert({ Ativo: ativo, mr_identifier: identifier } as any);
+          }
+        } catch (e) {
+          console.warn('Falha ao salvar mr_identifier no RAG:', e);
+        }
+      }
+    } catch (err: any) {
+      toast({
+        title: "Erro ao buscar Mais Retorno",
+        description: err.message || "Verifique o identifier e tente novamente.",
+        variant: "destructive",
+      });
+      setMrCalcResult(null);
+    } finally {
+      setMrCalcLoading(false);
+    }
+  };
+
+  // Pré-carrega mr_identifier do RAG_Processador para o ativo informado
+  const prefillMrIdentifierFromRag = async (ativo: string) => {
+    const a = (ativo || '').trim();
+    if (!a) return;
+    try {
+      const { data } = await supabase
+        .from('RAG_Processador')
+        .select('mr_identifier' as any)
+        .eq('Ativo', a)
+        .limit(1);
+      const id = (data && data[0] && (data[0] as any).mr_identifier) || '';
+      if (id) setMrCalcData((prev) => ({ ...prev, identifier: id }));
+    } catch (e) {
+      console.warn('prefillMrIdentifierFromRag falhou:', e);
+    }
+  };
+
   // Função para confirmar e aplicar o cálculo ao campo Rendimento
   const handleCalculatorConfirm = () => {
     let calculatedReturn: number | null = null;
@@ -1406,6 +1503,17 @@ export default function DataManagement() {
       // Usar o resultado do Tesouro Direto
       if (treasuryCalcResult) {
         calculatedReturn = treasuryCalcResult.rentabilidadeMensal / 100; // Converter de % para decimal
+      } else {
+        toast({
+          title: "Busque os dados primeiro",
+          description: "Clique em 'Buscar Rentabilidade' antes de confirmar",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else if (calculatorMode === 'maisretorno') {
+      if (mrCalcResult) {
+        calculatedReturn = mrCalcResult.rentabilidadeMensal / 100;
       } else {
         toast({
           title: "Busque os dados primeiro",
@@ -6204,6 +6312,9 @@ interface VerificationResult {
                       vencimento: extractYearFromDate(editingItem.Vencimento || ''),
                     });
                    setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || '', ...inferManualCalcFromAtivo(editingItem)});
+                   setMrCalcData({ competencia: editingItem.Competencia || '', identifier: '' });
+                   setMrCalcResult(null);
+                   prefillMrIdentifierFromRag(editingItem.Ativo || '');
                    setIsCalculatorOpen(true);
                 }}
                         className="mt-2 w-full"
@@ -6511,6 +6622,9 @@ interface VerificationResult {
                              vencimento: extractYearFromDate(editingItem.Vencimento || ''),
                            });
                            setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || '', ...inferManualCalcFromAtivo(editingItem)});
+                           setMrCalcData({ competencia: editingItem.Competencia || '', identifier: '' });
+                           setMrCalcResult(null);
+                           prefillMrIdentifierFromRag(editingItem.Ativo || '');
                            setIsCalculatorOpen(true);
                          }}
                        >
@@ -6855,6 +6969,13 @@ interface VerificationResult {
               >
                 <BarChart3 className="h-4 w-4 mr-1" />
                 Tesouro
+              </Button>
+              <Button
+                variant={calculatorMode === 'maisretorno' ? 'default' : 'outline'}
+                onClick={() => setCalculatorMode('maisretorno')}
+                className="col-span-2"
+              >
+                Mais Retorno (Fundos/Tesouro)
               </Button>
             </div>
 
@@ -7364,6 +7485,105 @@ interface VerificationResult {
                 )}
               </div>
             )}
+
+            {/* Modo Mais Retorno */}
+            {calculatorMode === 'maisretorno' && (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Busca a rentabilidade mensal do ativo (fundos, Tesouro Direto, títulos públicos)
+                  via API <a href="https://developers.maisretorno.com/" target="_blank" rel="noreferrer" className="underline">Mais Retorno</a>.
+                </p>
+
+                <div>
+                  <Label htmlFor="calc-mr-competencia">Competência</Label>
+                  <Input
+                    id="calc-mr-competencia"
+                    value={mrCalcData.competencia}
+                    onChange={(e) => {
+                      let value = e.target.value.replace(/\D/g, '');
+                      if (value.length >= 2) value = value.substring(0, 2) + '/' + value.substring(2, 6);
+                      setMrCalcData({ ...mrCalcData, competencia: value });
+                    }}
+                    placeholder="MM/YYYY"
+                    maxLength={7}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="calc-mr-identifier">Identifier Mais Retorno</Label>
+                  <Input
+                    id="calc-mr-identifier"
+                    value={mrCalcData.identifier}
+                    onChange={(e) => setMrCalcData({ ...mrCalcData, identifier: e.target.value.trim() })}
+                    placeholder="ex.: 12345678000190:fi  •  tesouro-selic-18-06-2008:td"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Fundos: <code>cnpj:fi</code> · Tesouro Direto: <code>slug:td</code> · Títulos Públicos: <code>slug:tp</code>.
+                    {editingItem?.Ativo && (
+                      <> Pré-carregado do RAG quando disponível. </>
+                    )}
+                  </p>
+                </div>
+
+                {editingItem?.Ativo && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="calc-mr-save-rag"
+                      type="checkbox"
+                      checked={mrSaveToRag}
+                      onChange={(e) => setMrSaveToRag(e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="calc-mr-save-rag" className="text-sm font-normal">
+                      Salvar identifier no RAG para reuso futuro
+                    </Label>
+                  </div>
+                )}
+
+                <Button
+                  onClick={handleFetchMaisRetornoData}
+                  disabled={!mrCalcData.identifier || !mrCalcData.competencia || mrCalcLoading}
+                  className="w-full"
+                  variant="secondary"
+                >
+                  {mrCalcLoading ? 'Buscando...' : 'Buscar Rentabilidade'}
+                </Button>
+
+                {mrCalcResult && (
+                  <div className="bg-muted p-4 rounded-md space-y-2 border border-primary/20">
+                    <h4 className="font-semibold text-sm">Resultado:</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="col-span-2">
+                        <p className="text-muted-foreground">Ativo:</p>
+                        <p className="font-medium">{mrCalcResult.nicename || mrCalcResult.identifier}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Rentabilidade:</p>
+                        <p className={`font-medium ${mrCalcResult.rentabilidadeMensal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {mrCalcResult.rentabilidadeMensal.toFixed(4)}%
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Dias com cota:</p>
+                        <p className="font-medium">{mrCalcResult.dias}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Cota Inicial ({mrCalcResult.dataInicial}):</p>
+                        <p className="font-medium">{mrCalcResult.cotacaoInicial}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Cota Final ({mrCalcResult.dataFinal}):</p>
+                        <p className="font-medium">{mrCalcResult.cotacaoFinal}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground italic mt-2">
+                      ℹ️ Ao confirmar, este valor será usado como Rendimento
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
 
             {/* Botões de ação */}
             <div className="flex gap-2 pt-4">
