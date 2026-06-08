@@ -5738,7 +5738,7 @@ interface VerificationResult {
                                                 </div>
                                                 <div className="flex justify-between">
                                                   <span className="text-muted-foreground">Liquidez:</span>
-                                                  <span className="font-medium">{(item as any).liquidez || '—'}</span>
+                                                  <span className="font-medium">{formatLiquidezDisplay(item)}</span>
                                                 </div>
                                               </div>
                                               {liquidezAlert && (
