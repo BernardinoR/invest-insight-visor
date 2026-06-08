@@ -156,7 +156,28 @@ interface DadosData {
   "rentabilidade_validada"?: boolean;
   "ativo_novo"?: boolean;
   "liquidez"?: string | null;
+  "liquidez_corridos"?: string | null;
+  "liquidez_uteis"?: string | null;
 }
+
+// Helpers de liquidez (dias corridos / dias úteis + coluna legada)
+const hasAnyLiquidez = (item: any): boolean => {
+  const c = (item?.liquidez_corridos || '').toString().trim();
+  const u = (item?.liquidez_uteis || '').toString().trim();
+  const legacy = (item?.liquidez || '').toString().trim();
+  return !!(c || u || legacy);
+};
+
+const formatLiquidezDisplay = (item: any): string => {
+  const c = (item?.liquidez_corridos || '').toString().trim();
+  const u = (item?.liquidez_uteis || '').toString().trim();
+  const legacy = (item?.liquidez || '').toString().trim();
+  const parts: string[] = [];
+  if (c) parts.push(`${c}c`);
+  if (u) parts.push(`${u}u`);
+  if (!c && !u && legacy) parts.push(legacy);
+  return parts.length ? parts.join(' / ') : '-';
+};
 
 export default function DataManagement() {
   const { clientName } = useParams<{ clientName: string }>();
@@ -287,8 +308,10 @@ export default function DataManagement() {
   const [ragLiquidezConflictDialog, setRagLiquidezConflictDialog] = useState<{
     open: boolean;
     ativo: string;
-    liquidezNova: string;
-    liquidezExistente: string;
+    corridosNovo: string | null;
+    uteisNovo: string | null;
+    corridosExistente: string | null;
+    uteisExistente: string | null;
   } | null>(null);
   const [ragLiquidezUpdateExisting, setRagLiquidezUpdateExisting] = useState(true);
   const [ragLiquidezSaving, setRagLiquidezSaving] = useState(false);
@@ -1083,7 +1106,7 @@ export default function DataManagement() {
       emissor: item.Emissor || '',
       taxa: item.Taxa || '',
       vencimento: item.Vencimento || '',
-      liquidez: (item as any).liquidez || '',
+      liquidez: (item as any).liquidez_corridos || (item as any).liquidez_uteis || (item as any).liquidez || '',
     });
     setActiveTab('overrides');
   };
@@ -1547,10 +1570,11 @@ export default function DataManagement() {
       
       if (!existing || existing.length === 0) {
         // Não existe — inserir novo
-        const liquidezAtual = editingItem.liquidez?.trim() || null;
+        const corridosAtual = editingItem.liquidez_corridos?.trim() || null;
+        const uteisAtual = editingItem.liquidez_uteis?.trim() || null;
         const { error: insertError } = await supabase
           .from('RAG_Processador')
-          .insert({ Ativo: ativo, Classificacao: classeNova, Liquidez: liquidezAtual } as any);
+          .insert({ Ativo: ativo, Classificacao: classeNova, Liquidez_Corridos: corridosAtual, Liquidez_Uteis: uteisAtual } as any);
         if (insertError) throw insertError;
         toast({ title: "Classificação gravada!", description: `"${ativo}" → ${classeNova}` });
       } else if (existing[0].Classificacao === classeNova) {
@@ -1613,17 +1637,18 @@ export default function DataManagement() {
   };
 
 
-  // Função para gravar liquidez no RAG_Processador
+  // Função para gravar liquidez (corridos + úteis) no RAG_Processador
   const handleSaveLiquidez = async () => {
-    if (!editingItem || !editingItem.Ativo || !editingItem.liquidez) {
-      toast({ title: "Preencha o Ativo e a Liquidez antes de gravar.", variant: "destructive" });
+    if (!editingItem || !editingItem.Ativo || (!editingItem.liquidez_corridos && !editingItem.liquidez_uteis)) {
+      toast({ title: "Preencha o Ativo e pelo menos um dos campos de Liquidez antes de gravar.", variant: "destructive" });
       return;
     }
 
     setRagLiquidezSaving(true);
     try {
       const ativo = editingItem.Ativo.trim();
-      const liquidezNova = editingItem.liquidez.trim();
+      const corridosNovo = editingItem.liquidez_corridos?.trim() || null;
+      const uteisNovo = editingItem.liquidez_uteis?.trim() || null;
 
       const { data: existing, error: fetchError } = await supabase
         .from('RAG_Processador')
@@ -1636,28 +1661,41 @@ export default function DataManagement() {
         const classeAtual = editingItem["Classe do ativo"]?.trim() || null;
         const { error: insertError } = await supabase
           .from('RAG_Processador')
-          .insert({ Ativo: ativo, Liquidez: liquidezNova, Classificacao: classeAtual } as any);
+          .insert({
+            Ativo: ativo,
+            Liquidez_Corridos: corridosNovo,
+            Liquidez_Uteis: uteisNovo,
+            Classificacao: classeAtual,
+          } as any);
         if (insertError) throw insertError;
-        toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${liquidezNova}` });
-      } else if ((existing[0] as any).Liquidez === liquidezNova) {
-        toast({ title: "Liquidez já gravada", description: `"${ativo}" já está como ${liquidezNova}.` });
-      } else if (!(existing[0] as any).Liquidez) {
-        // Existe sem liquidez — só atualiza
-        const { error: updateError } = await supabase
-          .from('RAG_Processador')
-          .update({ Liquidez: liquidezNova } as any)
-          .eq('Ativo', ativo);
-        if (updateError) throw updateError;
-        toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${liquidezNova}` });
+        toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${formatLiquidezDisplay({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo })}` });
       } else {
-        // Conflito — abrir dialog
-        setRagLiquidezConflictDialog({
-          open: true,
-          ativo,
-          liquidezNova,
-          liquidezExistente: (existing[0] as any).Liquidez,
-        });
-        setRagLiquidezUpdateExisting(true);
+        const row = existing[0] as any;
+        const corridosExistente = (row.Liquidez_Corridos || '').toString().trim() || null;
+        const uteisExistente = (row.Liquidez_Uteis || '').toString().trim() || null;
+        const same = corridosExistente === corridosNovo && uteisExistente === uteisNovo;
+        const empty = !corridosExistente && !uteisExistente && !((row.Liquidez || '').toString().trim());
+
+        if (same) {
+          toast({ title: "Liquidez já gravada", description: `"${ativo}" já está nesses valores.` });
+        } else if (empty) {
+          const { error: updateError } = await supabase
+            .from('RAG_Processador')
+            .update({ Liquidez_Corridos: corridosNovo, Liquidez_Uteis: uteisNovo } as any)
+            .eq('Ativo', ativo);
+          if (updateError) throw updateError;
+          toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${formatLiquidezDisplay({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo })}` });
+        } else {
+          setRagLiquidezConflictDialog({
+            open: true,
+            ativo,
+            corridosNovo,
+            uteisNovo,
+            corridosExistente: corridosExistente || (row.Liquidez || null),
+            uteisExistente,
+          });
+          setRagLiquidezUpdateExisting(true);
+        }
       }
     } catch (error: any) {
       toast({ title: "Erro ao gravar liquidez", description: error.message, variant: "destructive" });
@@ -1670,29 +1708,29 @@ export default function DataManagement() {
     if (!ragLiquidezConflictDialog) return;
     setRagLiquidezSaving(true);
     try {
-      const { ativo, liquidezNova } = ragLiquidezConflictDialog;
+      const { ativo, corridosNovo, uteisNovo } = ragLiquidezConflictDialog;
 
       const { error: updateError } = await supabase
         .from('RAG_Processador')
-        .update({ Liquidez: liquidezNova } as any)
+        .update({ Liquidez_Corridos: corridosNovo, Liquidez_Uteis: uteisNovo } as any)
         .eq('Ativo', ativo);
       if (updateError) throw updateError;
 
       if (ragLiquidezUpdateExisting) {
         const { error: dadosError } = await supabase
           .from('DadosPerformance')
-          .update({ liquidez: liquidezNova })
+          .update({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo } as any)
           .eq('Ativo', ativo);
         if (dadosError) throw dadosError;
 
         if (editingItem && editingItem.Ativo === ativo) {
-          setEditingItem({ ...editingItem, liquidez: liquidezNova });
+          setEditingItem({ ...editingItem, liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo });
         }
 
         await fetchData();
-        toast({ title: "Liquidez atualizada!", description: `"${ativo}" → ${liquidezNova} (todos os registros atualizados)` });
+        toast({ title: "Liquidez atualizada!", description: `"${ativo}" (todos os registros atualizados)` });
       } else {
-        toast({ title: "Liquidez atualizada!", description: `"${ativo}" → ${liquidezNova} (apenas RAG)` });
+        toast({ title: "Liquidez atualizada!", description: `"${ativo}" (apenas RAG)` });
       }
     } catch (error: any) {
       toast({ title: "Erro ao atualizar liquidez", description: error.message, variant: "destructive" });
@@ -1701,6 +1739,7 @@ export default function DataManagement() {
       setRagLiquidezConflictDialog(null);
     }
   };
+
 
 
   const handleSave = async () => {
@@ -1994,15 +2033,20 @@ export default function DataManagement() {
     try {
       const { data: ragRows, error: ragErr } = await supabase
         .from('RAG_Processador')
-        .select('Ativo, Liquidez')
+        .select('Ativo, Liquidez, Liquidez_Corridos, Liquidez_Uteis')
         .in('Ativo', nomesUnicos);
 
       if (ragErr) throw ragErr;
 
-      const map = new Map<string, string>();
+      const map = new Map<string, { corridos: string | null; uteis: string | null }>();
       (ragRows || []).forEach((r: any) => {
-        const liq = (r.Liquidez || '').toString().trim();
-        if (r.Ativo && liq) map.set(r.Ativo, liq);
+        const corridos = (r.Liquidez_Corridos || '').toString().trim() || null;
+        const uteis = (r.Liquidez_Uteis || '').toString().trim() || null;
+        const legacy = (r.Liquidez || '').toString().trim() || null;
+        const finalCorridos = corridos || legacy; // legado conta como corridos
+        if (r.Ativo && (finalCorridos || uteis)) {
+          map.set(r.Ativo, { corridos: finalCorridos, uteis });
+        }
       });
 
       let updated = 0;
@@ -2012,17 +2056,21 @@ export default function DataManagement() {
       const updatePromises: Promise<any>[] = [];
       for (const item of items) {
         const ativo = (item.Ativo || '').trim();
-        const liqRag = map.get(ativo);
-        if (!liqRag) { semRag++; continue; }
-        const liqAtual = ((item as any).liquidez || '').toString().trim();
-        if (liqAtual === liqRag) { jaIgual++; continue; }
+        const ragLiq = map.get(ativo);
+        if (!ragLiq) { semRag++; continue; }
+        const corridosAtual = ((item as any).liquidez_corridos || '').toString().trim() || null;
+        const uteisAtual = ((item as any).liquidez_uteis || '').toString().trim() || null;
+        if (corridosAtual === ragLiq.corridos && uteisAtual === ragLiq.uteis) { jaIgual++; continue; }
+        const patch: any = {};
+        if (ragLiq.corridos && !corridosAtual) patch.liquidez_corridos = ragLiq.corridos;
+        if (ragLiq.uteis && !uteisAtual) patch.liquidez_uteis = ragLiq.uteis;
+        if (Object.keys(patch).length === 0) { jaIgual++; continue; }
         updated++;
         updatePromises.push(
           Promise.resolve(
-            supabase.from('DadosPerformance').update({ liquidez: liqRag } as any).eq('id', item.id)
+            supabase.from('DadosPerformance').update(patch).eq('id', item.id)
           )
         );
-
       }
 
       await Promise.all(updatePromises);
@@ -2330,7 +2378,7 @@ interface VerificationResult {
       const ativoNorm = String(item.Ativo || '').toLowerCase();
       const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
       if (isCashLike) return false;
-      return !item.Vencimento && !(item as any).liquidez;
+      return !item.Vencimento && !hasAnyLiquidez(item);
     }).length;
 
     // Calcular diferença
@@ -2488,7 +2536,7 @@ interface VerificationResult {
           const ativoNorm = String(item.Ativo || '').toLowerCase();
           const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
           if (isCashLike) return false;
-          return !item.Vencimento && !(item as any).liquidez;
+          return !item.Vencimento && !hasAnyLiquidez(item);
         })();
 
         return isUnclassified || hasMissingYieldF || isNewAsset || isMissingLiquidity;
@@ -2627,7 +2675,7 @@ interface VerificationResult {
       const ativoNorm = String(item.Ativo || '').toLowerCase();
       const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
       if (isCashLike) return false;
-      return !item.Vencimento && !(item as any).liquidez;
+      return !item.Vencimento && !hasAnyLiquidez(item);
     }).length;
   }, [dadosData, selectedCompetencias, selectedInstituicoes, selectedNomesConta, selectedClasses, selectedEmissores, searchAtivo]);
 
@@ -4771,7 +4819,7 @@ interface VerificationResult {
                     const ativoNorm = String(item.Ativo || '').toLowerCase();
                     const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
                     if (isCashLike) return false;
-                    return !item.Vencimento && !(item as any).liquidez;
+                    return !item.Vencimento && !hasAnyLiquidez(item);
                   }).length;
 
                   const consolidadoValue = selectedConsolidado["Patrimonio Final"] || 0;
@@ -5622,7 +5670,7 @@ interface VerificationResult {
                               {visibleColumnsDetalhados.has('Posição') && <TableCell>{formatCurrency(item.Posicao, item.Moeda)}</TableCell>}
                               {visibleColumnsDetalhados.has('Taxa') && <TableCell>{item.Taxa}</TableCell>}
                               {visibleColumnsDetalhados.has('Vencimento') && <TableCell>{item.Vencimento}</TableCell>}
-                              {visibleColumnsDetalhados.has('Liquidez') && <TableCell>{(item as any).liquidez || '-'}</TableCell>}
+                              {visibleColumnsDetalhados.has('Liquidez') && <TableCell>{formatLiquidezDisplay(item)}</TableCell>}
                               {visibleColumnsDetalhados.has('Rendimento %') && <TableCell>{typeof item.Rendimento === 'number' ? formatPercentage(item.Rendimento) : item.Rendimento || '-'}</TableCell>}
                               {visibleColumnsDetalhados.has('Verificação') && (
                                 <TableCell className="text-center">
@@ -5633,7 +5681,7 @@ interface VerificationResult {
                                     const rentOk = hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo);
                                     const isAtivoNovo = item.ativo_novo === true;
                                     const semVencimento = !item.Vencimento;
-                                    const semLiquidez = !(item as any).liquidez;
+                                    const semLiquidez = !hasAnyLiquidez(item);
                                     const liquidezAlert = semVencimento && semLiquidez && !isCashLike;
 
                                     return (
@@ -5717,7 +5765,7 @@ interface VerificationResult {
                                                 </div>
                                                 <div className="flex justify-between">
                                                   <span className="text-muted-foreground">Liquidez:</span>
-                                                  <span className="font-medium">{(item as any).liquidez || '—'}</span>
+                                                  <span className="font-medium">{formatLiquidezDisplay(item)}</span>
                                                 </div>
                                               </div>
                                               {liquidezAlert && (
@@ -6334,38 +6382,16 @@ interface VerificationResult {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="liquidez">Liquidez</Label>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            id="liquidez"
-                            value={editingItem.liquidez ? editingItem.liquidez.replace(/^D\+/i, '') : ''}
-                            onChange={(e) => {
-                              const num = e.target.value.replace(/\D/g, '');
-                              setEditingItem({
-                                ...editingItem,
-                                liquidez: num ? `D+${num}` : null
-                              });
-                            }}
-                            placeholder="Ex: 0, 30, 90..."
-                          />
-                          {editingItem.liquidez && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="shrink-0"
-                              onClick={() => setEditingItem({...editingItem, liquidez: null})}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
+                        <div className="flex items-center justify-between">
+                          <Label>Liquidez (D+)</Label>
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-10 w-10 shrink-0"
-                                  disabled={!editingItem.Ativo || !editingItem.liquidez || ragLiquidezSaving}
+                                  className="h-7 w-7 shrink-0"
+                                  disabled={!editingItem.Ativo || (!editingItem.liquidez_corridos && !editingItem.liquidez_uteis) || ragLiquidezSaving}
                                   onClick={handleSaveLiquidez}
                                 >
                                   <BookmarkPlus className="h-4 w-4" />
@@ -6377,9 +6403,65 @@ interface VerificationResult {
                             </Tooltip>
                           </TooltipProvider>
                         </div>
-                        {editingItem.liquidez && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {/* Dias corridos */}
+                          <div className="flex items-center gap-1">
+                            <Input
+                              id="liquidez_corridos"
+                              value={editingItem.liquidez_corridos ? String(editingItem.liquidez_corridos).replace(/^D\+/i, '') : ''}
+                              onChange={(e) => {
+                                const num = e.target.value.replace(/\D/g, '');
+                                setEditingItem({
+                                  ...editingItem,
+                                  liquidez_corridos: num ? `D+${num}` : null
+                                });
+                              }}
+                              placeholder="Corridos (ex: 30)"
+                            />
+                            {editingItem.liquidez_corridos && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="shrink-0 h-8 w-8"
+                                onClick={() => setEditingItem({...editingItem, liquidez_corridos: null})}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                          {/* Dias úteis */}
+                          <div className="flex items-center gap-1">
+                            <Input
+                              id="liquidez_uteis"
+                              value={editingItem.liquidez_uteis ? String(editingItem.liquidez_uteis).replace(/^D\+/i, '') : ''}
+                              onChange={(e) => {
+                                const num = e.target.value.replace(/\D/g, '');
+                                setEditingItem({
+                                  ...editingItem,
+                                  liquidez_uteis: num ? `D+${num}` : null
+                                });
+                              }}
+                              placeholder="Úteis (ex: 30)"
+                            />
+                            {editingItem.liquidez_uteis && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="shrink-0 h-8 w-8"
+                                onClick={() => setEditingItem({...editingItem, liquidez_uteis: null})}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex justify-between text-[10px] text-muted-foreground mt-1 px-1">
+                          <span>dias corridos</span>
+                          <span>dias úteis</span>
+                        </div>
+                        {(editingItem.liquidez_corridos || editingItem.liquidez_uteis) && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            Valor salvo: {editingItem.liquidez}
+                            Salvo: {[editingItem.liquidez_corridos && `${editingItem.liquidez_corridos} corridos`, editingItem.liquidez_uteis && `${editingItem.liquidez_uteis} úteis`].filter(Boolean).join(' · ')}
                           </p>
                         )}
                       </div>
@@ -7403,9 +7485,10 @@ interface VerificationResult {
           <AlertDialogHeader>
             <AlertDialogTitle>Liquidez diferente encontrada</AlertDialogTitle>
             <AlertDialogDescription>
-              O ativo <strong>"{ragLiquidezConflictDialog?.ativo}"</strong> está gravado com liquidez{' '}
-              <strong>"{ragLiquidezConflictDialog?.liquidezExistente}"</strong>. Deseja atualizar para{' '}
-              <strong>"{ragLiquidezConflictDialog?.liquidezNova}"</strong>?
+              O ativo <strong>"{ragLiquidezConflictDialog?.ativo}"</strong> já tem liquidez gravada:{' '}
+              <strong>{formatLiquidezDisplay({ liquidez_corridos: ragLiquidezConflictDialog?.corridosExistente, liquidez_uteis: ragLiquidezConflictDialog?.uteisExistente })}</strong>.
+              Deseja atualizar para{' '}
+              <strong>{formatLiquidezDisplay({ liquidez_corridos: ragLiquidezConflictDialog?.corridosNovo, liquidez_uteis: ragLiquidezConflictDialog?.uteisNovo })}</strong>?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex items-center space-x-2 py-2">
