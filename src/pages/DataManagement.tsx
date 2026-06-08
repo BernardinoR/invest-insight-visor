@@ -5654,7 +5654,7 @@ interface VerificationResult {
                                     const rentOk = hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo);
                                     const isAtivoNovo = item.ativo_novo === true;
                                     const semVencimento = !item.Vencimento;
-                                    const semLiquidez = !(item as any).liquidez;
+                                    const semLiquidez = !hasAnyLiquidez(item);
                                     const liquidezAlert = semVencimento && semLiquidez && !isCashLike;
 
                                     return (
