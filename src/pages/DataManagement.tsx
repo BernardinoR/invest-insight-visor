@@ -7475,9 +7475,10 @@ interface VerificationResult {
           <AlertDialogHeader>
             <AlertDialogTitle>Liquidez diferente encontrada</AlertDialogTitle>
             <AlertDialogDescription>
-              O ativo <strong>"{ragLiquidezConflictDialog?.ativo}"</strong> está gravado com liquidez{' '}
-              <strong>"{ragLiquidezConflictDialog?.liquidezExistente}"</strong>. Deseja atualizar para{' '}
-              <strong>"{ragLiquidezConflictDialog?.liquidezNova}"</strong>?
+              O ativo <strong>"{ragLiquidezConflictDialog?.ativo}"</strong> já tem liquidez gravada:{' '}
+              <strong>{formatLiquidezDisplay({ liquidez_corridos: ragLiquidezConflictDialog?.corridosExistente, liquidez_uteis: ragLiquidezConflictDialog?.uteisExistente })}</strong>.
+              Deseja atualizar para{' '}
+              <strong>{formatLiquidezDisplay({ liquidez_corridos: ragLiquidezConflictDialog?.corridosNovo, liquidez_uteis: ragLiquidezConflictDialog?.uteisNovo })}</strong>?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex items-center space-x-2 py-2">
