@@ -6355,38 +6355,16 @@ interface VerificationResult {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="liquidez">Liquidez</Label>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            id="liquidez"
-                            value={editingItem.liquidez ? editingItem.liquidez.replace(/^D\+/i, '') : ''}
-                            onChange={(e) => {
-                              const num = e.target.value.replace(/\D/g, '');
-                              setEditingItem({
-                                ...editingItem,
-                                liquidez: num ? `D+${num}` : null
-                              });
-                            }}
-                            placeholder="Ex: 0, 30, 90..."
-                          />
-                          {editingItem.liquidez && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="shrink-0"
-                              onClick={() => setEditingItem({...editingItem, liquidez: null})}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
+                        <div className="flex items-center justify-between">
+                          <Label>Liquidez (D+)</Label>
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-10 w-10 shrink-0"
-                                  disabled={!editingItem.Ativo || !editingItem.liquidez || ragLiquidezSaving}
+                                  className="h-7 w-7 shrink-0"
+                                  disabled={!editingItem.Ativo || (!editingItem.liquidez_corridos && !editingItem.liquidez_uteis) || ragLiquidezSaving}
                                   onClick={handleSaveLiquidez}
                                 >
                                   <BookmarkPlus className="h-4 w-4" />
@@ -6398,9 +6376,65 @@ interface VerificationResult {
                             </Tooltip>
                           </TooltipProvider>
                         </div>
-                        {editingItem.liquidez && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {/* Dias corridos */}
+                          <div className="flex items-center gap-1">
+                            <Input
+                              id="liquidez_corridos"
+                              value={editingItem.liquidez_corridos ? String(editingItem.liquidez_corridos).replace(/^D\+/i, '') : ''}
+                              onChange={(e) => {
+                                const num = e.target.value.replace(/\D/g, '');
+                                setEditingItem({
+                                  ...editingItem,
+                                  liquidez_corridos: num ? `D+${num}` : null
+                                });
+                              }}
+                              placeholder="Corridos (ex: 30)"
+                            />
+                            {editingItem.liquidez_corridos && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="shrink-0 h-8 w-8"
+                                onClick={() => setEditingItem({...editingItem, liquidez_corridos: null})}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                          {/* Dias úteis */}
+                          <div className="flex items-center gap-1">
+                            <Input
+                              id="liquidez_uteis"
+                              value={editingItem.liquidez_uteis ? String(editingItem.liquidez_uteis).replace(/^D\+/i, '') : ''}
+                              onChange={(e) => {
+                                const num = e.target.value.replace(/\D/g, '');
+                                setEditingItem({
+                                  ...editingItem,
+                                  liquidez_uteis: num ? `D+${num}` : null
+                                });
+                              }}
+                              placeholder="Úteis (ex: 30)"
+                            />
+                            {editingItem.liquidez_uteis && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="shrink-0 h-8 w-8"
+                                onClick={() => setEditingItem({...editingItem, liquidez_uteis: null})}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex justify-between text-[10px] text-muted-foreground mt-1 px-1">
+                          <span>dias corridos</span>
+                          <span>dias úteis</span>
+                        </div>
+                        {(editingItem.liquidez_corridos || editingItem.liquidez_uteis) && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            Valor salvo: {editingItem.liquidez}
+                            Salvo: {[editingItem.liquidez_corridos && `${editingItem.liquidez_corridos} corridos`, editingItem.liquidez_uteis && `${editingItem.liquidez_uteis} úteis`].filter(Boolean).join(' · ')}
                           </p>
                         )}
                       </div>
