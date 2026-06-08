@@ -2033,15 +2033,20 @@ export default function DataManagement() {
     try {
       const { data: ragRows, error: ragErr } = await supabase
         .from('RAG_Processador')
-        .select('Ativo, Liquidez')
+        .select('Ativo, Liquidez, Liquidez_Corridos, Liquidez_Uteis')
         .in('Ativo', nomesUnicos);
 
       if (ragErr) throw ragErr;
 
-      const map = new Map<string, string>();
+      const map = new Map<string, { corridos: string | null; uteis: string | null }>();
       (ragRows || []).forEach((r: any) => {
-        const liq = (r.Liquidez || '').toString().trim();
-        if (r.Ativo && liq) map.set(r.Ativo, liq);
+        const corridos = (r.Liquidez_Corridos || '').toString().trim() || null;
+        const uteis = (r.Liquidez_Uteis || '').toString().trim() || null;
+        const legacy = (r.Liquidez || '').toString().trim() || null;
+        const finalCorridos = corridos || legacy; // legado conta como corridos
+        if (r.Ativo && (finalCorridos || uteis)) {
+          map.set(r.Ativo, { corridos: finalCorridos, uteis });
+        }
       });
 
       let updated = 0;
@@ -2051,17 +2056,21 @@ export default function DataManagement() {
       const updatePromises: Promise<any>[] = [];
       for (const item of items) {
         const ativo = (item.Ativo || '').trim();
-        const liqRag = map.get(ativo);
-        if (!liqRag) { semRag++; continue; }
-        const liqAtual = ((item as any).liquidez || '').toString().trim();
-        if (liqAtual === liqRag) { jaIgual++; continue; }
+        const ragLiq = map.get(ativo);
+        if (!ragLiq) { semRag++; continue; }
+        const corridosAtual = ((item as any).liquidez_corridos || '').toString().trim() || null;
+        const uteisAtual = ((item as any).liquidez_uteis || '').toString().trim() || null;
+        if (corridosAtual === ragLiq.corridos && uteisAtual === ragLiq.uteis) { jaIgual++; continue; }
+        const patch: any = {};
+        if (ragLiq.corridos && !corridosAtual) patch.liquidez_corridos = ragLiq.corridos;
+        if (ragLiq.uteis && !uteisAtual) patch.liquidez_uteis = ragLiq.uteis;
+        if (Object.keys(patch).length === 0) { jaIgual++; continue; }
         updated++;
         updatePromises.push(
           Promise.resolve(
-            supabase.from('DadosPerformance').update({ liquidez: liqRag } as any).eq('id', item.id)
+            supabase.from('DadosPerformance').update(patch).eq('id', item.id)
           )
         );
-
       }
 
       await Promise.all(updatePromises);
