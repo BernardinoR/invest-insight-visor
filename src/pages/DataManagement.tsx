@@ -158,10 +158,12 @@ interface DadosData {
   "liquidez"?: string | null;
   "liquidez_corridos"?: string | null;
   "liquidez_uteis"?: string | null;
+  "liquidez_fechada"?: boolean;
 }
 
-// Helpers de liquidez (dias corridos / dias úteis + coluna legada)
+// Helpers de liquidez (dias corridos / dias úteis + coluna legada + fechado)
 const hasAnyLiquidez = (item: any): boolean => {
+  if (item?.liquidez_fechada === true) return true;
   const c = (item?.liquidez_corridos || '').toString().trim();
   const u = (item?.liquidez_uteis || '').toString().trim();
   const legacy = (item?.liquidez || '').toString().trim();
@@ -169,6 +171,7 @@ const hasAnyLiquidez = (item: any): boolean => {
 };
 
 const formatLiquidezDisplay = (item: any): string => {
+  if (item?.liquidez_fechada === true) return 'Fechado';
   const c = (item?.liquidez_corridos || '').toString().trim();
   const u = (item?.liquidez_uteis || '').toString().trim();
   const legacy = (item?.liquidez || '').toString().trim();

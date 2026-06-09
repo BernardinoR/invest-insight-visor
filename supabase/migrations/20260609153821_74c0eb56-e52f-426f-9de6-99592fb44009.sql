@@ -1,0 +1,1 @@
+ALTER TABLE public."DadosPerformance" ADD COLUMN IF NOT EXISTS liquidez_fechada boolean NOT NULL DEFAULT false;
