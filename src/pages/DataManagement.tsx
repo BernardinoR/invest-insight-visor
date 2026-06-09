@@ -6658,11 +6658,6 @@ interface VerificationResult {
                             competencia: editingItem.Competencia || '',
                             ticker: getTickerWithSuffix(editingItem.Ativo || '', editingItem["Classe do ativo"] || '')
                           });
-                           setTreasuryCalcData({
-                             competencia: editingItem.Competencia || '',
-                             tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
-                             vencimento: extractYearFromDate(editingItem.Vencimento || ''),
-                           });
                            setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || '', ...inferManualCalcFromAtivo(editingItem)});
                            setMrCalcData({ competencia: editingItem.Competencia || '', identifier: '' });
                            setMrCalcResult(null);
