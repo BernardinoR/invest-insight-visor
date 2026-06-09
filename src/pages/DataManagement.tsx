@@ -1773,20 +1773,20 @@ export default function DataManagement() {
   };
 
 
-  // Função para gravar liquidez (corridos + úteis) no RAG_Processador
+  // Função para gravar liquidez (corridos + úteis ou Fechado) no RAG_Processador
   const handleSaveLiquidez = async () => {
-    if (!editingItem || !editingItem.Ativo || (!editingItem.liquidez_corridos && !editingItem.liquidez_uteis)) {
-      toast({ title: "Preencha o Ativo e pelo menos um dos campos de Liquidez antes de gravar.", variant: "destructive" });
+    const fechada = editingItem?.liquidez_fechada === true;
+    if (!editingItem || !editingItem.Ativo || (!fechada && !editingItem.liquidez_corridos && !editingItem.liquidez_uteis)) {
+      toast({ title: "Preencha o Ativo e a Liquidez (ou marque 'Sem liquidez') antes de gravar.", variant: "destructive" });
       return;
     }
 
     setRagLiquidezSaving(true);
     try {
       const ativo = editingItem.Ativo.trim();
-      const { corridos: corridosNovo, uteis: uteisNovo } = normalizeLiquidezPair(
-        editingItem.liquidez_corridos,
-        editingItem.liquidez_uteis
-      );
+      const { corridos: corridosNovo, uteis: uteisNovo } = fechada
+        ? { corridos: null, uteis: null }
+        : normalizeLiquidezPair(editingItem.liquidez_corridos, editingItem.liquidez_uteis);
 
       const { data: existing, error: fetchError } = await supabase
         .from('RAG_Processador')
@@ -1803,10 +1803,11 @@ export default function DataManagement() {
             Ativo: ativo,
             Liquidez_Corridos: corridosNovo,
             Liquidez_Uteis: uteisNovo,
+            liquidez_fechada: fechada,
             Classificacao: classeAtual,
           } as any);
         if (insertError) throw insertError;
-        toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${formatLiquidezDisplay({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo })}` });
+        toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${formatLiquidezDisplay({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo, liquidez_fechada: fechada })}` });
       } else {
         const row = existing[0] as any;
         const corridosExistente = (row.Liquidez_Corridos || '').toString().trim() || null;
