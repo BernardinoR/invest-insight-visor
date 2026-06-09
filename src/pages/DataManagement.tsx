@@ -1780,8 +1780,10 @@ export default function DataManagement() {
     setRagLiquidezSaving(true);
     try {
       const ativo = editingItem.Ativo.trim();
-      const corridosNovo = editingItem.liquidez_corridos?.trim() || null;
-      const uteisNovo = editingItem.liquidez_uteis?.trim() || null;
+      const { corridos: corridosNovo, uteis: uteisNovo } = normalizeLiquidezPair(
+        editingItem.liquidez_corridos,
+        editingItem.liquidez_uteis
+      );
 
       const { data: existing, error: fetchError } = await supabase
         .from('RAG_Processador')
