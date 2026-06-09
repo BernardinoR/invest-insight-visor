@@ -1851,22 +1851,23 @@ export default function DataManagement() {
     setRagLiquidezSaving(true);
     try {
       const { ativo, corridosNovo, uteisNovo } = ragLiquidezConflictDialog;
+      const fechadaNovo = (ragLiquidezConflictDialog as any).fechadaNovo === true;
 
       const { error: updateError } = await supabase
         .from('RAG_Processador')
-        .update({ Liquidez_Corridos: corridosNovo, Liquidez_Uteis: uteisNovo } as any)
+        .update({ Liquidez_Corridos: corridosNovo, Liquidez_Uteis: uteisNovo, liquidez_fechada: fechadaNovo } as any)
         .eq('Ativo', ativo);
       if (updateError) throw updateError;
 
       if (ragLiquidezUpdateExisting) {
         const { error: dadosError } = await supabase
           .from('DadosPerformance')
-          .update({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo } as any)
+          .update({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo, liquidez_fechada: fechadaNovo } as any)
           .eq('Ativo', ativo);
         if (dadosError) throw dadosError;
 
         if (editingItem && editingItem.Ativo === ativo) {
-          setEditingItem({ ...editingItem, liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo });
+          setEditingItem({ ...editingItem, liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo, liquidez_fechada: fechadaNovo });
         }
 
         await fetchData();
