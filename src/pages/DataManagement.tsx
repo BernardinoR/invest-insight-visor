@@ -1887,6 +1887,16 @@ export default function DataManagement() {
       const cleanedData = Object.fromEntries(
         Object.entries(itemData).filter(([_, value]) => value !== undefined && value !== '')
       );
+
+      // Normaliza liquidez: se só um lado preenchido, o outro vira "D+0"; ambos vazios => null
+      if (tableName === 'DadosPerformance') {
+        const liqPair = normalizeLiquidezPair(
+          (editingItem as any).liquidez_corridos,
+          (editingItem as any).liquidez_uteis
+        );
+        cleanedData.liquidez_corridos = liqPair.corridos;
+        cleanedData.liquidez_uteis = liqPair.uteis;
+      }
       
       // Auto-validar rentabilidade para Caixa/Cash/Proventos com rendimento 0
       if (tableName === 'DadosPerformance') {
