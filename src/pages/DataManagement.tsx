@@ -179,6 +179,21 @@ const formatLiquidezDisplay = (item: any): string => {
   return parts.length ? parts.join(' / ') : '-';
 };
 
+// Normaliza par de liquidez: se um lado for preenchido e o outro vazio,
+// o vazio vira "D+0" (não null). Apenas se ambos vazios é que retorna null.
+const normalizeLiquidezPair = (
+  corridos?: string | null,
+  uteis?: string | null
+): { corridos: string | null; uteis: string | null } => {
+  const c = (corridos ?? '').toString().trim();
+  const u = (uteis ?? '').toString().trim();
+  if (!c && !u) return { corridos: null, uteis: null };
+  return {
+    corridos: c || 'D+0',
+    uteis: u || 'D+0',
+  };
+};
+
 export default function DataManagement() {
   const { clientName } = useParams<{ clientName: string }>();
   const navigate = useNavigate();
