@@ -234,7 +234,7 @@ export default function DataManagement() {
   // Calculator dialog state
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [calculatorContext, setCalculatorContext] = useState<'bulk' | 'single'>('bulk');
-  const [calculatorMode, setCalculatorMode] = useState<'auto' | 'manual' | 'custom' | 'market' | 'treasury' | 'maisretorno'>('auto');
+  const [calculatorMode, setCalculatorMode] = useState<'auto' | 'manual' | 'custom' | 'market' | 'maisretorno'>('auto');
   const inferManualCalcFromAtivo = (item: any) => {
     const classe = (item?.["Classe do ativo"] || '').toLowerCase();
     const taxaStr = item?.Taxa || '';
@@ -282,21 +282,6 @@ export default function DataManagement() {
     ticker: '',
   });
   
-  // Treasury calculator state
-  const [treasuryCalcData, setTreasuryCalcData] = useState({
-    competencia: '',
-    tipoTitulo: 'Tesouro Prefixado',
-    vencimento: '',
-  });
-  const [treasuryCalcLoading, setTreasuryCalcLoading] = useState(false);
-  const [treasuryCalcResult, setTreasuryCalcResult] = useState<{
-    titulo: string;
-    rentabilidadeMensal: number;
-    puInicial: number;
-    puFinal: number;
-    vencimento: string;
-    diasUteis: number;
-  } | null>(null);
 
   // Mais Retorno calculator state
   const [mrCalcData, setMrCalcData] = useState<{
@@ -1361,58 +1346,50 @@ export default function DataManagement() {
     }
   };
 
-  // Função para buscar dados do Tesouro Direto
-  const handleFetchTreasuryData = async () => {
-    if (!treasuryCalcData.tipoTitulo || !treasuryCalcData.competencia) {
-      toast({
-        title: "Dados incompletos",
-        description: "Preencha o tipo de título e a competência",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Converte nome de título do TD ("LTN - 01/01/2032", "NTN-B Principal - 15/05/2035", etc.)
+  // para o slug aceito pela API Mais Retorno (ex.: "tesouro-prefixado-01-01-2032:td").
+  const parseTreasuryNameToSlug = (input: string): string => {
+    const raw = (input || '').trim();
+    if (!raw) return raw;
+    // Já é identifier no formato ativo:mercado → não mexer
+    if (/^[^:\s]+:[a-z]+$/i.test(raw)) return raw;
 
-    setTreasuryCalcLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('get-treasury-return', {
-        body: {
-          tipoTitulo: treasuryCalcData.tipoTitulo,
-          vencimento: treasuryCalcData.vencimento,
-          competencia: treasuryCalcData.competencia,
-        }
-      });
+    // Aceita "SIGLA - DD/MM/YYYY" ou "SIGLA DD/MM/YYYY"
+    const m = raw.match(/^(.+?)\s*[-–]?\s*(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!m) return raw;
+    const sigla = m[1].trim().toUpperCase().replace(/\s+/g, ' ');
+    const [, , dd, mm, yyyy] = m;
 
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      setTreasuryCalcResult(data);
-      toast({
-        title: "Dados obtidos!",
-        description: `${data.titulo}: ${data.rentabilidadeMensal.toFixed(4)}%`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao buscar dados",
-        description: error.message,
-        variant: "destructive",
-      });
-      setTreasuryCalcResult(null);
-    } finally {
-      setTreasuryCalcLoading(false);
-    }
+    const mapping: Array<{ test: (s: string) => boolean; slug: string }> = [
+      { test: (s) => /EDUCA/.test(s), slug: 'tesouro-educa-mais' },
+      { test: (s) => /RENDA/.test(s), slug: 'tesouro-renda-mais-aposentadoria-extra' },
+      { test: (s) => /NTN-?F/.test(s), slug: 'tesouro-prefixado-com-juros-semestrais' },
+      { test: (s) => /(NTN-?B).*PRINCIPAL/.test(s), slug: 'tesouro-ipca' },
+      { test: (s) => /NTN-?B/.test(s), slug: 'tesouro-ipca-com-juros-semestrais' },
+      { test: (s) => /\bLTN\b/.test(s) || /PREFIXADO/.test(s), slug: 'tesouro-prefixado' },
+      { test: (s) => /\bLFT\b/.test(s) || /SELIC/.test(s), slug: 'tesouro-selic' },
+    ];
+    const match = mapping.find((e) => e.test(sigla));
+    if (!match) return raw;
+    return `${match.slug}-${dd}-${mm}-${yyyy}:td`;
   };
 
   // Função para buscar rentabilidade via Mais Retorno
   const handleFetchMaisRetornoData = async () => {
-    const identifier = mrCalcData.identifier.trim();
+    const rawInput = mrCalcData.identifier.trim();
+    const identifier = parseTreasuryNameToSlug(rawInput);
     const competencia = mrCalcData.competencia.trim();
     if (!identifier || !competencia) {
       toast({
         title: "Dados incompletos",
-        description: "Preencha identifier (ex.: 12345678000190:fi) e competência (MM/YYYY).",
+        description: "Preencha identifier (ex.: 12345678000190:fi, LTN - 01/01/2032) e competência (MM/YYYY).",
         variant: "destructive",
       });
       return;
+    }
+    // Se o parser converteu um nome de TD em slug, refletir no campo para o usuário ver
+    if (identifier !== rawInput) {
+      setMrCalcData((prev) => ({ ...prev, identifier }));
     }
     setMrCalcLoading(true);
     try {
@@ -1519,18 +1496,6 @@ export default function DataManagement() {
       // Usar o resultado já buscado
       if (marketCalcResult) {
         calculatedReturn = marketCalcResult.monthlyReturn / 100; // Converter de % para decimal
-      } else {
-        toast({
-          title: "Busque os dados primeiro",
-          description: "Clique em 'Buscar Rentabilidade' antes de confirmar",
-          variant: "destructive",
-        });
-        return;
-      }
-    } else if (calculatorMode === 'treasury') {
-      // Usar o resultado do Tesouro Direto
-      if (treasuryCalcResult) {
-        calculatedReturn = treasuryCalcResult.rentabilidadeMensal / 100; // Converter de % para decimal
       } else {
         toast({
           title: "Busque os dados primeiro",
@@ -6369,14 +6334,13 @@ interface VerificationResult {
                     competencia: editingItem.Competencia || '',
                     ticker: getTickerWithSuffix(editingItem.Ativo || '', editingItem["Classe do ativo"] || '')
                   });
-                   // Preencher automaticamente os campos da calculadora do Tesouro
-                   setTreasuryCalcData({
-                      competencia: editingItem.Competencia || '',
-                      tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
-                      vencimento: extractYearFromDate(editingItem.Vencimento || ''),
-                    });
                    setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || '', ...inferManualCalcFromAtivo(editingItem)});
-                   setMrCalcData({ competencia: editingItem.Competencia || '', identifier: '' });
+                   {
+                     const ativoNome = editingItem.Ativo || '';
+                     const inferredSlug = parseTreasuryNameToSlug(ativoNome);
+                     const seed = inferredSlug && inferredSlug !== ativoNome ? inferredSlug : '';
+                     setMrCalcData({ competencia: editingItem.Competencia || '', identifier: seed });
+                   }
                    setMrCalcResult(null);
                    prefillMrIdentifierFromRag(editingItem.Ativo || '');
                    setIsCalculatorOpen(true);
@@ -6704,13 +6668,13 @@ interface VerificationResult {
                             competencia: editingItem.Competencia || '',
                             ticker: getTickerWithSuffix(editingItem.Ativo || '', editingItem["Classe do ativo"] || '')
                           });
-                           setTreasuryCalcData({
-                             competencia: editingItem.Competencia || '',
-                             tipoTitulo: extractTreasuryTypeFromAtivo(editingItem.Ativo || ''),
-                             vencimento: extractYearFromDate(editingItem.Vencimento || ''),
-                           });
                            setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || '', ...inferManualCalcFromAtivo(editingItem)});
-                           setMrCalcData({ competencia: editingItem.Competencia || '', identifier: '' });
+                           {
+                             const ativoNome = editingItem.Ativo || '';
+                             const inferredSlug = parseTreasuryNameToSlug(ativoNome);
+                             const seed = inferredSlug && inferredSlug !== ativoNome ? inferredSlug : '';
+                             setMrCalcData({ competencia: editingItem.Competencia || '', identifier: seed });
+                           }
                            setMrCalcResult(null);
                            prefillMrIdentifierFromRag(editingItem.Ativo || '');
                            setIsCalculatorOpen(true);
@@ -7050,13 +7014,6 @@ interface VerificationResult {
                 onClick={() => setCalculatorMode('market')}
               >
                 Mercado
-              </Button>
-              <Button
-                variant={calculatorMode === 'treasury' ? 'default' : 'outline'}
-                onClick={() => setCalculatorMode('treasury')}
-              >
-                <BarChart3 className="h-4 w-4 mr-1" />
-                Tesouro
               </Button>
               <Button
                 variant={calculatorMode === 'maisretorno' ? 'default' : 'outline'}
@@ -7464,115 +7421,6 @@ interface VerificationResult {
               </div>
             )}
 
-            {/* Modo Tesouro */}
-            {calculatorMode === 'treasury' && (
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Busca automaticamente a rentabilidade mensal de títulos públicos 
-                  usando dados oficiais do Tesouro Nacional.
-                </p>
-                
-                <div>
-                  <Label htmlFor="calc-treasury-competencia">Competência</Label>
-                  <Input
-                    id="calc-treasury-competencia"
-                    value={treasuryCalcData.competencia}
-                    onChange={(e) => {
-                      let value = e.target.value.replace(/\D/g, '');
-                      if (value.length >= 2) {
-                        value = value.substring(0, 2) + '/' + value.substring(2, 6);
-                      }
-                      setTreasuryCalcData({...treasuryCalcData, competencia: value});
-                    }}
-                    placeholder="MM/YYYY"
-                    maxLength={7}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="calc-treasury-tipo">Tipo de Título</Label>
-                  <Select
-                    value={treasuryCalcData.tipoTitulo}
-                    onValueChange={(value) => setTreasuryCalcData({...treasuryCalcData, tipoTitulo: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Tesouro Prefixado">Tesouro Prefixado (LTN)</SelectItem>
-                  <SelectItem value="Tesouro Prefixado com Juros Semestrais">Tesouro Prefixado c/ Juros (NTN-F)</SelectItem>
-                  <SelectItem value="Tesouro IPCA+">Tesouro IPCA+ (NTN-B Principal)</SelectItem>
-                  <SelectItem value="Tesouro IPCA+ com Juros Semestrais">Tesouro IPCA+ c/ Juros (NTN-B)</SelectItem>
-                  <SelectItem value="Tesouro Selic">Tesouro Selic (LFT)</SelectItem>
-                  <SelectItem value="Tesouro Educa+">Tesouro Educa+</SelectItem>
-                  <SelectItem value="Tesouro Renda+">Tesouro Renda+</SelectItem>
-                </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="calc-treasury-vencimento">Ano de Vencimento (opcional)</Label>
-                  <Input
-                    id="calc-treasury-vencimento"
-                    value={treasuryCalcData.vencimento}
-                    onChange={(e) => setTreasuryCalcData({...treasuryCalcData, vencimento: e.target.value})}
-                    placeholder="Ex: 2028"
-                    maxLength={4}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Deixe em branco para buscar qualquer vencimento
-                  </p>
-                </div>
-
-                <Button
-                  onClick={handleFetchTreasuryData}
-                  disabled={!treasuryCalcData.tipoTitulo || !treasuryCalcData.competencia || treasuryCalcLoading}
-                  className="w-full"
-                  variant="secondary"
-                >
-                  {treasuryCalcLoading ? 'Buscando...' : 'Buscar Rentabilidade'}
-                </Button>
-
-                {treasuryCalcResult && (
-                  <div className="bg-muted p-4 rounded-md space-y-2 border border-primary/20">
-                    <h4 className="font-semibold text-sm">Resultado da Consulta:</h4>
-                    
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="col-span-2">
-                        <p className="text-muted-foreground">Título:</p>
-                        <p className="font-medium">{treasuryCalcResult.titulo}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-muted-foreground">Rentabilidade:</p>
-                        <p className={`font-medium ${treasuryCalcResult.rentabilidadeMensal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {treasuryCalcResult.rentabilidadeMensal.toFixed(4)}%
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-muted-foreground">Vencimento:</p>
-                        <p className="font-medium">{treasuryCalcResult.vencimento}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-muted-foreground">PU Inicial:</p>
-                        <p className="font-medium">R$ {treasuryCalcResult.puInicial.toFixed(2)}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-muted-foreground">PU Final:</p>
-                        <p className="font-medium">R$ {treasuryCalcResult.puFinal.toFixed(2)}</p>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-muted-foreground italic mt-2">
-                      ℹ️ Ao confirmar, este valor será usado como Rendimento
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Modo Mais Retorno */}
             {calculatorMode === 'maisretorno' && (
@@ -7603,10 +7451,11 @@ interface VerificationResult {
                     id="calc-mr-identifier"
                     value={mrCalcData.identifier}
                     onChange={(e) => setMrCalcData({ ...mrCalcData, identifier: e.target.value.trim() })}
-                    placeholder="ex.: 12345678000190:fi  •  tesouro-selic-18-06-2008:td"
+                    placeholder="ex.: LTN - 01/01/2032  •  12345678000190:fi  •  tesouro-selic-18-06-2008:td"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Fundos: <code>cnpj:fi</code> · Tesouro Direto: <code>slug:td</code> · Títulos Públicos: <code>slug:tp</code>.
+                    Tesouro Direto: cole o nome no formato <code>LTN - 01/01/2032</code>, <code>NTN-B Principal - 15/05/2035</code>, <code>LFT - 01/03/2030</code> — o slug é gerado automaticamente.
+                    Fundos: <code>cnpj:fi</code>. Títulos públicos: <code>slug:tp</code>.
                     {editingItem?.Ativo && (
                       <> Pré-carregado do RAG quando disponível. </>
                     )}
