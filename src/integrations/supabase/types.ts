@@ -590,6 +590,7 @@ export type Database = {
           id: number
           Liquidez: string | null
           Liquidez_Corridos: string | null
+          liquidez_fechada: boolean
           Liquidez_Uteis: string | null
           mr_identifier: string | null
         }
@@ -600,6 +601,7 @@ export type Database = {
           id?: number
           Liquidez?: string | null
           Liquidez_Corridos?: string | null
+          liquidez_fechada?: boolean
           Liquidez_Uteis?: string | null
           mr_identifier?: string | null
         }
@@ -610,6 +612,7 @@ export type Database = {
           id?: number
           Liquidez?: string | null
           Liquidez_Corridos?: string | null
+          liquidez_fechada?: boolean
           Liquidez_Uteis?: string | null
           mr_identifier?: string | null
         }
