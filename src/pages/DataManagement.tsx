@@ -2194,12 +2194,11 @@ export default function DataManagement() {
           patch.liquidez_corridos = null;
           patch.liquidez_uteis = null;
         } else {
-          const finalCorridos = (ragLiq.corridos && !corridosAtual) ? ragLiq.corridos : corridosAtual;
-          const finalUteis = (ragLiq.uteis && !uteisAtual) ? ragLiq.uteis : uteisAtual;
-          const normalized = normalizeLiquidezPair(finalCorridos, finalUteis);
-          if (normalized.corridos !== corridosAtual) patch.liquidez_corridos = normalized.corridos;
-          if (normalized.uteis !== uteisAtual) patch.liquidez_uteis = normalized.uteis;
-          if (fechadaAtual) patch.liquidez_fechada = false;
+          const normalized = normalizeLiquidezPair(ragLiq.corridos, ragLiq.uteis);
+          // RAG é fonte de verdade: sobrescreve ambos os campos (inclusive com null)
+          patch.liquidez_corridos = normalized.corridos;
+          patch.liquidez_uteis = normalized.uteis;
+          patch.liquidez_fechada = false;
         }
         if (Object.keys(patch).length === 0) { jaIgual++; continue; }
         updated++;
