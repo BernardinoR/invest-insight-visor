@@ -1,36 +1,30 @@
-## Objetivo
+## Comportamento desejado nos inputs de Liquidez (modal de edição)
 
-Ao gravar liquidez no banco (DadosPerformance e RAG_Processador), aplicar a regra:
+1. **Auto-preencher o outro lado com `D+0` ao digitar**
+   - Ao digitar em **Dias corridos**, se **Dias úteis** estiver vazio, preenche `liquidez_uteis = "D+0"` automaticamente.
+   - Ao digitar em **Dias úteis**, se **Dias corridos** estiver vazio, preenche `liquidez_corridos = "D+0"`.
+   - Se o usuário apagar o conteúdo do input (`num === ''`), o campo volta a `null` — mas o auto-preencher do outro lado só dispara enquanto houver digitação válida (não força `D+0` ao limpar).
+   - Se o outro lado já tiver valor (inclusive `D+0` que o usuário trocou), preserva o valor.
 
-- Os dois campos vazios → ambos `null`
-- Apenas `liquidez_corridos` preenchido → `liquidez_uteis = "D+0"` (não `null`)
-- Apenas `liquidez_uteis` preenchido → `liquidez_corridos = "D+0"` (não `null`)
-- Ambos preenchidos → mantém os valores informados
+2. **Botão X agora limpa os dois campos**
+   - Mostrar um único X (ainda renderizado ao lado de cada input para manter a UI atual), mas ambos passam a chamar a mesma ação: `setEditingItem({...editingItem, liquidez_corridos: null, liquidez_uteis: null})`.
+   - O X continua aparecendo quando qualquer um dos dois estiver preenchido (`liquidez_corridos || liquidez_uteis`), em vez de só quando o seu próprio campo tiver valor.
 
-Hoje o campo "vazio" é gravado como `null`, o que dificulta diferenciar "não informado" de "liquidez imediata". A regra acima garante que, sempre que um dos dois for informado, o outro vire `0` explícito.
+## Arquivo afetado
 
-## Alterações em `src/pages/DataManagement.tsx`
+- `src/pages/DataManagement.tsx`, bloco dos inputs de liquidez (linhas ~6557-6608).
 
-1. **Helper único** `normalizeLiquidezPair(corridos, uteis)` no topo do arquivo (junto dos outros helpers de liquidez):
-   - Faz trim e ignora strings vazias.
-   - Retorna `{ corridos: null, uteis: null }` se ambos vazios.
-   - Caso apenas um esteja preenchido, completa o outro com `"D+0"`.
-   - Caso ambos preenchidos, devolve como estão.
+## Detalhes
 
-2. **`handleSave`** (linha ~1863, salvamento principal do item editado em DadosPerformance):
-   - Antes de montar `cleanedData`, aplicar `normalizeLiquidezPair` em `editingItem.liquidez_corridos` / `liquidez_uteis`.
-   - Como o `cleanedData` atual remove valores `''` mas mantém `null`, garantir que os campos normalizados sejam atribuídos explicitamente (inclusive `null` quando ambos vazios) para sobrescrever no banco.
-
-3. **`handleSaveLiquidez`** (linha ~1759) e **`handleConfirmRagLiquidezUpdate`** (linha ~1825):
-   - Aplicar `normalizeLiquidezPair` em `corridosNovo` / `uteisNovo` antes de inserir/atualizar `RAG_Processador` e antes do update em massa em `DadosPerformance`.
-   - Atualizar `editingItem` no estado com os mesmos valores normalizados.
-   - Validação atual ("precisa pelo menos um campo") permanece — só dispara quando ao menos um foi informado.
-
-4. **`handleBulkFillLiquidezFromRAG`** (linha ~2138, patch a partir do RAG):
-   - Após decidir quais campos copiar do RAG para o item, passar o par final por `normalizeLiquidezPair` antes do update em `DadosPerformance`, mantendo a regra: se o item terminar com apenas um lado preenchido, o outro vira `"D+0"`.
-
-## Observações
-
-- Não há alteração de schema; as colunas continuam `text` aceitando `"D+0"`.
-- A leitura/exibição (`formatLiquidezDisplay`, `getLiquidezOrderValue`) já trata `"D+0"` corretamente como valor válido — nenhum ajuste necessário ali.
-- O comportamento de "limpar" (botão X em cada input) continua zerando o campo individual; a regra de preencher o outro com `D+0` só vale no momento da gravação no banco.
+- A função de limpar passa a ser um único helper inline `clearLiquidez = () => setEditingItem({...editingItem, liquidez_corridos: null, liquidez_uteis: null})`.
+- A lógica do `onChange` vira algo como:
+  ```ts
+  const num = e.target.value.replace(/\D/g, '');
+  setEditingItem({
+    ...editingItem,
+    liquidez_corridos: num ? `D+${num}` : null,
+    liquidez_uteis: num && !editingItem.liquidez_uteis ? 'D+0' : editingItem.liquidez_uteis,
+  });
+  ```
+  (espelhado para o input de úteis).
+- Nenhum impacto na lógica de gravação no banco: o `normalizeLiquidezPair` já existente continua válido como rede de segurança.
