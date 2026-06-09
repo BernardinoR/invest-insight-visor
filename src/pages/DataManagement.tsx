@@ -1898,14 +1898,21 @@ export default function DataManagement() {
         Object.entries(itemData).filter(([_, value]) => value !== undefined && value !== '')
       );
 
-      // Normaliza liquidez: se só um lado preenchido, o outro vira "D+0"; ambos vazios => null
+      // Normaliza liquidez: se fechada=true, zera os dois; senão se só um lado, o outro vira "D+0"
       if (tableName === 'DadosPerformance') {
-        const liqPair = normalizeLiquidezPair(
-          (editingItem as any).liquidez_corridos,
-          (editingItem as any).liquidez_uteis
-        );
-        cleanedData.liquidez_corridos = liqPair.corridos;
-        cleanedData.liquidez_uteis = liqPair.uteis;
+        const fechada = (editingItem as any).liquidez_fechada === true;
+        cleanedData.liquidez_fechada = fechada;
+        if (fechada) {
+          cleanedData.liquidez_corridos = null;
+          cleanedData.liquidez_uteis = null;
+        } else {
+          const liqPair = normalizeLiquidezPair(
+            (editingItem as any).liquidez_corridos,
+            (editingItem as any).liquidez_uteis
+          );
+          cleanedData.liquidez_corridos = liqPair.corridos;
+          cleanedData.liquidez_uteis = liqPair.uteis;
+        }
       }
       
       // Auto-validar rentabilidade para Caixa/Cash/Proventos com rendimento 0
