@@ -158,10 +158,12 @@ interface DadosData {
   "liquidez"?: string | null;
   "liquidez_corridos"?: string | null;
   "liquidez_uteis"?: string | null;
+  "liquidez_fechada"?: boolean;
 }
 
-// Helpers de liquidez (dias corridos / dias úteis + coluna legada)
+// Helpers de liquidez (dias corridos / dias úteis + coluna legada + fechado)
 const hasAnyLiquidez = (item: any): boolean => {
+  if (item?.liquidez_fechada === true) return true;
   const c = (item?.liquidez_corridos || '').toString().trim();
   const u = (item?.liquidez_uteis || '').toString().trim();
   const legacy = (item?.liquidez || '').toString().trim();
@@ -169,6 +171,7 @@ const hasAnyLiquidez = (item: any): boolean => {
 };
 
 const formatLiquidezDisplay = (item: any): string => {
+  if (item?.liquidez_fechada === true) return 'Fechado';
   const c = (item?.liquidez_corridos || '').toString().trim();
   const u = (item?.liquidez_uteis || '').toString().trim();
   const legacy = (item?.liquidez || '').toString().trim();
@@ -1770,20 +1773,20 @@ export default function DataManagement() {
   };
 
 
-  // Função para gravar liquidez (corridos + úteis) no RAG_Processador
+  // Função para gravar liquidez (corridos + úteis ou Fechado) no RAG_Processador
   const handleSaveLiquidez = async () => {
-    if (!editingItem || !editingItem.Ativo || (!editingItem.liquidez_corridos && !editingItem.liquidez_uteis)) {
-      toast({ title: "Preencha o Ativo e pelo menos um dos campos de Liquidez antes de gravar.", variant: "destructive" });
+    const fechada = editingItem?.liquidez_fechada === true;
+    if (!editingItem || !editingItem.Ativo || (!fechada && !editingItem.liquidez_corridos && !editingItem.liquidez_uteis)) {
+      toast({ title: "Preencha o Ativo e a Liquidez (ou marque 'Sem liquidez') antes de gravar.", variant: "destructive" });
       return;
     }
 
     setRagLiquidezSaving(true);
     try {
       const ativo = editingItem.Ativo.trim();
-      const { corridos: corridosNovo, uteis: uteisNovo } = normalizeLiquidezPair(
-        editingItem.liquidez_corridos,
-        editingItem.liquidez_uteis
-      );
+      const { corridos: corridosNovo, uteis: uteisNovo } = fechada
+        ? { corridos: null, uteis: null }
+        : normalizeLiquidezPair(editingItem.liquidez_corridos, editingItem.liquidez_uteis);
 
       const { data: existing, error: fetchError } = await supabase
         .from('RAG_Processador')
@@ -1800,26 +1803,28 @@ export default function DataManagement() {
             Ativo: ativo,
             Liquidez_Corridos: corridosNovo,
             Liquidez_Uteis: uteisNovo,
+            liquidez_fechada: fechada,
             Classificacao: classeAtual,
           } as any);
         if (insertError) throw insertError;
-        toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${formatLiquidezDisplay({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo })}` });
+        toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${formatLiquidezDisplay({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo, liquidez_fechada: fechada })}` });
       } else {
         const row = existing[0] as any;
         const corridosExistente = (row.Liquidez_Corridos || '').toString().trim() || null;
         const uteisExistente = (row.Liquidez_Uteis || '').toString().trim() || null;
-        const same = corridosExistente === corridosNovo && uteisExistente === uteisNovo;
-        const empty = !corridosExistente && !uteisExistente && !((row.Liquidez || '').toString().trim());
+        const fechadaExistente = row.liquidez_fechada === true;
+        const same = corridosExistente === corridosNovo && uteisExistente === uteisNovo && fechadaExistente === fechada;
+        const empty = !corridosExistente && !uteisExistente && !fechadaExistente && !((row.Liquidez || '').toString().trim());
 
         if (same) {
           toast({ title: "Liquidez já gravada", description: `"${ativo}" já está nesses valores.` });
         } else if (empty) {
           const { error: updateError } = await supabase
             .from('RAG_Processador')
-            .update({ Liquidez_Corridos: corridosNovo, Liquidez_Uteis: uteisNovo } as any)
+            .update({ Liquidez_Corridos: corridosNovo, Liquidez_Uteis: uteisNovo, liquidez_fechada: fechada } as any)
             .eq('Ativo', ativo);
           if (updateError) throw updateError;
-          toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${formatLiquidezDisplay({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo })}` });
+          toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${formatLiquidezDisplay({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo, liquidez_fechada: fechada })}` });
         } else {
           setRagLiquidezConflictDialog({
             open: true,
@@ -1828,7 +1833,9 @@ export default function DataManagement() {
             uteisNovo,
             corridosExistente: corridosExistente || (row.Liquidez || null),
             uteisExistente,
-          });
+            fechadaNovo: fechada,
+            fechadaExistente,
+          } as any);
           setRagLiquidezUpdateExisting(true);
         }
       }
@@ -1844,22 +1851,23 @@ export default function DataManagement() {
     setRagLiquidezSaving(true);
     try {
       const { ativo, corridosNovo, uteisNovo } = ragLiquidezConflictDialog;
+      const fechadaNovo = (ragLiquidezConflictDialog as any).fechadaNovo === true;
 
       const { error: updateError } = await supabase
         .from('RAG_Processador')
-        .update({ Liquidez_Corridos: corridosNovo, Liquidez_Uteis: uteisNovo } as any)
+        .update({ Liquidez_Corridos: corridosNovo, Liquidez_Uteis: uteisNovo, liquidez_fechada: fechadaNovo } as any)
         .eq('Ativo', ativo);
       if (updateError) throw updateError;
 
       if (ragLiquidezUpdateExisting) {
         const { error: dadosError } = await supabase
           .from('DadosPerformance')
-          .update({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo } as any)
+          .update({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo, liquidez_fechada: fechadaNovo } as any)
           .eq('Ativo', ativo);
         if (dadosError) throw dadosError;
 
         if (editingItem && editingItem.Ativo === ativo) {
-          setEditingItem({ ...editingItem, liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo });
+          setEditingItem({ ...editingItem, liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo, liquidez_fechada: fechadaNovo });
         }
 
         await fetchData();
@@ -1890,14 +1898,21 @@ export default function DataManagement() {
         Object.entries(itemData).filter(([_, value]) => value !== undefined && value !== '')
       );
 
-      // Normaliza liquidez: se só um lado preenchido, o outro vira "D+0"; ambos vazios => null
+      // Normaliza liquidez: se fechada=true, zera os dois; senão se só um lado, o outro vira "D+0"
       if (tableName === 'DadosPerformance') {
-        const liqPair = normalizeLiquidezPair(
-          (editingItem as any).liquidez_corridos,
-          (editingItem as any).liquidez_uteis
-        );
-        cleanedData.liquidez_corridos = liqPair.corridos;
-        cleanedData.liquidez_uteis = liqPair.uteis;
+        const fechada = (editingItem as any).liquidez_fechada === true;
+        cleanedData.liquidez_fechada = fechada;
+        if (fechada) {
+          cleanedData.liquidez_corridos = null;
+          cleanedData.liquidez_uteis = null;
+        } else {
+          const liqPair = normalizeLiquidezPair(
+            (editingItem as any).liquidez_corridos,
+            (editingItem as any).liquidez_uteis
+          );
+          cleanedData.liquidez_corridos = liqPair.corridos;
+          cleanedData.liquidez_uteis = liqPair.uteis;
+        }
       }
       
       // Auto-validar rentabilidade para Caixa/Cash/Proventos com rendimento 0
@@ -2178,19 +2193,20 @@ export default function DataManagement() {
     try {
       const { data: ragRows, error: ragErr } = await supabase
         .from('RAG_Processador')
-        .select('Ativo, Liquidez, Liquidez_Corridos, Liquidez_Uteis')
+        .select('Ativo, Liquidez, Liquidez_Corridos, Liquidez_Uteis, liquidez_fechada')
         .in('Ativo', nomesUnicos);
 
       if (ragErr) throw ragErr;
 
-      const map = new Map<string, { corridos: string | null; uteis: string | null }>();
+      const map = new Map<string, { corridos: string | null; uteis: string | null; fechada: boolean }>();
       (ragRows || []).forEach((r: any) => {
         const corridos = (r.Liquidez_Corridos || '').toString().trim() || null;
         const uteis = (r.Liquidez_Uteis || '').toString().trim() || null;
         const legacy = (r.Liquidez || '').toString().trim() || null;
+        const fechada = r.liquidez_fechada === true;
         const finalCorridos = corridos || legacy; // legado conta como corridos
-        if (r.Ativo && (finalCorridos || uteis)) {
-          map.set(r.Ativo, { corridos: finalCorridos, uteis });
+        if (r.Ativo && (fechada || finalCorridos || uteis)) {
+          map.set(r.Ativo, { corridos: fechada ? null : finalCorridos, uteis: fechada ? null : uteis, fechada });
         }
       });
 
@@ -2205,13 +2221,21 @@ export default function DataManagement() {
         if (!ragLiq) { semRag++; continue; }
         const corridosAtual = ((item as any).liquidez_corridos || '').toString().trim() || null;
         const uteisAtual = ((item as any).liquidez_uteis || '').toString().trim() || null;
-        if (corridosAtual === ragLiq.corridos && uteisAtual === ragLiq.uteis) { jaIgual++; continue; }
+        const fechadaAtual = (item as any).liquidez_fechada === true;
+        if (corridosAtual === ragLiq.corridos && uteisAtual === ragLiq.uteis && fechadaAtual === ragLiq.fechada) { jaIgual++; continue; }
         const patch: any = {};
-        const finalCorridos = (ragLiq.corridos && !corridosAtual) ? ragLiq.corridos : corridosAtual;
-        const finalUteis = (ragLiq.uteis && !uteisAtual) ? ragLiq.uteis : uteisAtual;
-        const normalized = normalizeLiquidezPair(finalCorridos, finalUteis);
-        if (normalized.corridos !== corridosAtual) patch.liquidez_corridos = normalized.corridos;
-        if (normalized.uteis !== uteisAtual) patch.liquidez_uteis = normalized.uteis;
+        if (ragLiq.fechada) {
+          patch.liquidez_fechada = true;
+          patch.liquidez_corridos = null;
+          patch.liquidez_uteis = null;
+        } else {
+          const finalCorridos = (ragLiq.corridos && !corridosAtual) ? ragLiq.corridos : corridosAtual;
+          const finalUteis = (ragLiq.uteis && !uteisAtual) ? ragLiq.uteis : uteisAtual;
+          const normalized = normalizeLiquidezPair(finalCorridos, finalUteis);
+          if (normalized.corridos !== corridosAtual) patch.liquidez_corridos = normalized.corridos;
+          if (normalized.uteis !== uteisAtual) patch.liquidez_uteis = normalized.uteis;
+          if (fechadaAtual) patch.liquidez_fechada = false;
+        }
         if (Object.keys(patch).length === 0) { jaIgual++; continue; }
         updated++;
         updatePromises.push(
@@ -6542,7 +6566,7 @@ interface VerificationResult {
                                   variant="ghost"
                                   size="icon"
                                   className="h-7 w-7 shrink-0"
-                                  disabled={!editingItem.Ativo || (!editingItem.liquidez_corridos && !editingItem.liquidez_uteis) || ragLiquidezSaving}
+                                  disabled={!editingItem.Ativo || (!editingItem.liquidez_fechada && !editingItem.liquidez_corridos && !editingItem.liquidez_uteis) || ragLiquidezSaving}
                                   onClick={handleSaveLiquidez}
                                 >
                                   <BookmarkPlus className="h-4 w-4" />
@@ -6554,12 +6578,31 @@ interface VerificationResult {
                             </Tooltip>
                           </TooltipProvider>
                         </div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Checkbox
+                            id="liquidez_fechada"
+                            checked={editingItem.liquidez_fechada === true}
+                            onCheckedChange={(checked) => {
+                              const fechada = checked === true;
+                              setEditingItem({
+                                ...editingItem,
+                                liquidez_fechada: fechada,
+                                liquidez_corridos: fechada ? null : editingItem.liquidez_corridos,
+                                liquidez_uteis: fechada ? null : editingItem.liquidez_uteis,
+                              });
+                            }}
+                          />
+                          <Label htmlFor="liquidez_fechada" className="text-xs font-normal cursor-pointer">
+                            Sem liquidez (fundo fechado)
+                          </Label>
+                        </div>
                         <div className="grid grid-cols-2 gap-2">
                           {/* Dias corridos */}
                           <div className="flex items-center gap-1">
                             <Input
                               id="liquidez_corridos"
-                              value={editingItem.liquidez_corridos ? String(editingItem.liquidez_corridos).replace(/^D\+/i, '') : ''}
+                              disabled={editingItem.liquidez_fechada === true}
+                              value={editingItem.liquidez_fechada === true ? '' : (editingItem.liquidez_corridos ? String(editingItem.liquidez_corridos).replace(/^D\+/i, '') : '')}
                               onChange={(e) => {
                                 const num = e.target.value.replace(/\D/g, '');
                                 setEditingItem({
@@ -6568,14 +6611,14 @@ interface VerificationResult {
                                   liquidez_uteis: num && !editingItem.liquidez_uteis ? 'D+0' : editingItem.liquidez_uteis,
                                 });
                               }}
-                              placeholder="Corridos (ex: 30)"
+                              placeholder={editingItem.liquidez_fechada === true ? 'Fechado' : 'Corridos (ex: 30)'}
                             />
-                            {(editingItem.liquidez_corridos || editingItem.liquidez_uteis) && (
+                            {(editingItem.liquidez_corridos || editingItem.liquidez_uteis || editingItem.liquidez_fechada) && (
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="shrink-0 h-8 w-8"
-                                onClick={() => setEditingItem({...editingItem, liquidez_corridos: null, liquidez_uteis: null})}
+                                onClick={() => setEditingItem({...editingItem, liquidez_corridos: null, liquidez_uteis: null, liquidez_fechada: false})}
                               >
                                 <X className="h-4 w-4" />
                               </Button>
@@ -6585,7 +6628,8 @@ interface VerificationResult {
                           <div className="flex items-center gap-1">
                             <Input
                               id="liquidez_uteis"
-                              value={editingItem.liquidez_uteis ? String(editingItem.liquidez_uteis).replace(/^D\+/i, '') : ''}
+                              disabled={editingItem.liquidez_fechada === true}
+                              value={editingItem.liquidez_fechada === true ? '' : (editingItem.liquidez_uteis ? String(editingItem.liquidez_uteis).replace(/^D\+/i, '') : '')}
                               onChange={(e) => {
                                 const num = e.target.value.replace(/\D/g, '');
                                 setEditingItem({
@@ -6594,14 +6638,14 @@ interface VerificationResult {
                                   liquidez_corridos: num && !editingItem.liquidez_corridos ? 'D+0' : editingItem.liquidez_corridos,
                                 });
                               }}
-                              placeholder="Úteis (ex: 30)"
+                              placeholder={editingItem.liquidez_fechada === true ? 'Fechado' : 'Úteis (ex: 30)'}
                             />
-                            {(editingItem.liquidez_corridos || editingItem.liquidez_uteis) && (
+                            {(editingItem.liquidez_corridos || editingItem.liquidez_uteis || editingItem.liquidez_fechada) && (
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="shrink-0 h-8 w-8"
-                                onClick={() => setEditingItem({...editingItem, liquidez_corridos: null, liquidez_uteis: null})}
+                                onClick={() => setEditingItem({...editingItem, liquidez_corridos: null, liquidez_uteis: null, liquidez_fechada: false})}
                               >
                                 <X className="h-4 w-4" />
                               </Button>
@@ -6612,9 +6656,11 @@ interface VerificationResult {
                           <span>dias corridos</span>
                           <span>dias úteis</span>
                         </div>
-                        {(editingItem.liquidez_corridos || editingItem.liquidez_uteis) && (
+                        {(editingItem.liquidez_corridos || editingItem.liquidez_uteis || editingItem.liquidez_fechada) && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            Salvo: {[editingItem.liquidez_corridos && `${editingItem.liquidez_corridos} corridos`, editingItem.liquidez_uteis && `${editingItem.liquidez_uteis} úteis`].filter(Boolean).join(' · ')}
+                            Salvo: {editingItem.liquidez_fechada === true
+                              ? 'Fechado (sem liquidez)'
+                              : [editingItem.liquidez_corridos && `${editingItem.liquidez_corridos} corridos`, editingItem.liquidez_uteis && `${editingItem.liquidez_uteis} úteis`].filter(Boolean).join(' · ')}
                           </p>
                         )}
                       </div>

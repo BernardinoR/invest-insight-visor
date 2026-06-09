@@ -196,6 +196,7 @@ export type Database = {
           is_outra_pessoa: boolean
           liquidez: string | null
           liquidez_corridos: string | null
+          liquidez_fechada: boolean
           liquidez_uteis: string | null
           Moeda: string | null
           Nome: string | null
@@ -219,6 +220,7 @@ export type Database = {
           is_outra_pessoa?: boolean
           liquidez?: string | null
           liquidez_corridos?: string | null
+          liquidez_fechada?: boolean
           liquidez_uteis?: string | null
           Moeda?: string | null
           Nome?: string | null
@@ -242,6 +244,7 @@ export type Database = {
           is_outra_pessoa?: boolean
           liquidez?: string | null
           liquidez_corridos?: string | null
+          liquidez_fechada?: boolean
           liquidez_uteis?: string | null
           Moeda?: string | null
           Nome?: string | null
