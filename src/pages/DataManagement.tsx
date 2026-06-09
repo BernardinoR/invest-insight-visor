@@ -179,6 +179,21 @@ const formatLiquidezDisplay = (item: any): string => {
   return parts.length ? parts.join(' / ') : '-';
 };
 
+// Normaliza par de liquidez: se um lado for preenchido e o outro vazio,
+// o vazio vira "D+0" (não null). Apenas se ambos vazios é que retorna null.
+const normalizeLiquidezPair = (
+  corridos?: string | null,
+  uteis?: string | null
+): { corridos: string | null; uteis: string | null } => {
+  const c = (corridos ?? '').toString().trim();
+  const u = (uteis ?? '').toString().trim();
+  if (!c && !u) return { corridos: null, uteis: null };
+  return {
+    corridos: c || 'D+0',
+    uteis: u || 'D+0',
+  };
+};
+
 export default function DataManagement() {
   const { clientName } = useParams<{ clientName: string }>();
   const navigate = useNavigate();
@@ -1765,8 +1780,10 @@ export default function DataManagement() {
     setRagLiquidezSaving(true);
     try {
       const ativo = editingItem.Ativo.trim();
-      const corridosNovo = editingItem.liquidez_corridos?.trim() || null;
-      const uteisNovo = editingItem.liquidez_uteis?.trim() || null;
+      const { corridos: corridosNovo, uteis: uteisNovo } = normalizeLiquidezPair(
+        editingItem.liquidez_corridos,
+        editingItem.liquidez_uteis
+      );
 
       const { data: existing, error: fetchError } = await supabase
         .from('RAG_Processador')
@@ -1872,6 +1889,16 @@ export default function DataManagement() {
       const cleanedData = Object.fromEntries(
         Object.entries(itemData).filter(([_, value]) => value !== undefined && value !== '')
       );
+
+      // Normaliza liquidez: se só um lado preenchido, o outro vira "D+0"; ambos vazios => null
+      if (tableName === 'DadosPerformance') {
+        const liqPair = normalizeLiquidezPair(
+          (editingItem as any).liquidez_corridos,
+          (editingItem as any).liquidez_uteis
+        );
+        cleanedData.liquidez_corridos = liqPair.corridos;
+        cleanedData.liquidez_uteis = liqPair.uteis;
+      }
       
       // Auto-validar rentabilidade para Caixa/Cash/Proventos com rendimento 0
       if (tableName === 'DadosPerformance') {
@@ -2180,8 +2207,11 @@ export default function DataManagement() {
         const uteisAtual = ((item as any).liquidez_uteis || '').toString().trim() || null;
         if (corridosAtual === ragLiq.corridos && uteisAtual === ragLiq.uteis) { jaIgual++; continue; }
         const patch: any = {};
-        if (ragLiq.corridos && !corridosAtual) patch.liquidez_corridos = ragLiq.corridos;
-        if (ragLiq.uteis && !uteisAtual) patch.liquidez_uteis = ragLiq.uteis;
+        const finalCorridos = (ragLiq.corridos && !corridosAtual) ? ragLiq.corridos : corridosAtual;
+        const finalUteis = (ragLiq.uteis && !uteisAtual) ? ragLiq.uteis : uteisAtual;
+        const normalized = normalizeLiquidezPair(finalCorridos, finalUteis);
+        if (normalized.corridos !== corridosAtual) patch.liquidez_corridos = normalized.corridos;
+        if (normalized.uteis !== uteisAtual) patch.liquidez_uteis = normalized.uteis;
         if (Object.keys(patch).length === 0) { jaIgual++; continue; }
         updated++;
         updatePromises.push(
