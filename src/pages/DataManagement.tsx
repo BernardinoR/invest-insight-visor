@@ -2207,8 +2207,11 @@ export default function DataManagement() {
         const uteisAtual = ((item as any).liquidez_uteis || '').toString().trim() || null;
         if (corridosAtual === ragLiq.corridos && uteisAtual === ragLiq.uteis) { jaIgual++; continue; }
         const patch: any = {};
-        if (ragLiq.corridos && !corridosAtual) patch.liquidez_corridos = ragLiq.corridos;
-        if (ragLiq.uteis && !uteisAtual) patch.liquidez_uteis = ragLiq.uteis;
+        const finalCorridos = (ragLiq.corridos && !corridosAtual) ? ragLiq.corridos : corridosAtual;
+        const finalUteis = (ragLiq.uteis && !uteisAtual) ? ragLiq.uteis : uteisAtual;
+        const normalized = normalizeLiquidezPair(finalCorridos, finalUteis);
+        if (normalized.corridos !== corridosAtual) patch.liquidez_corridos = normalized.corridos;
+        if (normalized.uteis !== uteisAtual) patch.liquidez_uteis = normalized.uteis;
         if (Object.keys(patch).length === 0) { jaIgual++; continue; }
         updated++;
         updatePromises.push(
