@@ -2193,19 +2193,20 @@ export default function DataManagement() {
     try {
       const { data: ragRows, error: ragErr } = await supabase
         .from('RAG_Processador')
-        .select('Ativo, Liquidez, Liquidez_Corridos, Liquidez_Uteis')
+        .select('Ativo, Liquidez, Liquidez_Corridos, Liquidez_Uteis, liquidez_fechada')
         .in('Ativo', nomesUnicos);
 
       if (ragErr) throw ragErr;
 
-      const map = new Map<string, { corridos: string | null; uteis: string | null }>();
+      const map = new Map<string, { corridos: string | null; uteis: string | null; fechada: boolean }>();
       (ragRows || []).forEach((r: any) => {
         const corridos = (r.Liquidez_Corridos || '').toString().trim() || null;
         const uteis = (r.Liquidez_Uteis || '').toString().trim() || null;
         const legacy = (r.Liquidez || '').toString().trim() || null;
+        const fechada = r.liquidez_fechada === true;
         const finalCorridos = corridos || legacy; // legado conta como corridos
-        if (r.Ativo && (finalCorridos || uteis)) {
-          map.set(r.Ativo, { corridos: finalCorridos, uteis });
+        if (r.Ativo && (fechada || finalCorridos || uteis)) {
+          map.set(r.Ativo, { corridos: fechada ? null : finalCorridos, uteis: fechada ? null : uteis, fechada });
         }
       });
 
@@ -2220,13 +2221,21 @@ export default function DataManagement() {
         if (!ragLiq) { semRag++; continue; }
         const corridosAtual = ((item as any).liquidez_corridos || '').toString().trim() || null;
         const uteisAtual = ((item as any).liquidez_uteis || '').toString().trim() || null;
-        if (corridosAtual === ragLiq.corridos && uteisAtual === ragLiq.uteis) { jaIgual++; continue; }
+        const fechadaAtual = (item as any).liquidez_fechada === true;
+        if (corridosAtual === ragLiq.corridos && uteisAtual === ragLiq.uteis && fechadaAtual === ragLiq.fechada) { jaIgual++; continue; }
         const patch: any = {};
-        const finalCorridos = (ragLiq.corridos && !corridosAtual) ? ragLiq.corridos : corridosAtual;
-        const finalUteis = (ragLiq.uteis && !uteisAtual) ? ragLiq.uteis : uteisAtual;
-        const normalized = normalizeLiquidezPair(finalCorridos, finalUteis);
-        if (normalized.corridos !== corridosAtual) patch.liquidez_corridos = normalized.corridos;
-        if (normalized.uteis !== uteisAtual) patch.liquidez_uteis = normalized.uteis;
+        if (ragLiq.fechada) {
+          patch.liquidez_fechada = true;
+          patch.liquidez_corridos = null;
+          patch.liquidez_uteis = null;
+        } else {
+          const finalCorridos = (ragLiq.corridos && !corridosAtual) ? ragLiq.corridos : corridosAtual;
+          const finalUteis = (ragLiq.uteis && !uteisAtual) ? ragLiq.uteis : uteisAtual;
+          const normalized = normalizeLiquidezPair(finalCorridos, finalUteis);
+          if (normalized.corridos !== corridosAtual) patch.liquidez_corridos = normalized.corridos;
+          if (normalized.uteis !== uteisAtual) patch.liquidez_uteis = normalized.uteis;
+          if (fechadaAtual) patch.liquidez_fechada = false;
+        }
         if (Object.keys(patch).length === 0) { jaIgual++; continue; }
         updated++;
         updatePromises.push(
