@@ -6564,17 +6564,18 @@ interface VerificationResult {
                                 const num = e.target.value.replace(/\D/g, '');
                                 setEditingItem({
                                   ...editingItem,
-                                  liquidez_corridos: num ? `D+${num}` : null
+                                  liquidez_corridos: num ? `D+${num}` : null,
+                                  liquidez_uteis: num && !editingItem.liquidez_uteis ? 'D+0' : editingItem.liquidez_uteis,
                                 });
                               }}
                               placeholder="Corridos (ex: 30)"
                             />
-                            {editingItem.liquidez_corridos && (
+                            {(editingItem.liquidez_corridos || editingItem.liquidez_uteis) && (
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="shrink-0 h-8 w-8"
-                                onClick={() => setEditingItem({...editingItem, liquidez_corridos: null})}
+                                onClick={() => setEditingItem({...editingItem, liquidez_corridos: null, liquidez_uteis: null})}
                               >
                                 <X className="h-4 w-4" />
                               </Button>
@@ -6589,17 +6590,18 @@ interface VerificationResult {
                                 const num = e.target.value.replace(/\D/g, '');
                                 setEditingItem({
                                   ...editingItem,
-                                  liquidez_uteis: num ? `D+${num}` : null
+                                  liquidez_uteis: num ? `D+${num}` : null,
+                                  liquidez_corridos: num && !editingItem.liquidez_corridos ? 'D+0' : editingItem.liquidez_corridos,
                                 });
                               }}
                               placeholder="Úteis (ex: 30)"
                             />
-                            {editingItem.liquidez_uteis && (
+                            {(editingItem.liquidez_corridos || editingItem.liquidez_uteis) && (
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="shrink-0 h-8 w-8"
-                                onClick={() => setEditingItem({...editingItem, liquidez_uteis: null})}
+                                onClick={() => setEditingItem({...editingItem, liquidez_corridos: null, liquidez_uteis: null})}
                               >
                                 <X className="h-4 w-4" />
                               </Button>
