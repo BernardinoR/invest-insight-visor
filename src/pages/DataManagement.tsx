@@ -6335,7 +6335,12 @@ interface VerificationResult {
                     ticker: getTickerWithSuffix(editingItem.Ativo || '', editingItem["Classe do ativo"] || '')
                   });
                    setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || '', ...inferManualCalcFromAtivo(editingItem)});
-                   setMrCalcData({ competencia: editingItem.Competencia || '', identifier: '' });
+                   {
+                     const ativoNome = editingItem.Ativo || '';
+                     const inferredSlug = parseTreasuryNameToSlug(ativoNome);
+                     const seed = inferredSlug && inferredSlug !== ativoNome ? inferredSlug : '';
+                     setMrCalcData({ competencia: editingItem.Competencia || '', identifier: seed });
+                   }
                    setMrCalcResult(null);
                    prefillMrIdentifierFromRag(editingItem.Ativo || '');
                    setIsCalculatorOpen(true);
@@ -6664,7 +6669,12 @@ interface VerificationResult {
                             ticker: getTickerWithSuffix(editingItem.Ativo || '', editingItem["Classe do ativo"] || '')
                           });
                            setManualCalcData({...manualCalcData, competencia: editingItem.Competencia || '', ...inferManualCalcFromAtivo(editingItem)});
-                           setMrCalcData({ competencia: editingItem.Competencia || '', identifier: '' });
+                           {
+                             const ativoNome = editingItem.Ativo || '';
+                             const inferredSlug = parseTreasuryNameToSlug(ativoNome);
+                             const seed = inferredSlug && inferredSlug !== ativoNome ? inferredSlug : '';
+                             setMrCalcData({ competencia: editingItem.Competencia || '', identifier: seed });
+                           }
                            setMrCalcResult(null);
                            prefillMrIdentifierFromRag(editingItem.Ativo || '');
                            setIsCalculatorOpen(true);
