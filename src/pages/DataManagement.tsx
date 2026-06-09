@@ -1376,15 +1376,20 @@ export default function DataManagement() {
 
   // Função para buscar rentabilidade via Mais Retorno
   const handleFetchMaisRetornoData = async () => {
-    const identifier = mrCalcData.identifier.trim();
+    const rawInput = mrCalcData.identifier.trim();
+    const identifier = parseTreasuryNameToSlug(rawInput);
     const competencia = mrCalcData.competencia.trim();
     if (!identifier || !competencia) {
       toast({
         title: "Dados incompletos",
-        description: "Preencha identifier (ex.: 12345678000190:fi) e competência (MM/YYYY).",
+        description: "Preencha identifier (ex.: 12345678000190:fi, LTN - 01/01/2032) e competência (MM/YYYY).",
         variant: "destructive",
       });
       return;
+    }
+    // Se o parser converteu um nome de TD em slug, refletir no campo para o usuário ver
+    if (identifier !== rawInput) {
+      setMrCalcData((prev) => ({ ...prev, identifier }));
     }
     setMrCalcLoading(true);
     try {
@@ -7436,10 +7441,11 @@ interface VerificationResult {
                     id="calc-mr-identifier"
                     value={mrCalcData.identifier}
                     onChange={(e) => setMrCalcData({ ...mrCalcData, identifier: e.target.value.trim() })}
-                    placeholder="ex.: 12345678000190:fi  •  tesouro-selic-18-06-2008:td"
+                    placeholder="ex.: LTN - 01/01/2032  •  12345678000190:fi  •  tesouro-selic-18-06-2008:td"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Fundos: <code>cnpj:fi</code> · Tesouro Direto: <code>slug:td</code> · Títulos Públicos: <code>slug:tp</code>.
+                    Tesouro Direto: cole o nome no formato <code>LTN - 01/01/2032</code>, <code>NTN-B Principal - 15/05/2035</code>, <code>LFT - 01/03/2030</code> — o slug é gerado automaticamente.
+                    Fundos: <code>cnpj:fi</code>. Títulos públicos: <code>slug:tp</code>.
                     {editingItem?.Ativo && (
                       <> Pré-carregado do RAG quando disponível. </>
                     )}
