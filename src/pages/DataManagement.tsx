@@ -1812,18 +1812,19 @@ export default function DataManagement() {
         const row = existing[0] as any;
         const corridosExistente = (row.Liquidez_Corridos || '').toString().trim() || null;
         const uteisExistente = (row.Liquidez_Uteis || '').toString().trim() || null;
-        const same = corridosExistente === corridosNovo && uteisExistente === uteisNovo;
-        const empty = !corridosExistente && !uteisExistente && !((row.Liquidez || '').toString().trim());
+        const fechadaExistente = row.liquidez_fechada === true;
+        const same = corridosExistente === corridosNovo && uteisExistente === uteisNovo && fechadaExistente === fechada;
+        const empty = !corridosExistente && !uteisExistente && !fechadaExistente && !((row.Liquidez || '').toString().trim());
 
         if (same) {
           toast({ title: "Liquidez já gravada", description: `"${ativo}" já está nesses valores.` });
         } else if (empty) {
           const { error: updateError } = await supabase
             .from('RAG_Processador')
-            .update({ Liquidez_Corridos: corridosNovo, Liquidez_Uteis: uteisNovo } as any)
+            .update({ Liquidez_Corridos: corridosNovo, Liquidez_Uteis: uteisNovo, liquidez_fechada: fechada } as any)
             .eq('Ativo', ativo);
           if (updateError) throw updateError;
-          toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${formatLiquidezDisplay({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo })}` });
+          toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${formatLiquidezDisplay({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo, liquidez_fechada: fechada })}` });
         } else {
           setRagLiquidezConflictDialog({
             open: true,
@@ -1832,7 +1833,9 @@ export default function DataManagement() {
             uteisNovo,
             corridosExistente: corridosExistente || (row.Liquidez || null),
             uteisExistente,
-          });
+            fechadaNovo: fechada,
+            fechadaExistente,
+          } as any);
           setRagLiquidezUpdateExisting(true);
         }
       }
