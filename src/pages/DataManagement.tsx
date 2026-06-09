@@ -6566,7 +6566,7 @@ interface VerificationResult {
                                   variant="ghost"
                                   size="icon"
                                   className="h-7 w-7 shrink-0"
-                                  disabled={!editingItem.Ativo || (!editingItem.liquidez_corridos && !editingItem.liquidez_uteis) || ragLiquidezSaving}
+                                  disabled={!editingItem.Ativo || (!editingItem.liquidez_fechada && !editingItem.liquidez_corridos && !editingItem.liquidez_uteis) || ragLiquidezSaving}
                                   onClick={handleSaveLiquidez}
                                 >
                                   <BookmarkPlus className="h-4 w-4" />
@@ -6578,12 +6578,31 @@ interface VerificationResult {
                             </Tooltip>
                           </TooltipProvider>
                         </div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Checkbox
+                            id="liquidez_fechada"
+                            checked={editingItem.liquidez_fechada === true}
+                            onCheckedChange={(checked) => {
+                              const fechada = checked === true;
+                              setEditingItem({
+                                ...editingItem,
+                                liquidez_fechada: fechada,
+                                liquidez_corridos: fechada ? null : editingItem.liquidez_corridos,
+                                liquidez_uteis: fechada ? null : editingItem.liquidez_uteis,
+                              });
+                            }}
+                          />
+                          <Label htmlFor="liquidez_fechada" className="text-xs font-normal cursor-pointer">
+                            Sem liquidez (fundo fechado)
+                          </Label>
+                        </div>
                         <div className="grid grid-cols-2 gap-2">
                           {/* Dias corridos */}
                           <div className="flex items-center gap-1">
                             <Input
                               id="liquidez_corridos"
-                              value={editingItem.liquidez_corridos ? String(editingItem.liquidez_corridos).replace(/^D\+/i, '') : ''}
+                              disabled={editingItem.liquidez_fechada === true}
+                              value={editingItem.liquidez_fechada === true ? '' : (editingItem.liquidez_corridos ? String(editingItem.liquidez_corridos).replace(/^D\+/i, '') : '')}
                               onChange={(e) => {
                                 const num = e.target.value.replace(/\D/g, '');
                                 setEditingItem({
@@ -6592,14 +6611,14 @@ interface VerificationResult {
                                   liquidez_uteis: num && !editingItem.liquidez_uteis ? 'D+0' : editingItem.liquidez_uteis,
                                 });
                               }}
-                              placeholder="Corridos (ex: 30)"
+                              placeholder={editingItem.liquidez_fechada === true ? 'Fechado' : 'Corridos (ex: 30)'}
                             />
-                            {(editingItem.liquidez_corridos || editingItem.liquidez_uteis) && (
+                            {(editingItem.liquidez_corridos || editingItem.liquidez_uteis || editingItem.liquidez_fechada) && (
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="shrink-0 h-8 w-8"
-                                onClick={() => setEditingItem({...editingItem, liquidez_corridos: null, liquidez_uteis: null})}
+                                onClick={() => setEditingItem({...editingItem, liquidez_corridos: null, liquidez_uteis: null, liquidez_fechada: false})}
                               >
                                 <X className="h-4 w-4" />
                               </Button>
@@ -6609,7 +6628,8 @@ interface VerificationResult {
                           <div className="flex items-center gap-1">
                             <Input
                               id="liquidez_uteis"
-                              value={editingItem.liquidez_uteis ? String(editingItem.liquidez_uteis).replace(/^D\+/i, '') : ''}
+                              disabled={editingItem.liquidez_fechada === true}
+                              value={editingItem.liquidez_fechada === true ? '' : (editingItem.liquidez_uteis ? String(editingItem.liquidez_uteis).replace(/^D\+/i, '') : '')}
                               onChange={(e) => {
                                 const num = e.target.value.replace(/\D/g, '');
                                 setEditingItem({
@@ -6618,14 +6638,14 @@ interface VerificationResult {
                                   liquidez_corridos: num && !editingItem.liquidez_corridos ? 'D+0' : editingItem.liquidez_corridos,
                                 });
                               }}
-                              placeholder="Úteis (ex: 30)"
+                              placeholder={editingItem.liquidez_fechada === true ? 'Fechado' : 'Úteis (ex: 30)'}
                             />
-                            {(editingItem.liquidez_corridos || editingItem.liquidez_uteis) && (
+                            {(editingItem.liquidez_corridos || editingItem.liquidez_uteis || editingItem.liquidez_fechada) && (
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="shrink-0 h-8 w-8"
-                                onClick={() => setEditingItem({...editingItem, liquidez_corridos: null, liquidez_uteis: null})}
+                                onClick={() => setEditingItem({...editingItem, liquidez_corridos: null, liquidez_uteis: null, liquidez_fechada: false})}
                               >
                                 <X className="h-4 w-4" />
                               </Button>
@@ -6636,9 +6656,11 @@ interface VerificationResult {
                           <span>dias corridos</span>
                           <span>dias úteis</span>
                         </div>
-                        {(editingItem.liquidez_corridos || editingItem.liquidez_uteis) && (
+                        {(editingItem.liquidez_corridos || editingItem.liquidez_uteis || editingItem.liquidez_fechada) && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            Salvo: {[editingItem.liquidez_corridos && `${editingItem.liquidez_corridos} corridos`, editingItem.liquidez_uteis && `${editingItem.liquidez_uteis} úteis`].filter(Boolean).join(' · ')}
+                            Salvo: {editingItem.liquidez_fechada === true
+                              ? 'Fechado (sem liquidez)'
+                              : [editingItem.liquidez_corridos && `${editingItem.liquidez_corridos} corridos`, editingItem.liquidez_uteis && `${editingItem.liquidez_uteis} úteis`].filter(Boolean).join(' · ')}
                           </p>
                         )}
                       </div>
