@@ -1,41 +1,17 @@
-# Bug: bulk fill de liquidez via RAG não sobrescreve campo "vazio" do RAG
+## Mudança
 
-## Causa raiz
+No bulk fill "Preencher liquidez via RAG" (`handleBulkFillLiquidezFromRAG` em `src/pages/DataManagement.tsx`), passar a também atualizar o **Vencimento** quando o RAG tiver valor preenchido.
 
-Em `handleBulkFillLiquidezFromRAG` (`src/pages/DataManagement.tsx`, linhas 2197-2202), a lógica só preenche o valor do RAG quando o campo atual está vazio:
+### Regras
+- Para cada item selecionado, ler `RAG_Processador.Vencimento` do ativo.
+- Se `Vencimento` no RAG for **null/vazio** → não mexer no vencimento do item.
+- Se `Vencimento` no RAG estiver **preenchido** → sobrescrever sempre (mesmo que o item já tenha outro valor), sem confirmação.
+- Continua valendo a lógica atual de liquidez (substitui par integralmente).
+- Se o item não tiver liquidez para atualizar mas o RAG tiver vencimento, ainda assim aplica só o vencimento.
 
-```ts
-const finalCorridos = (ragLiq.corridos && !corridosAtual) ? ragLiq.corridos : corridosAtual;
-const finalUteis    = (ragLiq.uteis    && !uteisAtual)    ? ragLiq.uteis    : uteisAtual;
-```
+### Técnico
+- Incluir `Vencimento` no `select` do RAG dentro do bulk handler.
+- No `patch` enviado ao update, adicionar `vencimento: ragVenc` quando `ragVenc` não for null.
+- Ajustar o contador/toast para refletir que vencimentos também podem ter sido atualizados (mensagem genérica tipo "X registros atualizados via RAG").
 
-Cenário do bug:
-- Atual no registro: `corridos = "D+2"`, `uteis = null`
-- RAG (correto):     `corridos = null`,  `uteis = "D+2"`
-- Resultado errado: mantém `corridos = "D+2"` e ainda seta `uteis = "D+2"` → fica "2 e 2".
-
-O RAG é a fonte de verdade nessa ação ("preencher via RAG"), então o par precisa ser **substituído integralmente**, inclusive zerando lados que o RAG marca como vazios.
-
-## Correção
-
-Substituir o trecho acima para usar o par do RAG diretamente, sem fallback ao valor atual:
-
-```ts
-} else {
-  const normalized = normalizeLiquidezPair(ragLiq.corridos, ragLiq.uteis);
-  patch.liquidez_corridos = normalized.corridos; // sempre envia (pode ser null)
-  patch.liquidez_uteis    = normalized.uteis;    // sempre envia (pode ser null)
-  patch.liquidez_fechada  = false;
-}
-```
-
-Pontos importantes:
-- Enviar `null` explicitamente garante o `UPDATE` do Supabase a limpar o campo (resolve a ressalva do filtro "remove chaves vazias").
-- Manter a checagem de "já igual" anterior (linha 2190) — registros idênticos ao RAG continuam sendo pulados.
-- A regra de conflito do modal individual (`handleSaveLiquidez`) não muda: ela continua perguntando antes de sobrescrever; o bulk fill aqui é a ação explícita de "trazer do RAG".
-
-## Arquivos afetados
-
-- `src/pages/DataManagement.tsx` — apenas o bloco `else` em `handleBulkFillLiquidezFromRAG` (linhas ~2196-2203).
-
-Sem migrations, sem mudanças de UI, sem alterações no fluxo de edição individual.
+Sem migration, sem mudança no botão individual de liquidez nem no de vencimento.

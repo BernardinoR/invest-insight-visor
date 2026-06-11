@@ -2220,20 +2220,28 @@ export default function DataManagement() {
     try {
       const { data: ragRows, error: ragErr } = await supabase
         .from('RAG_Processador')
-        .select('Ativo, Liquidez, Liquidez_Corridos, Liquidez_Uteis, liquidez_fechada')
+        .select('Ativo, Liquidez, Liquidez_Corridos, Liquidez_Uteis, liquidez_fechada, Vencimento' as any)
         .in('Ativo', nomesUnicos);
 
       if (ragErr) throw ragErr;
 
-      const map = new Map<string, { corridos: string | null; uteis: string | null; fechada: boolean }>();
+      const map = new Map<string, { corridos: string | null; uteis: string | null; fechada: boolean; vencimento: string | null; hasLiq: boolean }>();
       (ragRows || []).forEach((r: any) => {
         const corridos = (r.Liquidez_Corridos || '').toString().trim() || null;
         const uteis = (r.Liquidez_Uteis || '').toString().trim() || null;
         const legacy = (r.Liquidez || '').toString().trim() || null;
         const fechada = r.liquidez_fechada === true;
         const finalCorridos = corridos || legacy; // legado conta como corridos
-        if (r.Ativo && (fechada || finalCorridos || uteis)) {
-          map.set(r.Ativo, { corridos: fechada ? null : finalCorridos, uteis: fechada ? null : uteis, fechada });
+        const vencimento = (r.Vencimento || '').toString().trim() || null;
+        const hasLiq = fechada || !!finalCorridos || !!uteis;
+        if (r.Ativo && (hasLiq || vencimento)) {
+          map.set(r.Ativo, {
+            corridos: fechada ? null : finalCorridos,
+            uteis: fechada ? null : uteis,
+            fechada,
+            vencimento,
+            hasLiq,
+          });
         }
       });
 
@@ -2249,19 +2257,33 @@ export default function DataManagement() {
         const corridosAtual = ((item as any).liquidez_corridos || '').toString().trim() || null;
         const uteisAtual = ((item as any).liquidez_uteis || '').toString().trim() || null;
         const fechadaAtual = (item as any).liquidez_fechada === true;
-        if (corridosAtual === ragLiq.corridos && uteisAtual === ragLiq.uteis && fechadaAtual === ragLiq.fechada) { jaIgual++; continue; }
+        const vencimentoAtual = ((item as any).Vencimento || '').toString().trim() || null;
+
         const patch: any = {};
-        if (ragLiq.fechada) {
-          patch.liquidez_fechada = true;
-          patch.liquidez_corridos = null;
-          patch.liquidez_uteis = null;
-        } else {
-          const normalized = normalizeLiquidezPair(ragLiq.corridos, ragLiq.uteis);
-          // RAG é fonte de verdade: sobrescreve ambos os campos (inclusive com null)
-          patch.liquidez_corridos = normalized.corridos;
-          patch.liquidez_uteis = normalized.uteis;
-          patch.liquidez_fechada = false;
+
+        // Liquidez: substitui par integralmente quando RAG tem liquidez
+        if (ragLiq.hasLiq) {
+          if (ragLiq.fechada) {
+            if (!(fechadaAtual && !corridosAtual && !uteisAtual)) {
+              patch.liquidez_fechada = true;
+              patch.liquidez_corridos = null;
+              patch.liquidez_uteis = null;
+            }
+          } else {
+            const normalized = normalizeLiquidezPair(ragLiq.corridos, ragLiq.uteis);
+            if (corridosAtual !== normalized.corridos || uteisAtual !== normalized.uteis || fechadaAtual) {
+              patch.liquidez_corridos = normalized.corridos;
+              patch.liquidez_uteis = normalized.uteis;
+              patch.liquidez_fechada = false;
+            }
+          }
         }
+
+        // Vencimento: só sobrescreve quando RAG tem vencimento preenchido
+        if (ragLiq.vencimento && ragLiq.vencimento !== vencimentoAtual) {
+          patch.Vencimento = ragLiq.vencimento;
+        }
+
         if (Object.keys(patch).length === 0) { jaIgual++; continue; }
         updated++;
         updatePromises.push(
@@ -2274,9 +2296,10 @@ export default function DataManagement() {
       await Promise.all(updatePromises);
 
       toast({
-        title: "Liquidez preenchida via RAG",
+        title: "Registros atualizados via RAG",
         description: `${updated} atualizado(s) · ${jaIgual} já igual · ${semRag} sem cadastro no RAG`,
       });
+
 
       setIsBulkEditOpen(false);
       setBulkEditData({});
