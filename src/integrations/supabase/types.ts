@@ -596,6 +596,7 @@ export type Database = {
           liquidez_fechada: boolean
           Liquidez_Uteis: string | null
           mr_identifier: string | null
+          Vencimento: string | null
         }
         Insert: {
           Ativo?: string | null
@@ -607,6 +608,7 @@ export type Database = {
           liquidez_fechada?: boolean
           Liquidez_Uteis?: string | null
           mr_identifier?: string | null
+          Vencimento?: string | null
         }
         Update: {
           Ativo?: string | null
@@ -618,6 +620,7 @@ export type Database = {
           liquidez_fechada?: boolean
           Liquidez_Uteis?: string | null
           mr_identifier?: string | null
+          Vencimento?: string | null
         }
         Relationships: []
       }
