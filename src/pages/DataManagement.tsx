@@ -1848,6 +1848,67 @@ export default function DataManagement() {
     }
   };
 
+  // Função para gravar Vencimento no RAG_Processador
+  const handleSaveVencimento = async () => {
+    if (!editingItem || !editingItem.Ativo || !editingItem.Vencimento) {
+      toast({ title: "Preencha o Ativo e o Vencimento antes de gravar.", variant: "destructive" });
+      return;
+    }
+    setRagVencimentoSaving(true);
+    try {
+      const ativo = editingItem.Ativo.trim();
+      const vencimentoNovo = editingItem.Vencimento;
+
+      const { data: existing, error: fetchError } = await supabase
+        .from('RAG_Processador')
+        .select('id, Vencimento' as any)
+        .eq('Ativo', ativo);
+      if (fetchError) throw fetchError;
+
+      if (!existing || existing.length === 0) {
+        const classeAtual = editingItem["Classe do ativo"]?.trim() || null;
+        const { error: insertError } = await supabase
+          .from('RAG_Processador')
+          .insert({ Ativo: ativo, Vencimento: vencimentoNovo, Classificacao: classeAtual } as any);
+        if (insertError) throw insertError;
+        toast({ title: "Vencimento gravado!", description: `"${ativo}" → ${vencimentoNovo}` });
+      } else {
+        const row = existing[0] as any;
+        const vencimentoExistente = row.Vencimento || null;
+        if (vencimentoExistente === vencimentoNovo) {
+          toast({ title: "Vencimento já gravado", description: `"${ativo}" já está com ${vencimentoNovo}.` });
+        } else {
+          const cascade = vencimentoExistente
+            ? window.confirm(`Já existe vencimento "${vencimentoExistente}" gravado no RAG para "${ativo}".\n\nSubstituir por "${vencimentoNovo}" e aplicar em todos os registros existentes do ativo?`)
+            : true;
+          const { error: updateError } = await supabase
+            .from('RAG_Processador')
+            .update({ Vencimento: vencimentoNovo } as any)
+            .eq('Ativo', ativo);
+          if (updateError) throw updateError;
+
+          if (cascade) {
+            const { error: dadosError } = await supabase
+              .from('DadosPerformance')
+              .update({ Vencimento: vencimentoNovo } as any)
+              .eq('Ativo', ativo);
+            if (dadosError) throw dadosError;
+            await fetchData();
+            toast({ title: "Vencimento atualizado!", description: `"${ativo}" → ${vencimentoNovo} (todos os registros atualizados)` });
+          } else {
+            toast({ title: "Vencimento atualizado!", description: `"${ativo}" → ${vencimentoNovo} (apenas RAG)` });
+          }
+        }
+      }
+    } catch (error: any) {
+      toast({ title: "Erro ao gravar vencimento", description: error.message, variant: "destructive" });
+    } finally {
+      setRagVencimentoSaving(false);
+    }
+  };
+
+
+
 
 
   const handleSave = async () => {
