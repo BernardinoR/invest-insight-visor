@@ -336,6 +336,7 @@ export default function DataManagement() {
   } | null>(null);
   const [ragLiquidezUpdateExisting, setRagLiquidezUpdateExisting] = useState(true);
   const [ragLiquidezSaving, setRagLiquidezSaving] = useState(false);
+  const [ragVencimentoSaving, setRagVencimentoSaving] = useState(false);
   const [marketCalcLoading, setMarketCalcLoading] = useState(false);
   const [marketCalcResult, setMarketCalcResult] = useState<{
     monthlyReturn: number;
