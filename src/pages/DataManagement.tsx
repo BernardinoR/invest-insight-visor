@@ -6572,15 +6572,36 @@ interface VerificationResult {
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="vencimento">Vencimento</Label>
-                        <Input
-                          id="vencimento"
-                          type="date"
-                          value={editingItem.Vencimento || ''}
-                          onChange={(e) => setEditingItem({...editingItem, Vencimento: e.target.value})}
-                        />
-                      </div>
+                       <div>
+                         <div className="flex items-center justify-between">
+                           <Label htmlFor="vencimento">Vencimento</Label>
+                           <TooltipProvider>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <Button
+                                   variant="ghost"
+                                   size="icon"
+                                   className="h-7 w-7 shrink-0"
+                                   disabled={!editingItem.Ativo || !editingItem.Vencimento || ragVencimentoSaving}
+                                   onClick={handleSaveVencimento}
+                                 >
+                                   <BookmarkPlus className="h-4 w-4" />
+                                 </Button>
+                               </TooltipTrigger>
+                               <TooltipContent>
+                                 <p>Gravar vencimento para uso automático</p>
+                               </TooltipContent>
+                             </Tooltip>
+                           </TooltipProvider>
+                         </div>
+                         <Input
+                           id="vencimento"
+                           type="date"
+                           value={editingItem.Vencimento || ''}
+                           onChange={(e) => setEditingItem({...editingItem, Vencimento: e.target.value})}
+                         />
+                       </div>
+
                       <div>
                         <div className="flex items-center justify-between">
                           <Label>Liquidez (D+)</Label>
