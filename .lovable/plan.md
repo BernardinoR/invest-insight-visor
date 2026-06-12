@@ -1,17 +1,21 @@
-## Mudança
+## Modo Yahoo no RolloverDialog ("Avançar")
 
-No bulk fill "Preencher liquidez via RAG" (`handleBulkFillLiquidezFromRAG` em `src/pages/DataManagement.tsx`), passar a também atualizar o **Vencimento** quando o RAG tiver valor preenchido.
+Adicionar um novo modo de cálculo **Yahoo** que busca o rendimento mensal do ativo direto pela API do Yahoo Finance (edge function `get-stock-return`) para a nova competência.
 
-### Regras
-- Para cada item selecionado, ler `RAG_Processador.Vencimento` do ativo.
-- Se `Vencimento` no RAG for **null/vazio** → não mexer no vencimento do item.
-- Se `Vencimento` no RAG estiver **preenchido** → sobrescrever sempre (mesmo que o item já tenha outro valor), sem confirmação.
-- Continua valendo a lógica atual de liquidez (substitui par integralmente).
-- Se o item não tiver liquidez para atualizar mas o RAG tiver vencimento, ainda assim aplica só o vencimento.
+### Comportamento
+- Disponível tanto no **"Aplicar a todos"** quanto no seletor **por ativo**.
+- Para cada ativo afetado:
+  - Usa o campo `Ativo` como ticker, **sem nenhum sufixo** (não acrescenta `.SA`). O usuário confirmou que o ticker já vem certo (BR como `PETR4.SA` se for o caso, exterior como `AAPL` puro).
+  - Chama `supabase.functions.invoke('get-stock-return', { body: { ticker, competencia: novaCompetencia } })`.
+  - Usa `monthlyReturn` (em %) como `rendimento` e calcula `novaPosicao = Posicao * (1 + monthlyReturn/100)`.
+- **Loading**: enquanto busca, mostra indicador no(s) ativo(s) e desabilita Salvar.
+- **Erro / sem dado / 429**: toast de aviso por ativo que falhou, mantém `rendimento = 0` e troca o modo daquele ativo para `Manual` para o usuário ajustar.
+- O parâmetro do modo Yahoo não tem input (igual ao CDI puro) — `renderParameterInput` retorna `null`.
 
 ### Técnico
-- Incluir `Vencimento` no `select` do RAG dentro do bulk handler.
-- No `patch` enviado ao update, adicionar `vencimento: ragVenc` quando `ragVenc` não for null.
-- Ajustar o contador/toast para refletir que vencimentos também podem ter sido atualizados (mensagem genérica tipo "X registros atualizados via RAG").
-
-Sem migration, sem mudança no botão individual de liquidez nem no de vencimento.
+- `CalcMode` ganha `'Yahoo'`; adicionar em `MODE_LABELS` como `'Yahoo'`.
+- Adicionar `<SelectItem value="Yahoo">Yahoo</SelectItem>` no `renderModeSelect`.
+- Nova função `fetchYahooRendimento(ticker, competencia)` que invoca a edge function e retorna `{ rendimento, error }`.
+- `recalcAtivo`, `handleUpdateAtivo` e `handleApplyAll` passam a ser **async** quando o modo é Yahoo (fluxo separado: busca → atualiza estado → reaplica resgate).
+- Estado de loading por ativo: `Set<number>` de ids em busca; bloqueia o botão Salvar enquanto houver pendência.
+- Nenhuma mudança na edge function, no schema, nem no fluxo de salvamento.

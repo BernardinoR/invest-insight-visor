@@ -56,7 +56,7 @@ import { FastForward, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-type CalcMode = 'CDI' | 'CDIplus' | 'pctCDI' | 'IPCA' | 'PRE' | 'Manual';
+type CalcMode = 'CDI' | 'CDIplus' | 'pctCDI' | 'IPCA' | 'PRE' | 'Manual' | 'Yahoo';
 
 interface RolloverAtivo {
   id: number;
@@ -151,6 +151,7 @@ const MODE_LABELS: Record<CalcMode, string> = {
   IPCA: 'IPCA+',
   PRE: 'Pré-fixado',
   Manual: 'Manual',
+  Yahoo: 'Yahoo',
 };
 
 export function RolloverDialog({
@@ -170,6 +171,48 @@ export function RolloverDialog({
   const [resgate, setResgate] = useState<number>(0);
   const [resgateMode, setResgateMode] = useState<'proporcional' | 'por_ativo'>('proporcional');
   const [resgatesPorAtivo, setResgatesPorAtivo] = useState<Record<number, number>>({});
+  const [yahooLoading, setYahooLoading] = useState<Set<number>>(new Set());
+
+  const fetchYahooRendimento = async (ticker: string, competencia: string): Promise<{ rendimento: number | null; error?: string }> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-stock-return', {
+        body: { ticker, competencia },
+      });
+      if (error) return { rendimento: null, error: error.message };
+      if (data?.error) return { rendimento: null, error: data.error };
+      if (typeof data?.monthlyReturn !== 'number') return { rendimento: null, error: 'Sem dados retornados' };
+      return { rendimento: data.monthlyReturn };
+    } catch (e: any) {
+      return { rendimento: null, error: e?.message || 'Erro Yahoo' };
+    }
+  };
+
+  const applyYahooToIndex = async (index: number) => {
+    if (!rolloverData) return;
+    const ativo = rolloverData.ativos[index];
+    setYahooLoading(prev => new Set(prev).add(ativo.id));
+    const { rendimento, error } = await fetchYahooRendimento(ativo.Ativo, rolloverData.novaCompetencia);
+    setYahooLoading(prev => {
+      const next = new Set(prev);
+      next.delete(ativo.id);
+      return next;
+    });
+    setRolloverData(prev => {
+      if (!prev) return prev;
+      const ativos = [...prev.ativos];
+      if (rendimento == null) {
+        ativos[index] = { ...ativos[index], modo: 'Manual', parametro: 0, rendimento: 0, novaPosicao: Math.round((ativos[index].Posicao || 0) * 100) / 100 };
+      } else {
+        const novaPosicao = (ativos[index].Posicao || 0) * (1 + rendimento / 100);
+        ativos[index] = { ...ativos[index], modo: 'Yahoo', parametro: 0, rendimento, novaPosicao: Math.round(novaPosicao * 100) / 100 };
+      }
+      const withResgate = applyResgateToAtivos(ativos, resgate);
+      return { ...prev, ativos: withResgate };
+    });
+    if (rendimento == null) {
+      toast({ title: `Yahoo: ${ativo.Ativo}`, description: error || 'Não foi possível buscar o rendimento', variant: 'destructive' });
+    }
+  };
 
   // Initialize rollover data when dialog opens
   useEffect(() => {
@@ -259,6 +302,12 @@ export function RolloverDialog({
     let ativos = [...rolloverData.ativos];
 
     if (campo === 'modo') {
+      if (valor === 'Yahoo') {
+        ativos[index] = { ...ativos[index], modo: 'Yahoo', parametro: 0 };
+        setRolloverData({ ...rolloverData, ativos });
+        applyYahooToIndex(index);
+        return;
+      }
       const defaultParam = valor === 'pctCDI' ? 100 : valor === 'CDIplus' ? 4 : valor === 'IPCA' ? 6 : valor === 'PRE' ? 14 : valor === 'Manual' ? 1 : 100;
       ativos = recalcAtivo(ativos, index, valor as CalcMode, defaultParam);
     } else if (campo === 'parametro') {
@@ -278,12 +327,48 @@ export function RolloverDialog({
     setRolloverData({ ...rolloverData, ativos });
   };
 
-  const handleApplyAll = () => {
+  const handleApplyAll = async () => {
     if (!rolloverData) return;
+
+    if (bulkMode === 'Yahoo') {
+      const ids = rolloverData.ativos.map(a => a.id);
+      setYahooLoading(prev => {
+        const next = new Set(prev);
+        ids.forEach(id => next.add(id));
+        return next;
+      });
+      const results = await Promise.all(
+        rolloverData.ativos.map(a => fetchYahooRendimento(a.Ativo, rolloverData.novaCompetencia))
+      );
+      setYahooLoading(prev => {
+        const next = new Set(prev);
+        ids.forEach(id => next.delete(id));
+        return next;
+      });
+      setRolloverData(prev => {
+        if (!prev) return prev;
+        let ativos = prev.ativos.map((a, i) => {
+          const r = results[i];
+          if (r.rendimento == null) {
+            return { ...a, modo: 'Manual' as CalcMode, parametro: 0, rendimento: 0, novaPosicao: Math.round((a.Posicao || 0) * 100) / 100 };
+          }
+          const novaPosicao = (a.Posicao || 0) * (1 + r.rendimento / 100);
+          return { ...a, modo: 'Yahoo' as CalcMode, parametro: 0, rendimento: r.rendimento, novaPosicao: Math.round(novaPosicao * 100) / 100 };
+        });
+        ativos = applyResgateToAtivos(ativos, resgate);
+        return { ...prev, ativos };
+      });
+      const failed = results.filter(r => r.rendimento == null).length;
+      if (failed > 0) {
+        toast({ title: 'Yahoo', description: `${failed} ativo(s) sem cotação. Trocados para Manual.`, variant: 'destructive' });
+      }
+      return;
+    }
+
     const cdiMensal = getCDIMensal(cdiData, rolloverData.competenciaOrigem);
     const ipcaMensal = getIPCAMensal(marketIndicators, rolloverData.competenciaOrigem);
 
-    let ativos = rolloverData.ativos.map(a => {
+    let ativos: RolloverAtivo[] = rolloverData.ativos.map(a => {
       const rendimento = calcularRendimento(bulkMode, bulkParametro, cdiMensal, ipcaMensal);
       const novaPosicao = (a.Posicao || 0) * (1 + rendimento);
       return {
@@ -477,12 +562,13 @@ export function RolloverDialog({
         <SelectItem value="IPCA">IPCA+</SelectItem>
         <SelectItem value="PRE">Pré-fixado</SelectItem>
         <SelectItem value="Manual">Manual</SelectItem>
+        <SelectItem value="Yahoo">Yahoo</SelectItem>
       </SelectContent>
     </Select>
   );
 
   const renderParameterInput = (modo: CalcMode, parametro: number, onChange: (v: number) => void, size?: string) => {
-    if (modo === 'CDI') return null;
+    if (modo === 'CDI' || modo === 'Yahoo') return null;
     const placeholder = modo === 'pctCDI' ? '110' : modo === 'CDIplus' ? '4' : modo === 'IPCA' ? '6' : modo === 'PRE' ? '14' : '1.5';
     const suffix = modo === 'pctCDI' ? '%' : modo === 'CDIplus' ? '% a.a.' : modo === 'IPCA' ? '% a.a.' : modo === 'PRE' ? '% a.a.' : '%';
     return (
@@ -717,9 +803,9 @@ export function RolloverDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
               Cancelar
             </Button>
-            <Button onClick={handleExecuteRollover} disabled={saving}>
+            <Button onClick={handleExecuteRollover} disabled={saving || yahooLoading.size > 0}>
               <FastForward className="mr-2 h-4 w-4" />
-              {saving ? 'Criando...' : 'Avançar e Criar Tudo'}
+              {saving ? 'Criando...' : yahooLoading.size > 0 ? 'Buscando Yahoo...' : 'Avançar e Criar Tudo'}
             </Button>
           </div>
         </div>
