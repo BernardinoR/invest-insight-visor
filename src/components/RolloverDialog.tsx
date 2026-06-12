@@ -56,7 +56,7 @@ import { FastForward, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-type CalcMode = 'CDI' | 'CDIplus' | 'pctCDI' | 'IPCA' | 'PRE' | 'Manual';
+type CalcMode = 'CDI' | 'CDIplus' | 'pctCDI' | 'IPCA' | 'PRE' | 'Manual' | 'Yahoo';
 
 interface RolloverAtivo {
   id: number;
