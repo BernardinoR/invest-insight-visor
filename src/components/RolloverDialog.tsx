@@ -803,9 +803,9 @@ export function RolloverDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
               Cancelar
             </Button>
-            <Button onClick={handleExecuteRollover} disabled={saving}>
+            <Button onClick={handleExecuteRollover} disabled={saving || yahooLoading.size > 0}>
               <FastForward className="mr-2 h-4 w-4" />
-              {saving ? 'Criando...' : 'Avançar e Criar Tudo'}
+              {saving ? 'Criando...' : yahooLoading.size > 0 ? 'Buscando Yahoo...' : 'Avançar e Criar Tudo'}
             </Button>
           </div>
         </div>
