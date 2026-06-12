@@ -151,6 +151,7 @@ const MODE_LABELS: Record<CalcMode, string> = {
   IPCA: 'IPCA+',
   PRE: 'Pré-fixado',
   Manual: 'Manual',
+  Yahoo: 'Yahoo',
 };
 
 export function RolloverDialog({
