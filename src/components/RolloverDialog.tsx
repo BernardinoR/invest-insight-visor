@@ -562,6 +562,7 @@ export function RolloverDialog({
         <SelectItem value="IPCA">IPCA+</SelectItem>
         <SelectItem value="PRE">Pré-fixado</SelectItem>
         <SelectItem value="Manual">Manual</SelectItem>
+        <SelectItem value="Yahoo">Yahoo</SelectItem>
       </SelectContent>
     </Select>
   );
