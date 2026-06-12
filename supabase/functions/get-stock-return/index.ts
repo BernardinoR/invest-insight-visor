@@ -34,7 +34,7 @@ serve(async (req) => {
     // Build candidate symbols: original, then .L (London), then .AS (Amsterdam)
     // Skip suffixes if ticker already has a dot.
     const hasSuffix = ticker.includes('.')
-    const candidates = hasSuffix ? [ticker] : [ticker, `${ticker}.L`, `${ticker}.AS`]
+    const candidates = hasSuffix ? [ticker] : [ticker, `${ticker}.L`, `${ticker}.AS`, `${ticker}.DE`, `${ticker}.F`]
 
     let response: Response | null = null
     let lastErrorText = ''
