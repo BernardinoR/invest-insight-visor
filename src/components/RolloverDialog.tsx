@@ -302,6 +302,12 @@ export function RolloverDialog({
     let ativos = [...rolloverData.ativos];
 
     if (campo === 'modo') {
+      if (valor === 'Yahoo') {
+        ativos[index] = { ...ativos[index], modo: 'Yahoo', parametro: 0 };
+        setRolloverData({ ...rolloverData, ativos });
+        applyYahooToIndex(index);
+        return;
+      }
       const defaultParam = valor === 'pctCDI' ? 100 : valor === 'CDIplus' ? 4 : valor === 'IPCA' ? 6 : valor === 'PRE' ? 14 : valor === 'Manual' ? 1 : 100;
       ativos = recalcAtivo(ativos, index, valor as CalcMode, defaultParam);
     } else if (campo === 'parametro') {
@@ -321,8 +327,44 @@ export function RolloverDialog({
     setRolloverData({ ...rolloverData, ativos });
   };
 
-  const handleApplyAll = () => {
+  const handleApplyAll = async () => {
     if (!rolloverData) return;
+
+    if (bulkMode === 'Yahoo') {
+      const ids = rolloverData.ativos.map(a => a.id);
+      setYahooLoading(prev => {
+        const next = new Set(prev);
+        ids.forEach(id => next.add(id));
+        return next;
+      });
+      const results = await Promise.all(
+        rolloverData.ativos.map(a => fetchYahooRendimento(a.Ativo, rolloverData.novaCompetencia))
+      );
+      setYahooLoading(prev => {
+        const next = new Set(prev);
+        ids.forEach(id => next.delete(id));
+        return next;
+      });
+      setRolloverData(prev => {
+        if (!prev) return prev;
+        let ativos = prev.ativos.map((a, i) => {
+          const r = results[i];
+          if (r.rendimento == null) {
+            return { ...a, modo: 'Manual' as CalcMode, parametro: 0, rendimento: 0, novaPosicao: Math.round((a.Posicao || 0) * 100) / 100 };
+          }
+          const novaPosicao = (a.Posicao || 0) * (1 + r.rendimento / 100);
+          return { ...a, modo: 'Yahoo' as CalcMode, parametro: 0, rendimento: r.rendimento, novaPosicao: Math.round(novaPosicao * 100) / 100 };
+        });
+        ativos = applyResgateToAtivos(ativos, resgate);
+        return { ...prev, ativos };
+      });
+      const failed = results.filter(r => r.rendimento == null).length;
+      if (failed > 0) {
+        toast({ title: 'Yahoo', description: `${failed} ativo(s) sem cotação. Trocados para Manual.`, variant: 'destructive' });
+      }
+      return;
+    }
+
     const cdiMensal = getCDIMensal(cdiData, rolloverData.competenciaOrigem);
     const ipcaMensal = getIPCAMensal(marketIndicators, rolloverData.competenciaOrigem);
 
