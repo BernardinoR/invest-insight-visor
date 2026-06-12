@@ -171,6 +171,48 @@ export function RolloverDialog({
   const [resgate, setResgate] = useState<number>(0);
   const [resgateMode, setResgateMode] = useState<'proporcional' | 'por_ativo'>('proporcional');
   const [resgatesPorAtivo, setResgatesPorAtivo] = useState<Record<number, number>>({});
+  const [yahooLoading, setYahooLoading] = useState<Set<number>>(new Set());
+
+  const fetchYahooRendimento = async (ticker: string, competencia: string): Promise<{ rendimento: number | null; error?: string }> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-stock-return', {
+        body: { ticker, competencia },
+      });
+      if (error) return { rendimento: null, error: error.message };
+      if (data?.error) return { rendimento: null, error: data.error };
+      if (typeof data?.monthlyReturn !== 'number') return { rendimento: null, error: 'Sem dados retornados' };
+      return { rendimento: data.monthlyReturn };
+    } catch (e: any) {
+      return { rendimento: null, error: e?.message || 'Erro Yahoo' };
+    }
+  };
+
+  const applyYahooToIndex = async (index: number) => {
+    if (!rolloverData) return;
+    const ativo = rolloverData.ativos[index];
+    setYahooLoading(prev => new Set(prev).add(ativo.id));
+    const { rendimento, error } = await fetchYahooRendimento(ativo.Ativo, rolloverData.novaCompetencia);
+    setYahooLoading(prev => {
+      const next = new Set(prev);
+      next.delete(ativo.id);
+      return next;
+    });
+    setRolloverData(prev => {
+      if (!prev) return prev;
+      const ativos = [...prev.ativos];
+      if (rendimento == null) {
+        ativos[index] = { ...ativos[index], modo: 'Manual', parametro: 0, rendimento: 0, novaPosicao: Math.round((ativos[index].Posicao || 0) * 100) / 100 };
+      } else {
+        const novaPosicao = (ativos[index].Posicao || 0) * (1 + rendimento / 100);
+        ativos[index] = { ...ativos[index], modo: 'Yahoo', parametro: 0, rendimento, novaPosicao: Math.round(novaPosicao * 100) / 100 };
+      }
+      const withResgate = applyResgateToAtivos(ativos, resgate);
+      return { ...prev, ativos: withResgate };
+    });
+    if (rendimento == null) {
+      toast({ title: `Yahoo: ${ativo.Ativo}`, description: error || 'Não foi possível buscar o rendimento', variant: 'destructive' });
+    }
+  };
 
   // Initialize rollover data when dialog opens
   useEffect(() => {
