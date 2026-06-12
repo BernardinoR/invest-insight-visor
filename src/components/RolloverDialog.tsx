@@ -368,7 +368,7 @@ export function RolloverDialog({
     const cdiMensal = getCDIMensal(cdiData, rolloverData.competenciaOrigem);
     const ipcaMensal = getIPCAMensal(marketIndicators, rolloverData.competenciaOrigem);
 
-    let ativos = rolloverData.ativos.map(a => {
+    let ativos: RolloverAtivo[] = rolloverData.ativos.map(a => {
       const rendimento = calcularRendimento(bulkMode, bulkParametro, cdiMensal, ipcaMensal);
       const novaPosicao = (a.Posicao || 0) * (1 + rendimento);
       return {
