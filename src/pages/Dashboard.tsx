@@ -3,6 +3,7 @@ import { InvestmentDashboard } from "@/components/InvestmentDashboard";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { GenerateReportButton } from "@/components/GenerateReportButton";
 
 export default function Dashboard() {
   const { clientName } = useParams<{ clientName: string }>();
