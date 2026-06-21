@@ -255,7 +255,7 @@ export function ClientReportPDF({ data }: { data: ReportData }) {
           <ChartPatrimonio serie={data.serie} />
         </View>
 
-        <Text style={styles.footer}>
+        <Text style={styles.footer} fixed>
           Relatório gerado automaticamente. Valores em reais (R$).
         </Text>
       </Page>
