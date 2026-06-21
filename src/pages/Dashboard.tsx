@@ -75,6 +75,7 @@ export default function Dashboard() {
                 Gerenciar Dados
               </Button>
             )}
+            <GenerateReportButton clientName={decodedClientName} />
           </div>
           <div className="flex gap-2">
             <ThemeToggle />
