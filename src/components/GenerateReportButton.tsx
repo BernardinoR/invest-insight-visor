@@ -98,7 +98,8 @@ export function GenerateReportButton({ clientName }: Props) {
         const cur = byComp.get(c) ?? { pi: 0, mov: 0, impostos: 0, ganho: 0, pf: 0 };
         cur.pi += Number(r["Patrimonio Inicial"]) || 0;
         cur.mov += Number(r["Movimentação"]) || 0;
-        cur.impostos += Number(r["Impostos"]) || 0;
+        // Sinal de Impostos é inconsistente entre instituições: usar abs e tratar como dedução
+        cur.impostos += Math.abs(Number(r["Impostos"]) || 0);
         cur.ganho += Number(r["Ganho Financeiro"]) || 0;
         cur.pf += Number(r["Patrimonio Final"]) || 0;
         byComp.set(c, cur);
@@ -135,6 +136,16 @@ export function GenerateReportButton({ clientName }: Props) {
         return (1 + acc) * (1 + mensal) - 1;
       }, 0);
 
+      // Conferência: PF deve bater com PI + Mov + GF − |Imp|
+      const esperadoPf = ultimo.pi + ultimo.mov + ultimo.ganho - ultimo.impostos;
+      const diferencaCheck = ultimo.pf - esperadoPf;
+      const tolerancia = Math.max(50, Math.abs(ultimo.pf) * 0.0001);
+      if (Math.abs(diferencaCheck) > tolerancia) {
+        console.warn(
+          `[Relatório ${clientName} ${ultimaComp}] Diferença de R$ ${diferencaCheck.toFixed(2)} entre PF (${ultimo.pf.toFixed(2)}) e PI+Mov+GF-|Imp| (${esperadoPf.toFixed(2)})`,
+        );
+      }
+
       const data: ReportData = {
         clientName,
         competencia: ultimaComp,
@@ -142,10 +153,12 @@ export function GenerateReportButton({ clientName }: Props) {
         emittedAt: new Date().toLocaleDateString("pt-BR"),
         mes: {
           patrimonioInicial: ultimo.pi,
-          movimentacao: ultimo.mov - ultimo.impostos,
+          movimentacao: ultimo.mov,
+          impostos: -ultimo.impostos, // sempre negativo (dedução)
           ganho: ultimo.ganho,
           rendimentoPct: rendMes,
           patrimonioFinal: ultimo.pf,
+          diferencaCheck,
         },
 
         acumulado: {
@@ -159,6 +172,7 @@ export function GenerateReportButton({ clientName }: Props) {
           primeiraCompetencia: formatCompetenciaLabel(primeiraComp),
         },
       };
+
 
 
       const blob = await pdf(<ClientReportPDF data={data} />).toBlob();

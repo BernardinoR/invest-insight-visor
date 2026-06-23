@@ -7,11 +7,14 @@ export interface ReportData {
   emittedAt: string;
   mes: {
     patrimonioInicial: number;
-    movimentacao: number; // já líquido de impostos
+    movimentacao: number; // bruto: aportes − resgates (sem deduzir imposto)
+    impostos: number; // sempre ≤ 0 (dedução)
     ganho: number;
     rendimentoPct: number;
     patrimonioFinal: number;
+    diferencaCheck: number; // PF − (PI + Mov + GF + Imp). ~0 quando bate.
   };
+
   acumulado: {
     rentabilidadePct: number;
     metaPct: number;
@@ -75,6 +78,8 @@ const styles = StyleSheet.create({
   },
   tableTotalLabel: { fontSize: 11, fontFamily: "Helvetica-Bold", color: COLOR_TEXT, flex: 1 },
   tableTotalValue: { fontSize: 12, fontFamily: "Helvetica-Bold", width: 140, textAlign: "right" },
+  checkNote: { fontSize: 8.5, color: COLOR_MUTED, marginTop: 8, fontStyle: "italic" },
+
 
   footer: {
     position: "absolute",
@@ -152,6 +157,15 @@ export function ClientReportPDF({ data }: { data: ReportData }) {
           </View>
 
           <View style={styles.tableRow}>
+            <Text style={styles.tableLabel}>Impostos</Text>
+            {mes.impostos === 0 ? (
+              <Text style={[styles.tableValue, { color: COLOR_MUTED }]}>—</Text>
+            ) : (
+              <Text style={[styles.tableValue, { color: COLOR_MUTED }]}>{formatBRL(mes.impostos)}</Text>
+            )}
+          </View>
+
+          <View style={styles.tableRow}>
             <Text style={styles.tableLabel}>
               Rendimento ({shortDate(dataInicial)} → {shortDate(dataFinal)})
             </Text>
@@ -166,7 +180,14 @@ export function ClientReportPDF({ data }: { data: ReportData }) {
             <Text style={styles.tableTotalLabel}>Patrimônio em {dataFinal}</Text>
             <Text style={styles.tableTotalValue}>{formatBRL(mes.patrimonioFinal)}</Text>
           </View>
+
+          {Math.abs(mes.diferencaCheck) > Math.max(50, Math.abs(mes.patrimonioFinal) * 0.0001) && (
+            <Text style={styles.checkNote}>
+              Diferença de {formatBRL(mes.diferencaCheck)} entre o patrimônio final e a soma dos componentes do mês.
+            </Text>
+          )}
         </View>
+
 
         {/* DESDE O INÍCIO */}
         <View style={styles.table}>
