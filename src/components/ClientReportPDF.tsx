@@ -78,6 +78,8 @@ const styles = StyleSheet.create({
   },
   tableTotalLabel: { fontSize: 11, fontFamily: "Helvetica-Bold", color: COLOR_TEXT, flex: 1 },
   tableTotalValue: { fontSize: 12, fontFamily: "Helvetica-Bold", width: 140, textAlign: "right" },
+  checkNote: { fontSize: 8.5, color: COLOR_MUTED, marginTop: 8, fontStyle: "italic" },
+
 
   footer: {
     position: "absolute",
