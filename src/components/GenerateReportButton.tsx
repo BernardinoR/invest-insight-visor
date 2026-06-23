@@ -157,9 +157,11 @@ export function GenerateReportButton({ clientName }: Props) {
           impostos: -ultimo.impostos, // sempre negativo (dedução)
           ganho: ultimo.ganho,
           rendimentoPct: rendMes,
+          ipcaPct: ipcasMensais[ipcasMensais.length - 1] ?? 0,
           patrimonioFinal: ultimo.pf,
           diferencaCheck,
         },
+
 
         acumulado: {
           rentabilidadePct: rentAcumulada,
