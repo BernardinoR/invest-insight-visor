@@ -142,11 +142,12 @@ export function GenerateReportButton({ clientName }: Props) {
         emittedAt: new Date().toLocaleDateString("pt-BR"),
         mes: {
           patrimonioInicial: ultimo.pi,
-          movimentacao: ultimo.mov,
+          movimentacao: ultimo.mov - ultimo.impostos,
           ganho: ultimo.ganho,
           rendimentoPct: rendMes,
           patrimonioFinal: ultimo.pf,
         },
+
         acumulado: {
           rentabilidadePct: rentAcumulada,
           metaPct: metaAcumulada,
