@@ -11,6 +11,8 @@ export interface ReportData {
     impostos: number; // sempre ≤ 0 (dedução)
     ganho: number;
     rendimentoPct: number;
+    ipcaPct: number; // IPCA do mês
+
     patrimonioFinal: number;
     diferencaCheck: number; // PF − (PI + Mov + GF + Imp). ~0 quando bate.
   };
