@@ -177,6 +177,18 @@ export function ClientReportPDF({ data }: { data: ReportData }) {
             <Text style={[styles.tableValue, { color: ganhoColor }]}>{formatBRL(mes.ganho)}</Text>
           </View>
 
+          <View style={styles.tableRow}>
+            <Text style={[styles.tableLabel, { color: COLOR_MUTED, paddingLeft: 16 }]}>Inflação no mês (IPCA)</Text>
+            <Text style={[styles.tableValue, { color: COLOR_MUTED }]}>{formatPct(mes.ipcaPct)}</Text>
+          </View>
+          <View style={styles.tableRow}>
+            <Text style={[styles.tableLabel, { color: COLOR_MUTED, paddingLeft: 16 }]}>Acima da inflação</Text>
+            <Text style={[styles.tableValue, { color: (mes.rendimentoPct - mes.ipcaPct) >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE }]}>
+              {formatPct(mes.rendimentoPct - mes.ipcaPct, true)}
+            </Text>
+          </View>
+
+
           <View style={styles.totalDivider} />
           <View style={styles.tableTotalRow}>
             <Text style={styles.tableTotalLabel}>Patrimônio em {dataFinal}</Text>
