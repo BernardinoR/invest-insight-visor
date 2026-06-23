@@ -1,55 +1,56 @@
-## PDF como duas tabelinhas limpas — com datas e dois totalizadores no acumulado
+## Corrigir Movimentações/Impostos no PDF + linha de Impostos separada + check de conferência
 
-### Layout
+### Bugs encontrados
+
+1. **Sinal de Impostos é inconsistente** entre instituições no `ConsolidadoPerformance`. Ex: XP guarda `-9.775,51`, BTG guarda `+979,97`. O atual `mov - impostos` ora subtrai, ora soma. Solução: sempre usar `abs(impostos)`.
+
+2. **Impostos estão somados dentro de Movimentações** — o usuário quer ver as duas linhas separadas no PDF.
+
+3. **Sem verificação**: PI + Mov + GF − |Imp| precisa bater com PF; se não bater, é erro nos dados e precisa avisar.
+
+### Layout novo da tabela "O Mês"
 
 ```
-Clenilton Martins Lopes
-Junho de 2026
-
-
 O MÊS
 
-Patrimônio em 31/05/2026                       R$ 1.234.567,89
-Movimentações                                  R$    50.000,00
-Rendimento (31/05 → 30/06)          +1,21%     R$    14.500,00
+Patrimônio em 30/04/2026                       R$ 3.690.907,88
+Movimentações                                  R$    49.909,81
+Impostos                                       R$    -10.755,48
+Rendimento (30/04 → 31/05)         +0,94%      R$    34.535,10
 ──────────────────────────────────────────────────────────────
-Patrimônio em 30/06/2026                       R$ 1.299.067,89
-
-
-DESDE O INÍCIO  ·  Janeiro/2025 · 18 meses
-
-Carteira                                                12,45%
-IPCA                                                     8,12%
-Meta (IPCA + 4%)                                        13,30%
-──────────────────────────────────────────────────────────────
-Acima da meta                                           -0,85%
-Acima da inflação                                       +4,33%
+Patrimônio em 31/05/2026                       R$ 3.764.510,03
 ```
 
-### Regras de data
+Onde:
+- **Movimentações** = `SUM(Movimentação)` (aportes − resgates brutos, sem mexer em imposto)
+- **Impostos** = `−SUM(|Impostos|)` (sempre mostrado negativo, sem ambiguidade de sinal)
+- **Rendimento** = `SUM(Ganho Financeiro)` (continua como hoje)
+- **PF** = soma direta de `SUM(Patrimonio Final)` da `ConsolidadoPerformance` (verdade absoluta)
 
-- **Data inicial** = último dia do mês anterior à competência → "Patrimônio em DD/MM/AAAA".
-- **Data final** = último dia do mês da competência → "Patrimônio em DD/MM/AAAA".
-- **Rendimento** mostra o intervalo curto: "Rendimento (DD/MM → DD/MM)" (sem ano).
+### Verificação de consistência
+
+Após calcular, checar:
+`abs(PF − (PI + Movimentações + Rendimento + Impostos)) ≤ max(R$ 50, 0,01% × PF)`
+
+- Se passar: sem aviso.
+- Se falhar: rodapé do PDF ganha uma linha discreta tipo *"Atenção: diferença de R$ X,XX entre o patrimônio final e os componentes do mês. Verifique os dados de [instituições com maior delta]."* E um `console.warn` no app pra debug.
 
 ### Mudanças concretas
 
-- **"Aportes" → "Movimentações"** (já é aportes − resgates − impostos).
-- **Remove blocos grandes e frase-conclusão**. Tudo vira linha de tabela.
-- **"Desde o início"** ganha **duas linhas totalizadoras** após o divisor: "Acima da meta" (rentabilidade − meta) e "Acima da inflação" (rentabilidade − IPCA), nessa ordem. Ambas em negrito, coloridas (verde/vermelho).
-- **Sem caixas, sem fundos coloridos.** Só divisor fino antes dos totalizadores.
-- **Cor**: cinza pra rótulos, preto pros valores, verde/vermelho só nas linhas-chave (Rendimento, Acima da meta, Acima da inflação).
-- **Tipografia**: rótulos 11pt regular, valores 11pt; linhas-totalizador em negrito.
+1. **`src/components/GenerateReportButton.tsx`**
+   - Acumular `impostos` por competência usando `Math.abs(Number(r["Impostos"]) || 0)` (resolve sinal misto).
+   - Acumular `mov` puro (sem subtrair impostos).
+   - Calcular `diferencaCheck = pf − (pi + mov + gf − impostos_abs)`.
+   - Passar quatro campos pro PDF: `patrimonioInicial`, `movimentacao`, `impostos` (negativo), `ganho`, `patrimonioFinal`, `diferencaCheck`.
+   - Rendimento % = `gf / (pi + max(0, mov))` (mantido).
 
-### Arquivos
-
-1. **`src/components/ClientReportPDF.tsx`** — reescrever:
-   - Eliminar estilos antigos (`eyebrow`, `bigNumber`, `sentence`, `rendeuRow`, `conclusion`).
-   - Novos estilos: `tableTitle`, `tableRow`, `tableLabel`, `tableMidValue`, `tableValue`, `tableTotalDivider`, `tableTotalRow`.
-   - Helpers `lastDayOfCompetencia` / `lastDayOfPreviousMonth` + versão curta `DD/MM` pro Rendimento.
-
-2. **`src/components/GenerateReportButton.tsx`** — sem mudanças (cálculos `vsMetaPct` e `acimaInflacaoPct` já existem).
+2. **`src/components/ClientReportPDF.tsx`**
+   - Adicionar campo `impostos: number` (sempre ≤ 0) e `diferencaCheck: number` no `ReportData.mes`.
+   - Inserir linha "Impostos" entre "Movimentações" e "Rendimento", em cor neutra/cinza (não vermelho — imposto não é rendimento ruim, é só dedução).
+   - Se `|diferencaCheck| > tolerância`, mostrar nota fina logo abaixo da tabela do mês: *"Diferença de R$ X,XX em relação aos componentes."*
 
 ### Fora do escopo
 
-- Cálculos, gráfico, logo, identidade visual.
+- Corrigir o sinal de Impostos no banco (responsabilidade do pipeline n8n, não do app).
+- Mudar `useMarketIndicators` ou o cálculo do acumulado (já está OK).
+- Layout dos outros blocos.
