@@ -67,6 +67,8 @@ export type Database = {
           id: string
           instituicao: string
           liquidez: string | null
+          liquidez_corridos: string | null
+          liquidez_uteis: string | null
           nome_ajustado: string | null
           observacao: string | null
           taxa: string | null
@@ -83,6 +85,8 @@ export type Database = {
           id?: string
           instituicao: string
           liquidez?: string | null
+          liquidez_corridos?: string | null
+          liquidez_uteis?: string | null
           nome_ajustado?: string | null
           observacao?: string | null
           taxa?: string | null
@@ -99,6 +103,8 @@ export type Database = {
           id?: string
           instituicao?: string
           liquidez?: string | null
+          liquidez_corridos?: string | null
+          liquidez_uteis?: string | null
           nome_ajustado?: string | null
           observacao?: string | null
           taxa?: string | null
