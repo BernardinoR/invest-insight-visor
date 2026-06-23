@@ -133,9 +133,6 @@ export function GenerateReportButton({ clientName }: Props) {
         return (1 + acc) * (1 + mensal) - 1;
       }, 0);
 
-      // 4. Série patrimonial
-      const serie = comps.map((c) => ({ competencia: c, patrimonio: byComp.get(c)!.pf }));
-
       const data: ReportData = {
         clientName,
         competencia: ultimaComp,
@@ -158,8 +155,8 @@ export function GenerateReportButton({ clientName }: Props) {
           mesesContados: comps.length,
           primeiraCompetencia: formatCompetenciaLabel(primeiraComp),
         },
-        serie,
       };
+
 
       const blob = await pdf(<ClientReportPDF data={data} />).toBlob();
       const url = URL.createObjectURL(blob);
