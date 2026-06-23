@@ -67,7 +67,7 @@ export function GenerateReportButton({ clientName }: Props) {
       const [{ data: consolidado, error: errC }, { data: pol }] = await Promise.all([
         supabase
           .from("ConsolidadoPerformance")
-          .select('Competencia, "Patrimonio Inicial", "Movimentação", "Patrimonio Final", "Ganho Financeiro", Moeda')
+          .select('Competencia, "Patrimonio Inicial", "Movimentação", "Impostos", "Patrimonio Final", "Ganho Financeiro", Moeda')
           .eq("Nome", clientName)
           .limit(20000),
         supabase
@@ -91,17 +91,19 @@ export function GenerateReportButton({ clientName }: Props) {
       }
 
       // Agrupar por competência
-      const byComp = new Map<string, { pi: number; mov: number; ganho: number; pf: number }>();
+      const byComp = new Map<string, { pi: number; mov: number; impostos: number; ganho: number; pf: number }>();
       rows.forEach((r: any) => {
         const c = r.Competencia as string;
         if (!c) return;
-        const cur = byComp.get(c) ?? { pi: 0, mov: 0, ganho: 0, pf: 0 };
+        const cur = byComp.get(c) ?? { pi: 0, mov: 0, impostos: 0, ganho: 0, pf: 0 };
         cur.pi += Number(r["Patrimonio Inicial"]) || 0;
         cur.mov += Number(r["Movimentação"]) || 0;
+        cur.impostos += Number(r["Impostos"]) || 0;
         cur.ganho += Number(r["Ganho Financeiro"]) || 0;
         cur.pf += Number(r["Patrimonio Final"]) || 0;
         byComp.set(c, cur);
       });
+
 
       const comps = Array.from(byComp.keys()).sort(sortComps);
       const ultimaComp = comps[comps.length - 1];
