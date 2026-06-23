@@ -7,11 +7,14 @@ export interface ReportData {
   emittedAt: string;
   mes: {
     patrimonioInicial: number;
-    movimentacao: number; // já líquido de impostos
+    movimentacao: number; // bruto: aportes − resgates (sem deduzir imposto)
+    impostos: number; // sempre ≤ 0 (dedução)
     ganho: number;
     rendimentoPct: number;
     patrimonioFinal: number;
+    diferencaCheck: number; // PF − (PI + Mov + GF + Imp). ~0 quando bate.
   };
+
   acumulado: {
     rentabilidadePct: number;
     metaPct: number;
