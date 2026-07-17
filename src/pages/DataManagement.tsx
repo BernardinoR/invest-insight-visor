@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus, FastForward, Scissors, Wand2, Database } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus, FastForward, Scissors, Wand2, Database, Users } from "lucide-react";
 import { RolloverDialog } from "@/components/RolloverDialog";
 import { SplitAccountDialog } from "@/components/SplitAccountDialog";
 import { AssetOverridesTab } from "@/components/AssetOverridesTab";
@@ -1903,6 +1903,173 @@ export default function DataManagement() {
       }
     } catch (error: any) {
       toast({ title: "Erro ao gravar vencimento", description: error.message, variant: "destructive" });
+    } finally {
+      setRagVencimentoSaving(false);
+    }
+  };
+
+  // Escapa \ % _ para uso literal em ilike. NÃO escapa *: o PostgREST converte
+  // *→% ANTES do escape, então '\*' viraria under-match; o filtro JS de igualdade
+  // abaixo corta o over-match de um '*' literal no nome.
+  const escapeLikeAtivo = (v: string) => v.replace(/[\\%_]/g, (m) => '\\' + m);
+
+  // supabase-js serializa .in('id', ids) na URL; o edge rejeita URLs grandes
+  // (~400 UUIDs passam, 700+ dão 400/520). Apply-to-all é bulk não-bounded →
+  // fatiar em lotes de 200 (~7,5KB).
+  const chunkIds = <T,>(ids: T[], size = 200): T[][] => {
+    const out: T[][] = [];
+    for (let i = 0; i < ids.length; i += size) out.push(ids.slice(i, i + size));
+    return out;
+  };
+
+  // ── "Aplicar a todos os clientes" (ação explícita, sem dialog de conflito nem
+  // window.confirm). Padrão ids-first nos DOIS lados (RAG e registros): lookup
+  // ilike escapado → filtro JS de igualdade case-insensitive → update por lista de
+  // ids. Nunca .eq direto (case-sensitive deixaria registros de caixa divergente
+  // de fora) nem update por ilike.
+  const handleAplicarClasseATodos = async () => {
+    if (!editingItem || !editingItem.Ativo || !editingItem["Classe do ativo"]) {
+      toast({ title: "Preencha o Ativo e a Classe do Ativo antes de aplicar.", variant: "destructive" });
+      return;
+    }
+    setRagSaving(true);
+    try {
+      const ativo = editingItem.Ativo.trim();
+      const classeNova = editingItem["Classe do ativo"].trim();
+      const pattern = escapeLikeAtivo(ativo);
+      const alvo = ativo.toLowerCase();
+
+      // 1) RAG: upsert case-insensitive por ids
+      const { data: ragRows, error: ragFetchErr } = await supabase
+        .from('RAG_Processador').select('id, Ativo').ilike('Ativo', pattern);
+      if (ragFetchErr) throw ragFetchErr;
+      const ragIds = (ragRows || []).filter((r: any) => (r.Ativo ?? '').trim().toLowerCase() === alvo).map((r: any) => r.id);
+      if (ragIds.length > 0) {
+        const { error } = await supabase.from('RAG_Processador').update({ Classificacao: classeNova }).in('id', ragIds);
+        if (error) throw error;
+      } else {
+        const corridosAtual = editingItem.liquidez_corridos?.trim() || null;
+        const uteisAtual = editingItem.liquidez_uteis?.trim() || null;
+        const { error } = await supabase.from('RAG_Processador').insert({ Ativo: ativo, Classificacao: classeNova, Liquidez_Corridos: corridosAtual, Liquidez_Uteis: uteisAtual, liquidez_fechada: editingItem.liquidez_fechada === true } as any);
+        if (error) throw error;
+      }
+
+      // 2) DadosPerformance de todos os clientes, por ids
+      const { data: dadosRows, error: dadosFetchErr } = await supabase
+        .from('DadosPerformance').select('id, Ativo').ilike('Ativo', pattern);
+      if (dadosFetchErr) throw dadosFetchErr;
+      const dadosIds = (dadosRows || []).filter((r: any) => (r.Ativo ?? '').trim().toLowerCase() === alvo).map((r: any) => r.id);
+      for (const batch of chunkIds(dadosIds)) {
+        const { error } = await supabase.from('DadosPerformance').update({ "Classe do ativo": classeNova }).in('id', batch);
+        if (error) throw error;
+      }
+
+      if (editingItem && editingItem.Ativo?.trim().toLowerCase() === alvo) {
+        setEditingItem({ ...editingItem, "Classe do ativo": classeNova });
+      }
+      await fetchData();
+      toast({ title: "Classificação aplicada a todos os clientes", description: `"${ativo}" → ${classeNova} (${dadosIds.length} registro(s))` });
+    } catch (error: any) {
+      toast({ title: "Erro ao aplicar classificação", description: error.message, variant: "destructive" });
+    } finally {
+      setRagSaving(false);
+    }
+  };
+
+  const handleAplicarLiquidezATodos = async () => {
+    const fechada = editingItem?.liquidez_fechada === true;
+    if (!editingItem || !editingItem.Ativo || (!fechada && !editingItem.liquidez_corridos && !editingItem.liquidez_uteis)) {
+      toast({ title: "Preencha o Ativo e a Liquidez (ou marque 'Sem liquidez') antes de aplicar.", variant: "destructive" });
+      return;
+    }
+    setRagLiquidezSaving(true);
+    try {
+      const ativo = editingItem.Ativo.trim();
+      const { corridos: corridosNovo, uteis: uteisNovo } = fechada
+        ? { corridos: null, uteis: null }
+        : normalizeLiquidezPair(editingItem.liquidez_corridos, editingItem.liquidez_uteis);
+      const pattern = escapeLikeAtivo(ativo);
+      const alvo = ativo.toLowerCase();
+
+      // 1) RAG por ids
+      const { data: ragRows, error: ragFetchErr } = await supabase
+        .from('RAG_Processador').select('id, Ativo').ilike('Ativo', pattern);
+      if (ragFetchErr) throw ragFetchErr;
+      const ragIds = (ragRows || []).filter((r: any) => (r.Ativo ?? '').trim().toLowerCase() === alvo).map((r: any) => r.id);
+      if (ragIds.length > 0) {
+        const { error } = await supabase.from('RAG_Processador').update({ Liquidez_Corridos: corridosNovo, Liquidez_Uteis: uteisNovo, liquidez_fechada: fechada } as any).in('id', ragIds);
+        if (error) throw error;
+      } else {
+        const classeAtual = editingItem["Classe do ativo"]?.trim() || null;
+        const { error } = await supabase.from('RAG_Processador').insert({ Ativo: ativo, Liquidez_Corridos: corridosNovo, Liquidez_Uteis: uteisNovo, liquidez_fechada: fechada, Classificacao: classeAtual } as any);
+        if (error) throw error;
+      }
+
+      // 2) DadosPerformance por ids
+      const { data: dadosRows, error: dadosFetchErr } = await supabase
+        .from('DadosPerformance').select('id, Ativo').ilike('Ativo', pattern);
+      if (dadosFetchErr) throw dadosFetchErr;
+      const dadosIds = (dadosRows || []).filter((r: any) => (r.Ativo ?? '').trim().toLowerCase() === alvo).map((r: any) => r.id);
+      for (const batch of chunkIds(dadosIds)) {
+        const { error } = await supabase.from('DadosPerformance').update({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo, liquidez_fechada: fechada } as any).in('id', batch);
+        if (error) throw error;
+      }
+
+      if (editingItem && editingItem.Ativo?.trim().toLowerCase() === alvo) {
+        setEditingItem({ ...editingItem, liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo, liquidez_fechada: fechada });
+      }
+      await fetchData();
+      toast({ title: "Liquidez aplicada a todos os clientes", description: `"${ativo}" (${dadosIds.length} registro(s))` });
+    } catch (error: any) {
+      toast({ title: "Erro ao aplicar liquidez", description: error.message, variant: "destructive" });
+    } finally {
+      setRagLiquidezSaving(false);
+    }
+  };
+
+  const handleAplicarVencimentoATodos = async () => {
+    if (!editingItem || !editingItem.Ativo || !editingItem.Vencimento) {
+      toast({ title: "Preencha o Ativo e o Vencimento antes de aplicar.", variant: "destructive" });
+      return;
+    }
+    setRagVencimentoSaving(true);
+    try {
+      const ativo = editingItem.Ativo.trim();
+      const vencimentoNovo = editingItem.Vencimento;
+      const pattern = escapeLikeAtivo(ativo);
+      const alvo = ativo.toLowerCase();
+
+      // 1) RAG por ids (sem window.confirm — ação já é explícita; cobre ativo novo)
+      const { data: ragRows, error: ragFetchErr } = await supabase
+        .from('RAG_Processador').select('id, Ativo').ilike('Ativo', pattern);
+      if (ragFetchErr) throw ragFetchErr;
+      const ragIds = (ragRows || []).filter((r: any) => (r.Ativo ?? '').trim().toLowerCase() === alvo).map((r: any) => r.id);
+      if (ragIds.length > 0) {
+        const { error } = await supabase.from('RAG_Processador').update({ Vencimento: vencimentoNovo } as any).in('id', ragIds);
+        if (error) throw error;
+      } else {
+        const classeAtual = editingItem["Classe do ativo"]?.trim() || null;
+        const { error } = await supabase.from('RAG_Processador').insert({ Ativo: ativo, Vencimento: vencimentoNovo, Classificacao: classeAtual } as any);
+        if (error) throw error;
+      }
+
+      // 2) DadosPerformance por ids
+      const { data: dadosRows, error: dadosFetchErr } = await supabase
+        .from('DadosPerformance').select('id, Ativo').ilike('Ativo', pattern);
+      if (dadosFetchErr) throw dadosFetchErr;
+      const dadosIds = (dadosRows || []).filter((r: any) => (r.Ativo ?? '').trim().toLowerCase() === alvo).map((r: any) => r.id);
+      for (const batch of chunkIds(dadosIds)) {
+        const { error } = await supabase.from('DadosPerformance').update({ Vencimento: vencimentoNovo } as any).in('id', batch);
+        if (error) throw error;
+      }
+
+      if (editingItem && editingItem.Ativo?.trim().toLowerCase() === alvo) {
+        setEditingItem({ ...editingItem, Vencimento: vencimentoNovo });
+      }
+      await fetchData();
+      toast({ title: "Vencimento aplicado a todos os clientes", description: `"${ativo}" → ${vencimentoNovo} (${dadosIds.length} registro(s))` });
+    } catch (error: any) {
+      toast({ title: "Erro ao aplicar vencimento", description: error.message, variant: "destructive" });
     } finally {
       setRagVencimentoSaving(false);
     }
@@ -6547,6 +6714,24 @@ interface VerificationResult {
                                </TooltipContent>
                              </Tooltip>
                            </TooltipProvider>
+                           <TooltipProvider>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <Button
+                                   variant="ghost"
+                                   size="icon"
+                                   className="h-10 w-10 shrink-0"
+                                   disabled={!editingItem.Ativo || !editingItem["Classe do ativo"] || ragSaving}
+                                   onClick={handleAplicarClasseATodos}
+                                 >
+                                   <Users className="h-4 w-4" />
+                                 </Button>
+                               </TooltipTrigger>
+                               <TooltipContent>
+                                 <p>Aplicar classificação a todos os clientes</p>
+                               </TooltipContent>
+                             </Tooltip>
+                           </TooltipProvider>
                          </div>
                        </div>
                      </div>
@@ -6598,24 +6783,44 @@ interface VerificationResult {
                        <div>
                          <div className="flex items-center justify-between">
                            <Label htmlFor="vencimento">Vencimento</Label>
-                           <TooltipProvider>
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <Button
-                                   variant="ghost"
-                                   size="icon"
-                                   className="h-7 w-7 shrink-0"
-                                   disabled={!editingItem.Ativo || !editingItem.Vencimento || ragVencimentoSaving}
-                                   onClick={handleSaveVencimento}
-                                 >
-                                   <BookmarkPlus className="h-4 w-4" />
-                                 </Button>
-                               </TooltipTrigger>
-                               <TooltipContent>
-                                 <p>Gravar vencimento para uso automático</p>
-                               </TooltipContent>
-                             </Tooltip>
-                           </TooltipProvider>
+                           <div className="flex items-center gap-1">
+                             <TooltipProvider>
+                               <Tooltip>
+                                 <TooltipTrigger asChild>
+                                   <Button
+                                     variant="ghost"
+                                     size="icon"
+                                     className="h-7 w-7 shrink-0"
+                                     disabled={!editingItem.Ativo || !editingItem.Vencimento || ragVencimentoSaving}
+                                     onClick={handleSaveVencimento}
+                                   >
+                                     <BookmarkPlus className="h-4 w-4" />
+                                   </Button>
+                                 </TooltipTrigger>
+                                 <TooltipContent>
+                                   <p>Gravar vencimento para uso automático</p>
+                                 </TooltipContent>
+                               </Tooltip>
+                             </TooltipProvider>
+                             <TooltipProvider>
+                               <Tooltip>
+                                 <TooltipTrigger asChild>
+                                   <Button
+                                     variant="ghost"
+                                     size="icon"
+                                     className="h-7 w-7 shrink-0"
+                                     disabled={!editingItem.Ativo || !editingItem.Vencimento || ragVencimentoSaving}
+                                     onClick={handleAplicarVencimentoATodos}
+                                   >
+                                     <Users className="h-4 w-4" />
+                                   </Button>
+                                 </TooltipTrigger>
+                                 <TooltipContent>
+                                   <p>Aplicar vencimento a todos os clientes</p>
+                                 </TooltipContent>
+                               </Tooltip>
+                             </TooltipProvider>
+                           </div>
                          </div>
                          <Input
                            id="vencimento"
@@ -6628,24 +6833,44 @@ interface VerificationResult {
                       <div>
                         <div className="flex items-center justify-between">
                           <Label>Liquidez (D+)</Label>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 shrink-0"
-                                  disabled={!editingItem.Ativo || (!editingItem.liquidez_fechada && !editingItem.liquidez_corridos && !editingItem.liquidez_uteis) || ragLiquidezSaving}
-                                  onClick={handleSaveLiquidez}
-                                >
-                                  <BookmarkPlus className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Gravar liquidez para uso automático</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          <div className="flex items-center gap-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 shrink-0"
+                                    disabled={!editingItem.Ativo || (!editingItem.liquidez_fechada && !editingItem.liquidez_corridos && !editingItem.liquidez_uteis) || ragLiquidezSaving}
+                                    onClick={handleSaveLiquidez}
+                                  >
+                                    <BookmarkPlus className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Gravar liquidez para uso automático</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 shrink-0"
+                                    disabled={!editingItem.Ativo || (!editingItem.liquidez_fechada && !editingItem.liquidez_corridos && !editingItem.liquidez_uteis) || ragLiquidezSaving}
+                                    onClick={handleAplicarLiquidezATodos}
+                                  >
+                                    <Users className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Aplicar liquidez a todos os clientes</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
                         </div>
                         <div className="flex items-center gap-2 mb-2">
                           <Checkbox
