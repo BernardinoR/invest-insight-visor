@@ -197,6 +197,16 @@ const normalizeLiquidezPair = (
   };
 };
 
+// Linhas sintéticas geradas pela consolidação (saldo em conta, proventos do mês,
+// caixa em moeda estrangeira). Match EXATO sobre o nome normalizado — nunca substring:
+// "V8 Cash FIC FIRF", "AMW Cash Clash FIRF LP" e "CAIXA SEGURI ON(CXSE3)" são ativos
+// reais e precisam de liquidez/vencimento como qualquer outro.
+const LINHAS_SINTETICAS = ['caixa', 'proventos', 'cash'];
+const isLinhaSintetica = (ativo: unknown): boolean =>
+  LINHAS_SINTETICAS.includes(String(ativo ?? '').trim().toLowerCase());
+
+
+
 export default function DataManagement() {
   const { clientName } = useParams<{ clientName: string }>();
   const navigate = useNavigate();
@@ -2763,8 +2773,7 @@ interface VerificationResult {
 
     // Contar ativos sem liquidez E sem vencimento (excluindo cash-like)
     const missingLiquidityCount = relatedDetails.filter(item => {
-      const ativoNorm = String(item.Ativo || '').toLowerCase();
-      const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+      const isCashLike = isLinhaSintetica(item.Ativo);
       if (isCashLike) return false;
       return !item.Vencimento && !hasAnyLiquidez(item);
     }).length;
@@ -2921,8 +2930,7 @@ interface VerificationResult {
         const isNewAsset = showOnlyNewAssets && item.ativo_novo === true;
         const isMissingLiquidity = (() => {
           if (!showOnlyMissingLiquidity) return false;
-          const ativoNorm = String(item.Ativo || '').toLowerCase();
-          const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+          const isCashLike = isLinhaSintetica(item.Ativo);
           if (isCashLike) return false;
           return !item.Vencimento && !hasAnyLiquidez(item);
         })();
@@ -3060,8 +3068,7 @@ interface VerificationResult {
     }
 
     return data.filter(item => {
-      const ativoNorm = String(item.Ativo || '').toLowerCase();
-      const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+      const isCashLike = isLinhaSintetica(item.Ativo);
       if (isCashLike) return false;
       return !item.Vencimento && !hasAnyLiquidez(item);
     }).length;
@@ -5204,8 +5211,7 @@ interface VerificationResult {
 
                   // Calcular ativos sem liquidez E sem vencimento (excluindo cash-like)
                   const missingLiquidityInComparison = filteredDadosData.filter(item => {
-                    const ativoNorm = String(item.Ativo || '').toLowerCase();
-                    const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+                    const isCashLike = isLinhaSintetica(item.Ativo);
                     if (isCashLike) return false;
                     return !item.Vencimento && !hasAnyLiquidez(item);
                   }).length;
@@ -6063,8 +6069,7 @@ interface VerificationResult {
                               {visibleColumnsDetalhados.has('Verificação') && (
                                 <TableCell className="text-center">
                                   {(() => {
-                                    const ativoNorm = String(item.Ativo || '').toLowerCase();
-                                    const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+                                    const isCashLike = isLinhaSintetica(item.Ativo);
                                     const classeOk = isValidAssetClass(item["Classe do ativo"]);
                                     const rentOk = hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo);
                                     const isAtivoNovo = item.ativo_novo === true;
