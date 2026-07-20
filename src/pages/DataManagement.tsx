@@ -197,6 +197,16 @@ const normalizeLiquidezPair = (
   };
 };
 
+// Linhas sintéticas geradas pela consolidação (saldo em conta, proventos do mês,
+// caixa em moeda estrangeira). Match EXATO sobre o nome normalizado — nunca substring:
+// "V8 Cash FIC FIRF", "AMW Cash Clash FIRF LP" e "CAIXA SEGURI ON(CXSE3)" são ativos
+// reais e precisam de liquidez/vencimento como qualquer outro.
+const LINHAS_SINTETICAS = ['caixa', 'proventos', 'cash'];
+const isLinhaSintetica = (ativo: unknown): boolean =>
+  LINHAS_SINTETICAS.includes(String(ativo ?? '').trim().toLowerCase());
+
+
+
 export default function DataManagement() {
   const { clientName } = useParams<{ clientName: string }>();
   const navigate = useNavigate();
