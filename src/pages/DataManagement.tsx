@@ -2774,7 +2774,7 @@ interface VerificationResult {
     // Contar ativos sem liquidez E sem vencimento (excluindo cash-like)
     const missingLiquidityCount = relatedDetails.filter(item => {
       const ativoNorm = String(item.Ativo || '').toLowerCase();
-      const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+      const isCashLike = isLinhaSintetica(item.Ativo);
       if (isCashLike) return false;
       return !item.Vencimento && !hasAnyLiquidez(item);
     }).length;
@@ -2932,7 +2932,7 @@ interface VerificationResult {
         const isMissingLiquidity = (() => {
           if (!showOnlyMissingLiquidity) return false;
           const ativoNorm = String(item.Ativo || '').toLowerCase();
-          const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+          const isCashLike = isLinhaSintetica(item.Ativo);
           if (isCashLike) return false;
           return !item.Vencimento && !hasAnyLiquidez(item);
         })();
@@ -3071,7 +3071,7 @@ interface VerificationResult {
 
     return data.filter(item => {
       const ativoNorm = String(item.Ativo || '').toLowerCase();
-      const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+      const isCashLike = isLinhaSintetica(item.Ativo);
       if (isCashLike) return false;
       return !item.Vencimento && !hasAnyLiquidez(item);
     }).length;
@@ -5215,7 +5215,7 @@ interface VerificationResult {
                   // Calcular ativos sem liquidez E sem vencimento (excluindo cash-like)
                   const missingLiquidityInComparison = filteredDadosData.filter(item => {
                     const ativoNorm = String(item.Ativo || '').toLowerCase();
-                    const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+                    const isCashLike = isLinhaSintetica(item.Ativo);
                     if (isCashLike) return false;
                     return !item.Vencimento && !hasAnyLiquidez(item);
                   }).length;
@@ -6074,7 +6074,7 @@ interface VerificationResult {
                                 <TableCell className="text-center">
                                   {(() => {
                                     const ativoNorm = String(item.Ativo || '').toLowerCase();
-                                    const isCashLike = ativoNorm.includes('caixa') || ativoNorm.includes('cash') || ativoNorm.includes('proventos');
+                                    const isCashLike = isLinhaSintetica(item.Ativo);
                                     const classeOk = isValidAssetClass(item["Classe do ativo"]);
                                     const rentOk = hasValidYield(item.Rendimento, item.rentabilidade_validada, item.Ativo, item.ativo_novo);
                                     const isAtivoNovo = item.ativo_novo === true;
