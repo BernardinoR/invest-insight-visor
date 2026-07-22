@@ -111,7 +111,13 @@ export function InvestmentDetailsTable({ dadosData = [], selectedClient, filtere
   // Helper function to check if an asset should be excluded from profitability calculations
   const shouldExcludeFromProfitability = (assetName: string): boolean => {
     const normalizedName = assetName.toLowerCase().trim();
-    return normalizedName === 'caixa' || normalizedName === 'proventos';
+    return (
+      normalizedName === 'caixa' ||
+      normalizedName === 'proventos' ||
+      normalizedName === 'valor em trânsito' ||
+      normalizedName === 'valor em transito' ||
+      normalizedName === 'dinheiro em garantia'
+    );
   };
 
   // Calculate accumulated returns with compound interest for each strategy from filtered data
