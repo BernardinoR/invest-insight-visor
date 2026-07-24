@@ -8,6 +8,7 @@ import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, Ch
 import { RolloverDialog } from "@/components/RolloverDialog";
 import { SplitAccountDialog } from "@/components/SplitAccountDialog";
 import { AssetOverridesTab } from "@/components/AssetOverridesTab";
+import { postClassificacao } from "@/lib/visorBridge";
 
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -211,6 +212,20 @@ export default function DataManagement() {
   const { clientName } = useParams<{ clientName: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Dual-write pro canônico (Journey via broker no CRM) — chamado DEPOIS que o
+  // write local (RAG_Processador/DadosPerformance) já teve sucesso. Nunca
+  // reverte o local: falha aqui só avisa o usuário via toast.
+  const syncClassificacaoToJourney = useCallback(
+    async (input: Parameters<typeof postClassificacao>[0]) => {
+      try {
+        await postClassificacao(input);
+      } catch {
+        toast({ title: "não sincronizou com o Journey — tente de novo", variant: "destructive" });
+      }
+    },
+    [toast]
+  );
   const { cdiData } = useCDIData();
   const { getCotacaoByCompetencia } = usePTAXData();
   const { marketData: marketIndicators } = useMarketIndicators();
@@ -1689,6 +1704,7 @@ export default function DataManagement() {
           .insert({ Ativo: ativo, Classificacao: classeNova, Liquidez_Corridos: corridosAtual, Liquidez_Uteis: uteisAtual } as any);
         if (insertError) throw insertError;
         toast({ title: "Classificação gravada!", description: `"${ativo}" → ${classeNova}` });
+        await syncClassificacaoToJourney({ ativo, classePT: classeNova });
       } else if (existing[0].Classificacao === classeNova) {
         toast({ title: "Classificação já gravada", description: `"${ativo}" já está como ${classeNova}.` });
       } else {
@@ -1740,6 +1756,7 @@ export default function DataManagement() {
       } else {
         toast({ title: "Classificação atualizada!", description: `"${ativo}" → ${classeNova} (apenas RAG)` });
       }
+      await syncClassificacaoToJourney({ ativo, classePT: classeNova });
     } catch (error: any) {
       toast({ title: "Erro ao atualizar classificação", description: error.message, variant: "destructive" });
     } finally {
@@ -1784,6 +1801,11 @@ export default function DataManagement() {
           } as any);
         if (insertError) throw insertError;
         toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${formatLiquidezDisplay({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo, liquidez_fechada: fechada })}` });
+        await syncClassificacaoToJourney({
+          ativo,
+          classePT: editingItem["Classe do ativo"]?.trim() || '',
+          liquidez: { calendarDays: corridosNovo, businessDays: uteisNovo, closed: fechada },
+        });
       } else {
         const row = existing[0] as any;
         const corridosExistente = (row.Liquidez_Corridos || '').toString().trim() || null;
@@ -1801,6 +1823,11 @@ export default function DataManagement() {
             .eq('Ativo', ativo);
           if (updateError) throw updateError;
           toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${formatLiquidezDisplay({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo, liquidez_fechada: fechada })}` });
+          await syncClassificacaoToJourney({
+            ativo,
+            classePT: editingItem["Classe do ativo"]?.trim() || '',
+            liquidez: { calendarDays: corridosNovo, businessDays: uteisNovo, closed: fechada },
+          });
         } else {
           setRagLiquidezConflictDialog({
             open: true,
@@ -1851,6 +1878,11 @@ export default function DataManagement() {
       } else {
         toast({ title: "Liquidez atualizada!", description: `"${ativo}" (apenas RAG)` });
       }
+      await syncClassificacaoToJourney({
+        ativo,
+        classePT: editingItem?.["Classe do ativo"]?.trim() || '',
+        liquidez: { calendarDays: corridosNovo, businessDays: uteisNovo, closed: fechadaNovo },
+      });
     } catch (error: any) {
       toast({ title: "Erro ao atualizar liquidez", description: error.message, variant: "destructive" });
     } finally {
@@ -1883,6 +1915,11 @@ export default function DataManagement() {
           .insert({ Ativo: ativo, Vencimento: vencimentoNovo, Classificacao: classeAtual } as any);
         if (insertError) throw insertError;
         toast({ title: "Vencimento gravado!", description: `"${ativo}" → ${vencimentoNovo}` });
+        await syncClassificacaoToJourney({
+          ativo,
+          classePT: editingItem["Classe do ativo"]?.trim() || '',
+          vencimento: vencimentoNovo,
+        });
       } else {
         const row = existing[0] as any;
         const vencimentoExistente = row.Vencimento || null;
@@ -1909,6 +1946,11 @@ export default function DataManagement() {
           } else {
             toast({ title: "Vencimento atualizado!", description: `"${ativo}" → ${vencimentoNovo} (apenas RAG)` });
           }
+          await syncClassificacaoToJourney({
+            ativo,
+            classePT: editingItem["Classe do ativo"]?.trim() || '',
+            vencimento: vencimentoNovo,
+          });
         }
       }
     } catch (error: any) {
@@ -1979,6 +2021,7 @@ export default function DataManagement() {
       }
       await fetchData();
       toast({ title: "Classificação aplicada a todos os clientes", description: `"${ativo}" → ${classeNova} (${dadosIds.length} registro(s))` });
+      await syncClassificacaoToJourney({ ativo, classePT: classeNova });
     } catch (error: any) {
       toast({ title: "Erro ao aplicar classificação", description: error.message, variant: "destructive" });
     } finally {
@@ -2030,6 +2073,11 @@ export default function DataManagement() {
       }
       await fetchData();
       toast({ title: "Liquidez aplicada a todos os clientes", description: `"${ativo}" (${dadosIds.length} registro(s))` });
+      await syncClassificacaoToJourney({
+        ativo,
+        classePT: editingItem["Classe do ativo"]?.trim() || '',
+        liquidez: { calendarDays: corridosNovo, businessDays: uteisNovo, closed: fechada },
+      });
     } catch (error: any) {
       toast({ title: "Erro ao aplicar liquidez", description: error.message, variant: "destructive" });
     } finally {
@@ -2078,6 +2126,11 @@ export default function DataManagement() {
       }
       await fetchData();
       toast({ title: "Vencimento aplicado a todos os clientes", description: `"${ativo}" → ${vencimentoNovo} (${dadosIds.length} registro(s))` });
+      await syncClassificacaoToJourney({
+        ativo,
+        classePT: editingItem["Classe do ativo"]?.trim() || '',
+        vencimento: vencimentoNovo,
+      });
     } catch (error: any) {
       toast({ title: "Erro ao aplicar vencimento", description: error.message, variant: "destructive" });
     } finally {
@@ -6384,6 +6437,7 @@ interface VerificationResult {
                 classesAtivo={[...VALID_ASSET_CLASSES]}
                 instituicoes={instituicoes}
                 ativosOriginais={ativosUnique}
+                dadosPerformanceRows={dadosData}
                 refreshSignal={overridesRefreshSignal}
                 prefillRequest={overridePrefill ?? undefined}
                 onOverridesChanged={() => setOverridesRefreshSignal((s) => s + 1)}

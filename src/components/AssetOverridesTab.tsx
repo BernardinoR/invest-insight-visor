@@ -42,6 +42,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Plus,
   Edit,
@@ -50,7 +51,14 @@ import {
   Search,
   RefreshCw,
   ArrowRight,
+  AlertTriangle,
 } from "lucide-react";
+import {
+  postOverride,
+  deleteOverride,
+  resolveProfileId,
+  type DadosPerformanceRow,
+} from "@/lib/visorBridge";
 
 // ===== Geração de nome padrão =====
 const detectPrefixo = (ativoOriginal: string, classeAtivo: string): string => {
@@ -164,6 +172,8 @@ interface AssetOverridesTabProps {
   classesAtivo: string[];
   instituicoes: string[];
   ativosOriginais: string[]; // ativos vistos para esse cliente, para autocomplete
+  /** Linhas de DadosPerformance carregadas pela página-mãe — usadas pra resolver o profile_id canônico. */
+  dadosPerformanceRows: DadosPerformanceRow[];
   /** Quando muda, o componente recarrega as regras (útil após salvar do modal externo) */
   refreshSignal?: number;
   /** Quando o nonce muda, abre o dialog de criação pré-preenchido com os campos abaixo. */
@@ -213,6 +223,7 @@ export function AssetOverridesTab({
   classesAtivo,
   instituicoes,
   ativosOriginais,
+  dadosPerformanceRows,
   refreshSignal,
   prefillRequest,
   onOverridesChanged,
@@ -220,6 +231,36 @@ export function AssetOverridesTab({
   const { toast } = useToast();
   const [overrides, setOverrides] = useState<AssetOverride[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Resolve o profile_id canônico a partir das linhas de DadosPerformance do
+  // cliente. Sem profile_id, o motor ainda não reconsolidou o cliente e
+  // qualquer override iria pra chave errada no Journey — editor bloqueado.
+  const profileId = useMemo(
+    () => resolveProfileId(dadosPerformanceRows, clientName),
+    [dadosPerformanceRows, clientName]
+  );
+  const overrideEditingBlocked = profileId === null;
+
+  const syncOverrideToJourney = async (
+    input: Parameters<typeof postOverride>[0]
+  ) => {
+    try {
+      await postOverride(input);
+    } catch {
+      toast({ title: "não sincronizou com o Journey — tente de novo", variant: "destructive" });
+    }
+  };
+
+  const syncDeleteOverrideToJourney = async (
+    input: Parameters<typeof deleteOverride>[0]
+  ) => {
+    try {
+      await deleteOverride(input);
+    } catch {
+      toast({ title: "não sincronizou com o Journey — tente de novo", variant: "destructive" });
+    }
+  };
+
 
   const [filterInstituicao, setFilterInstituicao] = useState<string>("__all__");
   const [searchAtivo, setSearchAtivo] = useState("");
@@ -332,6 +373,14 @@ export function AssetOverridesTab({
   };
 
   const handleSave = async () => {
+    if (overrideEditingBlocked || !profileId) {
+      toast({
+        title: "Editor de overrides bloqueado",
+        description: "Reconsolide este cliente no motor pra editar overrides.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!form.cliente || !form.instituicao || !form.ativo_original) {
       toast({
         title: "Campos obrigatórios",
@@ -450,6 +499,20 @@ export function AssetOverridesTab({
       setIsDialogOpen(false);
       await fetchOverrides();
       onOverridesChanged?.();
+
+      // Dual-write pro Journey — chave composta, form completo. `null` limpa.
+      await syncOverrideToJourney({
+        profileId,
+        institution: form.instituicao,
+        ativoOriginal: form.ativo_original.trim(),
+        nomeAjustado: form.ativo_novo.trim() || null,
+        classePT: form.classe_ativo || null,
+        emissor: form.emissor.trim() || null,
+        taxa: form.taxa.trim() || null,
+        vencimento: form.vencimento || null,
+        liquidez: form.liquidez.trim() || null,
+        active: form.ativo,
+      });
     } catch (error: any) {
       toast({
         title: "Erro ao salvar regra",
@@ -462,6 +525,14 @@ export function AssetOverridesTab({
   };
 
   const handleToggleAtivo = async (o: AssetOverride) => {
+    if (overrideEditingBlocked || !profileId) {
+      toast({
+        title: "Editor de overrides bloqueado",
+        description: "Reconsolide este cliente no motor pra editar overrides.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       const { error } = await supabase
         .from("asset_overrides" as any)
@@ -470,6 +541,13 @@ export function AssetOverridesTab({
       if (error) throw error;
       await fetchOverrides();
       onOverridesChanged?.();
+
+      await syncOverrideToJourney({
+        profileId,
+        institution: o.instituicao,
+        ativoOriginal: o.ativo_original,
+        active: !o.ativo,
+      });
     } catch (error: any) {
       toast({
         title: "Erro ao alterar status",
@@ -480,7 +558,17 @@ export function AssetOverridesTab({
   };
 
   const handleDelete = async () => {
+    if (overrideEditingBlocked || !profileId) {
+      toast({
+        title: "Editor de overrides bloqueado",
+        description: "Reconsolide este cliente no motor pra editar overrides.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!deleteId) return;
+    // Capturar chave composta ANTES do delete local — a linha some do estado.
+    const target = overrides.find((o) => o.id === deleteId);
     try {
       const { error } = await supabase
         .from("asset_overrides" as any)
@@ -491,6 +579,14 @@ export function AssetOverridesTab({
       setDeleteId(null);
       await fetchOverrides();
       onOverridesChanged?.();
+
+      if (target) {
+        await syncDeleteOverrideToJourney({
+          profileId,
+          institution: target.instituicao,
+          ativoOriginal: target.ativo_original,
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Erro ao excluir",
@@ -499,6 +595,7 @@ export function AssetOverridesTab({
       });
     }
   };
+
 
   return (
     <Card>
@@ -520,7 +617,7 @@ export function AssetOverridesTab({
               />
               Atualizar
             </Button>
-            <Button size="sm" onClick={openCreate}>
+            <Button size="sm" onClick={openCreate} disabled={overrideEditingBlocked}>
               <Plus className="h-4 w-4 mr-1" />
               Nova regra
             </Button>
@@ -533,6 +630,14 @@ export function AssetOverridesTab({
         </p>
       </CardHeader>
       <CardContent>
+        {overrideEditingBlocked && (
+          <Alert variant="destructive" className="mb-3">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Reconsolide este cliente no motor pra editar overrides.
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="flex items-center gap-2 mb-3">
           <div className="relative flex-1 max-w-xs">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -642,6 +747,7 @@ export function AssetOverridesTab({
                       <Switch
                         checked={o.ativo}
                         onCheckedChange={() => handleToggleAtivo(o)}
+                        disabled={overrideEditingBlocked}
                       />
                     </TableCell>
                     <TableCell className="text-right">
@@ -651,6 +757,7 @@ export function AssetOverridesTab({
                           size="sm"
                           className="h-8 w-8 p-0"
                           onClick={() => openEdit(o)}
+                          disabled={overrideEditingBlocked}
                           title="Editar"
                         >
                           <Edit className="h-4 w-4" />
@@ -660,6 +767,7 @@ export function AssetOverridesTab({
                           size="sm"
                           className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                           onClick={() => setDeleteId(o.id)}
+                          disabled={overrideEditingBlocked}
                           title="Excluir"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -924,7 +1032,7 @@ export function AssetOverridesTab({
             >
               Cancelar
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving || overrideEditingBlocked}>
               {saving ? "Salvando..." : form.id ? "Salvar" : "Criar regra"}
             </Button>
           </DialogFooter>
