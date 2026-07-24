@@ -757,6 +757,7 @@ export function AssetOverridesTab({
                           size="sm"
                           className="h-8 w-8 p-0"
                           onClick={() => openEdit(o)}
+                          disabled={overrideEditingBlocked}
                           title="Editar"
                         >
                           <Edit className="h-4 w-4" />
@@ -766,6 +767,7 @@ export function AssetOverridesTab({
                           size="sm"
                           className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                           onClick={() => setDeleteId(o.id)}
+                          disabled={overrideEditingBlocked}
                           title="Excluir"
                         >
                           <Trash2 className="h-4 w-4" />
