@@ -1756,6 +1756,7 @@ export default function DataManagement() {
       } else {
         toast({ title: "Classificação atualizada!", description: `"${ativo}" → ${classeNova} (apenas RAG)` });
       }
+      await syncClassificacaoToJourney({ ativo, classePT: classeNova });
     } catch (error: any) {
       toast({ title: "Erro ao atualizar classificação", description: error.message, variant: "destructive" });
     } finally {
