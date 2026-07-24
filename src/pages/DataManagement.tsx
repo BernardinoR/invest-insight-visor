@@ -1878,6 +1878,11 @@ export default function DataManagement() {
       } else {
         toast({ title: "Liquidez atualizada!", description: `"${ativo}" (apenas RAG)` });
       }
+      await syncClassificacaoToJourney({
+        ativo,
+        classePT: editingItem?.["Classe do ativo"]?.trim() || '',
+        liquidez: { calendarDays: corridosNovo, businessDays: uteisNovo, closed: fechadaNovo },
+      });
     } catch (error: any) {
       toast({ title: "Erro ao atualizar liquidez", description: error.message, variant: "destructive" });
     } finally {
