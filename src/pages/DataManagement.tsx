@@ -1823,6 +1823,11 @@ export default function DataManagement() {
             .eq('Ativo', ativo);
           if (updateError) throw updateError;
           toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${formatLiquidezDisplay({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo, liquidez_fechada: fechada })}` });
+          await syncClassificacaoToJourney({
+            ativo,
+            classePT: editingItem["Classe do ativo"]?.trim() || '',
+            liquidez: { calendarDays: corridosNovo, businessDays: uteisNovo, closed: fechada },
+          });
         } else {
           setRagLiquidezConflictDialog({
             open: true,
