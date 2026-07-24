@@ -8,6 +8,7 @@ import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, Ch
 import { RolloverDialog } from "@/components/RolloverDialog";
 import { SplitAccountDialog } from "@/components/SplitAccountDialog";
 import { AssetOverridesTab } from "@/components/AssetOverridesTab";
+import { postClassificacao } from "@/lib/visorBridge";
 
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
