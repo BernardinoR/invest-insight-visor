@@ -373,6 +373,14 @@ export function AssetOverridesTab({
   };
 
   const handleSave = async () => {
+    if (overrideEditingBlocked || !profileId) {
+      toast({
+        title: "Editor de overrides bloqueado",
+        description: "Reconsolide este cliente no motor pra editar overrides.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!form.cliente || !form.instituicao || !form.ativo_original) {
       toast({
         title: "Campos obrigatórios",
@@ -491,6 +499,20 @@ export function AssetOverridesTab({
       setIsDialogOpen(false);
       await fetchOverrides();
       onOverridesChanged?.();
+
+      // Dual-write pro Journey — chave composta, form completo. `null` limpa.
+      await syncOverrideToJourney({
+        profileId,
+        institution: form.instituicao,
+        ativoOriginal: form.ativo_original.trim(),
+        nomeAjustado: form.ativo_novo.trim() || null,
+        classePT: form.classe_ativo || null,
+        emissor: form.emissor.trim() || null,
+        taxa: form.taxa.trim() || null,
+        vencimento: form.vencimento || null,
+        liquidez: form.liquidez.trim() || null,
+        active: form.ativo,
+      });
     } catch (error: any) {
       toast({
         title: "Erro ao salvar regra",
@@ -503,6 +525,14 @@ export function AssetOverridesTab({
   };
 
   const handleToggleAtivo = async (o: AssetOverride) => {
+    if (overrideEditingBlocked || !profileId) {
+      toast({
+        title: "Editor de overrides bloqueado",
+        description: "Reconsolide este cliente no motor pra editar overrides.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       const { error } = await supabase
         .from("asset_overrides" as any)
@@ -511,6 +541,13 @@ export function AssetOverridesTab({
       if (error) throw error;
       await fetchOverrides();
       onOverridesChanged?.();
+
+      await syncOverrideToJourney({
+        profileId,
+        institution: o.instituicao,
+        ativoOriginal: o.ativo_original,
+        active: !o.ativo,
+      });
     } catch (error: any) {
       toast({
         title: "Erro ao alterar status",
@@ -521,7 +558,17 @@ export function AssetOverridesTab({
   };
 
   const handleDelete = async () => {
+    if (overrideEditingBlocked || !profileId) {
+      toast({
+        title: "Editor de overrides bloqueado",
+        description: "Reconsolide este cliente no motor pra editar overrides.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!deleteId) return;
+    // Capturar chave composta ANTES do delete local — a linha some do estado.
+    const target = overrides.find((o) => o.id === deleteId);
     try {
       const { error } = await supabase
         .from("asset_overrides" as any)
@@ -532,6 +579,14 @@ export function AssetOverridesTab({
       setDeleteId(null);
       await fetchOverrides();
       onOverridesChanged?.();
+
+      if (target) {
+        await syncDeleteOverrideToJourney({
+          profileId,
+          institution: target.instituicao,
+          ativoOriginal: target.ativo_original,
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Erro ao excluir",
@@ -540,6 +595,7 @@ export function AssetOverridesTab({
       });
     }
   };
+
 
   return (
     <Card>
