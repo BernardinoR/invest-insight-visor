@@ -630,6 +630,14 @@ export function AssetOverridesTab({
         </p>
       </CardHeader>
       <CardContent>
+        {overrideEditingBlocked && (
+          <Alert variant="destructive" className="mb-3">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Reconsolide este cliente no motor pra editar overrides.
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="flex items-center gap-2 mb-3">
           <div className="relative flex-1 max-w-xs">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
