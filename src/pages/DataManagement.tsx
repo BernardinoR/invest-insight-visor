@@ -2073,6 +2073,11 @@ export default function DataManagement() {
       }
       await fetchData();
       toast({ title: "Liquidez aplicada a todos os clientes", description: `"${ativo}" (${dadosIds.length} registro(s))` });
+      await syncClassificacaoToJourney({
+        ativo,
+        classePT: editingItem["Classe do ativo"]?.trim() || '',
+        liquidez: { calendarDays: corridosNovo, businessDays: uteisNovo, closed: fechada },
+      });
     } catch (error: any) {
       toast({ title: "Erro ao aplicar liquidez", description: error.message, variant: "destructive" });
     } finally {
