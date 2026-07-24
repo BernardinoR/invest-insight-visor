@@ -617,7 +617,7 @@ export function AssetOverridesTab({
               />
               Atualizar
             </Button>
-            <Button size="sm" onClick={openCreate}>
+            <Button size="sm" onClick={openCreate} disabled={overrideEditingBlocked}>
               <Plus className="h-4 w-4 mr-1" />
               Nova regra
             </Button>
