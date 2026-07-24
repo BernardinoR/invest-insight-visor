@@ -2021,6 +2021,7 @@ export default function DataManagement() {
       }
       await fetchData();
       toast({ title: "Classificação aplicada a todos os clientes", description: `"${ativo}" → ${classeNova} (${dadosIds.length} registro(s))` });
+      await syncClassificacaoToJourney({ ativo, classePT: classeNova });
     } catch (error: any) {
       toast({ title: "Erro ao aplicar classificação", description: error.message, variant: "destructive" });
     } finally {
