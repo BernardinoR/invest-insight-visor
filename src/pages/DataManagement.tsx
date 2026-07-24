@@ -6437,6 +6437,7 @@ interface VerificationResult {
                 classesAtivo={[...VALID_ASSET_CLASSES]}
                 instituicoes={instituicoes}
                 ativosOriginais={ativosUnique}
+                dadosPerformanceRows={dadosData}
                 refreshSignal={overridesRefreshSignal}
                 prefillRequest={overridePrefill ?? undefined}
                 onOverridesChanged={() => setOverridesRefreshSignal((s) => s + 1)}
