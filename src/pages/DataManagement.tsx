@@ -1801,6 +1801,11 @@ export default function DataManagement() {
           } as any);
         if (insertError) throw insertError;
         toast({ title: "Liquidez gravada!", description: `"${ativo}" → ${formatLiquidezDisplay({ liquidez_corridos: corridosNovo, liquidez_uteis: uteisNovo, liquidez_fechada: fechada })}` });
+        await syncClassificacaoToJourney({
+          ativo,
+          classePT: editingItem["Classe do ativo"]?.trim() || '',
+          liquidez: { calendarDays: corridosNovo, businessDays: uteisNovo, closed: fechada },
+        });
       } else {
         const row = existing[0] as any;
         const corridosExistente = (row.Liquidez_Corridos || '').toString().trim() || null;
