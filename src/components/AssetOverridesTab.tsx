@@ -42,6 +42,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Plus,
   Edit,
@@ -50,7 +51,14 @@ import {
   Search,
   RefreshCw,
   ArrowRight,
+  AlertTriangle,
 } from "lucide-react";
+import {
+  postOverride,
+  deleteOverride,
+  resolveProfileId,
+  type DadosPerformanceRow,
+} from "@/lib/visorBridge";
 
 // ===== Geração de nome padrão =====
 const detectPrefixo = (ativoOriginal: string, classeAtivo: string): string => {
