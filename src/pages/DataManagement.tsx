@@ -2126,6 +2126,11 @@ export default function DataManagement() {
       }
       await fetchData();
       toast({ title: "Vencimento aplicado a todos os clientes", description: `"${ativo}" → ${vencimentoNovo} (${dadosIds.length} registro(s))` });
+      await syncClassificacaoToJourney({
+        ativo,
+        classePT: editingItem["Classe do ativo"]?.trim() || '',
+        vencimento: vencimentoNovo,
+      });
     } catch (error: any) {
       toast({ title: "Erro ao aplicar vencimento", description: error.message, variant: "destructive" });
     } finally {
