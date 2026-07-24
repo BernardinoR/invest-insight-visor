@@ -223,6 +223,7 @@ export function AssetOverridesTab({
   classesAtivo,
   instituicoes,
   ativosOriginais,
+  dadosPerformanceRows,
   refreshSignal,
   prefillRequest,
   onOverridesChanged,
@@ -230,6 +231,36 @@ export function AssetOverridesTab({
   const { toast } = useToast();
   const [overrides, setOverrides] = useState<AssetOverride[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Resolve o profile_id canônico a partir das linhas de DadosPerformance do
+  // cliente. Sem profile_id, o motor ainda não reconsolidou o cliente e
+  // qualquer override iria pra chave errada no Journey — editor bloqueado.
+  const profileId = useMemo(
+    () => resolveProfileId(dadosPerformanceRows, clientName),
+    [dadosPerformanceRows, clientName]
+  );
+  const overrideEditingBlocked = profileId === null;
+
+  const syncOverrideToJourney = async (
+    input: Parameters<typeof postOverride>[0]
+  ) => {
+    try {
+      await postOverride(input);
+    } catch {
+      toast({ title: "não sincronizou com o Journey — tente de novo", variant: "destructive" });
+    }
+  };
+
+  const syncDeleteOverrideToJourney = async (
+    input: Parameters<typeof deleteOverride>[0]
+  ) => {
+    try {
+      await deleteOverride(input);
+    } catch {
+      toast({ title: "não sincronizou com o Journey — tente de novo", variant: "destructive" });
+    }
+  };
+
 
   const [filterInstituicao, setFilterInstituicao] = useState<string>("__all__");
   const [searchAtivo, setSearchAtivo] = useState("");
