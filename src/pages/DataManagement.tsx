@@ -1704,6 +1704,7 @@ export default function DataManagement() {
           .insert({ Ativo: ativo, Classificacao: classeNova, Liquidez_Corridos: corridosAtual, Liquidez_Uteis: uteisAtual } as any);
         if (insertError) throw insertError;
         toast({ title: "Classificação gravada!", description: `"${ativo}" → ${classeNova}` });
+        await syncClassificacaoToJourney({ ativo, classePT: classeNova });
       } else if (existing[0].Classificacao === classeNova) {
         toast({ title: "Classificação já gravada", description: `"${ativo}" já está como ${classeNova}.` });
       } else {
