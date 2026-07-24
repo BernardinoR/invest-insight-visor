@@ -212,6 +212,20 @@ export default function DataManagement() {
   const { clientName } = useParams<{ clientName: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Dual-write pro canônico (Journey via broker no CRM) — chamado DEPOIS que o
+  // write local (RAG_Processador/DadosPerformance) já teve sucesso. Nunca
+  // reverte o local: falha aqui só avisa o usuário via toast.
+  const syncClassificacaoToJourney = useCallback(
+    async (input: Parameters<typeof postClassificacao>[0]) => {
+      try {
+        await postClassificacao(input);
+      } catch {
+        toast({ title: "não sincronizou com o Journey — tente de novo", variant: "destructive" });
+      }
+    },
+    [toast]
+  );
   const { cdiData } = useCDIData();
   const { getCotacaoByCompetencia } = usePTAXData();
   const { marketData: marketIndicators } = useMarketIndicators();
