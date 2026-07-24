@@ -747,6 +747,7 @@ export function AssetOverridesTab({
                       <Switch
                         checked={o.ativo}
                         onCheckedChange={() => handleToggleAtivo(o)}
+                        disabled={overrideEditingBlocked}
                       />
                     </TableCell>
                     <TableCell className="text-right">
