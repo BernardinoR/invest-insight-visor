@@ -1915,6 +1915,11 @@ export default function DataManagement() {
           .insert({ Ativo: ativo, Vencimento: vencimentoNovo, Classificacao: classeAtual } as any);
         if (insertError) throw insertError;
         toast({ title: "Vencimento gravado!", description: `"${ativo}" → ${vencimentoNovo}` });
+        await syncClassificacaoToJourney({
+          ativo,
+          classePT: editingItem["Classe do ativo"]?.trim() || '',
+          vencimento: vencimentoNovo,
+        });
       } else {
         const row = existing[0] as any;
         const vencimentoExistente = row.Vencimento || null;
