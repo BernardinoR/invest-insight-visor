@@ -172,6 +172,8 @@ interface AssetOverridesTabProps {
   classesAtivo: string[];
   instituicoes: string[];
   ativosOriginais: string[]; // ativos vistos para esse cliente, para autocomplete
+  /** Linhas de DadosPerformance carregadas pela página-mãe — usadas pra resolver o profile_id canônico. */
+  dadosPerformanceRows: DadosPerformanceRow[];
   /** Quando muda, o componente recarrega as regras (útil após salvar do modal externo) */
   refreshSignal?: number;
   /** Quando o nonce muda, abre o dialog de criação pré-preenchido com os campos abaixo. */
