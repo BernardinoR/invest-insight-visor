@@ -1946,6 +1946,11 @@ export default function DataManagement() {
           } else {
             toast({ title: "Vencimento atualizado!", description: `"${ativo}" → ${vencimentoNovo} (apenas RAG)` });
           }
+          await syncClassificacaoToJourney({
+            ativo,
+            classePT: editingItem["Classe do ativo"]?.trim() || '',
+            vencimento: vencimentoNovo,
+          });
         }
       }
     } catch (error: any) {
