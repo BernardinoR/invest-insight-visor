@@ -1032,7 +1032,7 @@ export function AssetOverridesTab({
             >
               Cancelar
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving || overrideEditingBlocked}>
               {saving ? "Salvando..." : form.id ? "Salvar" : "Criar regra"}
             </Button>
           </DialogFooter>
