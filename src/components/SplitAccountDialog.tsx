@@ -514,28 +514,47 @@ export function SplitAccountDialog({
 
   // Load config into form from saved configs tab
   const loadConfigIntoForm = (config: SplitConfig) => {
+    const base = consolidado;
+    const compAtual = base?.Competencia;
+
+    // Prioriza o consolidado atualmente aberto; senão, procura na MESMA competência
     const allConsolidados = consolidadoData || [];
-    const match = allConsolidados.find(
-      (c: any) =>
-        c.Instituicao === config.instituicao &&
-        (c.nomeConta || '') === config.nome_conta_origem
-    );
+    const matchesOrigem = (c: any) =>
+      c.Instituicao === config.instituicao &&
+      (c.nomeConta || '') === (config.nome_conta_origem || '');
+
+    const match =
+      base && matchesOrigem(base)
+        ? base
+        : allConsolidados.find((c: any) => matchesOrigem(c) && (!compAtual || c.Competencia === compAtual));
 
     if (!match) {
       toast({
         title: 'Consolidado não encontrado',
-        description: `Não há consolidado para ${config.instituicao} / ${config.nome_conta_origem || '(sem conta)'} na competência atual.`,
+        description: `Não há consolidado para ${config.instituicao} / ${config.nome_conta_origem || '(sem conta)'} na competência ${compAtual || 'atual'}.`,
         variant: 'destructive',
       });
       return null;
     }
 
     const comp = match.Competencia;
+    const destino = (config.nome_conta_destino || '').trim();
+
     const linkedAtivos = dadosData.filter(
       (d: any) =>
         d.Competencia === comp &&
         d.Instituicao === match.Instituicao &&
         (d.nomeConta || '') === (match.nomeConta || '') &&
+        d.Nome === match.Nome
+    );
+
+    // Ativos que JÁ estão na conta destino (split já aplicado nesta competência)
+    const ativosNoDestino = dadosData.filter(
+      (d: any) =>
+        d.Competencia === comp &&
+        d.Instituicao === match.Instituicao &&
+        (d.nomeConta || '').trim() === destino &&
+        destino !== '' &&
         d.Nome === match.Nome
     );
 
@@ -563,7 +582,17 @@ export function SplitAccountDialog({
       return a;
     });
 
-    return { updatedAtivos, match };
+    const jaSeparados: SplitAtivo[] = ativosNoDestino.map((a: any) => ({
+      id: a.id,
+      Ativo: a.Ativo || '(sem nome)',
+      Posicao: a.Posicao || 0,
+      selected: true,
+      percentual: 100,
+      valorTransferido: 0,
+      jaSeparado: true,
+    }));
+
+    return { updatedAtivos: [...updatedAtivos, ...jaSeparados], match };
   };
 
   // Saved configs tab: apply a config
@@ -571,6 +600,7 @@ export function SplitAccountDialog({
     const result = loadConfigIntoForm(config);
     if (!result) return;
 
+    setActiveConsolidado(result.match);
     setConfigId(config.id);
     setLoadedDestino(config.nome_conta_destino);
     setNomeContaDestino(config.nome_conta_destino);
@@ -585,6 +615,7 @@ export function SplitAccountDialog({
     const result = loadConfigIntoForm(config);
     if (!result) return;
 
+    setActiveConsolidado(result.match);
     setConfigId(config.id);
     setLoadedDestino(config.nome_conta_destino);
     setNomeContaDestino(config.nome_conta_destino);
