@@ -78,6 +78,7 @@ export function SplitAccountDialog({
   const [ativos, setAtivos] = useState<SplitAtivo[]>([]);
   const [saving, setSaving] = useState(false);
   const [configId, setConfigId] = useState<string | null>(null);
+  const [loadedDestino, setLoadedDestino] = useState<string | null>(null);
   const [configLoaded, setConfigLoaded] = useState(false);
 
   // Saved configs state
@@ -131,6 +132,7 @@ export function SplitAccountDialog({
       setNomeContaDestino('');
       setIsOutraPessoa(false);
       setConfigId(null);
+      setLoadedDestino(null);
       setConfigLoaded(false);
       return;
     }
@@ -157,32 +159,31 @@ export function SplitAccountDialog({
   }, [open, consolidado, dadosData, preloadConfigId]);
 
   const loadSavedConfig = async (cons: any, initialAtivos: SplitAtivo[], forceConfigId?: string) => {
-    try {
-      let fetchedConfigs: any[] | null = null;
+    // Só carrega uma config existente quando o usuário escolheu explicitamente
+    // (botão "Editar" na aba de configs salvas ou preloadConfigId).
+    // Sem isso, o form abre limpo para criar uma NOVA config.
+    if (!forceConfigId) {
+      setConfigId(null);
+      setLoadedDestino(null);
+      setNomeContaDestino('');
+      setIsOutraPessoa(false);
+      setAtivos(initialAtivos);
+      setConfigLoaded(true);
+      return;
+    }
 
-      if (forceConfigId) {
-        const { data } = await supabase
-          .from('account_split_configs')
-          .select('*')
-          .eq('id', forceConfigId)
-          .limit(1);
-        fetchedConfigs = data;
-      } else {
-        const { data } = await supabase
-          .from('account_split_configs')
-          .select('*')
-          .eq('cliente', cons.Nome)
-          .eq('instituicao', cons.Instituicao)
-          .eq('nome_conta_origem', cons.nomeConta || '')
-          .eq('ativo', true)
-          .limit(1);
-        fetchedConfigs = data;
-      }
+    try {
+      const { data: fetchedConfigs } = await supabase
+        .from('account_split_configs')
+        .select('*')
+        .eq('id', forceConfigId)
+        .limit(1);
 
       if (fetchedConfigs && fetchedConfigs.length > 0) {
         const config = fetchedConfigs[0];
         setConfigId(config.id);
         setNomeContaDestino(config.nome_conta_destino);
+        setLoadedDestino(config.nome_conta_destino);
         setIsOutraPessoa(!!config.is_outra_pessoa);
 
         const especificos: Array<{ ativo: string; percentual: number }> =
@@ -221,6 +222,8 @@ export function SplitAccountDialog({
       setConfigLoaded(true);
     }
   };
+
+
 
   const handleToggle = (index: number, checked: boolean) => {
     const updated = [...ativos];
@@ -275,6 +278,11 @@ export function SplitAccountDialog({
     };
   };
 
+  // Se está em modo edição mas o destino mudou, salva como NOVA config
+  // (evita sobrescrever a config carregada sem querer).
+  const shouldUpdateExisting = () =>
+    !!configId && (loadedDestino ?? '').trim() === nomeContaDestino.trim();
+
   const handleSaveConfig = async () => {
     if (!nomeContaDestino.trim()) {
       toast({ title: 'Erro', description: 'Informe o nome da sub-conta destino', variant: 'destructive' });
@@ -283,12 +291,13 @@ export function SplitAccountDialog({
     setSaving(true);
     try {
       const payload = buildConfigPayload();
-      if (configId) {
+      if (shouldUpdateExisting()) {
         const { error } = await supabase
           .from('account_split_configs')
           .update({ ...payload, updated_at: new Date().toISOString() })
-          .eq('id', configId);
+          .eq('id', configId!);
         if (error) throw error;
+        toast({ title: 'Config atualizada!', description: 'Regras de split atualizadas.' });
       } else {
         const { data, error } = await supabase
           .from('account_split_configs')
@@ -297,14 +306,23 @@ export function SplitAccountDialog({
           .single();
         if (error) throw error;
         setConfigId(data.id);
+        setLoadedDestino(nomeContaDestino.trim());
+        toast({ title: 'Nova config salva!', description: 'Regras de split salvas para reutilização.' });
       }
-      toast({ title: 'Config salva!', description: 'Regras de split salvas para reutilização.' });
       fetchConfigs();
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleNovaConfig = () => {
+    setConfigId(null);
+    setLoadedDestino(null);
+    setNomeContaDestino('');
+    setIsOutraPessoa(false);
+    setAtivos(prev => prev.map(a => ({ ...a, selected: false, percentual: 100, valorTransferido: 0 })));
   };
 
   const handleApply = async () => {
@@ -321,19 +339,24 @@ export function SplitAccountDialog({
     try {
       // Save config first
       const payload = buildConfigPayload();
-      if (configId) {
+      if (shouldUpdateExisting()) {
         await supabase
           .from('account_split_configs')
           .update({ ...payload, updated_at: new Date().toISOString() })
-          .eq('id', configId);
+          .eq('id', configId!);
       } else {
         const { data } = await supabase
           .from('account_split_configs')
           .insert(payload)
           .select('id')
           .single();
-        if (data) setConfigId(data.id);
+        if (data) {
+          setConfigId(data.id);
+          setLoadedDestino(nomeContaDestino.trim());
+        }
       }
+
+
 
       // Execute split on DadosPerformance
       const selected = ativos.filter(a => a.selected);
@@ -518,6 +541,7 @@ export function SplitAccountDialog({
     if (!result) return;
 
     setConfigId(config.id);
+    setLoadedDestino(config.nome_conta_destino);
     setNomeContaDestino(config.nome_conta_destino);
     setIsOutraPessoa(!!config.is_outra_pessoa);
     setAtivos(result.updatedAtivos);
@@ -531,6 +555,7 @@ export function SplitAccountDialog({
     if (!result) return;
 
     setConfigId(config.id);
+    setLoadedDestino(config.nome_conta_destino);
     setNomeContaDestino(config.nome_conta_destino);
     setIsOutraPessoa(!!config.is_outra_pessoa);
     setAtivos(result.updatedAtivos);
@@ -556,6 +581,16 @@ export function SplitAccountDialog({
   };
 
   const showForm = consolidado && configLoaded;
+
+  // Configs já salvas para esta mesma conta de origem
+  const configsDaOrigem = useMemo(() => {
+    if (!consolidado) return [];
+    return configs.filter(
+      c =>
+        c.instituicao === consolidado.Instituicao &&
+        (c.nome_conta_origem || '') === (consolidado.nomeConta || '')
+    );
+  }, [configs, consolidado]);
 
   return (
     <>
@@ -595,6 +630,47 @@ export function SplitAccountDialog({
                   </div>
 
                   <Separator />
+
+                  {/* Configs já salvas desta conta de origem */}
+                  {configsDaOrigem.length > 0 && (
+                    <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        Configs salvas desta conta de origem ({configsDaOrigem.length}):
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {configsDaOrigem.map(c => (
+                          <Button
+                            key={c.id}
+                            variant={c.id === configId ? 'default' : 'outline'}
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => handleEditConfig(c)}
+                          >
+                            <Pencil className="h-3 w-3 mr-1" />
+                            {c.nome_conta_destino}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Modo de edição */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs">
+                      {configId ? (
+                        <Badge variant="secondary">Editando config: {loadedDestino}</Badge>
+                      ) : (
+                        <Badge variant="outline">Nova config</Badge>
+                      )}
+                    </div>
+                    {configId && (
+                      <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleNovaConfig}>
+                        + Nova config
+                      </Button>
+                    )}
+                  </div>
+
+
 
                   {/* Sub-conta destino */}
                   <div className="space-y-2">
