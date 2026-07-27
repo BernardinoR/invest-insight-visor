@@ -278,6 +278,11 @@ export function SplitAccountDialog({
     };
   };
 
+  // Se está em modo edição mas o destino mudou, salva como NOVA config
+  // (evita sobrescrever a config carregada sem querer).
+  const shouldUpdateExisting = () =>
+    !!configId && (loadedDestino ?? '').trim() === nomeContaDestino.trim();
+
   const handleSaveConfig = async () => {
     if (!nomeContaDestino.trim()) {
       toast({ title: 'Erro', description: 'Informe o nome da sub-conta destino', variant: 'destructive' });
@@ -286,12 +291,13 @@ export function SplitAccountDialog({
     setSaving(true);
     try {
       const payload = buildConfigPayload();
-      if (configId) {
+      if (shouldUpdateExisting()) {
         const { error } = await supabase
           .from('account_split_configs')
           .update({ ...payload, updated_at: new Date().toISOString() })
-          .eq('id', configId);
+          .eq('id', configId!);
         if (error) throw error;
+        toast({ title: 'Config atualizada!', description: 'Regras de split atualizadas.' });
       } else {
         const { data, error } = await supabase
           .from('account_split_configs')
@@ -300,14 +306,23 @@ export function SplitAccountDialog({
           .single();
         if (error) throw error;
         setConfigId(data.id);
+        setLoadedDestino(nomeContaDestino.trim());
+        toast({ title: 'Nova config salva!', description: 'Regras de split salvas para reutilização.' });
       }
-      toast({ title: 'Config salva!', description: 'Regras de split salvas para reutilização.' });
       fetchConfigs();
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleNovaConfig = () => {
+    setConfigId(null);
+    setLoadedDestino(null);
+    setNomeContaDestino('');
+    setIsOutraPessoa(false);
+    setAtivos(prev => prev.map(a => ({ ...a, selected: false, percentual: 100, valorTransferido: 0 })));
   };
 
   const handleApply = async () => {
@@ -324,19 +339,24 @@ export function SplitAccountDialog({
     try {
       // Save config first
       const payload = buildConfigPayload();
-      if (configId) {
+      if (shouldUpdateExisting()) {
         await supabase
           .from('account_split_configs')
           .update({ ...payload, updated_at: new Date().toISOString() })
-          .eq('id', configId);
+          .eq('id', configId!);
       } else {
         const { data } = await supabase
           .from('account_split_configs')
           .insert(payload)
           .select('id')
           .single();
-        if (data) setConfigId(data.id);
+        if (data) {
+          setConfigId(data.id);
+          setLoadedDestino(nomeContaDestino.trim());
+        }
       }
+
+
 
       // Execute split on DadosPerformance
       const selected = ativos.filter(a => a.selected);
