@@ -765,6 +765,14 @@ export function SplitAccountDialog({
 
                   <Separator />
 
+                  {jaSeparadosCount > 0 && (
+                    <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 text-xs text-amber-800 dark:text-amber-300">
+                      {configJaAplicada
+                        ? `Esta config já foi aplicada nesta competência: ${jaSeparadosCount} ativo(s) já estão em "${nomeContaDestino.trim()}".`
+                        : `${jaSeparadosCount} ativo(s) já estão em "${nomeContaDestino.trim()}" e aparecem abaixo apenas como referência.`}
+                    </div>
+                  )}
+
                   {/* Table of assets */}
                   <div className="border rounded-md overflow-auto max-h-[40vh]">
                     <Table>
@@ -779,14 +787,31 @@ export function SplitAccountDialog({
                       </TableHeader>
                       <TableBody>
                         {ativos.map((ativo, idx) => (
-                          <TableRow key={ativo.id} className={ativo.selected ? 'bg-primary/5' : ''}>
+                          <TableRow
+                            key={`${ativo.id}-${idx}`}
+                            className={
+                              ativo.jaSeparado
+                                ? 'bg-muted/40 text-muted-foreground'
+                                : ativo.selected
+                                  ? 'bg-primary/5'
+                                  : ''
+                            }
+                          >
                             <TableCell>
                               <Checkbox
                                 checked={ativo.selected}
+                                disabled={ativo.jaSeparado}
                                 onCheckedChange={(checked) => handleToggle(idx, !!checked)}
                               />
                             </TableCell>
-                            <TableCell className="font-medium text-sm">{ativo.Ativo}</TableCell>
+                            <TableCell className="font-medium text-sm">
+                              <div className="flex items-center gap-2">
+                                <span>{ativo.Ativo}</span>
+                                {ativo.jaSeparado && (
+                                  <Badge variant="secondary" className="text-[10px] font-normal">já separado</Badge>
+                                )}
+                              </div>
+                            </TableCell>
                             <TableCell className="text-right text-sm">{formatBR(ativo.Posicao)}</TableCell>
                             <TableCell className="text-center">
                               <Input
@@ -796,17 +821,18 @@ export function SplitAccountDialog({
                                 value={ativo.percentual}
                                 onChange={e => handlePercentChange(idx, parseFloat(e.target.value) || 0)}
                                 className="h-8 text-xs w-20 text-center mx-auto"
-                                disabled={!ativo.selected}
+                                disabled={!ativo.selected || ativo.jaSeparado}
                               />
                             </TableCell>
                             <TableCell className="text-right text-sm font-medium">
-                              {ativo.selected ? formatBR(ativo.valorTransferido) : '-'}
+                              {ativo.jaSeparado ? '—' : ativo.selected ? formatBR(ativo.valorTransferido) : '-'}
                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                   </div>
+
 
                   {/* Summary */}
                   <div className="bg-muted/50 rounded-lg p-4 space-y-2">
