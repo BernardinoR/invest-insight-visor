@@ -541,6 +541,7 @@ export function SplitAccountDialog({
     if (!result) return;
 
     setConfigId(config.id);
+    setLoadedDestino(config.nome_conta_destino);
     setNomeContaDestino(config.nome_conta_destino);
     setIsOutraPessoa(!!config.is_outra_pessoa);
     setAtivos(result.updatedAtivos);
@@ -554,6 +555,7 @@ export function SplitAccountDialog({
     if (!result) return;
 
     setConfigId(config.id);
+    setLoadedDestino(config.nome_conta_destino);
     setNomeContaDestino(config.nome_conta_destino);
     setIsOutraPessoa(!!config.is_outra_pessoa);
     setAtivos(result.updatedAtivos);
