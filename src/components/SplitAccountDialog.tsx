@@ -41,6 +41,7 @@ interface SplitAtivo {
   selected: boolean;
   percentual: number;
   valorTransferido: number;
+  jaSeparado?: boolean;
 }
 
 interface SplitConfig {
