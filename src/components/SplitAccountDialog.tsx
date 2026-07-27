@@ -159,32 +159,31 @@ export function SplitAccountDialog({
   }, [open, consolidado, dadosData, preloadConfigId]);
 
   const loadSavedConfig = async (cons: any, initialAtivos: SplitAtivo[], forceConfigId?: string) => {
-    try {
-      let fetchedConfigs: any[] | null = null;
+    // Só carrega uma config existente quando o usuário escolheu explicitamente
+    // (botão "Editar" na aba de configs salvas ou preloadConfigId).
+    // Sem isso, o form abre limpo para criar uma NOVA config.
+    if (!forceConfigId) {
+      setConfigId(null);
+      setLoadedDestino(null);
+      setNomeContaDestino('');
+      setIsOutraPessoa(false);
+      setAtivos(initialAtivos);
+      setConfigLoaded(true);
+      return;
+    }
 
-      if (forceConfigId) {
-        const { data } = await supabase
-          .from('account_split_configs')
-          .select('*')
-          .eq('id', forceConfigId)
-          .limit(1);
-        fetchedConfigs = data;
-      } else {
-        const { data } = await supabase
-          .from('account_split_configs')
-          .select('*')
-          .eq('cliente', cons.Nome)
-          .eq('instituicao', cons.Instituicao)
-          .eq('nome_conta_origem', cons.nomeConta || '')
-          .eq('ativo', true)
-          .limit(1);
-        fetchedConfigs = data;
-      }
+    try {
+      const { data: fetchedConfigs } = await supabase
+        .from('account_split_configs')
+        .select('*')
+        .eq('id', forceConfigId)
+        .limit(1);
 
       if (fetchedConfigs && fetchedConfigs.length > 0) {
         const config = fetchedConfigs[0];
         setConfigId(config.id);
         setNomeContaDestino(config.nome_conta_destino);
+        setLoadedDestino(config.nome_conta_destino);
         setIsOutraPessoa(!!config.is_outra_pessoa);
 
         const especificos: Array<{ ativo: string; percentual: number }> =
@@ -223,6 +222,8 @@ export function SplitAccountDialog({
       setConfigLoaded(true);
     }
   };
+
+
 
   const handleToggle = (index: number, checked: boolean) => {
     const updated = [...ativos];
