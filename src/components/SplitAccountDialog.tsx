@@ -132,6 +132,7 @@ export function SplitAccountDialog({
       setNomeContaDestino('');
       setIsOutraPessoa(false);
       setConfigId(null);
+      setLoadedDestino(null);
       setConfigLoaded(false);
       return;
     }
