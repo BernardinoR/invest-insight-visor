@@ -582,6 +582,16 @@ export function SplitAccountDialog({
 
   const showForm = consolidado && configLoaded;
 
+  // Configs já salvas para esta mesma conta de origem
+  const configsDaOrigem = useMemo(() => {
+    if (!consolidado) return [];
+    return configs.filter(
+      c =>
+        c.instituicao === consolidado.Instituicao &&
+        (c.nome_conta_origem || '') === (consolidado.nomeConta || '')
+    );
+  }, [configs, consolidado]);
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
