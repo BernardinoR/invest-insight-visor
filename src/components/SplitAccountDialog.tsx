@@ -646,17 +646,17 @@ export function SplitAccountDialog({
     }
   };
 
-  const showForm = consolidado && configLoaded;
+  const showForm = activeConsolidado && configLoaded;
 
   // Configs já salvas para esta mesma conta de origem
   const configsDaOrigem = useMemo(() => {
-    if (!consolidado) return [];
+    if (!activeConsolidado) return [];
     return configs.filter(
       c =>
-        c.instituicao === consolidado.Instituicao &&
-        (c.nome_conta_origem || '') === (consolidado.nomeConta || '')
+        c.instituicao === activeConsolidado.Instituicao &&
+        (c.nome_conta_origem || '') === (activeConsolidado.nomeConta || '')
     );
-  }, [configs, consolidado]);
+  }, [configs, activeConsolidado]);
 
   return (
     <>
