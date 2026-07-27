@@ -631,6 +631,47 @@ export function SplitAccountDialog({
 
                   <Separator />
 
+                  {/* Configs já salvas desta conta de origem */}
+                  {configsDaOrigem.length > 0 && (
+                    <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        Configs salvas desta conta de origem ({configsDaOrigem.length}):
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {configsDaOrigem.map(c => (
+                          <Button
+                            key={c.id}
+                            variant={c.id === configId ? 'default' : 'outline'}
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => handleEditConfig(c)}
+                          >
+                            <Pencil className="h-3 w-3 mr-1" />
+                            {c.nome_conta_destino}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Modo de edição */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs">
+                      {configId ? (
+                        <Badge variant="secondary">Editando config: {loadedDestino}</Badge>
+                      ) : (
+                        <Badge variant="outline">Nova config</Badge>
+                      )}
+                    </div>
+                    {configId && (
+                      <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleNovaConfig}>
+                        + Nova config
+                      </Button>
+                    )}
+                  </div>
+
+
+
                   {/* Sub-conta destino */}
                   <div className="space-y-2">
                     <Label>Sub-conta destino (nomeConta)</Label>
