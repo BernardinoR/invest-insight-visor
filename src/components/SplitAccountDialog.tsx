@@ -233,6 +233,7 @@ export function SplitAccountDialog({
 
 
   const handleToggle = (index: number, checked: boolean) => {
+    if (ativos[index]?.jaSeparado) return;
     const updated = [...ativos];
     updated[index].selected = checked;
     if (checked) {
@@ -245,6 +246,7 @@ export function SplitAccountDialog({
   };
 
   const handlePercentChange = (index: number, pct: number) => {
+    if (ativos[index]?.jaSeparado) return;
     const clamped = Math.min(100, Math.max(0, pct));
     const updated = [...ativos];
     updated[index].percentual = clamped;
@@ -256,17 +258,19 @@ export function SplitAccountDialog({
   };
 
   const totalTransferido = useMemo(
-    () => ativos.filter(a => a.selected).reduce((s, a) => s + a.valorTransferido, 0),
+    () => ativos.filter(a => a.selected && !a.jaSeparado).reduce((s, a) => s + a.valorTransferido, 0),
     [ativos]
   );
 
   const totalOriginal = useMemo(
-    () => ativos.reduce((s, a) => s + a.Posicao, 0),
+    () => ativos.filter(a => !a.jaSeparado).reduce((s, a) => s + a.Posicao, 0),
     [ativos]
   );
 
   const totalRestante = totalOriginal - totalTransferido;
-  const selectedCount = ativos.filter(a => a.selected).length;
+  const selectedCount = ativos.filter(a => a.selected && !a.jaSeparado).length;
+  const jaSeparadosCount = ativos.filter(a => a.jaSeparado).length;
+  const configJaAplicada = jaSeparadosCount > 0 && selectedCount === 0;
 
   const buildConfigPayload = () => {
     const especificos = ativos
@@ -274,10 +278,10 @@ export function SplitAccountDialog({
       .map(a => ({ ativo: a.Ativo, percentual: a.percentual }));
 
     return {
-      cliente: consolidado!.Nome,
-      instituicao: consolidado!.Instituicao,
-      nome_conta_origem: consolidado!.nomeConta || '',
-      nome_conta_destino: nomeContaDestino,
+      cliente: activeConsolidado!.Nome,
+      instituicao: activeConsolidado!.Instituicao,
+      nome_conta_origem: activeConsolidado!.nomeConta || '',
+      nome_conta_destino: nomeContaDestino.trim(),
       percentual_padrao: 0,
       ativos_especificos: especificos,
       ativo: true,
