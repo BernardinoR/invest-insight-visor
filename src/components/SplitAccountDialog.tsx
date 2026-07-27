@@ -333,7 +333,11 @@ export function SplitAccountDialog({
     setLoadedDestino(null);
     setNomeContaDestino('');
     setIsOutraPessoa(false);
-    setAtivos(prev => prev.map(a => ({ ...a, selected: false, percentual: 100, valorTransferido: 0 })));
+    setAtivos(prev =>
+      prev
+        .filter(a => !a.jaSeparado)
+        .map(a => ({ ...a, selected: false, percentual: 100, valorTransferido: 0 }))
+    );
   };
 
   const handleApply = async () => {
