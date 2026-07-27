@@ -81,6 +81,8 @@ export function SplitAccountDialog({
   const [configId, setConfigId] = useState<string | null>(null);
   const [loadedDestino, setLoadedDestino] = useState<string | null>(null);
   const [configLoaded, setConfigLoaded] = useState(false);
+  // Consolidado efetivamente usado pelo form (pode mudar ao carregar uma config)
+  const [activeConsolidado, setActiveConsolidado] = useState<any | null>(consolidado);
 
   // Saved configs state
   const [configs, setConfigs] = useState<SplitConfig[]>([]);
