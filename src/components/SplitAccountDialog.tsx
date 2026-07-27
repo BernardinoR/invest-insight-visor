@@ -41,6 +41,7 @@ interface SplitAtivo {
   selected: boolean;
   percentual: number;
   valorTransferido: number;
+  jaSeparado?: boolean;
 }
 
 interface SplitConfig {
@@ -80,6 +81,8 @@ export function SplitAccountDialog({
   const [configId, setConfigId] = useState<string | null>(null);
   const [loadedDestino, setLoadedDestino] = useState<string | null>(null);
   const [configLoaded, setConfigLoaded] = useState(false);
+  // Consolidado efetivamente usado pelo form (pode mudar ao carregar uma config)
+  const [activeConsolidado, setActiveConsolidado] = useState<any | null>(consolidado);
 
   // Saved configs state
   const [configs, setConfigs] = useState<SplitConfig[]>([]);
@@ -134,8 +137,12 @@ export function SplitAccountDialog({
       setConfigId(null);
       setLoadedDestino(null);
       setConfigLoaded(false);
+      setActiveConsolidado(null);
       return;
     }
+
+    setActiveConsolidado(consolidado);
+
 
     const comp = consolidado.Competencia;
     const linkedAtivos = dadosData.filter(
@@ -226,6 +233,7 @@ export function SplitAccountDialog({
 
 
   const handleToggle = (index: number, checked: boolean) => {
+    if (ativos[index]?.jaSeparado) return;
     const updated = [...ativos];
     updated[index].selected = checked;
     if (checked) {
@@ -238,6 +246,7 @@ export function SplitAccountDialog({
   };
 
   const handlePercentChange = (index: number, pct: number) => {
+    if (ativos[index]?.jaSeparado) return;
     const clamped = Math.min(100, Math.max(0, pct));
     const updated = [...ativos];
     updated[index].percentual = clamped;
@@ -249,17 +258,19 @@ export function SplitAccountDialog({
   };
 
   const totalTransferido = useMemo(
-    () => ativos.filter(a => a.selected).reduce((s, a) => s + a.valorTransferido, 0),
+    () => ativos.filter(a => a.selected && !a.jaSeparado).reduce((s, a) => s + a.valorTransferido, 0),
     [ativos]
   );
 
   const totalOriginal = useMemo(
-    () => ativos.reduce((s, a) => s + a.Posicao, 0),
+    () => ativos.filter(a => !a.jaSeparado).reduce((s, a) => s + a.Posicao, 0),
     [ativos]
   );
 
   const totalRestante = totalOriginal - totalTransferido;
-  const selectedCount = ativos.filter(a => a.selected).length;
+  const selectedCount = ativos.filter(a => a.selected && !a.jaSeparado).length;
+  const jaSeparadosCount = ativos.filter(a => a.jaSeparado).length;
+  const configJaAplicada = jaSeparadosCount > 0 && selectedCount === 0;
 
   const buildConfigPayload = () => {
     const especificos = ativos
@@ -267,10 +278,10 @@ export function SplitAccountDialog({
       .map(a => ({ ativo: a.Ativo, percentual: a.percentual }));
 
     return {
-      cliente: consolidado!.Nome,
-      instituicao: consolidado!.Instituicao,
-      nome_conta_origem: consolidado!.nomeConta || '',
-      nome_conta_destino: nomeContaDestino,
+      cliente: activeConsolidado!.Nome,
+      instituicao: activeConsolidado!.Instituicao,
+      nome_conta_origem: activeConsolidado!.nomeConta || '',
+      nome_conta_destino: nomeContaDestino.trim(),
       percentual_padrao: 0,
       ativos_especificos: especificos,
       ativo: true,
@@ -322,7 +333,11 @@ export function SplitAccountDialog({
     setLoadedDestino(null);
     setNomeContaDestino('');
     setIsOutraPessoa(false);
-    setAtivos(prev => prev.map(a => ({ ...a, selected: false, percentual: 100, valorTransferido: 0 })));
+    setAtivos(prev =>
+      prev
+        .filter(a => !a.jaSeparado)
+        .map(a => ({ ...a, selected: false, percentual: 100, valorTransferido: 0 }))
+    );
   };
 
   const handleApply = async () => {
@@ -355,17 +370,16 @@ export function SplitAccountDialog({
           setLoadedDestino(nomeContaDestino.trim());
         }
       }
-
-
+      const destino = nomeContaDestino.trim();
 
       // Execute split on DadosPerformance
-      const selected = ativos.filter(a => a.selected);
+      const selected = ativos.filter(a => a.selected && !a.jaSeparado);
 
       for (const ativo of selected) {
         if (ativo.percentual === 100) {
           const { error } = await supabase
             .from('DadosPerformance')
-            .update({ nomeConta: nomeContaDestino, is_outra_pessoa: isOutraPessoa })
+            .update({ nomeConta: destino, is_outra_pessoa: isOutraPessoa })
             .eq('id', ativo.id);
           if (error) throw error;
         } else {
@@ -390,7 +404,7 @@ export function SplitAccountDialog({
             .insert({
               ...rest,
               Posicao: ativo.valorTransferido,
-              nomeConta: nomeContaDestino,
+              nomeConta: destino,
               is_outra_pessoa: isOutraPessoa,
             });
           if (insertError) throw insertError;
@@ -398,10 +412,10 @@ export function SplitAccountDialog({
       }
 
       // Auto-calculate consolidated for BOTH accounts
-      const comp = consolidado!.Competencia;
-      const inst = consolidado!.Instituicao;
-      const nome = consolidado!.Nome;
-      const contaOrigem = consolidado!.nomeConta || '';
+      const comp = activeConsolidado!.Competencia;
+      const inst = activeConsolidado!.Instituicao;
+      const nome = activeConsolidado!.Nome;
+      const contaOrigem = activeConsolidado!.nomeConta || '';
 
       // Fetch updated assets for original account
       const { data: ativosOrigem } = await supabase
@@ -419,7 +433,7 @@ export function SplitAccountDialog({
         .eq('Nome', nome)
         .eq('Competencia', comp)
         .eq('Instituicao', inst)
-        .eq('nomeConta', nomeContaDestino);
+        .eq('nomeConta', destino);
 
       const calcOrigem = calcularConsolidadoFromAtivos(ativosOrigem || []);
       const calcDestino = calcularConsolidadoFromAtivos(ativosDestino || []);
@@ -433,32 +447,53 @@ export function SplitAccountDialog({
           'Ganho Financeiro': calcOrigem.ganhoFinanceiro,
           Rendimento: calcOrigem.rendimento,
         })
-        .eq('id', consolidado!.id);
+        .eq('id', activeConsolidado!.id);
       if (updateConsError) throw updateConsError;
 
       // Create/update consolidated for the destination sub-account
-      const { error: consError } = await supabase
+      const { data: consDestinoExistente } = await supabase
         .from('ConsolidadoPerformance')
-        .insert({
-          Nome: nome,
-          Competencia: comp,
-          Instituicao: inst,
-          nomeConta: nomeContaDestino,
-          Moeda: consolidado!.Moeda || 'Real',
-          'Patrimonio Inicial': calcDestino.patrimonioInicial,
-          'Patrimonio Final': calcDestino.patrimonioFinal,
-          'Ganho Financeiro': calcDestino.ganhoFinanceiro,
-          Rendimento: calcDestino.rendimento,
-          'Movimentação': 0,
-          Impostos: 0,
-          Data: consolidado!.Data,
-          is_outra_pessoa: isOutraPessoa,
-        });
-      if (consError) throw consError;
+        .select('id')
+        .eq('Nome', nome)
+        .eq('Competencia', comp)
+        .eq('Instituicao', inst)
+        .eq('nomeConta', destino)
+        .limit(1);
+
+      const valoresDestino = {
+        'Patrimonio Inicial': calcDestino.patrimonioInicial,
+        'Patrimonio Final': calcDestino.patrimonioFinal,
+        'Ganho Financeiro': calcDestino.ganhoFinanceiro,
+        Rendimento: calcDestino.rendimento,
+        is_outra_pessoa: isOutraPessoa,
+      };
+
+      if (consDestinoExistente && consDestinoExistente.length > 0) {
+        const { error: consUpdError } = await supabase
+          .from('ConsolidadoPerformance')
+          .update(valoresDestino)
+          .eq('id', consDestinoExistente[0].id);
+        if (consUpdError) throw consUpdError;
+      } else {
+        const { error: consError } = await supabase
+          .from('ConsolidadoPerformance')
+          .insert({
+            Nome: nome,
+            Competencia: comp,
+            Instituicao: inst,
+            nomeConta: destino,
+            Moeda: activeConsolidado!.Moeda || 'Real',
+            ...valoresDestino,
+            'Movimentação': 0,
+            Impostos: 0,
+            Data: activeConsolidado!.Data,
+          });
+        if (consError) throw consError;
+      }
 
       toast({
         title: 'Split aplicado!',
-        description: `${selected.length} ativo(s) movidos para "${nomeContaDestino}". Consolidados recalculados automaticamente.`,
+        description: `${selected.length} ativo(s) movidos para "${destino}". Consolidados recalculados automaticamente.`,
       });
 
       onOpenChange(false);
@@ -483,28 +518,47 @@ export function SplitAccountDialog({
 
   // Load config into form from saved configs tab
   const loadConfigIntoForm = (config: SplitConfig) => {
+    const base = consolidado;
+    const compAtual = base?.Competencia;
+
+    // Prioriza o consolidado atualmente aberto; senão, procura na MESMA competência
     const allConsolidados = consolidadoData || [];
-    const match = allConsolidados.find(
-      (c: any) =>
-        c.Instituicao === config.instituicao &&
-        (c.nomeConta || '') === config.nome_conta_origem
-    );
+    const matchesOrigem = (c: any) =>
+      c.Instituicao === config.instituicao &&
+      (c.nomeConta || '') === (config.nome_conta_origem || '');
+
+    const match =
+      base && matchesOrigem(base)
+        ? base
+        : allConsolidados.find((c: any) => matchesOrigem(c) && (!compAtual || c.Competencia === compAtual));
 
     if (!match) {
       toast({
         title: 'Consolidado não encontrado',
-        description: `Não há consolidado para ${config.instituicao} / ${config.nome_conta_origem || '(sem conta)'} na competência atual.`,
+        description: `Não há consolidado para ${config.instituicao} / ${config.nome_conta_origem || '(sem conta)'} na competência ${compAtual || 'atual'}.`,
         variant: 'destructive',
       });
       return null;
     }
 
     const comp = match.Competencia;
+    const destino = (config.nome_conta_destino || '').trim();
+
     const linkedAtivos = dadosData.filter(
       (d: any) =>
         d.Competencia === comp &&
         d.Instituicao === match.Instituicao &&
         (d.nomeConta || '') === (match.nomeConta || '') &&
+        d.Nome === match.Nome
+    );
+
+    // Ativos que JÁ estão na conta destino (split já aplicado nesta competência)
+    const ativosNoDestino = dadosData.filter(
+      (d: any) =>
+        d.Competencia === comp &&
+        d.Instituicao === match.Instituicao &&
+        (d.nomeConta || '').trim() === destino &&
+        destino !== '' &&
         d.Nome === match.Nome
     );
 
@@ -532,7 +586,17 @@ export function SplitAccountDialog({
       return a;
     });
 
-    return { updatedAtivos, match };
+    const jaSeparados: SplitAtivo[] = ativosNoDestino.map((a: any) => ({
+      id: a.id,
+      Ativo: a.Ativo || '(sem nome)',
+      Posicao: a.Posicao || 0,
+      selected: true,
+      percentual: 100,
+      valorTransferido: 0,
+      jaSeparado: true,
+    }));
+
+    return { updatedAtivos: [...updatedAtivos, ...jaSeparados], match };
   };
 
   // Saved configs tab: apply a config
@@ -540,6 +604,7 @@ export function SplitAccountDialog({
     const result = loadConfigIntoForm(config);
     if (!result) return;
 
+    setActiveConsolidado(result.match);
     setConfigId(config.id);
     setLoadedDestino(config.nome_conta_destino);
     setNomeContaDestino(config.nome_conta_destino);
@@ -554,6 +619,7 @@ export function SplitAccountDialog({
     const result = loadConfigIntoForm(config);
     if (!result) return;
 
+    setActiveConsolidado(result.match);
     setConfigId(config.id);
     setLoadedDestino(config.nome_conta_destino);
     setNomeContaDestino(config.nome_conta_destino);
@@ -580,17 +646,17 @@ export function SplitAccountDialog({
     }
   };
 
-  const showForm = consolidado && configLoaded;
+  const showForm = activeConsolidado && configLoaded;
 
   // Configs já salvas para esta mesma conta de origem
   const configsDaOrigem = useMemo(() => {
-    if (!consolidado) return [];
+    if (!activeConsolidado) return [];
     return configs.filter(
       c =>
-        c.instituicao === consolidado.Instituicao &&
-        (c.nome_conta_origem || '') === (consolidado.nomeConta || '')
+        c.instituicao === activeConsolidado.Instituicao &&
+        (c.nome_conta_origem || '') === (activeConsolidado.nomeConta || '')
     );
-  }, [configs, consolidado]);
+  }, [configs, activeConsolidado]);
 
   return (
     <>
@@ -619,12 +685,12 @@ export function SplitAccountDialog({
                 <div className="space-y-4">
                   {/* Badges */}
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline">{consolidado.Instituicao}</Badge>
-                    <Badge variant="secondary">{consolidado.Nome}</Badge>
-                    <Badge>{consolidado.Competencia}</Badge>
-                    {consolidado.nomeConta && (
+                    <Badge variant="outline">{activeConsolidado.Instituicao}</Badge>
+                    <Badge variant="secondary">{activeConsolidado.Nome}</Badge>
+                    <Badge>{activeConsolidado.Competencia}</Badge>
+                    {activeConsolidado.nomeConta && (
                       <Badge variant="outline" className="text-muted-foreground">
-                        Conta: {consolidado.nomeConta}
+                        Conta: {activeConsolidado.nomeConta}
                       </Badge>
                     )}
                   </div>
@@ -699,6 +765,14 @@ export function SplitAccountDialog({
 
                   <Separator />
 
+                  {jaSeparadosCount > 0 && (
+                    <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 text-xs text-amber-800 dark:text-amber-300">
+                      {configJaAplicada
+                        ? `Esta config já foi aplicada nesta competência: ${jaSeparadosCount} ativo(s) já estão em "${nomeContaDestino.trim()}".`
+                        : `${jaSeparadosCount} ativo(s) já estão em "${nomeContaDestino.trim()}" e aparecem abaixo apenas como referência.`}
+                    </div>
+                  )}
+
                   {/* Table of assets */}
                   <div className="border rounded-md overflow-auto max-h-[40vh]">
                     <Table>
@@ -713,14 +787,31 @@ export function SplitAccountDialog({
                       </TableHeader>
                       <TableBody>
                         {ativos.map((ativo, idx) => (
-                          <TableRow key={ativo.id} className={ativo.selected ? 'bg-primary/5' : ''}>
+                          <TableRow
+                            key={`${ativo.id}-${idx}`}
+                            className={
+                              ativo.jaSeparado
+                                ? 'bg-muted/40 text-muted-foreground'
+                                : ativo.selected
+                                  ? 'bg-primary/5'
+                                  : ''
+                            }
+                          >
                             <TableCell>
                               <Checkbox
                                 checked={ativo.selected}
+                                disabled={ativo.jaSeparado}
                                 onCheckedChange={(checked) => handleToggle(idx, !!checked)}
                               />
                             </TableCell>
-                            <TableCell className="font-medium text-sm">{ativo.Ativo}</TableCell>
+                            <TableCell className="font-medium text-sm">
+                              <div className="flex items-center gap-2">
+                                <span>{ativo.Ativo}</span>
+                                {ativo.jaSeparado && (
+                                  <Badge variant="secondary" className="text-[10px] font-normal">já separado</Badge>
+                                )}
+                              </div>
+                            </TableCell>
                             <TableCell className="text-right text-sm">{formatBR(ativo.Posicao)}</TableCell>
                             <TableCell className="text-center">
                               <Input
@@ -730,17 +821,18 @@ export function SplitAccountDialog({
                                 value={ativo.percentual}
                                 onChange={e => handlePercentChange(idx, parseFloat(e.target.value) || 0)}
                                 className="h-8 text-xs w-20 text-center mx-auto"
-                                disabled={!ativo.selected}
+                                disabled={!ativo.selected || ativo.jaSeparado}
                               />
                             </TableCell>
                             <TableCell className="text-right text-sm font-medium">
-                              {ativo.selected ? formatBR(ativo.valorTransferido) : '-'}
+                              {ativo.jaSeparado ? '—' : ativo.selected ? formatBR(ativo.valorTransferido) : '-'}
                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                   </div>
+
 
                   {/* Summary */}
                   <div className="bg-muted/50 rounded-lg p-4 space-y-2">
