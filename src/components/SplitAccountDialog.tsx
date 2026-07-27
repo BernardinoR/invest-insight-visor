@@ -685,12 +685,12 @@ export function SplitAccountDialog({
                 <div className="space-y-4">
                   {/* Badges */}
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline">{consolidado.Instituicao}</Badge>
-                    <Badge variant="secondary">{consolidado.Nome}</Badge>
-                    <Badge>{consolidado.Competencia}</Badge>
-                    {consolidado.nomeConta && (
+                    <Badge variant="outline">{activeConsolidado.Instituicao}</Badge>
+                    <Badge variant="secondary">{activeConsolidado.Nome}</Badge>
+                    <Badge>{activeConsolidado.Competencia}</Badge>
+                    {activeConsolidado.nomeConta && (
                       <Badge variant="outline" className="text-muted-foreground">
-                        Conta: {consolidado.nomeConta}
+                        Conta: {activeConsolidado.nomeConta}
                       </Badge>
                     )}
                   </div>
