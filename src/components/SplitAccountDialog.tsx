@@ -78,6 +78,7 @@ export function SplitAccountDialog({
   const [ativos, setAtivos] = useState<SplitAtivo[]>([]);
   const [saving, setSaving] = useState(false);
   const [configId, setConfigId] = useState<string | null>(null);
+  const [loadedDestino, setLoadedDestino] = useState<string | null>(null);
   const [configLoaded, setConfigLoaded] = useState(false);
 
   // Saved configs state
