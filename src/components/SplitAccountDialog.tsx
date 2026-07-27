@@ -137,8 +137,12 @@ export function SplitAccountDialog({
       setConfigId(null);
       setLoadedDestino(null);
       setConfigLoaded(false);
+      setActiveConsolidado(null);
       return;
     }
+
+    setActiveConsolidado(consolidado);
+
 
     const comp = consolidado.Competencia;
     const linkedAtivos = dadosData.filter(
