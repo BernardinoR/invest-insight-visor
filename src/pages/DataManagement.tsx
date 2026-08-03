@@ -7059,6 +7059,27 @@ interface VerificationResult {
                         <div className="flex items-center justify-between">
                           <Label>Liquidez (D+)</Label>
                           <div className="flex items-center gap-1">
+                            <PullFromRagButton
+                              state={ragPullLiquidez.state}
+                              tooltip={
+                                ragPullLiquidez.state === 'amber'
+                                  ? `Preencher com o RAG: ${ragPullLiquidez.label}`
+                                  : ragPullLiquidez.state === 'blue'
+                                    ? `Substituir pelo RAG: ${ragPullLiquidez.label} (atual: ${ragPullLiquidez.atualLabel})`
+                                    : 'Igual ao RAG'
+                              }
+                              onPull={() => {
+                                const p = ragPullLiquidez.prop;
+                                if (!p) return;
+                                setEditingItem({
+                                  ...editingItem,
+                                  liquidez_corridos: p.corridos,
+                                  liquidez_uteis: p.uteis,
+                                  liquidez_fechada: p.fechada,
+                                });
+                              }}
+                            />
+
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
