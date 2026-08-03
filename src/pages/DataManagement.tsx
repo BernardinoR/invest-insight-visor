@@ -9,6 +9,7 @@ import { RolloverDialog } from "@/components/RolloverDialog";
 import { SplitAccountDialog } from "@/components/SplitAccountDialog";
 import { AssetOverridesTab } from "@/components/AssetOverridesTab";
 import { postClassificacao } from "@/lib/visorBridge";
+import { PercentInput } from "@/components/PercentInput";
 
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -6616,12 +6617,10 @@ interface VerificationResult {
                     <div>
                       <Label htmlFor="rendimento">Rendimento (%)</Label>
                       <div className="relative">
-                        <Input
+                        <PercentInput
                           id="rendimento"
-                          type="number"
-                          step="0.0001"
-                          value={(editingItem.Rendimento || 0) * 100}
-                          onChange={(e) => setEditingItem({...editingItem, Rendimento: (parseFloat(e.target.value) || 0) / 100})}
+                          value={editingItem.Rendimento != null ? editingItem.Rendimento * 100 : undefined}
+                          onChange={(pct) => setEditingItem({...editingItem, Rendimento: (pct ?? 0) / 100})}
                           className="pr-8"
                         />
                         <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
@@ -7029,12 +7028,10 @@ interface VerificationResult {
                       <div className="flex-1">
                         <Label htmlFor="rendimento">Rendimento (%)</Label>
                         <div className="relative">
-                          <Input
+                          <PercentInput
                             id="rendimento"
-                            type="number"
-                            step="0.0001"
-                            value={(editingItem.Rendimento || 0) * 100}
-                            onChange={(e) => setEditingItem({...editingItem, Rendimento: (parseFloat(e.target.value) || 0) / 100})}
+                            value={editingItem.Rendimento != null ? editingItem.Rendimento * 100 : undefined}
+                            onChange={(pct) => setEditingItem({...editingItem, Rendimento: (pct ?? 0) / 100})}
                             className="pr-8"
                           />
                           <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
@@ -7194,12 +7191,10 @@ interface VerificationResult {
                   <div>
                     <Label htmlFor="bulk-rendimento">Rendimento (%)</Label>
                     <div className="relative">
-                      <Input
+                      <PercentInput
                         id="bulk-rendimento"
-                        type="number"
-                        step="0.0001"
-                        value={bulkEditData.Rendimento ? (bulkEditData.Rendimento * 100) : ''}
-                        onChange={(e) => setBulkEditData({...bulkEditData, Rendimento: e.target.value ? (parseFloat(e.target.value) / 100) : undefined})}
+                        value={bulkEditData.Rendimento != null ? bulkEditData.Rendimento * 100 : undefined}
+                        onChange={(pct) => setBulkEditData({...bulkEditData, Rendimento: pct != null ? pct / 100 : undefined})}
                         className="pr-8"
                       />
                       <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
@@ -7289,12 +7284,10 @@ interface VerificationResult {
                   <div>
                     <Label htmlFor="bulk-rendimento">Rendimento (%)</Label>
                     <div className="relative">
-                      <Input
+                      <PercentInput
                         id="bulk-rendimento"
-                        type="number"
-                        step="0.0001"
-                        value={bulkEditData.Rendimento ? (bulkEditData.Rendimento * 100) : ''}
-                        onChange={(e) => setBulkEditData({...bulkEditData, Rendimento: e.target.value ? (parseFloat(e.target.value) / 100) : undefined})}
+                        value={bulkEditData.Rendimento != null ? bulkEditData.Rendimento * 100 : undefined}
+                        onChange={(pct) => setBulkEditData({...bulkEditData, Rendimento: pct != null ? pct / 100 : undefined})}
                         className="pr-8"
                       />
                       <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">%</span>
