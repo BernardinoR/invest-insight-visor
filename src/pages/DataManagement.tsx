@@ -1,10 +1,10 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { parseCompetenciaToDate } from "@/lib/utils";
+import { parseCompetenciaToDate, cn } from "@/lib/utils";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus, FastForward, Scissors, Wand2, Database, Users } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Search, CheckSquare, Square, ChevronDown, FileCheck, CheckCircle2, AlertCircle, XCircle, Info, ExternalLink, ArrowRight, Filter as FilterIcon, ArrowUp, ArrowDown, SortAsc, Settings, Settings2, Tag, AlertTriangle, Copy, DollarSign, BarChart3, RefreshCw, BookmarkPlus, FastForward, Scissors, Wand2, Database, Users, ArrowDownToLine } from "lucide-react";
 import { RolloverDialog } from "@/components/RolloverDialog";
 import { SplitAccountDialog } from "@/components/SplitAccountDialog";
 import { AssetOverridesTab } from "@/components/AssetOverridesTab";
@@ -206,6 +206,78 @@ const normalizeLiquidezPair = (
 const LINHAS_SINTETICAS = ['caixa', 'proventos', 'cash'];
 const isLinhaSintetica = (ativo: unknown): boolean =>
   LINHAS_SINTETICAS.includes(String(ativo ?? '').trim().toLowerCase());
+
+// ── "Puxar do RAG": lê o RAG_Processador do ativo em edição e propõe o valor
+// para o campo do formulário. Nada vai ao banco no clique — só o Salvar grava.
+type RagPullState = 'amber' | 'blue' | 'muted' | 'hidden';
+
+// Liquidez do RAG já normalizada (legado "Liquidez" conta como corridos).
+const ragLiquidezFromRow = (
+  r: any
+): { corridos: string | null; uteis: string | null; fechada: boolean } | null => {
+  if (!r) return null;
+  const corridos = (r.Liquidez_Corridos || '').toString().trim() || null;
+  const uteis = (r.Liquidez_Uteis || '').toString().trim() || null;
+  const legacy = (r.Liquidez || '').toString().trim() || null;
+  const fechada = r.liquidez_fechada === true;
+  const finalCorridos = corridos || legacy;
+  if (!fechada && !finalCorridos && !uteis) return null;
+  if (fechada) return { corridos: null, uteis: null, fechada: true };
+  const n = normalizeLiquidezPair(finalCorridos, uteis);
+  return { corridos: n.corridos, uteis: n.uteis, fechada: false };
+};
+
+// Mesma normalização de formato usada no fluxo de vencimento (input date / date column)
+const normalizeVencimento = (v: unknown): string | null => {
+  const s = String(v ?? '').trim();
+  if (!s) return null;
+  return s.slice(0, 10);
+};
+
+const PullFromRagButton = ({
+  state,
+  tooltip,
+  onPull,
+  sizeClass = 'h-7 w-7',
+}: {
+  state: RagPullState;
+  tooltip: string;
+  onPull: () => void;
+  sizeClass?: string;
+}) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            sizeClass,
+            'shrink-0',
+            state === 'hidden' && 'invisible',
+            state === 'muted' && 'opacity-30'
+          )}
+          aria-disabled={state === 'muted' || state === 'hidden'}
+          onClick={() => {
+            if (state === 'amber' || state === 'blue') onPull();
+          }}
+        >
+          <ArrowDownToLine
+            className={cn(
+              'h-4 w-4',
+              state === 'amber' && 'text-amber-600 dark:text-amber-400',
+              state === 'blue' && 'text-blue-600 dark:text-blue-400'
+            )}
+          />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{tooltip}</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
 
 
 
@@ -1974,6 +2046,101 @@ export default function DataManagement() {
     for (let i = 0; i < ids.length; i += size) out.push(ids.slice(i, i + size));
     return out;
   };
+
+  // ── "Puxar do RAG": lookup da linha do RAG do ativo em edição.
+  // Pré-filtro ilike escapado + filtro JS de igualdade exata (case-insensitive).
+  // Falha em silêncio: sem toast, os botões apenas não aparecem.
+  const [ragLookup, setRagLookup] = useState<any>(null);
+  const ragLookupSeq = useRef(0);
+
+  useEffect(() => {
+    const ativo = (editingItem?.Ativo || '').toString().trim();
+    // limpa IMEDIATAMENTE ao trocar de ativo, antes do debounce
+    setRagLookup(null);
+    const seq = ++ragLookupSeq.current;
+    if (!isDialogOpen || !ativo) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const pattern = escapeLikeAtivo(ativo);
+        const { data, error } = await supabase
+          .from('RAG_Processador')
+          .select('id, Ativo, Classificacao, Liquidez, Liquidez_Corridos, Liquidez_Uteis, liquidez_fechada, Vencimento' as any)
+          .ilike('Ativo', pattern);
+        if (error) throw error;
+        if (seq !== ragLookupSeq.current) return;
+        const alvo = ativo.toLowerCase();
+        const matches = (data || []).filter(
+          (r: any) => (r.Ativo ?? '').toString().trim().toLowerCase() === alvo
+        );
+        if (matches.length === 0) {
+          setRagLookup(null);
+          return;
+        }
+        // determinístico: casing idêntico primeiro; senão o id mais recente
+        const exato = matches.find((r: any) => (r.Ativo ?? '').toString().trim() === ativo);
+        const escolhida =
+          exato || [...matches].sort((a: any, b: any) => (b.id ?? 0) - (a.id ?? 0))[0];
+        setRagLookup(escolhida);
+      } catch {
+        if (seq === ragLookupSeq.current) setRagLookup(null);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [editingItem?.Ativo, isDialogOpen]);
+
+  const ragPullClasse = useMemo(() => {
+    const val = (ragLookup?.Classificacao || '').toString().trim();
+    if (!val || !(VALID_ASSET_CLASSES as readonly string[]).includes(val)) {
+      return { state: 'hidden' as RagPullState, value: null as string | null, atual: '' };
+    }
+    const atual = (editingItem?.["Classe do ativo"] || '').toString().trim();
+    if (!atual) return { state: 'amber' as RagPullState, value: val, atual };
+    if (atual === val) return { state: 'muted' as RagPullState, value: val, atual };
+    return { state: 'blue' as RagPullState, value: val, atual };
+  }, [ragLookup, editingItem]);
+
+  const ragPullLiquidez = useMemo(() => {
+    const prop = ragLiquidezFromRow(ragLookup);
+    if (!prop) return { state: 'hidden' as RagPullState, prop: null, label: '', atualLabel: '' };
+    const label = prop.fechada
+      ? 'Fechado'
+      : formatLiquidezDisplay({ liquidez_corridos: prop.corridos, liquidez_uteis: prop.uteis });
+
+    const fechadaAtual = editingItem?.liquidez_fechada === true;
+    const atualNorm = fechadaAtual
+      ? { corridos: null, uteis: null }
+      : normalizeLiquidezPair(editingItem?.liquidez_corridos, editingItem?.liquidez_uteis);
+    const temAtual = fechadaAtual || !!atualNorm.corridos || !!atualNorm.uteis;
+    const atualLabel = temAtual
+      ? fechadaAtual
+        ? 'Fechado'
+        : formatLiquidezDisplay({
+            liquidez_corridos: atualNorm.corridos,
+            liquidez_uteis: atualNorm.uteis,
+          })
+      : '';
+
+    if (!temAtual) return { state: 'amber' as RagPullState, prop, label, atualLabel };
+    const igual =
+      fechadaAtual === prop.fechada &&
+      atualNorm.corridos === prop.corridos &&
+      atualNorm.uteis === prop.uteis;
+    if (igual) return { state: 'muted' as RagPullState, prop, label, atualLabel };
+    return { state: 'blue' as RagPullState, prop, label, atualLabel };
+  }, [ragLookup, editingItem]);
+
+  // Vencimento é fato da posição, não do nome do ativo: só o estado ÂMBAR.
+  // Se o registro já tem vencimento (mesmo divergindo do RAG), fica apagado.
+  const ragPullVencimento = useMemo(() => {
+    const val = normalizeVencimento(ragLookup?.Vencimento);
+    if (!val) return { state: 'hidden' as RagPullState, value: null as string | null };
+    const atual = normalizeVencimento(editingItem?.Vencimento);
+    if (!atual) return { state: 'amber' as RagPullState, value: val };
+    return { state: 'muted' as RagPullState, value: val };
+  }, [ragLookup, editingItem]);
+
 
   // ── "Aplicar a todos os clientes" (ação explícita, sem dialog de conflito nem
   // window.confirm). Padrão ids-first nos DOIS lados (RAG e registros): lookup
@@ -6753,8 +6920,23 @@ interface VerificationResult {
                                  </SelectItem>
                                )}
                              </SelectContent>
-                           </Select>
-                           <TooltipProvider>
+                            </Select>
+                            <PullFromRagButton
+                              sizeClass="h-10 w-10"
+                              state={ragPullClasse.state}
+                              tooltip={
+                                ragPullClasse.state === 'amber'
+                                  ? `Preencher com o RAG: ${ragPullClasse.value}`
+                                  : ragPullClasse.state === 'blue'
+                                    ? `Substituir pelo RAG: ${ragPullClasse.value} (atual: ${ragPullClasse.atual})`
+                                    : 'Igual ao RAG'
+                              }
+                              onPull={() => {
+                                if (!ragPullClasse.value) return;
+                                setEditingItem({ ...editingItem, "Classe do ativo": ragPullClasse.value });
+                              }}
+                            />
+                            <TooltipProvider>
                              <Tooltip>
                                <TooltipTrigger asChild>
                                  <Button
@@ -6842,6 +7024,19 @@ interface VerificationResult {
                          <div className="flex items-center justify-between">
                            <Label htmlFor="vencimento">Vencimento</Label>
                            <div className="flex items-center gap-1">
+                             <PullFromRagButton
+                               state={ragPullVencimento.state}
+                               tooltip={
+                                 ragPullVencimento.state === 'amber'
+                                   ? `Preencher com o RAG: ${ragPullVencimento.value}`
+                                   : 'Igual ao RAG'
+                               }
+                               onPull={() => {
+                                 if (!ragPullVencimento.value) return;
+                                 setEditingItem({ ...editingItem, Vencimento: ragPullVencimento.value });
+                               }}
+                             />
+
                              <TooltipProvider>
                                <Tooltip>
                                  <TooltipTrigger asChild>
@@ -6892,6 +7087,27 @@ interface VerificationResult {
                         <div className="flex items-center justify-between">
                           <Label>Liquidez (D+)</Label>
                           <div className="flex items-center gap-1">
+                            <PullFromRagButton
+                              state={ragPullLiquidez.state}
+                              tooltip={
+                                ragPullLiquidez.state === 'amber'
+                                  ? `Preencher com o RAG: ${ragPullLiquidez.label}`
+                                  : ragPullLiquidez.state === 'blue'
+                                    ? `Substituir pelo RAG: ${ragPullLiquidez.label} (atual: ${ragPullLiquidez.atualLabel})`
+                                    : 'Igual ao RAG'
+                              }
+                              onPull={() => {
+                                const p = ragPullLiquidez.prop;
+                                if (!p) return;
+                                setEditingItem({
+                                  ...editingItem,
+                                  liquidez_corridos: p.corridos,
+                                  liquidez_uteis: p.uteis,
+                                  liquidez_fechada: p.fechada,
+                                });
+                              }}
+                            />
+
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
