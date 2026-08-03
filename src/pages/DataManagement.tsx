@@ -2047,6 +2047,101 @@ export default function DataManagement() {
     return out;
   };
 
+  // ── "Puxar do RAG": lookup da linha do RAG do ativo em edição.
+  // Pré-filtro ilike escapado + filtro JS de igualdade exata (case-insensitive).
+  // Falha em silêncio: sem toast, os botões apenas não aparecem.
+  const [ragLookup, setRagLookup] = useState<any>(null);
+  const ragLookupSeq = useRef(0);
+
+  useEffect(() => {
+    const ativo = (editingItem?.Ativo || '').toString().trim();
+    // limpa IMEDIATAMENTE ao trocar de ativo, antes do debounce
+    setRagLookup(null);
+    const seq = ++ragLookupSeq.current;
+    if (!isDialogOpen || !ativo) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const pattern = escapeLikeAtivo(ativo);
+        const { data, error } = await supabase
+          .from('RAG_Processador')
+          .select('id, Ativo, Classificacao, Liquidez, Liquidez_Corridos, Liquidez_Uteis, liquidez_fechada, Vencimento' as any)
+          .ilike('Ativo', pattern);
+        if (error) throw error;
+        if (seq !== ragLookupSeq.current) return;
+        const alvo = ativo.toLowerCase();
+        const matches = (data || []).filter(
+          (r: any) => (r.Ativo ?? '').toString().trim().toLowerCase() === alvo
+        );
+        if (matches.length === 0) {
+          setRagLookup(null);
+          return;
+        }
+        // determinístico: casing idêntico primeiro; senão o id mais recente
+        const exato = matches.find((r: any) => (r.Ativo ?? '').toString().trim() === ativo);
+        const escolhida =
+          exato || [...matches].sort((a: any, b: any) => (b.id ?? 0) - (a.id ?? 0))[0];
+        setRagLookup(escolhida);
+      } catch {
+        if (seq === ragLookupSeq.current) setRagLookup(null);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [editingItem?.Ativo, isDialogOpen]);
+
+  const ragPullClasse = useMemo(() => {
+    const val = (ragLookup?.Classificacao || '').toString().trim();
+    if (!val || !(VALID_ASSET_CLASSES as readonly string[]).includes(val)) {
+      return { state: 'hidden' as RagPullState, value: null as string | null, atual: '' };
+    }
+    const atual = (editingItem?.["Classe do ativo"] || '').toString().trim();
+    if (!atual) return { state: 'amber' as RagPullState, value: val, atual };
+    if (atual === val) return { state: 'muted' as RagPullState, value: val, atual };
+    return { state: 'blue' as RagPullState, value: val, atual };
+  }, [ragLookup, editingItem]);
+
+  const ragPullLiquidez = useMemo(() => {
+    const prop = ragLiquidezFromRow(ragLookup);
+    if (!prop) return { state: 'hidden' as RagPullState, prop: null, label: '', atualLabel: '' };
+    const label = prop.fechada
+      ? 'Fechado'
+      : formatLiquidezDisplay({ liquidez_corridos: prop.corridos, liquidez_uteis: prop.uteis });
+
+    const fechadaAtual = editingItem?.liquidez_fechada === true;
+    const atualNorm = fechadaAtual
+      ? { corridos: null, uteis: null }
+      : normalizeLiquidezPair(editingItem?.liquidez_corridos, editingItem?.liquidez_uteis);
+    const temAtual = fechadaAtual || !!atualNorm.corridos || !!atualNorm.uteis;
+    const atualLabel = temAtual
+      ? fechadaAtual
+        ? 'Fechado'
+        : formatLiquidezDisplay({
+            liquidez_corridos: atualNorm.corridos,
+            liquidez_uteis: atualNorm.uteis,
+          })
+      : '';
+
+    if (!temAtual) return { state: 'amber' as RagPullState, prop, label, atualLabel };
+    const igual =
+      fechadaAtual === prop.fechada &&
+      atualNorm.corridos === prop.corridos &&
+      atualNorm.uteis === prop.uteis;
+    if (igual) return { state: 'muted' as RagPullState, prop, label, atualLabel };
+    return { state: 'blue' as RagPullState, prop, label, atualLabel };
+  }, [ragLookup, editingItem]);
+
+  // Vencimento é fato da posição, não do nome do ativo: só o estado ÂMBAR.
+  // Se o registro já tem vencimento (mesmo divergindo do RAG), fica apagado.
+  const ragPullVencimento = useMemo(() => {
+    const val = normalizeVencimento(ragLookup?.Vencimento);
+    if (!val) return { state: 'hidden' as RagPullState, value: null as string | null };
+    const atual = normalizeVencimento(editingItem?.Vencimento);
+    if (!atual) return { state: 'amber' as RagPullState, value: val };
+    return { state: 'muted' as RagPullState, value: val };
+  }, [ragLookup, editingItem]);
+
+
   // ── "Aplicar a todos os clientes" (ação explícita, sem dialog de conflito nem
   // window.confirm). Padrão ids-first nos DOIS lados (RAG e registros): lookup
   // ilike escapado → filtro JS de igualdade case-insensitive → update por lista de
