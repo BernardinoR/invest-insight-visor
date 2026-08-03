@@ -6920,8 +6920,23 @@ interface VerificationResult {
                                  </SelectItem>
                                )}
                              </SelectContent>
-                           </Select>
-                           <TooltipProvider>
+                            </Select>
+                            <PullFromRagButton
+                              sizeClass="h-10 w-10"
+                              state={ragPullClasse.state}
+                              tooltip={
+                                ragPullClasse.state === 'amber'
+                                  ? `Preencher com o RAG: ${ragPullClasse.value}`
+                                  : ragPullClasse.state === 'blue'
+                                    ? `Substituir pelo RAG: ${ragPullClasse.value} (atual: ${ragPullClasse.atual})`
+                                    : 'Igual ao RAG'
+                              }
+                              onPull={() => {
+                                if (!ragPullClasse.value) return;
+                                setEditingItem({ ...editingItem, "Classe do ativo": ragPullClasse.value });
+                              }}
+                            />
+                            <TooltipProvider>
                              <Tooltip>
                                <TooltipTrigger asChild>
                                  <Button
