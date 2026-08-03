@@ -7009,6 +7009,19 @@ interface VerificationResult {
                          <div className="flex items-center justify-between">
                            <Label htmlFor="vencimento">Vencimento</Label>
                            <div className="flex items-center gap-1">
+                             <PullFromRagButton
+                               state={ragPullVencimento.state}
+                               tooltip={
+                                 ragPullVencimento.state === 'amber'
+                                   ? `Preencher com o RAG: ${ragPullVencimento.value}`
+                                   : 'Igual ao RAG'
+                               }
+                               onPull={() => {
+                                 if (!ragPullVencimento.value) return;
+                                 setEditingItem({ ...editingItem, Vencimento: ragPullVencimento.value });
+                               }}
+                             />
+
                              <TooltipProvider>
                                <Tooltip>
                                  <TooltipTrigger asChild>
