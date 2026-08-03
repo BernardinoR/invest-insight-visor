@@ -207,6 +207,78 @@ const LINHAS_SINTETICAS = ['caixa', 'proventos', 'cash'];
 const isLinhaSintetica = (ativo: unknown): boolean =>
   LINHAS_SINTETICAS.includes(String(ativo ?? '').trim().toLowerCase());
 
+// ── "Puxar do RAG": lê o RAG_Processador do ativo em edição e propõe o valor
+// para o campo do formulário. Nada vai ao banco no clique — só o Salvar grava.
+type RagPullState = 'amber' | 'blue' | 'muted' | 'hidden';
+
+// Liquidez do RAG já normalizada (legado "Liquidez" conta como corridos).
+const ragLiquidezFromRow = (
+  r: any
+): { corridos: string | null; uteis: string | null; fechada: boolean } | null => {
+  if (!r) return null;
+  const corridos = (r.Liquidez_Corridos || '').toString().trim() || null;
+  const uteis = (r.Liquidez_Uteis || '').toString().trim() || null;
+  const legacy = (r.Liquidez || '').toString().trim() || null;
+  const fechada = r.liquidez_fechada === true;
+  const finalCorridos = corridos || legacy;
+  if (!fechada && !finalCorridos && !uteis) return null;
+  if (fechada) return { corridos: null, uteis: null, fechada: true };
+  const n = normalizeLiquidezPair(finalCorridos, uteis);
+  return { corridos: n.corridos, uteis: n.uteis, fechada: false };
+};
+
+// Mesma normalização de formato usada no fluxo de vencimento (input date / date column)
+const normalizeVencimento = (v: unknown): string | null => {
+  const s = String(v ?? '').trim();
+  if (!s) return null;
+  return s.slice(0, 10);
+};
+
+const PullFromRagButton = ({
+  state,
+  tooltip,
+  onPull,
+  sizeClass = 'h-7 w-7',
+}: {
+  state: RagPullState;
+  tooltip: string;
+  onPull: () => void;
+  sizeClass?: string;
+}) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            sizeClass,
+            'shrink-0',
+            state === 'hidden' && 'invisible',
+            state === 'muted' && 'opacity-30'
+          )}
+          aria-disabled={state === 'muted' || state === 'hidden'}
+          onClick={() => {
+            if (state === 'amber' || state === 'blue') onPull();
+          }}
+        >
+          <ArrowDownToLine
+            className={cn(
+              'h-4 w-4',
+              state === 'amber' && 'text-amber-600 dark:text-amber-400',
+              state === 'blue' && 'text-blue-600 dark:text-blue-400'
+            )}
+          />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{tooltip}</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
+
 
 
 export default function DataManagement() {
