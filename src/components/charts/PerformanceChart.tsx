@@ -1437,6 +1437,37 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
                       );
                     })()}
 
+                    {ipcaReturn !== null && (() => {
+                      const months = chartDataWithIndicators.length;
+                      if (months < 1) return null;
+                      const realFactor = (1 + portfolioReturn / 100) / (1 + ipcaReturn / 100);
+                      if (realFactor <= 0) return null;
+                      const annualizedReal = (Math.pow(realFactor, 12 / months) - 1) * 100;
+
+                      return (
+                        <div className="bg-card border border-border rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-muted-foreground">Retorno real anualizado</p>
+                              <p className="text-2xl font-semibold text-foreground">
+                                {annualizedReal >= 0 ? '+' : ''}{annualizedReal.toFixed(2)}% a.a.
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                acima do {inflationLabel} ({months} {months === 1 ? 'mês' : 'meses'})
+                              </p>
+                            </div>
+                            <div className={`text-sm px-2 py-1 rounded ${
+                              annualizedReal >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                            }`}>
+                              {annualizedReal >= 0 ? '↑' : '↓'}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+
+
                     {cdiRelative !== null && selectedIndicators.cdi && (
                       <div className="bg-card border border-border rounded-lg p-4">
                         <div className="flex items-center justify-between">
