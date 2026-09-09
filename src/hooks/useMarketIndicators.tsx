@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface MarketIndicatorData {
   competencia: string;
@@ -16,13 +17,18 @@ interface MarketIndicatorData {
 interface ClientTarget {
   meta: string;
   targetValue: number; // extracted numeric value from meta (e.g., 5 from "IPCA+5%")
+  inflationLabel: 'IPCA' | 'CPI';
+  metaLabel: string; // meta com o índice de inflação da moeda em exibição
 }
 
 export function useMarketIndicators(clientName?: string) {
+  const { currency } = useCurrency();
+  const inflationLabel: 'IPCA' | 'CPI' = currency === 'USD' ? 'CPI' : 'IPCA';
   const [marketData, setMarketData] = useState<MarketIndicatorData[]>([]);
   const [clientTarget, setClientTarget] = useState<ClientTarget | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
 
   // Fetch real market data from B3 and Banco Central APIs
   const fetchMarketData = async (clientTargetValue?: ClientTarget | null): Promise<MarketIndicatorData[]> => {
