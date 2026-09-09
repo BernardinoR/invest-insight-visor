@@ -45,7 +45,8 @@ const competenciaToDate = (competencia: string): Date => {
 };
 
 export function PerformanceChart({ consolidadoData, clientName, marketData: propMarketData, clientTarget: propClientTarget }: PerformanceChartProps) {
-  const { convertValue, adjustReturnWithFX } = useCurrency();
+  const { convertValue, adjustReturnWithFX, currency } = useCurrency();
+  const inflationLabel = currency === 'USD' ? 'CPI' : 'IPCA';
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'all' | 'custom'>('12months');
   const [customStartCompetencia, setCustomStartCompetencia] = useState<string>('');
   const [customEndCompetencia, setCustomEndCompetencia] = useState<string>('');
