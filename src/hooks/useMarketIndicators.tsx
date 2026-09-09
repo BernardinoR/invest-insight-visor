@@ -47,22 +47,6 @@ export function useMarketIndicators(clientName?: string) {
 
       console.log('Fetching market data...');
 
-      // Try to fetch IPCA data from Banco Central (this one usually works)
-      let ipcaData = [];
-      try {
-        const ipcaResponse = await fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`);
-        if (ipcaResponse.ok) {
-          ipcaData = await ipcaResponse.json();
-          console.log('IPCA data fetched successfully:', ipcaData.length, 'records');
-        } else {
-          console.error('IPCA API error:', ipcaResponse.status);
-        }
-      } catch (ipcaError) {
-        console.error('Error fetching IPCA:', ipcaError);
-      }
-
-      console.log('IPCA data fetched:', ipcaData.length, 'records');
-
       // Process and consolidate data by competencia
       const competenciaMap = new Map<string, {
         ibovespa: number[];
@@ -76,18 +60,52 @@ export function useMarketIndicators(clientName?: string) {
         return `${month}/${year}`;
       };
 
-
-      // Process IPCA historical data (monthly values)
-      ipcaData.forEach((item: any) => {
-        const competencia = dateToCompetencia(item.data);
+      const addInflation = (competencia: string, value: number) => {
         if (!competenciaMap.has(competencia)) {
           competenciaMap.set(competencia, { ibovespa: [], ifix: [], ipca: [] });
         }
-        const value = parseFloat(item.valor) / 100; // Convert percentage to decimal
-        if (!isNaN(value)) {
-          competenciaMap.get(competencia)!.ipca.push(value);
+        competenciaMap.get(competencia)!.ipca.push(value);
+      };
+
+      if (inflationLabel === 'CPI') {
+        // Inflação americana (CPI-U) via edge function que faz proxy do BLS
+        try {
+          const { data: cpi, error: cpiError } = await supabase.functions.invoke('get-us-cpi', {
+            body: { startYear: startDate.getFullYear(), endYear: endDate.getFullYear() },
+          });
+          if (cpiError) throw cpiError;
+          const monthly = (cpi?.monthly ?? {}) as Record<string, number>;
+          Object.entries(monthly).forEach(([competencia, value]) => {
+            const v = Number(value);
+            if (!isNaN(v)) addInflation(competencia, v);
+          });
+          console.log('CPI data fetched successfully:', Object.keys(monthly).length, 'records');
+        } catch (cpiError) {
+          console.error('Error fetching CPI:', cpiError);
         }
-      });
+      } else {
+        // Try to fetch IPCA data from Banco Central (this one usually works)
+        let ipcaData: any[] = [];
+        try {
+          const ipcaResponse = await fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json&dataInicial=${startDateStr}&dataFinal=${endDateStr}`);
+          if (ipcaResponse.ok) {
+            ipcaData = await ipcaResponse.json();
+            console.log('IPCA data fetched successfully:', ipcaData.length, 'records');
+          } else {
+            console.error('IPCA API error:', ipcaResponse.status);
+          }
+        } catch (ipcaError) {
+          console.error('Error fetching IPCA:', ipcaError);
+        }
+
+        // Process IPCA historical data (monthly values)
+        ipcaData.forEach((item: any) => {
+          const competencia = dateToCompetencia(item.data);
+          const value = parseFloat(item.valor) / 100; // Convert percentage to decimal
+          if (!isNaN(value)) addInflation(competencia, value);
+        });
+      }
+
 
       // Calculate monthly returns and accumulated returns
       const result: MarketIndicatorData[] = [];
