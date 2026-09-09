@@ -11,24 +11,49 @@ const FRED_SERIES_ID = 'CPIAUCNS'
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 
-/** Build monthly MoM changes (keyed by MM/YYYY) from an index map keyed by YYYY-MM. */
+/**
+ * Build monthly MoM changes (keyed by MM/YYYY) from an index map keyed by YYYY-MM.
+ * Months without a published index (e.g. Oct/2025, skipped during the US government
+ * shutdown) are bridged: the change between the two published indexes around the gap
+ * is spread geometrically across the missing months, so the series has no holes.
+ */
 function toMonthlyChanges(indexByKey: Map<string, number>, startYear: number) {
   const monthly: Record<string, number> = {}
-  for (const [key, value] of indexByKey.entries()) {
-    const [yStr, mStr] = key.split('-')
-    const year = Number(yStr)
-    const month = Number(mStr)
-    if (year < startYear) continue
 
-    const prevYear = month === 1 ? year - 1 : year
-    const prevMonth = month === 1 ? 12 : month - 1
-    const prev = indexByKey.get(`${prevYear}-${String(prevMonth).padStart(2, '0')}`)
-    if (!prev || prev <= 0) continue
-
-    monthly[`${String(month).padStart(2, '0')}/${year}`] = value / prev - 1
+  const toIdx = (key: string) => {
+    const [y, m] = key.split('-').map(Number)
+    return y * 12 + (m - 1)
   }
+  const fromIdx = (idx: number) => {
+    const year = Math.floor(idx / 12)
+    const month = (idx % 12) + 1
+    return { year, competencia: `${String(month).padStart(2, '0')}/${year}` }
+  }
+
+  const points = Array.from(indexByKey.entries())
+    .map(([key, value]) => ({ idx: toIdx(key), value }))
+    .filter((p) => Number.isFinite(p.value) && p.value > 0)
+    .sort((a, b) => a.idx - b.idx)
+
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1]
+    const curr = points[i]
+    const gap = curr.idx - prev.idx
+    if (gap <= 0) continue
+
+    // Geometric monthly rate covering the (possibly multi-month) gap
+    const rate = Math.pow(curr.value / prev.value, 1 / gap) - 1
+
+    for (let step = 1; step <= gap; step++) {
+      const { year, competencia } = fromIdx(prev.idx + step)
+      if (year < startYear) continue
+      monthly[competencia] = rate
+    }
+  }
+
   return monthly
 }
+
 
 async function fetchFred(fetchStart: number, endYear: number) {
   const fredUrl =
