@@ -312,11 +312,12 @@ export function useMarketIndicators(clientName?: string) {
     };
 
     loadData();
-  }, [clientName]);
+  }, [clientName, inflationLabel]);
 
   return {
     marketData,
     clientTarget,
+    inflationLabel,
     loading,
     error
   };
