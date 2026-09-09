@@ -1417,7 +1417,7 @@ export function InvestmentDashboard({ selectedClient, initialSelectedRows = [] }
                                         case 'Pós Fixado':
                                           return '% CDI';
                                         case 'Inflação':
-                                          return '± IPCA';
+                                          return currency === 'USD' ? '± CPI' : '± IPCA';
                                         case 'Pré Fixado':
                                           return '± IRF-M';
                                         case 'Multimercado':

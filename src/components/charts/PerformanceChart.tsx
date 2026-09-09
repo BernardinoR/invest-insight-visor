@@ -45,7 +45,8 @@ const competenciaToDate = (competencia: string): Date => {
 };
 
 export function PerformanceChart({ consolidadoData, clientName, marketData: propMarketData, clientTarget: propClientTarget }: PerformanceChartProps) {
-  const { convertValue, adjustReturnWithFX } = useCurrency();
+  const { convertValue, adjustReturnWithFX, currency } = useCurrency();
+  const inflationLabel = currency === 'USD' ? 'CPI' : 'IPCA';
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | '12months' | 'all' | 'custom'>('12months');
   const [customStartCompetencia, setCustomStartCompetencia] = useState<string>('');
   const [customEndCompetencia, setCustomEndCompetencia] = useState<string>('');
@@ -621,7 +622,7 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
                            Meta {(() => {
                              console.log('Debug clientTarget:', clientTarget, 'marketLoading:', marketLoading);
                              if (marketLoading) return '(Carregando...)';
-                             if (clientTarget && clientTarget.meta) return `(${clientTarget.meta})`;
+                             if (clientTarget && clientTarget.meta) return `(${clientTarget.metaLabel || clientTarget.meta})`;
                              return '(Não disponível)';
                            })()}
                          </label>
@@ -636,7 +637,7 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
                             setSelectedIndicators(prev => ({ ...prev, ipca: checked as boolean }))
                           }
                         />
-                        <label htmlFor="ipca" className="text-sm">IPCA</label>
+                        <label htmlFor="ipca" className="text-sm">{inflationLabel}</label>
                       </div>
                       
                       {/* Carteira Antiga benchmark */}
@@ -1031,7 +1032,7 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
                       return [`${value.toFixed(2)}%`, 'Meta'];
                     }
                     if (name === 'ipcaRetorno') {
-                      return [`${value.toFixed(2)}%`, 'IPCA'];
+                      return [`${value.toFixed(2)}%`, inflationLabel];
                     }
                     if (name === 'oldPortfolioRetorno') {
                       return [`${value.toFixed(2)}%`, 'Carteira Antiga'];
@@ -1423,7 +1424,7 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
                                 {targetDifference >= 0 ? '+' : ''}{targetDifference.toFixed(2)}pp
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {targetDifference >= 0 ? 'acima' : 'abaixo'} da meta ({clientTarget.meta})
+                                {targetDifference >= 0 ? 'acima' : 'abaixo'} da meta ({clientTarget.metaLabel || clientTarget.meta})
                               </p>
                             </div>
                             <div className={`text-sm px-2 py-1 rounded ${
@@ -1461,7 +1462,7 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
                       <div className="bg-card border border-border rounded-lg p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-muted-foreground">vs IPCA</p>
+                            <p className="text-sm text-muted-foreground">vs {inflationLabel}</p>
                             <p className="text-2xl font-semibold text-foreground">
                               {ipcaDifference >= 0 ? '+' : ''}{ipcaDifference.toFixed(2)}pp
                             </p>
