@@ -1437,10 +1437,19 @@ export function PerformanceChart({ consolidadoData, clientName, marketData: prop
                       );
                     })()}
 
-                    {ipcaReturn !== null && (() => {
-                      const months = chartDataWithIndicators.length;
+                    {(() => {
+                      // Usa o último mês que tem inflação disponível (o mês corrente pode não ter dado publicado)
+                      const lastInflationIndex = [...chartDataWithIndicators]
+                        .map((d, i) => ({ d, i }))
+                        .filter(({ d }) => d.ipcaRetorno !== null && d.ipcaRetorno !== undefined)
+                        .pop()?.i;
+                      if (lastInflationIndex === undefined) return null;
+                      const inflationPoint = chartDataWithIndicators[lastInflationIndex];
+                      const inflationReturn = inflationPoint.ipcaRetorno as number;
+                      const portfolioAtPoint = inflationPoint.retornoAcumulado;
+                      const months = lastInflationIndex + 1;
                       if (months < 1) return null;
-                      const realFactor = (1 + portfolioReturn / 100) / (1 + ipcaReturn / 100);
+                      const realFactor = (1 + portfolioAtPoint / 100) / (1 + inflationReturn / 100);
                       if (realFactor <= 0) return null;
                       const annualizedReal = (Math.pow(realFactor, 12 / months) - 1) * 100;
 
