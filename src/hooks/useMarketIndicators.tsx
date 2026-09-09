@@ -223,15 +223,20 @@ export function useMarketIndicators(clientName?: string) {
         const meta = data[0]['Meta de Retorno'];
         console.log('Meta encontrada:', meta);
         
-        // Extract numeric value from meta (e.g., "IPCA+5%" -> 5)
-        const match = meta?.match(/IPCA\+\s*(\d+(?:\.\d+)?)/i);
-        const targetValue = match ? parseFloat(match[1]) : 0;
+        // Extract numeric value from meta (e.g., "IPCA+5%", "IPCA + 5%", "CPI+5%" -> 5)
+        const match = meta?.match(/(?:IPCA|CPI)\s*\+\s*(\d+(?:[.,]\d+)?)/i);
+        const targetValue = match ? parseFloat(match[1].replace(',', '.')) : 0;
         
         console.log('Valor da meta extraído:', targetValue);
         
+        const metaText = meta || '';
+        const metaLabel = metaText.replace(/IPCA|CPI/gi, inflationLabel);
+        
         return {
-          meta: meta || '',
-          targetValue
+          meta: metaText,
+          targetValue,
+          inflationLabel,
+          metaLabel
         };
       }
       
